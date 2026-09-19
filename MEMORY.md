@@ -4,14 +4,14 @@ Live checkpoint. Answers "where exactly did we stop?". Keep concise; no logs.
 
 ## Current Status
 
-Current branch: main
-Current commit: HEAD of main = `docs: record phase 4 checkpoint` (run `git log --oneline -1`; the hash cannot be embedded in its own commit) · Phase 4 commit: b99f514 `feat: complete phase 4 engineering foundation`
+Current branch: feat/phase-5-approved-ui
+Current commit: Phase 5 work in progress; Phase 4 main checkpoint remains `e217ac1`
 Tag: phase-4-complete → b99f514
 Remote: origin = https://github.com/sheeffii/ksc-public-record-intelligence.git (configured, **never pushed**)
-Current milestone: Phase 4 — Engineering Foundation — **COMPLETE**
-Next milestone: Phase 5 — Approved UI implementation with mock data (not started)
-Current active task: None. Phase 4 closed deliberately; Phase 5 not started.
-Working tree: clean after the checkpoint commit
+Current milestone: Phase 5 — Approved UI implementation with mock data — **IN PROGRESS**
+Next milestone: Phase 6 — real database / evidence model (not authorised)
+Current active task: Implement the approved route screens from the typed mock repository.
+Working tree: Phase 5 foundation batch pending commit
 Last updated: 2026-09-19
 
 ## What Works
@@ -71,7 +71,7 @@ Failed documents: 0
 
 ## Tests
 
-Frontend: 108 passed (vitest) — `pnpm --filter @ksc/web test`
+Frontend: 117 passed (vitest) — `pnpm --filter @ksc/web test`
 Backend: 21 passed (pytest: 10 unit, 11 integration) — `make test-backend`
 Integration: included above; needs `make infra`
 E2E: 50 passed (25 specs × desktop + mobile, Chromium) — `pnpm e2e` against `make up`; not in CI
@@ -119,27 +119,22 @@ Entire repository created in Phase 4. Key entry points:
 
 ## Current Working Context
 
-Phase 4 finished and verified end to end. The next phase (5) implements the
-approved UI with mock data. Nothing from Phase 5 has been started: no screen beyond
-the placeholder and the foundation homepage exists, no mock data files exist.
+Phase 4 remains verified. Phase 5 is authorised and underway on its feature branch.
+The first batch adds `RecordBlock`, `AiAnalysisBlock`, `ProtectionNotice`,
+`DirectionBadge` + `ScopeNote`, `ReferenceCountStrip`, and a typed `MockRepository`
+boundary with safe generic demo data. Route screens beyond the foundation homepage
+are still placeholders.
 
 ## Next Actions
 
-1. **Start Phase 5 only when instructed.** First task: build the remaining
-   foundational components from HANDOFF.md §3 in `apps/web/src/components/provenance/`
-   — `RecordBlock` + `AiAnalysisBlock` (matched pair, four-signal boundary),
-   `CitationPreview` (popover before navigation), `ProtectionNotice`,
-   `WitnessHeaderProtected` (no identity markup), `DirectionBadge` + `ScopeNote`,
-   `ReferenceCountStrip` (disclaimer inside the component) — each with tests
-   encoding its rule, strings added to both message tables.
-2. Create `apps/web/src/mock/` with clearly-labelled mock data typed by
-   `@ksc/shared`; every screen showing a figure keeps `DemoDataFlag`.
-3. Implement screens in HANDOFF.md §11 order: Document Reader (04) → Global Search
+1. Add `CitationPreview` and the code-only `WitnessHeaderProtected` while building
+   the first screens that exercise them.
+2. Implement screens in HANDOFF.md §11 order: Document Reader (04) → Global Search
    (06) + ⌘K (06b) → Finding Detail (05) → dossiers (07, 08) → Evidence Explorer
    (10) + the five directories → Network (03) + Evidence Path (20) → 11, 12, 09 →
    13, 14, 15 → Public mode (16). Mobile throughout.
-4. Decide whether to add Playwright (`pnpm e2e`, already passing locally) to CI.
-5. Have Albanian legal terminology reviewed against official KSC publications.
+3. Add Phase 5 workflow Playwright coverage as the corresponding screens land.
+4. Have Albanian legal terminology reviewed against official KSC publications.
 
 ## Do Not Forget
 

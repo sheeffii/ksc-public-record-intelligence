@@ -100,6 +100,21 @@
     "aiHeader": "Shkruar nga softueri · asnjë pjesë e kësaj nuk është regjistër gjykate",
     "recordHeader": "Nga regjistri publik i gjykatës"
   },
+  "protection": {
+    "title": "Dëshmitar i mbrojtur",
+    "body": "Ky sistem mban vetëm kodin publik të dëshmitarit. Nuk ruan ose nxjerr atribute identiteti dhe kërkimi nuk lidh një emër me këtë kod."
+  },
+  "referenceCounts": {
+    "title": "Referencat në regjistër",
+    "disclaimer": "Sa herë shfaqet kjo në regjistër. Nuk është masë e rëndësisë, përfshirjes apo përgjegjësisë.",
+    "documentMentions": "Përmendje në dokumente",
+    "transcriptMentions": "Përmendje në transkripte",
+    "exhibitRefs": "Referenca të provave",
+    "findings": "Konstatime",
+    "witnessesWhoReferred": "Referenca dëshmitarësh",
+    "incidents": "Incidente",
+    "citationsResolved": "Citime të zgjidhura"
+  },
   "citation": {
     "open": "Hap dokumentin",
     "copy": "Kopjo citimin",

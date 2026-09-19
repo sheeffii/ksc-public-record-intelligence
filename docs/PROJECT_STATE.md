@@ -11,7 +11,7 @@ Last updated: 2026-09-19
 | ----- | --------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | 1–3   | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)   |
 | **4** | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)** |
-| 5     | Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)            | ⏳ Next                      |
+| **5** | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | 🚧 **In progress**           |
 | 6     | Controlled ingestion: one public document end to end, citation extraction + resolution index              | Planned                      |
 | 7     | Evidence schema (witnesses, exhibits, findings, incidents, citations, relationships) + real data wiring   | Planned                      |
 | 8     | Search (PostgreSQL FTS + pgvector), network, evidence paths                                               | Planned                      |
@@ -81,6 +81,17 @@ Shared / docs
 - ⌘K command palette (Modal primitive exists; palette not built).
 - Any data fetching from web → api.
 - Ingestion, parsing, resolution index, search, network, AI (later phases).
+
+## Phase 5 progress
+
+- Branch `feat/phase-5-approved-ui` created from the verified Phase 4 checkpoint.
+- Added the matched `RecordBlock` / `AiAnalysisBlock` provenance pair,
+  `ProtectionNotice`, `DirectionBadge` + `ScopeNote`, and `ReferenceCountStrip`.
+- Added a typed `MockRepository` boundary and centralized generic demo records under
+  `apps/web/src/mock/`; no real court material or provider call is involved.
+- Documentation discrepancy retained without redesign: `HANDOFF.md` says 83
+  components while `COMPONENTS.md` inventories 91; its “Nine rules” summary lists ten.
+- Screen implementation remains in progress; Phase 4 placeholders are still present.
 
 ## Technical debt / notes
 

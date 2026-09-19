@@ -100,6 +100,21 @@
     "aiHeader": "Written by software · no part of this is a court record",
     "recordHeader": "From the public court record"
   },
+  "protection": {
+    "title": "Protected Witness",
+    "body": "This system holds only the public witness code. It stores or derives no identity attributes, and search will not resolve a name to this code."
+  },
+  "referenceCounts": {
+    "title": "Record References",
+    "disclaimer": "How many times this appears in the record. Not a measure of significance, involvement or responsibility.",
+    "documentMentions": "Document mentions",
+    "transcriptMentions": "Transcript mentions",
+    "exhibitRefs": "Exhibit references",
+    "findings": "Findings",
+    "witnessesWhoReferred": "Witness references",
+    "incidents": "Incidents",
+    "citationsResolved": "Citations resolved"
+  },
   "citation": {
     "open": "Open document",
     "copy": "Copy citation",
