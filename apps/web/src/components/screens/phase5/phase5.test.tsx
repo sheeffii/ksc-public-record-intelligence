@@ -1,5 +1,6 @@
 import "@/test/next-mocks";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { messagesEn, renderWithProviders } from "@/test/render";
 import { DirectoryScreen } from "./DirectoryScreen";
@@ -25,6 +26,35 @@ describe("Phase 5 safety contracts", () => {
     expect(screen.getAllByText(messagesEn.footer.network).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(messagesEn.phase5.whyConnection)).toBeInTheDocument();
     expect(screen.getByText("Exhibit P00123 · p. 4")).toBeInTheDocument();
+  });
+
+  it("supports network search, isolate, collapse, and reset controls", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NetworkScreen />);
+    const graph = screen.getByRole("main", { name: messagesEn.phase5.network });
+    const search = screen.getByRole("textbox", { name: messagesEn.phase5.searchWithin });
+
+    await user.type(search, "W01234");
+    expect(search).toHaveValue("W01234");
+
+    const isolate = screen.getByRole("button", { name: messagesEn.phase5.isolate });
+    await user.click(isolate);
+    expect(isolate).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(screen.getByRole("button", { name: messagesEn.phase5.collapseGraph }));
+    expect(within(graph).queryByRole("button", { name: "Illustrative finding" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: messagesEn.phase5.reset }));
+    expect(search).toHaveValue("");
+    expect(isolate).toHaveAttribute("aria-pressed", "false");
+    expect(within(graph).getByRole("button", { name: "Illustrative finding" })).toBeInTheDocument();
+
+    const inspectorToggle = screen.getByText(messagesEn.phase5.viewDetails, {
+      selector: "summary",
+    });
+    expect(inspectorToggle.closest("details")).toHaveAttribute("open");
+    await user.click(inspectorToggle);
+    expect(inspectorToggle.closest("details")).not.toHaveAttribute("open");
   });
 
   it("renders the evidence path constraint and non-inference card", () => {

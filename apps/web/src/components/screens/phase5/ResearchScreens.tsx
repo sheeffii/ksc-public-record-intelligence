@@ -3,7 +3,7 @@
 import type { AnswerBlockKind, DateType, SourceType } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Panel } from "@/components/primitives/Panel";
 import {
   AiAnalysisBlock,
@@ -90,6 +90,48 @@ export function NetworkScreen() {
   const [selectedNode, setSelectedNode] = useState(nodes[0]!);
   const [selectedEdge, setSelectedEdge] = useState(edges[0]!);
   const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [query, setQuery] = useState("");
+  const [isolated, setIsolated] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  const dragStart = useRef<{
+    pointerX: number;
+    pointerY: number;
+    panX: number;
+    panY: number;
+  } | null>(null);
+  const neighbourIds = new Set(
+    edges
+      .filter((edge) => edge.from === selectedNode.id || edge.to === selectedNode.id)
+      .flatMap((edge) => [edge.from, edge.to]),
+  );
+  const visibleNodes = isolated
+    ? nodes.filter((node) => neighbourIds.has(node.id))
+    : expanded
+      ? nodes
+      : nodes.slice(0, 3);
+  const visibleNodeIds = new Set(visibleNodes.map((node) => node.id));
+  const visibleEdges = edges.filter(
+    (edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to),
+  );
+  const listedNodes = nodes.filter((node) =>
+    node.label.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  function handleGraphAction(key: string) {
+    if (key === "zoomIn") setZoom((value) => Math.min(1.4, value + 0.1));
+    if (key === "zoomOut") setZoom((value) => Math.max(0.7, value - 0.1));
+    if (key === "isolate") setIsolated((value) => !value);
+    if (key === "expand") setExpanded(true);
+    if (key === "collapseGraph") setExpanded(false);
+    if (key === "reset") {
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      setIsolated(false);
+      setExpanded(true);
+      setQuery("");
+    }
+  }
   return (
     <AppShell footer={footer("network")}>
       <ScreenHeader
@@ -103,18 +145,18 @@ export function NetworkScreen() {
         }
       />
       <div className="border-border-subtle flex flex-wrap gap-2 border-b px-4 py-2">
-        {["zoomIn", "zoomOut", "reset", "isolate", "expand"].map((key) => (
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t("searchWithin")}
+          aria-label={t("searchWithin")}
+          className="border-border bg-surface-raised rounded-control min-w-44 border px-3 py-1 text-[10px]"
+        />
+        {["zoomIn", "zoomOut", "reset", "isolate", "expand", "collapseGraph"].map((key) => (
           <button
             key={key}
-            onClick={() =>
-              key === "zoomIn"
-                ? setZoom(Math.min(1.4, zoom + 0.1))
-                : key === "zoomOut"
-                  ? setZoom(Math.max(0.7, zoom - 0.1))
-                  : key === "reset"
-                    ? setZoom(1)
-                    : undefined
-            }
+            onClick={() => handleGraphAction(key)}
+            aria-pressed={key === "isolate" ? isolated : undefined}
             className="border-border bg-surface-raised rounded-control border px-3 py-1 text-[10px]"
           >
             {t(key)}
@@ -125,7 +167,7 @@ export function NetworkScreen() {
         <aside className="border-border bg-surface hidden border-r p-3 lg:block">
           <Panel title={t("allRecords")}>
             <div className="space-y-2">
-              {nodes.map((node) => (
+              {listedNodes.map((node) => (
                 <button
                   key={node.id}
                   onClick={() => setSelectedNode(node)}
@@ -139,77 +181,115 @@ export function NetworkScreen() {
           </Panel>
         </aside>
         <main
-          className="bg-bg-graph relative min-h-[560px] overflow-hidden"
-          style={{ transform: `scale(${zoom})`, transformOrigin: "center" }}
+          className="bg-bg-graph relative min-h-[560px] cursor-grab touch-none overflow-hidden active:cursor-grabbing"
           aria-label={t("network")}
+          onPointerDown={(event) => {
+            if ((event.target as Element).closest("button")) return;
+            event.currentTarget.setPointerCapture(event.pointerId);
+            dragStart.current = {
+              pointerX: event.clientX,
+              pointerY: event.clientY,
+              panX: pan.x,
+              panY: pan.y,
+            };
+          }}
+          onPointerMove={(event) => {
+            if (!dragStart.current) return;
+            setPan({
+              x: dragStart.current.panX + event.clientX - dragStart.current.pointerX,
+              y: dragStart.current.panY + event.clientY - dragStart.current.pointerY,
+            });
+          }}
+          onPointerUp={() => {
+            dragStart.current = null;
+          }}
+          onPointerCancel={() => {
+            dragStart.current = null;
+          }}
         >
-          <svg className="absolute inset-0 size-full" aria-hidden>
-            {edges.map((edge) => {
-              const a = nodes.find((n) => n.id === edge.from)!;
-              const b = nodes.find((n) => n.id === edge.to)!;
-              return (
-                <line
-                  key={edge.id}
-                  x1={`${a.x}%`}
-                  y1={`${a.y}%`}
-                  x2={`${b.x}%`}
-                  y2={`${b.y}%`}
-                  stroke="var(--border)"
-                  strokeWidth="2"
-                  onClick={() => setSelectedEdge(edge)}
-                  className="cursor-pointer"
-                />
-              );
-            })}
-          </svg>
-          {nodes.map((node) => (
-            <button
-              key={node.id}
-              onClick={() => setSelectedNode(node)}
-              style={{ left: `${node.x}%`, top: `${node.y}%` }}
-              className="border-accent bg-surface text-fg absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border px-3 py-2 text-[9px]"
-            >
-              {node.label}
-            </button>
-          ))}
+          <div
+            className="absolute inset-0 transition-transform motion-reduce:transition-none"
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: "center",
+            }}
+          >
+            <svg className="absolute inset-0 size-full" aria-hidden>
+              {visibleEdges.map((edge) => {
+                const a = visibleNodes.find((node) => node.id === edge.from)!;
+                const b = visibleNodes.find((node) => node.id === edge.to)!;
+                return (
+                  <line
+                    key={edge.id}
+                    x1={`${a.x}%`}
+                    y1={`${a.y}%`}
+                    x2={`${b.x}%`}
+                    y2={`${b.y}%`}
+                    stroke="var(--border)"
+                    strokeWidth="2"
+                    onClick={() => setSelectedEdge(edge)}
+                    className="cursor-pointer"
+                  />
+                );
+              })}
+            </svg>
+            {visibleNodes.map((node) => (
+              <button
+                key={node.id}
+                onClick={() => setSelectedNode(node)}
+                style={{ left: `${node.x}%`, top: `${node.y}%` }}
+                className="border-accent bg-surface text-fg absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border px-3 py-2 text-[9px]"
+              >
+                {node.label}
+              </button>
+            ))}
+          </div>
           <p className="governance-text bg-bg-deep/80 absolute right-4 bottom-4 max-w-xs rounded px-3 py-2">
             {footer("network")}
           </p>
         </main>
-        <aside className="border-border bg-surface max-lg:rounded-t-sheet max-lg:shadow-sheet border-l p-3 max-lg:fixed max-lg:right-0 max-lg:bottom-14 max-lg:left-0 max-lg:z-30 max-lg:max-h-[42dvh] max-lg:overflow-auto max-lg:border-t">
-          <Panel title={t("nodeInspector")}>
-            <NodeGlyph type={selectedNode.type} />
-            <p className="text-fg mt-2 font-semibold">{selectedNode.label}</p>
-          </Panel>
-          <Panel className="mt-3" title={t("whyConnection")}>
-            <p className="text-fg text-[11px]">{selectedEdge.relation}</p>
-            <div className="mt-2">
-              <SourceBadge type={selectedEdge.sourceType} />
-            </div>
-            <div className="mt-2">
-              <CitationChip citation={selectedEdge.citation} />
-            </div>
-            <div className="mt-2">
-              <VerificationBadge state={selectedEdge.verification} />
-            </div>
-            <div className="mt-3">
-              <ActionLink href={`/documents/${selectedEdge.citation.docId}`}>
-                {t("openSource")}
-              </ActionLink>
-            </div>
-          </Panel>
-          <Panel className="mt-3" title={t("graphTextAlternative")}>
-            <ul className="space-y-2 text-[10px]">
-              {edges.map((edge) => (
-                <li key={edge.id}>
-                  <button onClick={() => setSelectedEdge(edge)}>
-                    {edge.from} → {edge.to}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        </aside>
+        <details
+          open
+          className="border-border bg-surface max-lg:rounded-t-sheet max-lg:shadow-sheet border-l max-lg:fixed max-lg:right-0 max-lg:bottom-14 max-lg:left-0 max-lg:z-30 max-lg:max-h-[42dvh] max-lg:overflow-auto max-lg:border-t"
+        >
+          <summary className="text-fg-secondary cursor-pointer list-none px-4 py-2 text-center text-[10px] font-semibold tracking-[0.16em] uppercase lg:hidden">
+            {t("viewDetails")}
+          </summary>
+          <div className="p-3">
+            <Panel title={t("nodeInspector")}>
+              <NodeGlyph type={selectedNode.type} />
+              <p className="text-fg mt-2 font-semibold">{selectedNode.label}</p>
+            </Panel>
+            <Panel className="mt-3" title={t("whyConnection")}>
+              <p className="text-fg text-[11px]">{selectedEdge.relation}</p>
+              <div className="mt-2">
+                <SourceBadge type={selectedEdge.sourceType} />
+              </div>
+              <div className="mt-2">
+                <CitationChip citation={selectedEdge.citation} />
+              </div>
+              <div className="mt-2">
+                <VerificationBadge state={selectedEdge.verification} />
+              </div>
+              <div className="mt-3">
+                <ActionLink href={`/documents/${selectedEdge.citation.docId}`}>
+                  {t("openSource")}
+                </ActionLink>
+              </div>
+            </Panel>
+            <Panel className="mt-3" title={t("graphTextAlternative")}>
+              <ul className="space-y-2 text-[10px]">
+                {edges.map((edge) => (
+                  <li key={edge.id}>
+                    <button onClick={() => setSelectedEdge(edge)}>
+                      {edge.from} → {edge.to}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          </div>
+        </details>
       </div>
     </AppShell>
   );
