@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import type { SurfaceMode } from "@/lib/routes";
+import { CommandPalette } from "./CommandPalette";
 import { CaseStripe, type Crumb } from "./CaseStripe";
 import { GlobalNav } from "./GlobalNav";
 import { GovernanceFooter } from "./GovernanceFooter";
@@ -39,6 +40,7 @@ export function AppShell({
         {t("skipToContent")}
       </a>
       <GlobalNav />
+      <CommandPalette />
       <SurfaceTheme mode={mode}>
         <CaseStripe crumbs={crumbs} showDemoFlag={showDemoFlag} />
         <main id="main" className="flex min-w-0 flex-1 flex-col pb-14 md:pb-0">

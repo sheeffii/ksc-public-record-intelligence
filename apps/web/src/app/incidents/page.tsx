@@ -1,5 +1,7 @@
-import { PlaceholderScreen } from "@/components/screens/PlaceholderScreen";
+import { DirectoryScreen } from "@/components/screens/phase5";
+import { getTranslations } from "next-intl/server";
 
-export default function Page() {
-  return <PlaceholderScreen screen="incidents" />;
+export default async function Page() {
+  const t = await getTranslations("screens");
+  return <DirectoryScreen kind="incidents" screenTitle={t("incidents")} />;
 }

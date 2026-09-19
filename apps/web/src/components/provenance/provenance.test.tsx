@@ -1,10 +1,17 @@
 import type { Citation } from "@ksc/shared";
 import { SOURCE_TYPES, VERIFICATION_STATES } from "@ksc/shared";
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { messagesEn, messagesSq, renderWithProviders } from "@/test/render";
 import { CitationChip } from "./CitationChip";
+import { CitationPreview } from "./CitationPreview";
+import { AiAnalysisBlock } from "./AiAnalysisBlock";
+import { DirectionBadge, ScopeNote } from "./DirectionBadge";
+import { ProtectionNotice } from "./ProtectionNotice";
 import { ProvenanceBoundary } from "./ProvenanceBoundary";
+import { RecordBlock } from "./RecordBlock";
+import { ReferenceCountStrip } from "./ReferenceCountStrip";
 import { SourceBadge } from "./SourceBadge";
 import { VerificationBadge } from "./VerificationBadge";
 
@@ -74,6 +81,17 @@ describe("CitationChip — resolves or does not render", () => {
   });
 });
 
+it("CitationPreview keeps context visible before source navigation", async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<CitationPreview citation={resolved} passage="Surrounding record passage" />);
+  await user.click(screen.getByRole("button"));
+  expect(screen.getByRole("dialog")).toHaveTextContent("Surrounding record passage");
+  expect(screen.getByRole("link", { name: /Open document/ })).toHaveAttribute(
+    "href",
+    "/documents/F00482?page=894&highlight=8421-8427",
+  );
+});
+
 describe("ProvenanceBoundary", () => {
   it("is a labelled separator carrying the required sentence", () => {
     renderWithProviders(<ProvenanceBoundary />);
@@ -81,4 +99,67 @@ describe("ProvenanceBoundary", () => {
     expect(sep).toHaveAttribute("aria-label", messagesEn.provenance.boundary);
     expect(sep).toHaveTextContent(messagesEn.provenance.boundary);
   });
+});
+
+describe("record and AI block boundary", () => {
+  it("renders record material in a solid source block", () => {
+    renderWithProviders(
+      <RecordBlock sourceType="court" citations={[resolved]}>
+        Record words
+      </RecordBlock>,
+    );
+    const block = screen.getByText("Record words").closest("[data-record-block]");
+    expect(block).toHaveClass("border");
+    expect(block).not.toHaveClass("border-dashed");
+    expect(block).toHaveAttribute("data-source", "court");
+  });
+
+  it("labels software output and uses a dashed AI-only container", () => {
+    renderWithProviders(
+      <AiAnalysisBlock citations={[resolved]}>Generated analysis</AiAnalysisBlock>,
+    );
+    const block = screen.getByText("Generated analysis").closest("[data-ai-analysis-block]");
+    expect(block).toHaveClass("border-dashed", "bg-ai-surface");
+    expect(block).toHaveTextContent(messagesEn.provenance.aiHeader);
+    expect(block).toHaveTextContent(messagesEn.source.ai);
+  });
+});
+
+describe("protected witness and scoped direction", () => {
+  it("states the code-only protection rule", () => {
+    renderWithProviders(<ProtectionNotice />);
+    expect(screen.getByRole("complementary")).toHaveTextContent(messagesEn.protection.title);
+    expect(screen.getByRole("complementary")).toHaveTextContent("only the public witness code");
+  });
+
+  it("keeps direction paired with its claim scope note", () => {
+    renderWithProviders(
+      <>
+        <DirectionBadge direction="qualifies" />
+        <ScopeNote />
+      </>,
+    );
+    expect(screen.getByText(messagesEn.direction.qualifies)).toBeInTheDocument();
+    expect(screen.getByText(messagesEn.direction.scopeNote)).toBeInTheDocument();
+  });
+});
+
+it("ReferenceCountStrip owns its neutrality disclaimer", () => {
+  renderWithProviders(
+    <ReferenceCountStrip
+      counts={{
+        documentMentions: 1,
+        transcriptMentions: 2,
+        exhibitRefs: 3,
+        findings: 4,
+        witnessesWhoReferred: 5,
+        incidents: 6,
+        citationsResolved: 7,
+      }}
+    />,
+  );
+  const strip = screen
+    .getByText(messagesEn.referenceCounts.title)
+    .closest("[data-reference-counts]");
+  expect(strip).toHaveTextContent(messagesEn.referenceCounts.disclaimer);
 });

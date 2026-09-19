@@ -1,5 +1,5 @@
-import { PlaceholderScreen } from "@/components/screens/PlaceholderScreen";
+import { PublicScreen } from "@/components/screens/phase5";
 
 export default function Page() {
-  return <PlaceholderScreen screen="public" />;
+  return <PublicScreen />;
 }

@@ -1,7 +1,6 @@
-import { PlaceholderScreen } from "@/components/screens/PlaceholderScreen";
+import { DocumentReaderScreen } from "@/components/screens/phase5";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  // Identifiers in routes are the record's own; rendered verbatim (ROUTE_MAP.md §1).
-  return <PlaceholderScreen screen="documentReader" identifier={decodeURIComponent(id)} />;
+  return <DocumentReaderScreen id={decodeURIComponent(id)} />;
 }

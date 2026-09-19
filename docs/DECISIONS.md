@@ -266,3 +266,32 @@ Consequences:
 
 Relevant files:
 `apps/web/src/i18n/*`, `apps/web/next.config.ts`
+
+---
+
+## ADR-008 — Phase 5 screens consume a replaceable repository contract
+
+Date: 2026-09-19
+
+Status: Accepted
+
+Context:
+Phase 5 must present realistic interactions using demo data without coupling screen
+components to inline objects or prematurely building Phase 6 API endpoints.
+
+Decision:
+Phase 5 domain data is centralized under `apps/web/src/mock/` and exposed through a
+typed `MockRepository` interface. Screens consume that boundary. A later
+`ApiRepository` can implement the same screen-facing contracts without redesigning
+the component tree. The mock adapter is synchronous because the data is bundled,
+but the boundary stays narrow and domain-oriented.
+
+Consequences:
+
+- Mock legal content remains generic and visibly demo-labelled.
+- Protected witness payloads use the shared discriminated union and omit identity
+  markup structurally.
+- Real API work, ingestion and provider calls remain outside Phase 5.
+
+Relevant files:
+`apps/web/src/mock/types.ts`, `apps/web/src/mock/repository.ts`

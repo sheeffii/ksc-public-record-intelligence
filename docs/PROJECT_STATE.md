@@ -11,9 +11,9 @@ Last updated: 2026-09-19
 | ----- | --------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | 1–3   | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)   |
 | **4** | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)** |
-| 5     | Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)            | ⏳ Next                      |
-| 6     | Controlled ingestion: one public document end to end, citation extraction + resolution index              | Planned                      |
-| 7     | Evidence schema (witnesses, exhibits, findings, incidents, citations, relationships) + real data wiring   | Planned                      |
+| **5** | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Complete (2026-09-19)** |
+| 6     | Real database / evidence model and API-backed repository contracts                                        | Planned                      |
+| 7     | Controlled ingestion: one public document end to end, citation extraction + resolution index              | Planned                      |
 | 8     | Search (PostgreSQL FTS + pgvector), network, evidence paths                                               | Planned                      |
 | 9     | AI research layer (retrieval-before-composition, withhold-on-unresolved), evaluation sets                 | Planned                      |
 | 10    | Review workflows, public mode content authoring, access control, hardening                                | Planned                      |
@@ -72,15 +72,34 @@ Shared / docs
 
 ## Unfinished / deferred (by design)
 
-- All 21 screens' real content (Phase 5).
-- Five undesigned directory screens (Phase 5, from the DataTable pattern; design
-  review before shipping).
-- CitationPreview popover, RecordBlock/AiAnalysisBlock pair, ProtectionNotice,
-  WitnessHeaderProtected, DirectionBadge+ScopeNote, ReferenceCountStrip — the
-  remaining foundational components from HANDOFF.md §3 (Phase 5 start).
-- ⌘K command palette (Modal primitive exists; palette not built).
-- Any data fetching from web → api.
-- Ingestion, parsing, resolution index, search, network, AI (later phases).
+- Real web → API data fetching and persistent interaction state (Phase 6).
+- Real database/evidence entities beyond the Phase 4 Case, Document and AuditLog
+  foundation (Phase 6).
+- Ingestion, parsing and the persisted citation-resolution index (Phase 7 or later).
+- Search over real records, production-scale graph rendering and real AI retrieval
+  remain later phases.
+- Albanian legal terminology needs specialist review against official KSC texts.
+
+## Completed features (Phase 5)
+
+- Branch `feat/phase-5-approved-ui` created from the verified Phase 4 checkpoint.
+- Added the matched `RecordBlock` / `AiAnalysisBlock` provenance pair,
+  `CitationPreview`, `ProtectionNotice`, `DirectionBadge` + `ScopeNote`, and
+  `ReferenceCountStrip`.
+- Added a typed `MockRepository` boundary and centralized generic demo records under
+  `apps/web/src/mock/`; no real court material or provider call is involved.
+- Replaced every generic route placeholder with the approved mock-data experience:
+  overview, search and command palette, directories, dossiers, comparison, readers,
+  evidence, network/path, timeline, incident/finding chain, appeal, argument/red
+  team, AI research and public/simple mode.
+- Implemented desktop and representative mobile states, including collapsible
+  reader context and a network bottom-sheet inspector.
+- Added keyboard-accessible controls, semantic tables/headings, non-color badge
+  labels, reduced-motion handling and a textual graph alternative.
+- Added six major E2E workflows across desktop and mobile and regression tests for
+  provenance, protected-witness safety, repository validity and prohibited scoring.
+- Documentation discrepancy retained without redesign: `HANDOFF.md` says 83
+  components while `COMPONENTS.md` inventories 91; its “Nine rules” summary lists ten.
 
 ## Technical debt / notes
 
@@ -99,22 +118,22 @@ None — nothing parsed.
 
 ## Test / evaluation status
 
-| Suite                                    | Count            | Last result                                      |
-| ---------------------------------------- | ---------------- | ------------------------------------------------ |
-| Backend unit (pytest)                    | 10               | pass                                             |
-| Backend integration (pytest, live infra) | 11               | pass                                             |
-| Frontend (vitest)                        | 108              | pass                                             |
-| E2E (playwright)                         | 25 specs written | not run in CI; requires running stack + browsers |
-| Evaluation                               | 0                | reserved directory                               |
+| Suite                                    | Count        | Last result                                        |
+| ---------------------------------------- | ------------ | -------------------------------------------------- |
+| Backend unit (pytest)                    | 10           | pass                                               |
+| Backend integration (pytest, live infra) | 11           | pass                                               |
+| Frontend (vitest)                        | 147          | pass                                               |
+| E2E (playwright)                         | 31 specs × 2 | 62 pass locally; requires running stack + browsers |
+| Evaluation                               | 0            | reserved directory                                 |
 
 Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all pass.
 
 ## Deployment state
 
 Local only: `docker compose up --build` verified 2026-09-19 with all five services
-healthy. Git: commit `b99f514`, tag `phase-4-complete`; remote `origin` configured
-(github.com/sheeffii/ksc-public-record-intelligence) but nothing pushed. No remote
-deployment, no production workflow.
+healthy. Git: Phase 5 is on `feat/phase-5-approved-ui`; Phase 4 tag
+`phase-4-complete` remains at `b99f514`. Remote `origin` is configured but nothing
+was pushed. No remote deployment or production workflow.
 
 ## Verification limitations
 
