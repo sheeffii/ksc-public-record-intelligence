@@ -5,7 +5,7 @@ Live checkpoint. Answers “where exactly did we stop?”. Keep concise; no logs
 ## Current Status
 
 Current branch: `feat/phase-6-evidence-model` (cut from `main` at `3e9f8f8`)
-Phase 6 tag: `phase-6-complete` → see Git (`git tag --list`)
+Phase 6 tag: `phase-6-complete` → `bdc3ceb`
 Phase 5 tag: `phase-5-complete` → `ee8a0e7` · Phase 4 tag: `phase-4-complete` → `b99f514`
 Remote: origin configured; `main` = `origin/main` = `3e9f8f8`. Phase 6 is local
 only. Never push without explicit instruction.
