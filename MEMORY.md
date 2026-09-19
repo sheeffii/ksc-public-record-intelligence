@@ -5,11 +5,12 @@ Live checkpoint. Answers “where exactly did we stop?”. Keep concise; no logs
 ## Current Status
 
 Current branch: `feat/phase-5-approved-ui`
-Current commit: Phase 5 checkpoint (see `git rev-parse HEAD`)
+Phase 5 commit: `ee8a0e7`
+Tag: `phase-5-complete` → `ee8a0e7`
 Phase 4 tag: `phase-4-complete` → `b99f514`
 Remote: origin configured, **never pushed**
-Current milestone: Phase 5 — Approved UI implementation with mock data — **COMPLETE**
-Next milestone: Phase 6 — Real database / evidence model (**not authorised**)
+Current milestone: Phase 5 **COMPLETE**
+Next milestone: Phase 6 — Real Database / Evidence Model (**not authorised**)
 Current active task: None. Stop at the Phase 5 boundary.
 Working tree at checkpoint: clean
 Last updated: 2026-09-19
@@ -47,19 +48,17 @@ Last full verification: 2026-09-19.
 
 ## Known Differences / Follow-up
 
-- The network uses a lightweight accessible SVG implementation over the typed mock
-  graph rather than adding Sigma.js/Graphology for five demo nodes. The required
-  interaction contract is implemented; a production graph engine remains a later
-  data-scale decision.
+- Network currently uses a lightweight accessible SVG implementation over the typed
+  mock graph. Reconsider Sigma.js/Graphology when real graph scale is known.
 - The five directory routes reuse the approved DataTable language because they had
   no individual artboards.
 - Mobile sidebars use native disclosure controls and the network inspector uses a
   fixed bottom sheet; these preserve the approved behavior with simpler Phase 5
   mechanics.
-- Albanian legal terminology is provisional pending review against official KSC
-  publications.
-- Mock state is local and intentionally not persisted. Real API/database wiring is
-  Phase 6.
+- Albanian legal terminology still requires verification against official KSC
+  Albanian publications.
+- Mock interaction state is intentionally not persistent. Real API/database wiring
+  is Phase 6.
 - Design-package provenance limitation remains: three Markdown files were
   structurally, but not byte-for-byte, restored during Phase 4. Do not rewrite
   `docs/design/`; see `docs/PROJECT_STATE.md`.
