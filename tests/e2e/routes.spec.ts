@@ -53,3 +53,64 @@ test("document reader renders on the light surface", async ({ page }) => {
   await page.goto("/documents/F00482");
   await expect(page.locator('[data-surface="light"]')).toBeVisible();
 });
+
+test("Flow A: search to person, network connection and source", async ({ page }) => {
+  await page.goto("/search?q=Demo%20Research%20Subject");
+  await page
+    .getByRole("link", { name: /Demo Research Subject/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/people\/demo-research-subject/);
+  await page.getByRole("link", { name: "View Network" }).click();
+  await expect(page).toHaveURL(/\/network/);
+  await expect(page.getByText("Why does this connection exist?")).toBeVisible();
+  await page.getByRole("link", { name: "Open source" }).click();
+  await expect(page).toHaveURL(/\/documents\//);
+});
+
+test("Flow B: protected witness testimony to statement comparison", async ({ page }) => {
+  await page.goto("/witnesses/W01234");
+  await expect(page.getByText("Protected Witness").first()).toBeVisible();
+  await page.getByRole("link", { name: "Statement Comparison" }).last().click();
+  await expect(page).toHaveURL(/\/witnesses\/W01234\/compare/);
+  await expect(page.getByText("Prior Public Statements")).toBeVisible();
+});
+
+test("Flow C: judgment passage to finding and evidence", async ({ page }) => {
+  await page.goto("/documents/F01234?page=12&highlight=45");
+  await page
+    .getByRole("link", { name: /Court Findings/ })
+    .last()
+    .click();
+  await expect(page).toHaveURL(/\/findings\/F-DEMO-01/);
+  await expect(page.getByText("Evidence Relied Upon").first()).toBeVisible();
+});
+
+test("Flow D: finding potential issue to red team workspace", async ({ page }) => {
+  await page.goto("/findings/F-DEMO-01");
+  await expect(page.getByText("Potential Issues for Review").first()).toBeVisible();
+  await page.getByRole("link", { name: "Send to Argument Lab" }).click();
+  await expect(page).toHaveURL(/\/appeal\/argument\/new/);
+  await expect(page.getByText("SPO Red Team").first()).toBeVisible();
+});
+
+test("Flow E: AI citation preview before original source", async ({ page }) => {
+  await page.goto("/ai");
+  await expect(page.getByText("Below this line: generated analysis, not the record")).toBeVisible();
+  await page
+    .getByRole("button", { name: /F01234 · ¶45–46/ })
+    .first()
+    .click();
+  await page.getByRole("link", { name: /Open document/ }).click();
+  await expect(page).toHaveURL(/\/documents\/F01234/);
+});
+
+test("Flow F: dossier to evidence path with per-hop citations", async ({ page }) => {
+  await page.goto("/people/demo-research-subject");
+  await page.getByRole("link", { name: "Find Record Connection" }).click();
+  await expect(page).toHaveURL(/\/network\/path/);
+  await expect(
+    page.getByText("These records reference one another. That is all a path shows."),
+  ).toBeVisible();
+  await expect(page.getByText("What a path cannot tell you")).toBeVisible();
+});
