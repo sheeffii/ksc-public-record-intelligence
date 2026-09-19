@@ -4,88 +4,92 @@ Live checkpoint. Answers “where exactly did we stop?”. Keep concise; no logs
 
 ## Current Status
 
-Current branch: `feat/phase-6-evidence-model` (cut from `main` at `3e9f8f8`)
-Phase 6 tag: `phase-6-complete` → `bdc3ceb`
+Current branch: `feat/phase-5b-visual-parity` (cut from `main` at `bdf7293`)
+Phase 5B tag: `phase-5b-complete` → see `git tag --list`
+Phase 6 tag: `phase-6-complete` → `bdf7293` (on `main`, pushed)
 Phase 5 tag: `phase-5-complete` → `ee8a0e7` · Phase 4 tag: `phase-4-complete` → `b99f514`
-Remote: origin configured; `main` = `origin/main` = `3e9f8f8`. Phase 6 is local
-only. Never push without explicit instruction.
-Roadmap: `docs/roadmap/` (master + 15 phase files + usage guide).
-Current milestone: Phase 6 — Real Database / Evidence Model **COMPLETE**
-(2026-09-20). Phase 5 functional implementation complete; Phase 5 visual parity
-requires Phase 5B.
-Next milestone: Phase 5B — UI/UX Visual Parity Remediation
-(`docs/roadmap/PHASE_05B_UI_UX_VISUAL_PARITY_REMEDIATION.md`). **Not started;
-awaiting explicit authorisation.** Then Phase 7 (first controlled real-KSC
-ingestion), 8 … 13, then 14 (post-core external media).
-Current active task: None. Stop at the Phase 6 boundary.
+Remote: `main` = `origin/main` = `bdf7293`. Phase 5B is local only; never push
+without explicit instruction.
+Roadmap: `docs/roadmap/`.
+Current milestone: Phase 5B — UI/UX Visual Parity Remediation **COMPLETE**
+(2026-09-20).
+Next milestone: Phase 7 — KSC Public Record Discovery + Controlled 10–20
+Document Ingestion (`docs/roadmap/PHASE_07_KSC_DISCOVERY_AND_CONTROLLED_INGESTION.md`).
+**Not started; awaiting explicit authorisation.** This is the first phase that
+touches real KSC material.
+Current active task: None. Stop at the Phase 5B boundary.
 Working tree at checkpoint: clean
 Last updated: 2026-09-20
 
 ## What Works
 
-- Phase 5 UI unchanged: all 23 routes render the approved mock-data screens;
-  Cmd/Ctrl+K search, directories, dossiers, readers, evidence explorer, network,
-  path, timeline, appeal/argument/red-team workspaces, AI research, public mode.
-- **Database (Phase 6)**: Alembic `0002` on top of `0001`; 37 tables — source
-  records, documents / versions / pages / sections / chunks, hearings /
-  transcripts / segments / appearances, persons / aliases / witnesses /
-  organizations / locations, exhibits, incidents, events, claims / mentions,
-  findings / evidence links, arguments / responses, citations +
-  record_identifiers, graph_nodes / relationships, research notes, prompt
-  versions / ai_runs / ai_outputs, ingestion_jobs, audit_log. Provenance,
-  visibility, verification (with reviewer) and versioning are columns with
-  CHECKs; protected witnesses cannot carry identity; every relationship needs a
-  citation; polymorphic references go through a node registry with real FKs.
-- **Read API** `/api/v1/*` (case, documents + version pages/chunks, people,
-  witnesses, exhibits, incidents, findings, claims, arguments, events,
-  transcripts, citations + resolve, network, relationships, search) — paginated,
-  case-scoped, fail-closed (public/public_redacted only; rejected facts and
-  unresolved-citation dependants withheld; not-public documents stated, not 404).
-- **Synthetic fixture** `KSC-DEMO-0000` (`make demo-fixture`) proves the five
-  roadmap traversals; nothing in it is a real record.
-- **Frontend boundary** `apps/web/src/data/`: async `ResearchRepository` with
-  mock adapter (default) and `ApiRepository`; `NEXT_PUBLIC_DATA_SOURCE=api`
-  switches. Screens still use the sync mock (Phase 5B moves them).
-- Docker stack healthy with the rebuilt API image; real case serves 0 records.
-  No court document was discovered, downloaded, parsed or indexed; no model
-  provider is called.
+- **Phase 5B screens** (`apps/web/src/components/screens/phase5/`): every
+  authoritative screen rebuilt to PAGE_SPECS composition over the same mock
+  boundary — home (quick-search pills, 7-stat row, recent panels, ingestion
+  health); grouped search with category tabs, filter rail, query interpretation,
+  syntax reference, ranking disclaimer; directories / evidence explorer as a
+  dense table workspace with working filters, sort, density, page size,
+  pagination, CSV export, detail / preview / linked panels and the column-meaning
+  footer over 24 generated demo rows per kind; person dossier (hex avatar, role
+  badges, aliases, 4 quick actions, Record References strip, 10 tabs, cited
+  summary, judgment-order findings table, typed dates, network preview, rail,
+  no-score footer); witness dossier (two header states, 7-stat strip,
+  Compare / Ask AI, 10 tabs, chronology rail with closed-session rows,
+  testimony reader, findings-citing / prior-statement / comparison panels);
+  statement comparison (topic rail, three columns, diff span, AI band, label
+  picker + mark reviewed, legend, language rules, Chamber-attributed
+  credibility card); document reader (breadcrumb + type badges, pager, copy
+  citation, sidebar with metadata / in-doc search / ToC / versions, 600px
+  page with ¶ anchors, cited banner, footnotes, redaction gap, six research
+  tabs); finding detail (01–09 numbered spine, scroll-spy rail, related
+  findings, analysis rail); incident (header, charge chips, 9 tabs, direction
+  summary, matrix with direction / court-cited filters and sort, positions
+  rail, required notes); timeline (7 toggleable lanes, dual-era axis with
+  per-era zoom, date-type legend, empty lanes kept, card detail rail with
+  attached dates, mobile vertical list); network (toolbar: layout, depth,
+  filters, save view, export, fullscreen, resolving chip; legend rail with
+  date slider and verification filter; node / edge inspectors; minimap;
+  three-detent mobile sheet); evidence path (entity picker, max hops, banner,
+  canvas, expandable hop inspector, composition, alternates, cannot-tell card);
+  appeal (category rail with counts, expandable issue cards with six sections,
+  review actions, coverage / will-not-do / status rail, legal strip); argument
+  lab (editor flagging uncited sentences, citation health, 8 actions, stepper,
+  three stage columns, neutral review rows with apply, required notes); AI
+  research (session rail, question, retrieved-first list, record blocks →
+  boundary → AI block, sources / citation status / verification / not-available
+  rail, action bar); public mode (dedicated light composition: mode toggle,
+  hero, before-you-begin, six entry cards, worked example with term tooltips,
+  original text, does-not-mean, where-from, other-side).
+- Phase 6 backend, read API and `apps/web/src/data/` boundary unchanged.
+- Docker stack healthy with rebuilt web + api images; no court document was
+  discovered, downloaded, parsed or indexed; no model provider is called.
 
 ## Tests
 
-- Backend: 82 passed (31 unit + 51 integration: migrations, constraints,
-  traversal, read API).
-- Frontend: 176 passed (Vitest; 147 Phase 5 + 29 data-boundary).
-- E2E: 62 passed (31 workflows × desktop + Pixel 7 Chromium).
+- Backend: 82 passed (31 unit + 51 integration).
+- Frontend: 188 passed (Vitest; 176 prior + 12 Phase 5B composition / interaction).
+- E2E: 96 passed (62 prior + 32 visual screenshots × desktop / Pixel 7 + 2
+  mobile layout checks); screenshots land in `test-results/visual/`.
 - Lint: ruff, ruff format, ESLint, Prettier clean. Typecheck: mypy strict, tsc clean.
-- `alembic check`: no drift. Production Next.js build passes.
+- Production Next.js build passes.
 
 Last full verification: 2026-09-20.
 
 ## Known Differences / Follow-up
 
-- Phase 5 is functionally complete but visually simplified against
-  `docs/design/Design.html` on several screens; the page-by-page gap list is in
-  `docs/roadmap/PHASE_05B_UI_UX_VISUAL_PARITY_REMEDIATION.md`.
-- Network currently uses a lightweight accessible SVG implementation over the typed
-  mock graph. Reconsider Sigma.js/Graphology when real graph scale is known.
-- The five directory routes reuse the approved DataTable language because they had
-  no individual artboards.
-- Mobile sidebars use native disclosure controls and the network inspector uses a
-  fixed bottom sheet; these preserve the approved behavior with simpler Phase 5
-  mechanics.
-- Albanian legal terminology still requires verification against official KSC
-  Albanian publications.
-- Mock interaction state is intentionally not persistent. Screens are not yet
-  wired to `getRepository()`; the API adapter is proven by contract tests only.
-- `ApiRepository.getPath()` and `getAnswer()` return empty (no path engine before
-  Phase 9, no AI run before Phase 11). Reader paragraphs come from chunk spans
-  (`para_from`), not per-paragraph rows. A public witness without a calling
-  party maps to code-only (shared `Witness` requires `calledBy`).
-- `document_chunks` has no embedding column yet; search is ILIKE on identifiers
-  and titles until Phase 8.
-- Design-package provenance limitation remains: three Markdown files were
-  structurally, but not byte-for-byte, restored during Phase 4. Do not rewrite
-  `docs/design/`; see `docs/PROJECT_STATE.md`.
+- Screens still read the synchronous `@/mock` repository; `getRepository()`
+  (ADR-009) is proven by contract tests but not yet wired into screens. Wire
+  it when Phase 7 puts real records behind the API.
+- Visual checks are screenshot artefacts plus region assertions, not pixel
+  baselines; compare against `docs/design/Design.html` by eye.
+- Network graph remains the accessible SVG implementation (engine choice
+  deferred until real scale). Timeline positions are illustrative.
+- Search date-range inputs, Save view, Export (network) and stage "Compare"
+  are present but inert until real data exists.
+- Albanian strings for `phase5b` are provisional and need review against
+  official KSC Albanian texts.
+- Design-package provenance limitation from Phase 4 remains; do not rewrite
+  `docs/design/`.
 
 ## Architecture State
 
@@ -96,7 +100,9 @@ Last full verification: 2026-09-20.
 - `apps/api/src/ksc_api/fixtures/demo.py` — synthetic case; `ksc-demo-fixture`.
 - `apps/web/src/data/` — `ResearchRepository` contract, mock adapter,
   `api/{client,mappers,repository}.ts`, `getRepository()`.
-- `apps/web/src/mock/` remains the Phase 5 boundary screens import.
+- `apps/web/src/mock/` remains the boundary screens import; `mock/volume.ts`
+  generates demo table volume. `screens/phase5/Workspace.tsx` holds the shared
+  5B building blocks (toolbar, stat strip, rail index, stepper, pager…).
 - Documents discovered/downloaded/parsed/indexed and transcripts parsed: all 0.
 
 ## Important Decisions
@@ -109,12 +115,13 @@ Last full verification: 2026-09-20.
 
 ## Exact Next Task
 
-Only after explicit authorisation, begin Phase 5B by reading
+Only after explicit authorisation, begin Phase 7 by reading
 `docs/roadmap/00_MASTER_ROADMAP.md` and the complete
-`docs/roadmap/PHASE_05B_UI_UX_VISUAL_PARITY_REMEDIATION.md`: page-by-page visual
-parity against `docs/design/Design.html`, moving screens onto `getRepository()`
-where convenient, without schema changes or real ingestion. Phase 7 follows 5B.
-Do not ingest real KSC material before Phase 7.
+`docs/roadmap/PHASE_07_KSC_DISCOVERY_AND_CONTROLLED_INGESTION.md`. Phase 7 is
+the first controlled contact with real KSC public material: public-only,
+official sources, 10–20 documents, every rule in `docs/SECURITY.md` and the
+roadmap's public-only requirement applies. Nothing before that authorisation
+may fetch anything.
 
 ## Do Not Forget
 

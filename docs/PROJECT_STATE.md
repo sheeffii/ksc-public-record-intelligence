@@ -7,21 +7,21 @@ Last updated: 2026-09-20
 
 ## Milestones
 
-| Phase | Scope                                                                                                     | Status                                                                                    |
-| ----- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1–3   | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                |
-| **4** | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                              |
-| **5** | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B) |
-| **6** | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                              |
-| 5B    | UI/UX visual parity remediation against `docs/design/Design.html`                                         | **Next** (not started); before Phase 7                                                    |
-| 7     | KSC public record discovery + controlled 10–20 document ingestion (first real KSC data)                   | Not started                                                                               |
-| 8     | Parsing, exact citations, resolution index, search                                                        | Planned                                                                                   |
-| 9     | Real evidence network and timeline                                                                        | Planned                                                                                   |
-| 10    | Judgment, findings and evidence matrix                                                                    | Planned                                                                                   |
-| 11    | Citation-first AI / RAG                                                                                   | Planned                                                                                   |
-| 12    | Appeal research, red team and statement comparison                                                        | Planned                                                                                   |
-| 13    | Gradual full public corpus ingestion and production hardening                                             | Planned                                                                                   |
-| 14    | External media and public statements intelligence                                                         | Post-core / later                                                                         |
+| Phase  | Scope                                                                                                     | Status                                                                                    |
+| ------ | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1–3    | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                |
+| **4**  | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                              |
+| **5**  | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B) |
+| **6**  | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                              |
+| **5B** | **UI/UX visual parity remediation against `docs/design/Design.html`**                                     | ✅ **Complete (2026-09-20)**                                                              |
+| 7      | KSC public record discovery + controlled 10–20 document ingestion (first real KSC data)                   | **Next** (not started; requires explicit authorisation)                                   |
+| 8      | Parsing, exact citations, resolution index, search                                                        | Planned                                                                                   |
+| 9      | Real evidence network and timeline                                                                        | Planned                                                                                   |
+| 10     | Judgment, findings and evidence matrix                                                                    | Planned                                                                                   |
+| 11     | Citation-first AI / RAG                                                                                   | Planned                                                                                   |
+| 12     | Appeal research, red team and statement comparison                                                        | Planned                                                                                   |
+| 13     | Gradual full public corpus ingestion and production hardening                                             | Planned                                                                                   |
+| 14     | External media and public statements intelligence                                                         | Post-core / later                                                                         |
 
 ## Roadmap
 
@@ -139,6 +139,25 @@ check` and `head → base → head` are integration-tested.
 - Not done by design: screens still read the sync mock; no path engine; no AI
   run; no embedding column; no real record.
 
+## Completed features (Phase 5B)
+
+- Branch `feat/phase-5b-visual-parity` from `main` (`bdf7293`); tag
+  `phase-5b-complete`.
+- Every authoritative screen recomposed to PAGE_SPECS regions, rails and
+  controls (see MEMORY.md → What Works); five directory routes share one dense
+  table workspace with functioning filter / sort / density / pagination /
+  export over generated demo volume.
+- Shared 5B building blocks in `screens/phase5/Workspace.tsx`; `phase5b`
+  string namespace (333 keys, EN/SQ parity); date-type glyph utilities on the
+  source palette tokens.
+- Mobile: three-detent network sheet, reader sidebar / panel toggles,
+  comparison A/B/C control, stage tabs, timeline vertical list, appeal category
+  dropdown, term tooltips as bottom sheets.
+- Tests: 12 composition / interaction tests, 16-screen visual screenshot spec
+  across desktop and Pixel 7, two mobile layout assertions. All prior tests
+  green; design docs untouched.
+- Not done by design: screens still consume the sync mock; no pixel baselines.
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -160,8 +179,8 @@ None — nothing parsed.
 | ---------------------------------------- | ------------ | -------------------------------------------------- |
 | Backend unit (pytest)                    | 31           | pass                                               |
 | Backend integration (pytest, live infra) | 51           | pass                                               |
-| Frontend (vitest)                        | 176          | pass                                               |
-| E2E (playwright)                         | 31 specs × 2 | 62 pass locally; requires running stack + browsers |
+| Frontend (vitest)                        | 188          | pass                                               |
+| E2E (playwright)                         | 48 specs × 2 | 96 pass locally; requires running stack + browsers |
 | Evaluation                               | 0            | reserved directory                                 |
 
 Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all pass.
@@ -170,8 +189,9 @@ Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all 
 
 Local only: stack verified 2026-09-20 with all five services healthy after
 rebuilding the API image (migration `0002` applied by the entrypoint). Git:
-Phase 6 is on `feat/phase-6-evidence-model`, tag `phase-6-complete`; `main` =
-`origin/main` = `3e9f8f8` (Phase 5). Phase 6 is not pushed. No remote deployment
+Phase 6 is on `main` = `origin/main` = `bdf7293` (tag `phase-6-complete`,
+pushed). Phase 5B is on `feat/phase-5b-visual-parity`, tag
+`phase-5b-complete`, not pushed. No remote deployment
 or production workflow.
 
 ## Verification limitations
