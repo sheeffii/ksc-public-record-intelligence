@@ -31,6 +31,7 @@ dev = [
 
 [project.scripts]
 ksc-seed = "ksc_api.seed:main"
+ksc-demo-fixture = "ksc_api.fixtures.demo:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -68,17 +68,48 @@ def engine(migrated_database_url: str):
     eng.dispose()
 
 
+def _reset_caches() -> None:
+    from ksc_api import config
+    from ksc_api.db import session as session_module
+
+    config.get_settings.cache_clear()
+    session_module.get_engine.cache_clear()
+    session_module.get_sessionmaker.cache_clear()
+
+
 @pytest.fixture
 def integration_settings(migrated_database_url: str, monkeypatch: pytest.MonkeyPatch):
     """Point the application at the test database and clear cached engines."""
     from ksc_api import config
-    from ksc_api.db import session as session_module
 
     monkeypatch.setenv("DATABASE_URL", migrated_database_url)
-    config.get_settings.cache_clear()
-    session_module.get_engine.cache_clear()
-    session_module.get_sessionmaker.cache_clear()
+    _reset_caches()
     yield config.get_settings()
-    config.get_settings.cache_clear()
-    session_module.get_engine.cache_clear()
-    session_module.get_sessionmaker.cache_clear()
+    _reset_caches()
+
+
+@pytest.fixture
+def demo_settings(migrated_database_url: str, monkeypatch: pytest.MonkeyPatch):
+    """Like `integration_settings`, but the configured case is the synthetic
+    demo case and its fixture is loaded (idempotently)."""
+    from ksc_api import config
+    from ksc_api.db.session import session_scope
+    from ksc_api.fixtures.demo import DEMO_CASE_NUMBER, load_demo_fixture
+
+    monkeypatch.setenv("DATABASE_URL", migrated_database_url)
+    monkeypatch.setenv("CASE_ID", DEMO_CASE_NUMBER)
+    _reset_caches()
+    with session_scope() as session:
+        load_demo_fixture(session)
+    yield config.get_settings()
+    _reset_caches()
+
+
+@pytest.fixture
+def demo_client(demo_settings):
+    from fastapi.testclient import TestClient
+
+    from ksc_api.main import create_app
+
+    with TestClient(create_app()) as client:
+        yield client

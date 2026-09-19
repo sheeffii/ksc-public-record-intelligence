@@ -35,7 +35,7 @@ def test_migration_created_minimal_tables(engine):
 def test_migration_is_at_head(engine):
     with engine.connect() as conn:
         version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-    assert version == "0001"
+    assert version == "0002"
 
 
 def test_seed_case_is_idempotent(integration_settings):
@@ -50,10 +50,10 @@ def test_seed_case_is_idempotent(integration_settings):
         second, created = seed_case(session)
         assert created is False
         assert second.id == first_id
-        assert session.scalar(select(Case).where(Case.case_number == "KSC-BC-2020-06")) is not None
-        assert session.execute(select(Case)).scalars().all().__len__() == 1
-        # Phase 4 ingests nothing.
-        assert session.execute(select(Document)).scalars().all() == []
+        real_cases = session.scalars(select(Case).where(Case.case_number == "KSC-BC-2020-06")).all()
+        assert len(real_cases) == 1
+        # Nothing is ingested for the real case before Phase 7.
+        assert session.scalars(select(Document).where(Document.case_id == first_id)).all() == []
 
 
 def test_seed_writes_an_audit_entry(integration_settings):
