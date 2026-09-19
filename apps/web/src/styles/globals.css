@@ -1,0 +1,335 @@
+/*
+ * KSC Public Record Intelligence — design tokens and base styles.
+ *
+ * Source of truth: docs/design/DESIGN_SYSTEM.md. Every value here is copied
+ * from that document; components consume tokens only and never hardcode a
+ * hex (HANDOFF.md §10.7).
+ *
+ * Theme model (DESIGN_DECISIONS.md §9): dark is the default and means "you are
+ * working over the record". `.light` means "you are reading the record itself"
+ * and is applied per surface (Document Reader, Public mode) or, through
+ * next-themes, on <html> as a user preference.
+ */
+
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant light (&:where(.light, .light *));
+
+/* ------------------------------------------------------------ dark tokens */
+:root,
+.dark {
+  color-scheme: dark;
+
+  /* §2.1 Dark foundation */
+  --bg: #0c1220;
+  --bg-deep: #0a0f1a;
+  --bg-graph: #080d18;
+  --surface: #141c2e;
+  --surface-raised: #1b2540;
+  --surface-high: #223060;
+  --border: #2a3a58;
+  --border-subtle: #1e2d46;
+  --border-faint: #161f32;
+  --text-primary: #e8edf5;
+  --text-body: #c8d0e0;
+  --text-secondary: #8b9bc0;
+  --text-muted: #5c6a88;
+  --text-faint: #4a5875;
+  --accent: #4d8fff;
+  --accent-bright: #60a5ff;
+
+  /* §2.3 Source provenance palette (dark) */
+  --court: #818cf8;
+  --witness: #38bdf8;
+  --spo: #34d399;
+  --defence: #a78bfa;
+  --doc: #fbb035;
+  --ai: #f472b6;
+  --incident: #f87171;
+  --location: #8b9bc0;
+  --organisation: #a78bfa;
+
+  --court-bg: #1a1f35;
+  --witness-bg: #0f2030;
+  --spo-bg: #0a2018;
+  --defence-bg: #1a1030;
+  --doc-bg: #201a08;
+  --ai-bg: #25102a;
+  --incident-bg: #281515;
+  --location-bg: #1a2234;
+  --organisation-bg: #1a1030;
+
+  /* Same hex as --spo / --incident today, kept separate so either can move
+     independently (DESIGN_SYSTEM.md §2.3 engineering note). */
+  --verified: #34d399;
+  --unresolved: #f87171;
+
+  /* §2.4 Direction labels */
+  --supports: #34d399;
+  --contradicts: #f87171;
+  --qualifies: #fbb035;
+  --neutral: #8b9bc0;
+  --contradicts-row: #160f10;
+
+  /* §6 AI block surfaces */
+  --ai-surface: #150c1c;
+  --ai-surface-alt: #1a1024;
+  --ai-border: #5c2d4a;
+
+  /* DemoDataFlag (COMPONENTS.md §1) */
+  --demo-bg: #201a08;
+  --demo-border: #6b5320;
+  --demo-fg: #fbb035;
+
+  /* Comparison difference span */
+  --diff-bg: #2a2208;
+  --diff-fg: #fbb035;
+
+  /* §5 Elevation */
+  --shadow-palette: 0 24px 72px rgba(0, 0, 0, 0.66);
+  --shadow-sheet: 0 -8px 28px rgba(0, 0, 0, 0.5);
+  --shadow-page: 0 2px 12px rgba(0, 0, 0, 0.1);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  --scrim: rgba(6, 10, 18, 0.72);
+}
+
+/* ----------------------------------------------------------- light tokens */
+.light {
+  color-scheme: light;
+
+  /* §2.2 Light foundation — the record itself */
+  --bg: #f5f7fa;
+  --bg-deep: #f8fafc;
+  --bg-graph: #f5f7fa;
+  --surface: #ffffff;
+  --surface-raised: #f8fafc;
+  --surface-high: #eef2f8;
+  --border: #e2e6ef;
+  --border-subtle: #e2e6ef;
+  --border-faint: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-body: #334155;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-faint: #94a3b8;
+  --accent: #2f6fe4;
+  --accent-bright: #2563eb;
+
+  /* §2.3 Source provenance palette (light) */
+  --court: #4f46e5;
+  --witness: #0284c7;
+  --spo: #059669;
+  --defence: #7c3aed;
+  --doc: #b45309;
+  --ai: #db2777;
+  --incident: #dc2626;
+  --location: #475569;
+  --organisation: #7c3aed;
+
+  --court-bg: color-mix(in srgb, #4f46e5 10%, white);
+  --witness-bg: color-mix(in srgb, #0284c7 10%, white);
+  --spo-bg: color-mix(in srgb, #059669 10%, white);
+  --defence-bg: color-mix(in srgb, #7c3aed 10%, white);
+  --doc-bg: color-mix(in srgb, #b45309 10%, white);
+  --ai-bg: color-mix(in srgb, #db2777 10%, white);
+  --incident-bg: color-mix(in srgb, #dc2626 10%, white);
+  --location-bg: color-mix(in srgb, #475569 10%, white);
+  --organisation-bg: color-mix(in srgb, #7c3aed 10%, white);
+
+  --verified: #059669;
+  --unresolved: #dc2626;
+
+  --supports: #059669;
+  --contradicts: #dc2626;
+  --qualifies: #b45309;
+  --neutral: #475569;
+  --contradicts-row: #fff7f7;
+
+  --ai-surface: color-mix(in srgb, #db2777 5%, white);
+  --ai-surface-alt: color-mix(in srgb, #db2777 8%, white);
+  --ai-border: color-mix(in srgb, #db2777 45%, white);
+
+  --demo-bg: #fff7e6;
+  --demo-border: #f3d59b;
+  --demo-fg: #b45309;
+
+  --diff-bg: #fff4d6;
+  --diff-fg: #b45309;
+
+  --shadow-palette: 0 24px 72px rgba(15, 23, 42, 0.25);
+  --shadow-sheet: 0 -8px 28px rgba(15, 23, 42, 0.18);
+  --shadow-page: 0 2px 12px rgba(0, 0, 0, 0.1);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  --scrim: rgba(15, 23, 42, 0.45);
+}
+
+/* -------------------------------------------------- Tailwind theme mapping */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-deep: var(--bg-deep);
+  --color-bg-graph: var(--bg-graph);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-high: var(--surface-high);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-faint: var(--border-faint);
+  --color-fg: var(--text-primary);
+  --color-fg-body: var(--text-body);
+  --color-fg-secondary: var(--text-secondary);
+  --color-fg-muted: var(--text-muted);
+  --color-fg-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
+
+  --color-court: var(--court);
+  --color-witness: var(--witness);
+  --color-spo: var(--spo);
+  --color-defence: var(--defence);
+  --color-doc: var(--doc);
+  --color-ai: var(--ai);
+  --color-incident: var(--incident);
+  --color-location: var(--location);
+  --color-organisation: var(--organisation);
+  --color-court-bg: var(--court-bg);
+  --color-witness-bg: var(--witness-bg);
+  --color-spo-bg: var(--spo-bg);
+  --color-defence-bg: var(--defence-bg);
+  --color-doc-bg: var(--doc-bg);
+  --color-ai-bg: var(--ai-bg);
+  --color-incident-bg: var(--incident-bg);
+  --color-location-bg: var(--location-bg);
+  --color-organisation-bg: var(--organisation-bg);
+  --color-verified: var(--verified);
+  --color-unresolved: var(--unresolved);
+
+  --color-supports: var(--supports);
+  --color-contradicts: var(--contradicts);
+  --color-qualifies: var(--qualifies);
+  --color-neutral: var(--neutral);
+  --color-contradicts-row: var(--contradicts-row);
+
+  --color-ai-surface: var(--ai-surface);
+  --color-ai-surface-alt: var(--ai-surface-alt);
+  --color-ai-border: var(--ai-border);
+  --color-demo-bg: var(--demo-bg);
+  --color-demo-border: var(--demo-border);
+  --color-demo-fg: var(--demo-fg);
+  --color-diff-bg: var(--diff-bg);
+  --color-diff-fg: var(--diff-fg);
+  --color-scrim: var(--scrim);
+
+  /* §3 Typography — two families only */
+  --font-sans: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
+  --font-serif: var(--font-libre-baskerville), "Libre Baskerville", Georgia, serif;
+
+  /* §4 Spacing scale: 4 · 8 · 12 · 16 · 24 · 32 · 48 (Tailwind's 1,2,3,4,6,8,12) */
+
+  /* §4 Radii */
+  --radius-badge: 3px;
+  --radius-chip: 5px;
+  --radius-control: 6px;
+  --radius-inset: 7px;
+  --radius-card: 8px;
+  --radius-card-lg: 9px;
+  --radius-palette: 13px;
+  --radius-sheet: 16px;
+
+  /* §5 Elevation */
+  --shadow-palette: var(--shadow-palette);
+  --shadow-sheet: var(--shadow-sheet);
+  --shadow-page: var(--shadow-page);
+  --shadow-focus: var(--focus-ring);
+
+  /* Standard desktop chrome (§4) */
+  --spacing-nav: 52px;
+  --spacing-nav-light: 56px;
+  --spacing-stripe: 32px;
+  --spacing-tabbar: 40px;
+  --spacing-footer: 26px;
+  --spacing-rail-left: 236px;
+  --spacing-rail-right: 300px;
+
+  /* Breakpoints (HANDOFF.md §5) */
+  --breakpoint-sm: 390px;
+  --breakpoint-md: 860px;
+  --breakpoint-lg: 1100px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1440px;
+}
+
+/* ------------------------------------------------------------- base layer */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-body);
+    font-size: 13px;
+    line-height: 1.55;
+    min-height: 100dvh;
+  }
+
+  /* §10 Focus is a 3px accent ring, never a bare outline. */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-control);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+}
+
+/* --------------------------------------------------------------- utilities */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Identifiers (W01234, ¶1,204, T. 4,226) — always tabular, 600, source-coloured. */
+@utility identifier {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* §3 Section label: 10 / 600 uppercase, 0.10em, muted. */
+@utility section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* §3 Governance footnote: 10 / 400, faint, 1.5. */
+@utility governance-text {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+/* Legal quotation: serif means "these are the words from the record". */
+@utility legal-text {
+  font-family: var(--font-serif);
+  font-size: 12.5px;
+  line-height: 1.75;
+}
+
+/* Hide scrollbars on horizontally scrolling tab strips without disabling scroll. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

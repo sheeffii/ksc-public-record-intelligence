@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ksc-api"
+version = "0.1.0"
+description = "KSC Public Record Intelligence — API (citation-first public court-record research platform)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+dependencies = [
+  "fastapi>=0.141,<1",
+  "uvicorn[standard]>=0.53,<1",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.15,<3",
+  "sqlalchemy>=2.0.54,<3",
+  "alembic>=1.20,<2",
+  "psycopg[binary]>=3.3,<4",
+  "redis>=8.1,<9",
+  "minio>=7.2,<8",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.1,<10",
+  "httpx2>=2.13,<3",
+  "ruff>=0.16,<1",
+  "mypy>=2.3,<3",
+]
+
+[project.scripts]
+ksc-seed = "ksc_api.seed:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ksc_api = ["py.typed"]

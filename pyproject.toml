@@ -1,0 +1,47 @@
+# Root tooling configuration for the Python side of the monorepo.
+# The installable packages live in apps/api and workers/*.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["apps/api/src", "workers/ingestion/src", "workers/analysis/src", "tests", "scripts"]
+extend-exclude = ["apps/web", "docs", "node_modules", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "S", "BLE", "RUF"]
+ignore = [
+  "E501",   # handled by formatter
+  "S101",   # assert is fine in tests
+  "RUF012",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S608"]
+"apps/api/alembic/**" = ["N999"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ksc_api", "ksc_ingestion", "ksc_analysis"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+mypy_path = "apps/api/src"
+packages = ["ksc_api"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["minio", "minio.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit", "tests/integration"]
+pythonpath = ["apps/api/src", "tests"]
+addopts = "-ra --strict-markers"
+markers = [
+  "integration: requires live PostgreSQL/Redis/MinIO (see docs/DEVELOPMENT.md)",
+]
+filterwarnings = ["error::DeprecationWarning:ksc_api.*"]

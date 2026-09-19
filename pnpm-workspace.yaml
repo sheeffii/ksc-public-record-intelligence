@@ -1,0 +1,12 @@
+packages:
+  - "apps/web"
+  - "packages/shared"
+
+# Native postinstall builds required by Next.js / ESLint tooling.
+allowBuilds:
+  "@parcel/watcher": true
+  "@swc/core": true
+  unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - "@types/node@26.6.2"

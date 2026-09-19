@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ksc-analysis-worker"
+version = "0.1.0"
+description = "KSC Public Record Intelligence — analysis worker (placeholder; not active in Phase 4)"
+requires-python = ">=3.12"
+dependencies = ["ksc-api"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

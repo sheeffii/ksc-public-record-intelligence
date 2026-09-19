@@ -1,0 +1,212 @@
+{
+  "app": {
+    "name": "KSC Inteligjenca e Regjistrit Publik",
+    "shortName": "KSC·PRI",
+    "tagline": "Hulumtim i bazuar në citime mbi regjistrin publik të gjykatës",
+    "skipToContent": "Kalo te përmbajtja",
+    "caseLabel": "Çështja",
+    "courtName": "Dhomat e Specializuara të Kosovës"
+  },
+  "nav": {
+    "home": "Kreu",
+    "search": "Kërko",
+    "documents": "Dokumentet",
+    "people": "Personat",
+    "witnesses": "Dëshmitarët",
+    "exhibits": "Provat",
+    "incidents": "Incidentet",
+    "findings": "Konstatimet",
+    "timeline": "Kronologjia",
+    "network": "Rrjeti",
+    "appeal": "Apeli",
+    "ai": "Hulumtim me IA",
+    "public": "Mënyra e thjeshtë",
+    "more": "Më shumë",
+    "moreSections": "Seksione të tjera",
+    "openSearch": "Kërko në regjistër",
+    "searchShortcut": "⌘K",
+    "account": "Llogaria",
+    "mainNavigation": "Navigimi kryesor",
+    "mobileNavigation": "Seksionet"
+  },
+  "mobileNav": {
+    "home": "Kreu",
+    "search": "Kërko",
+    "network": "Rrjeti",
+    "docs": "Dok.",
+    "ai": "IA"
+  },
+  "language": {
+    "label": "Gjuha e ndërfaqes",
+    "current": "EN / SQ",
+    "english": "English",
+    "englishSub": "Interface in English",
+    "albanian": "Shqip",
+    "albanianSub": "Ndërfaqja në shqip",
+    "note": "Ndryshimi i gjuhës ndryshon vetëm ndërfaqen. Gjuha e dokumentit është veti e vetë dokumentit.",
+    "provisional": "Terminologjia juridike në shqip është e përkohshme derisa të krahasohet me publikimet zyrtare të DhSK-së."
+  },
+  "theme": {
+    "label": "Tema e ngjyrave",
+    "dark": "E errët — duke punuar mbi regjistrin",
+    "light": "E çelët — duke lexuar regjistrin",
+    "switchToDark": "Kalo në temën e errët",
+    "switchToLight": "Kalo në temën e çelët"
+  },
+  "demo": {
+    "long": "Të dhëna demonstruese — jo regjistra të drejtpërdrejtë",
+    "short": "Të dhëna demo",
+    "description": "Çdo shifër në këtë ekran është ilustruese. Në prodhim çdo shifër lexohet drejtpërdrejt nga baza e të dhënave të regjistrit."
+  },
+  "source": {
+    "court": "Konstatim i Gjykatës",
+    "witness": "Dëshmi e dëshmitarit",
+    "spo": "Argument i ZPS-së",
+    "defence": "Argument i Mbrojtjes",
+    "exhibit": "Dokument / Provë",
+    "ai": "Analizë e IA-së",
+    "incident": "Incident",
+    "location": "Vendndodhje",
+    "organisation": "Organizatë",
+    "meaning": {
+      "court": "Përcaktuar nga Trupi gjykues",
+      "witness": "Thënë nën betim në gjykatë",
+      "spo": "Pohuar nga Prokurori",
+      "defence": "Pohuar nga Mbrojtja",
+      "exhibit": "Një dokument në prova",
+      "ai": "Gjeneruar nga softueri",
+      "incident": "Një ngjarje e pretenduar në regjistër",
+      "location": "Një vend i përmendur në regjistër",
+      "organisation": "Një njësi ose organ i përmendur në regjistër"
+    }
+  },
+  "verification": {
+    "verified": "Verifikuar nga njeriu",
+    "ai-flagged": "Sinjalizuar nga IA — kërkon shqyrtim",
+    "unresolved": "Citim i pazgjidhur",
+    "needs-evidence": "Nevojiten më shumë prova",
+    "unreviewed": "I pashqyrtuar"
+  },
+  "direction": {
+    "supports": "Mbështet",
+    "contradicts": "Kundërshton",
+    "qualifies": "Kualifikon",
+    "neutral": "Neutral",
+    "scopeNote": "Drejtimi matet kundrejt pohimit në të njëjtin rresht, jo kundrejt ndonjë personi."
+  },
+  "provenance": {
+    "boundary": "Nën këtë vijë: analizë e gjeneruar, jo regjistri i gjykatës",
+    "aiBadge": "Analizë e IA-së",
+    "aiHeader": "Shkruar nga softueri · asnjë pjesë e kësaj nuk është regjistër gjykate",
+    "recordHeader": "Nga regjistri publik i gjykatës"
+  },
+  "citation": {
+    "open": "Hap dokumentin",
+    "copy": "Kopjo citimin",
+    "opens": "Hap {reference}",
+    "unresolved": "UNRESOLVED",
+    "unresolvedNotice": "Një citim në këtë ekran nuk mund të zgjidhej në një faqe, paragraf ose varg rreshtash. Përmbajtja që varej prej tij është mbajtur e fshehur."
+  },
+  "table": {
+    "density": "Dendësia",
+    "compact": "Kompakte",
+    "comfortable": "E rehatshme",
+    "sortedAscending": "renditur në rritje",
+    "sortedDescending": "renditur në zbritje",
+    "sortBy": "Rendit sipas {column}",
+    "selectRow": "Zgjidh {label}",
+    "empty": "Nuk ka rreshta",
+    "columnNote": "Vlerat e kolonave janë atribute të regjistrit. Asnjë kolonë nuk është peshë apo shkallë rëndësie."
+  },
+  "filters": {
+    "title": "Filtrat",
+    "active": "Filtrat aktivë",
+    "remove": "Hiq filtrin: {label}",
+    "clearAll": "Pastro të gjithë filtrat",
+    "none": "Nuk është aplikuar asnjë filtër"
+  },
+  "states": {
+    "loading": "Duke u ngarkuar",
+    "loadingScope": "Duke ngarkuar {scope}",
+    "emptyAction": "Pastro filtrat",
+    "errorTitle": "{scope} nuk mund të ngarkohej",
+    "errorScopeDefault": "Ky seksion",
+    "retry": "Provo përsëri",
+    "partial": "Shfaqen të dhëna të pjesshme. Mungesa është shënuar më sipër."
+  },
+  "gap": {
+    "title": "Nuk mbahet në regjistrin publik",
+    "closed-session": "Seancë e mbyllur",
+    "redaction": "E redaktuar në versionin publik",
+    "untranslated": "Nuk mbahet përkthim zyrtar",
+    "unresolved-citation": "Citim i pazgjidhur",
+    "extent": "Shtrirja",
+    "rule": "Mungesat deklarohen, kurrë nuk plotësohen."
+  },
+  "dialog": {
+    "close": "Mbyll",
+    "drawerTitle": "Paneli"
+  },
+  "footer": {
+    "neutrality": "Çdo zë në këtë ekran është një referencë në regjistrin publik të gjykatës. Asgjë këtu nuk është vlerësim i ndonjë personi.",
+    "network": "Lidhjet paraqesin marrëdhënie ose referenca të gjetura në regjistrin publik të gjykatës. Një lidhje në vetvete nuk nënkupton veprim të gabuar, marrëveshje, përgjegjësi apo faj.",
+    "referenceCounts": "Numëruesit e referencave tregojnë sa herë diçka shfaqet në regjistër. Ata nuk janë masë e rëndësisë, përfshirjes apo përgjegjësisë.",
+    "sourceNote": "Burimet parësore të gjykatës, baza e të dhënave, prejardhja dhe citimet janë autoritative. Rezultati i IA-së është vetëm analizë."
+  },
+  "placeholder": {
+    "phaseLabel": "Themeli",
+    "absent": "Ky ekran nuk është ndërtuar ende.",
+    "reason": "Është planifikuar për Fazën 5 — zbatimi i dizajnit të miratuar me të dhëna simuluese. Rruga, korniza dhe ndërrimi i gjuhës janë aktive; përmbajtja jo.",
+    "action": "Kthehu në faqen kryesore",
+    "artboard": "Tabela {id}",
+    "notDesigned": "Pa tabelë dizajni — ndërtohet nga modeli i tabelës së Eksploruesit të Provave",
+    "route": "Rruga",
+    "identifier": "Identifikuesi",
+    "mode": "Mënyra",
+    "modeDark": "E errët — duke punuar mbi regjistrin",
+    "modeLight": "E çelët — duke lexuar regjistrin",
+    "spec": "Specifikimi"
+  },
+  "screens": {
+    "home": "Kreu",
+    "search": "Kërkim global",
+    "people": "Personat",
+    "personDossier": "Dosja e personit",
+    "witnesses": "Dëshmitarët",
+    "witnessDossier": "Dosja e dëshmitarit",
+    "statementComparison": "Krahasimi i deklaratave",
+    "documents": "Dokumentet",
+    "documentReader": "Lexuesi i dokumenteve",
+    "exhibits": "Eksploruesi i provave",
+    "incidents": "Incidentet",
+    "incidentDetail": "Detajet e incidentit",
+    "timeline": "Kronologjia e hulumtimit",
+    "findings": "Konstatimet",
+    "findingDetail": "Detajet e konstatimit",
+    "network": "Eksploruesi i rrjetit",
+    "evidencePath": "Rruga e provave",
+    "appeal": "Çështje potenciale për shqyrtim",
+    "argumentLab": "Laboratori i argumenteve + Ekipi i kuq",
+    "ai": "Hulumtim me IA",
+    "aiSession": "Hulumtim me IA — sesion i ruajtur",
+    "public": "Mënyra publike / e thjeshtë",
+    "publicTopic": "Mënyra publike / e thjeshtë — temë"
+  },
+  "home": {
+    "title": "KSC Inteligjenca e Regjistrit Publik",
+    "subtitle": "Eksploroni regjistrin publik të KSC-BC-2020-06 — dokumente, transkripte, dëshmitarë, prova, konstatime — me çdo pohim të gjurmuar deri te burimi i tij.",
+    "searchPlaceholder": "Kërkoni në regjistrin publik — një emër, W01234, F01234, P00123, ¶1204 ose tekst të lirë",
+    "searchButton": "Kërko",
+    "explore": "Eksploroni regjistrin",
+    "statsNote": "Numëruesit do të lexohen drejtpërdrejt nga baza e të dhënave. Deri në fillimin e përpunimit shfaqen si vizë, kurrë si zero.",
+    "foundationNotice": "Themeli inxhinierik. Asnjë dokument gjykate nuk është përpunuar. Çdo seksion më poshtë hap rrugën e vet; përmbajtja vjen në fazat e mëvonshme.",
+    "principle": "Burimet parësore → baza e të dhënave → provat e strukturuara → prejardhja dhe citimet → kërkimi, rrjeti dhe analiza → IA. Regjistri është autoritativ. IA është vetëm analizë."
+  },
+  "notFound": {
+    "title": "Nuk u gjet",
+    "identifierMissing": "Asnjë regjistrim me identifikuesin {identifier} nuk është në grupin publik.",
+    "reason": "Identifikuesi mund të jetë shkruar gabim, ose regjistrimi mund të ekzistojë por të mos jetë publik. Këto janë gjendje të ndryshme dhe sistemi i dallon.",
+    "action": "Kërkoje",
+    "generic": "Nuk ka faqe në këtë adresë."
+  }
+}

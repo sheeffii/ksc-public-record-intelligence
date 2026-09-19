@@ -1,0 +1,153 @@
+# Architecture
+
+KSC Public Record Intelligence is a citation-first research platform over the public
+record of **KSC-BC-2020-06**. This document describes the system as it exists after
+Phase 4 (engineering foundation) and the layers planned above it.
+
+## The authoritative hierarchy
+
+```
+PRIMARY COURT SOURCES        official public documents, transcripts, exhibits
+        ↓
+DATABASE                     PostgreSQL — the system of record for what we hold
+        ↓
+STRUCTURED EVIDENCE          documents, pages, segments, witnesses, exhibits, findings…
+        ↓
+PROVENANCE / CITATIONS       every structured fact points back to page / ¶ / line
+        ↓
+SEARCH / NETWORK / ANALYSIS  derived views, computed from the layers above
+        ↓
+AI                           analysis only — never a source of truth
+```
+
+**Database + primary sources + provenance + citations are authoritative.** AI
+operates above these systems, reads from them, and produces analysis that is
+always labelled as such and always cites downward. The product is not built
+around "AI memory"; AI memory is not evidence.
+
+## Monorepo layout
+
+```
+apps/web            Next.js 16 · React 19 · TypeScript strict · Tailwind 4 · next-intl · next-themes
+apps/api            FastAPI · Pydantic v2 · SQLAlchemy 2 · Alembic · psycopg 3
+workers/ingestion   placeholder — controlled ingestion pipeline (Phase 6+)
+workers/analysis    placeholder — embeddings / retrieval / AI analysis (later)
+packages/shared     TypeScript contract types (Citation, VerificationState, Witness, …)
+packages/prompts    reserved for versioned prompt templates (empty)
+infrastructure/     Docker assets beyond compose (empty in Phase 4)
+scripts/            operational scripts
+tests/              backend unit + integration, Playwright e2e, fixtures, evaluation
+docs/               this documentation; docs/design is the approved UX (read-only)
+```
+
+## Frontend (`apps/web`)
+
+- **App Router**, one page per approved route in `docs/design/ROUTE_MAP.md`. The
+  registry lives in `src/lib/routes.ts` and a test asserts every route has a page.
+- **Tokens** in `src/styles/globals.css`, transcribed from `DESIGN_SYSTEM.md`.
+  Components use Tailwind utilities bound to tokens; no component hardcodes a hex.
+- **Theme**: dark is the default and semantic ("working over the record"). Light is
+  applied per surface by `<SurfaceTheme mode="light">` for the Document Reader and
+  Public mode. `next-themes` provides the user-preference infrastructure (ADR-006).
+- **i18n**: `next-intl` without routing; the locale is a cookie, never a URL
+  prefix. Tables in `src/i18n/messages/{en,sq}.json`; Albanian is provisional.
+- **Shell**: `AppShell` = GlobalNav (52px) · CaseStripe (32px) · content ·
+  GovernanceFooter (26px) · MobileTabBar (<860px).
+- **Provenance primitives**: `SourceBadge`, `VerificationBadge`, `CitationChip`
+  (returns `null` when `resolved === false`), `ProvenanceBoundary`.
+- **Primitives**: `DataTable` + `DensityToggle`, `Panel`, filters, `SkeletonBlock`,
+  `EmptyState` (three required lines), `ErrorState` (names its scope), `GapNotice`,
+  `Modal`, `Drawer` (Radix Dialog).
+- Talks to the API at `NEXT_PUBLIC_API_URL` (browser) / `API_INTERNAL_URL` (server).
+  No data fetching exists yet.
+
+## API (`apps/api`)
+
+- `create_app()` in `ksc_api/main.py`; routers under `ksc_api/routers/`.
+- Phase 4 endpoints: `GET /health` (liveness), `GET /ready` (PostgreSQL, pgvector,
+  Redis, MinIO; 503 when any is down), `GET /version`.
+- Settings via `pydantic-settings` (`ksc_api/config.py`). No AI key is required.
+- Sync SQLAlchemy 2.0 with psycopg 3; sessions are FastAPI dependencies.
+- Alembic migrations in `apps/api/alembic/`; `0001` enables `vector` and creates
+  `cases`, `documents`, `audit_log`.
+- `ksc-seed` inserts public metadata for KSC-BC-2020-06 (idempotent). The container
+  entrypoint runs migrations then seed before serving.
+
+## Database
+
+PostgreSQL 16 with the **pgvector** extension enabled from the first migration so
+later phases can add embedding columns without a privileged step. Phase 4 holds only
+three tables; the planned schema is in `docs/DATA_MODEL.md`. Search will use
+PostgreSQL full-text + pgvector before any separate search engine is considered
+(ADR-002).
+
+## Object storage
+
+MinIO (S3-compatible) holds original document bytes under `MINIO_BUCKET_DOCUMENTS`.
+Every stored object will carry a SHA-256 and the official public URL it came from.
+Nothing is stored yet.
+
+## Redis
+
+Reserved for job queues (ingestion / analysis workers), short-lived caches and
+rate limiting. Only connectivity is verified in Phase 4.
+
+## Workers
+
+Two placeholder packages. Neither contains executable pipeline code:
+
+- **ingestion** — discover → download (official public URLs only) → hash → store →
+  parse → segment → extract citations → resolve → persist the resolution index.
+- **analysis** — embeddings, retrieval, AI analysis, relationship extraction,
+  potential-issue surfacing. All output is `AI ANALYSIS`, cited, and withheld when
+  any citation is `UNRESOLVED`.
+
+## Future layers
+
+### Ingestion (docs/INGESTION.md)
+
+Controlled, per-document, auditable. A single document end to end before any
+corpus-wide run (ADR-003).
+
+### Citation resolution index (ADR-005)
+
+Resolution is computed **at ingest**, not at request time:
+
+```
+DOCUMENT INGESTION → CITATION EXTRACTION → CITATION RESOLUTION
+       → PERSISTED RESOLUTION INDEX → FAST RUNTIME LOOKUP
+```
+
+Each extracted raw citation (`F01234`, `F01234/RED`, `P00123`, `W01234`, transcript
+page/line, judgment paragraph, other decisions) is stored with its resolved target,
+a confidence, and a verification state. Unresolvable citations persist as
+`UNRESOLVED` and block rendering of dependent content. The runtime never guesses.
+
+### Search
+
+PostgreSQL full-text search over segments and metadata, with pgvector for semantic
+retrieval. Protected-witness records live in an index with no name field so a name
+can never resolve to a W-code (DESIGN_DECISIONS.md §18.2).
+
+### Evidence graph
+
+Nodes are record entities; **every edge is a persisted citation**. Edges without a
+resolvable citation are not created, so they cannot be drawn. Paths are computed
+per request and ordered by hop count only.
+
+### AI layer (docs/AI_METHODS.md)
+
+Retrieval before composition; block order returned by the API; the record/AI
+boundary is structural in the payload (`AnswerBlock.kind`). No guilt, suspicion,
+credibility or success scores exist anywhere in the pipeline or the schema.
+
+## Cross-cutting rules enforced in code
+
+| Rule                                         | Where                                                                               |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| No score/rank/weight field of any person     | `tests/unit/test_models.py` scans every column name; `@ksc/shared` types carry none |
+| Unresolved citation ⇒ not rendered           | `CitationChip` returns `null`; tested                                               |
+| Interface strings from the string table only | `src/i18n/messages/*`; key-parity test                                              |
+| Official identifiers never translated        | `UNRESOLVED` literal test; identifiers rendered via `identifier` utility            |
+| Document date ≠ filing date                  | separate nullable columns; tested                                                   |
+| Light surface only for reader/public         | route registry test                                                                 |
