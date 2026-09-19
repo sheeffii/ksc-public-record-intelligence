@@ -1,9 +1,11 @@
 import type { Citation } from "@ksc/shared";
 import { SOURCE_TYPES, VERIFICATION_STATES } from "@ksc/shared";
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { messagesEn, messagesSq, renderWithProviders } from "@/test/render";
 import { CitationChip } from "./CitationChip";
+import { CitationPreview } from "./CitationPreview";
 import { AiAnalysisBlock } from "./AiAnalysisBlock";
 import { DirectionBadge, ScopeNote } from "./DirectionBadge";
 import { ProtectionNotice } from "./ProtectionNotice";
@@ -77,6 +79,17 @@ describe("CitationChip — resolves or does not render", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
     expect(screen.getByText("Judgment · ¶8421–8427")).toBeInTheDocument();
   });
+});
+
+it("CitationPreview keeps context visible before source navigation", async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<CitationPreview citation={resolved} passage="Surrounding record passage" />);
+  await user.click(screen.getByRole("button"));
+  expect(screen.getByRole("dialog")).toHaveTextContent("Surrounding record passage");
+  expect(screen.getByRole("link", { name: /Open document/ })).toHaveAttribute(
+    "href",
+    "/documents/F00482?page=894&highlight=8421-8427",
+  );
 });
 
 describe("ProvenanceBoundary", () => {

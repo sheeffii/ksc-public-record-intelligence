@@ -1,5 +1,6 @@
 export { AiAnalysisBlock } from "./AiAnalysisBlock";
 export { CitationChip } from "./CitationChip";
+export { CitationPreview } from "./CitationPreview";
 export { DirectionBadge, ScopeNote } from "./DirectionBadge";
 export { ProtectionNotice } from "./ProtectionNotice";
 export { ProvenanceBoundary } from "./ProvenanceBoundary";

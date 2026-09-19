@@ -2,14 +2,15 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { SearchIcon } from "@/components/primitives/icons";
 import { Panel } from "@/components/primitives/Panel";
-import { PendingCount } from "@/components/primitives/States";
+import { CitationChip, VerificationBadge } from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
 import { DemoDataFlag } from "@/components/shell/DemoDataFlag";
-import { PRIMARY_NAV, type NavKey } from "@/lib/routes";
+import { PRIMARY_NAV } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { courtCitation, mockRepository } from "@/mock";
 
 /** Seven live counts (PAGE_SPECS.md §02). None exists yet, so each renders a dash — never 0. */
-const STAT_KEYS: readonly NavKey[] = [
+const STAT_KEYS = [
   "documents",
   "people",
   "witnesses",
@@ -17,7 +18,7 @@ const STAT_KEYS: readonly NavKey[] = [
   "findings",
   "incidents",
   "network",
-];
+] as const;
 
 /**
  * Homepage (Artboard 02) — foundation version. Hero, search, explore grid.
@@ -29,6 +30,16 @@ export default function HomePage() {
   const t = useTranslations("home");
   const tNav = useTranslations("nav");
   const tFooter = useTranslations("footer");
+  const tPhase = useTranslations("phase5");
+  const demoCounts: Record<(typeof STAT_KEYS)[number], number> = {
+    documents: mockRepository.getDirectory("documents").length,
+    people: mockRepository.getDirectory("people").length,
+    witnesses: mockRepository.getDirectory("witnesses").length,
+    exhibits: mockRepository.getDirectory("exhibits").length,
+    findings: mockRepository.getDirectory("findings").length,
+    incidents: mockRepository.getDirectory("incidents").length,
+    network: mockRepository.getNetwork().edges.length,
+  };
 
   return (
     <AppShell footer={tFooter("sourceNote")}>
@@ -67,13 +78,13 @@ export default function HomePage() {
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6">
         <div className="rounded-card border-demo-border bg-demo-bg/40 text-fg-body flex flex-wrap items-center gap-3 border px-3 py-2 text-[11.5px]">
           <DemoDataFlag compact />
-          <span>{t("foundationNotice")}</span>
+          <span>{tPhase("mockNotice")}</span>
         </div>
 
         <div>
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <h2 className="section-label">{t("explore")}</h2>
-            <p className="text-fg-muted text-[10.5px]">{t("statsNote")}</p>
+            <p className="text-fg-muted text-[10.5px]">{tPhase("mockNotice")}</p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
             {STAT_KEYS.map((key) => {
@@ -84,7 +95,9 @@ export default function HomePage() {
                   href={item?.href ?? "/"}
                   className="rounded-card border-border bg-surface hover:bg-surface-raised flex flex-col gap-1 border px-3 py-2.5"
                 >
-                  <PendingCount className="text-fg text-[22px] font-bold tracking-[-0.02em]" />
+                  <span className="text-fg tabular text-[22px] font-bold tracking-[-0.02em]">
+                    {demoCounts[key]}
+                  </span>
                   <span className="text-fg-muted text-[10.5px]">{tNav(key)}</span>
                 </Link>
               );
@@ -112,6 +125,37 @@ export default function HomePage() {
               </Link>
             </Panel>
           ))}
+        </div>
+        <div className="grid gap-3 lg:grid-cols-3">
+          <Panel title={tPhase("documents")}>
+            {mockRepository.getDirectory("documents").map((row) => (
+              <Link
+                key={row.id}
+                href={row.href}
+                className="border-border-faint block border-b py-2"
+              >
+                <span className="identifier text-doc">{row.id}</span>
+                <span className="text-fg ml-2 text-[11px]">{row.title}</span>
+              </Link>
+            ))}
+          </Panel>
+          <Panel title={tPhase("courtFindings")}>
+            <div className="flex items-center justify-between">
+              <Link href="/findings/F-DEMO-01" className="text-fg text-[11px] font-semibold">
+                Illustrative finding
+              </Link>
+              <VerificationBadge state="verified" />
+            </div>
+            <div className="mt-3">
+              <CitationChip citation={courtCitation} />
+            </div>
+          </Panel>
+          <Panel title={tPhase("verificationStatus")}>
+            <p className="text-fg text-[12px] font-semibold">Mock repository ready</p>
+            <p className="text-fg-secondary mt-2 text-[11px]">
+              No court documents ingested · all displayed records are generic demo content.
+            </p>
+          </Panel>
         </div>
       </section>
     </AppShell>

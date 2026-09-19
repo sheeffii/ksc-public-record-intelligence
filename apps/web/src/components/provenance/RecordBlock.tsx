@@ -1,6 +1,7 @@
 import type { Citation, CitableSourceType } from "@ksc/shared";
 import type { ReactNode } from "react";
 import { CitationChip } from "./CitationChip";
+import { CitationPreview } from "./CitationPreview";
 import { SourceBadge } from "./SourceBadge";
 
 export interface RecordBlockProps {
@@ -8,10 +9,17 @@ export interface RecordBlockProps {
   children: ReactNode;
   citations?: readonly Citation[];
   title?: ReactNode;
+  previewCitations?: boolean;
 }
 
 /** Solid, source-coloured container reserved for material from the public record. */
-export function RecordBlock({ sourceType, children, citations = [], title }: RecordBlockProps) {
+export function RecordBlock({
+  sourceType,
+  children,
+  citations = [],
+  title,
+  previewCitations = false,
+}: RecordBlockProps) {
   return (
     <section
       data-record-block
@@ -26,9 +34,13 @@ export function RecordBlock({ sourceType, children, citations = [], title }: Rec
       <div className="text-fg-body px-3 py-3 text-[12px] leading-relaxed">{children}</div>
       {citations.length ? (
         <footer className="border-border-subtle flex flex-wrap gap-2 border-t px-3 py-2">
-          {citations.map((citation) => (
-            <CitationChip key={`${citation.docId}-${citation.display}`} citation={citation} />
-          ))}
+          {citations.map((citation) =>
+            previewCitations ? (
+              <CitationPreview key={`${citation.docId}-${citation.display}`} citation={citation} />
+            ) : (
+              <CitationChip key={`${citation.docId}-${citation.display}`} citation={citation} />
+            ),
+          )}
         </footer>
       ) : null}
     </section>

@@ -2,16 +2,23 @@ import type { Citation } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { CitationChip } from "./CitationChip";
+import { CitationPreview } from "./CitationPreview";
 import { SourceBadge } from "./SourceBadge";
 
 export interface AiAnalysisBlockProps {
   children: ReactNode;
   citations?: readonly Citation[];
   title?: ReactNode;
+  previewCitations?: boolean;
 }
 
 /** Generated analysis with all four mandatory provenance signals. */
-export function AiAnalysisBlock({ children, citations = [], title }: AiAnalysisBlockProps) {
+export function AiAnalysisBlock({
+  children,
+  citations = [],
+  title,
+  previewCitations = false,
+}: AiAnalysisBlockProps) {
   const t = useTranslations("provenance");
   return (
     <section
@@ -28,9 +35,13 @@ export function AiAnalysisBlock({ children, citations = [], title }: AiAnalysisB
       <div className="text-fg-body px-3 py-3 font-sans text-[12px] leading-relaxed">{children}</div>
       {citations.length ? (
         <footer className="border-ai-border flex flex-wrap gap-2 border-t border-dashed px-3 py-2">
-          {citations.map((citation) => (
-            <CitationChip key={`${citation.docId}-${citation.display}`} citation={citation} />
-          ))}
+          {citations.map((citation) =>
+            previewCitations ? (
+              <CitationPreview key={`${citation.docId}-${citation.display}`} citation={citation} />
+            ) : (
+              <CitationChip key={`${citation.docId}-${citation.display}`} citation={citation} />
+            ),
+          )}
         </footer>
       ) : null}
     </section>
