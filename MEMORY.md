@@ -5,9 +5,13 @@ Live checkpoint. Answers "where exactly did we stop?". Keep concise; no logs.
 ## Current Status
 
 Current branch: main
-Current commit: none yet — all 173 files are staged for the initial commit, awaiting user review (`git commit -m "feat: phase 4 engineering foundation"`)
+Current commit: HEAD of main = `docs: record phase 4 checkpoint` (run `git log --oneline -1`; the hash cannot be embedded in its own commit) · Phase 4 commit: b99f514 `feat: complete phase 4 engineering foundation`
+Tag: phase-4-complete → b99f514
+Remote: origin = https://github.com/sheeffii/ksc-public-record-intelligence.git (configured, **never pushed**)
 Current milestone: Phase 4 — Engineering Foundation — **COMPLETE**
-Current active task: None. Phase 4 stopped deliberately; Phase 5 not started.
+Next milestone: Phase 5 — Approved UI implementation with mock data (not started)
+Current active task: None. Phase 4 closed deliberately; Phase 5 not started.
+Working tree: clean after the checkpoint commit
 Last updated: 2026-09-19
 
 ## What Works
@@ -24,6 +28,9 @@ Only what was verified on 2026-09-19:
   and `/public*` render `data-surface="light"`.
 - `pnpm build` (Next 16 standalone) succeeds.
 - Backend: 21 pytest pass (10 unit + 11 integration). Frontend: 108 vitest pass.
+- Playwright E2E executed against the running Docker stack: 50 passed
+  (25 desktop Chromium 1440px + 25 mobile Pixel 7). Mobile project switched from
+  iPhone 12 (WebKit, not installed) to Pixel 7 (Chromium).
 - ruff, ruff format, mypy --strict, eslint, tsc, prettier --check all clean.
 
 ## Completed Since Previous Checkpoint
@@ -67,15 +74,26 @@ Failed documents: 0
 Frontend: 108 passed (vitest) — `pnpm --filter @ksc/web test`
 Backend: 21 passed (pytest: 10 unit, 11 integration) — `make test-backend`
 Integration: included above; needs `make infra`
-E2E: 25 Playwright specs written in tests/e2e; not executed in CI (needs browsers)
+E2E: 50 passed (25 specs × desktop + mobile, Chromium) — `pnpm e2e` against `make up`; not in CI
 Evaluation: none (reserved)
 
-Last full test result: 2026-09-19 — all passing (`make test`).
+Last full test result: 2026-09-19 (checkpoint) — lint, typecheck, 21 backend, 108 frontend, 50 e2e all passing.
 
 ## Current Problems / Known Bugs
 
 - None blocking. See "Technical debt" in docs/PROJECT_STATE.md.
-- Playwright e2e has not been run in this session (infrastructure only).
+- **Design-file verification limitation.** `docs/design/DESIGN_SYSTEM.md`,
+  `ROUTE_MAP.md` and `PAGE_SPECS.md` were re-transcribed from a verbatim in-session
+  read after an accidental Prettier pass; no original copy exists locally, so a
+  byte-for-byte check was impossible. Structural inspection passed (line counts
+  238/239/602 equal the originals; all sections present; code fences balanced;
+  all 11 spec fields on each of the 16 authoritative screens; no duplicated
+  lines; trailing newlines intact; 26 token rows). `COMPONENTS.md`, `HANDOFF.md`,
+  `UX_FLOWS.md`, `DESIGN_DECISIONS.md` and `Design.html` are byte-exact. If the
+  user still holds the original download, a `diff`/`sha256` against those three
+  files would close this. Do NOT rewrite them again.
+- `git diff --cached --check` reports trailing whitespace at `Design.html:26` —
+  this is the handed-off file as delivered; left untouched on purpose.
 
 ## Important Recent Decisions
 
@@ -120,8 +138,7 @@ the placeholder and the foundation homepage exists, no mock data files exist.
    (06) + ⌘K (06b) → Finding Detail (05) → dossiers (07, 08) → Evidence Explorer
    (10) + the five directories → Network (03) + Evidence Path (20) → 11, 12, 09 →
    13, 14, 15 → Public mode (16). Mobile throughout.
-4. Run Playwright once against `make up` (`pnpm exec playwright install chromium`)
-   and decide whether to add it to CI.
+4. Decide whether to add Playwright (`pnpm e2e`, already passing locally) to CI.
 5. Have Albanian legal terminology reviewed against official KSC publications.
 
 ## Do Not Forget
@@ -159,8 +176,9 @@ docker compose ps    service health
 
 ```
 docker compose up --build -d            # all five services healthy
+make lint && make typecheck             # clean
 make test-backend                       # 21 passed
 pnpm --filter @ksc/web test             # 108 passed
-pnpm --filter @ksc/web build            # standalone build ok
-make lint && make typecheck             # clean
+pnpm e2e                                # 50 passed (stack running)
+git commit / git tag phase-4-complete   # b99f514
 ```

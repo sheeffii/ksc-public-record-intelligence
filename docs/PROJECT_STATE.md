@@ -85,7 +85,7 @@ Shared / docs
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
-- Playwright e2e exists but is not in CI (browsers not installed there).
+- Playwright e2e passes locally (Chromium only; mobile project uses Pixel 7) but is not in CI.
 - Albanian strings are provisional pending review against official KSC texts.
 - `eslint` pinned to 9.x: `eslint-config-next@16.3.5` → `eslint-plugin-react@7`
   is incompatible with ESLint 10.
@@ -112,7 +112,16 @@ Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all 
 ## Deployment state
 
 Local only: `docker compose up --build` verified 2026-09-19 with all five services
-healthy. No remote deployment, no production workflow.
+healthy. Git: commit `b99f514`, tag `phase-4-complete`; remote `origin` configured
+(github.com/sheeffii/ksc-public-record-intelligence) but nothing pushed. No remote
+deployment, no production workflow.
+
+## Verification limitations
+
+`docs/design/DESIGN_SYSTEM.md`, `ROUTE_MAP.md`, `PAGE_SPECS.md` were re-transcribed
+from a verbatim read after an accidental formatter pass; structurally verified
+(line counts, sections, fences, spec fields) but not byte-verified because no
+original copy exists locally. See MEMORY.md → Current Problems.
 
 ## Ingestion state
 
