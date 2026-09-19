@@ -1,18 +1,21 @@
 """FastAPI application factory.
 
-Phase 4 scope: system endpoints only. No court documents are fetched, parsed
-or served, and no AI provider is called.
+System endpoints plus the Phase 6 public read API (`/api/v1`). No court
+document is fetched and no AI provider is called; the read API serves whatever
+the database holds, filtered to the public record.
 """
 
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from ksc_api import __version__
 from ksc_api.config import get_settings
 from ksc_api.logging_config import configure_logging
-from ksc_api.routers import system
+from ksc_api.repositories.records import CaseNotConfiguredError
+from ksc_api.routers import records, system
 
 
 def create_app() -> FastAPI:
@@ -36,6 +39,15 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(system.router)
+    app.include_router(records.router)
+
+    @app.exception_handler(CaseNotConfiguredError)
+    def _case_not_configured(_: Request, exc: CaseNotConfiguredError) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": f"case {exc} is not seeded; run ksc-seed"},
+        )
+
     return app
 
 
