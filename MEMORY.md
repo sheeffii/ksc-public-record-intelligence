@@ -4,14 +4,22 @@ Live checkpoint. Answers “where exactly did we stop?”. Keep concise; no logs
 
 ## Current Status
 
-Current branch: `feat/phase-5-approved-ui`
+Current branch: `feat/phase-6-evidence-model` (cut from `main` at `3e9f8f8`)
 Phase 5 commit: `ee8a0e7`
 Tag: `phase-5-complete` → `ee8a0e7`
 Phase 4 tag: `phase-4-complete` → `b99f514`
-Remote: origin configured, **never pushed**
-Current milestone: Phase 5 **COMPLETE**
-Next milestone: Phase 6 — Real Database / Evidence Model (**not authorised**)
-Current active task: None. Stop at the Phase 5 boundary.
+Remote: origin configured; `main` = `origin/main` = `3e9f8f8` (Phase 5 landed on
+main by the user). Never push without explicit instruction.
+Roadmap: installed under `docs/roadmap/` (master + 15 phase files + usage guide).
+Current milestone: Phase 5 functional implementation **COMPLETE**; Phase 5
+visual parity **requires Phase 5B remediation** (scheduled after Phase 6).
+Next milestone: Phase 6 — Real Database / Evidence Model
+(`docs/roadmap/PHASE_06_REAL_DATABASE_AND_EVIDENCE_MODEL.md`). **Not started;
+awaiting explicit authorisation.**
+Planned order: 6 → 5B → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14.
+Phase 7 is the first controlled real-KSC ingestion milestone; Phase 14 is the
+later external-media / public-statements feature (post-core).
+Current active task: None. Roadmap installed; stop at the Phase 6 boundary.
 Working tree at checkpoint: clean
 Last updated: 2026-09-19
 
@@ -48,6 +56,9 @@ Last full verification: 2026-09-19.
 
 ## Known Differences / Follow-up
 
+- Phase 5 is functionally complete but visually simplified against
+  `docs/design/Design.html` on several screens; the page-by-page gap list is in
+  `docs/roadmap/PHASE_05B_UI_UX_VISUAL_PARITY_REMEDIATION.md`.
 - Network currently uses a lightweight accessible SVG implementation over the typed
   mock graph. Reconsider Sigma.js/Graphology when real graph scale is known.
 - The five directory routes reuse the approved DataTable language because they had
@@ -81,9 +92,12 @@ Last full verification: 2026-09-19.
 
 ## Exact Next Task
 
-Only after explicit authorisation, begin Phase 6: design and migrate the real
-database/evidence model and replace mock repository contracts with API-backed
-repositories. Do not ingest real KSC material before Phase 7.
+Only after explicit authorisation, begin Phase 6 by reading
+`docs/roadmap/00_MASTER_ROADMAP.md` and then the complete
+`docs/roadmap/PHASE_06_REAL_DATABASE_AND_EVIDENCE_MODEL.md`: design and migrate
+the real database/evidence model and add the API-backed repository boundary while
+keeping `MockRepository` working. Phase 5B follows Phase 6; Phase 7 follows 5B.
+Do not ingest real KSC material before Phase 7.
 
 ## Do Not Forget
 

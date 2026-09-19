@@ -7,16 +7,30 @@ Last updated: 2026-09-19
 
 ## Milestones
 
-| Phase | Scope                                                                                                     | Status                       |
-| ----- | --------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 1–3   | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)   |
-| **4** | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)** |
-| **5** | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Complete (2026-09-19)** |
-| 6     | Real database / evidence model and API-backed repository contracts                                        | Planned                      |
-| 7     | Controlled ingestion: one public document end to end, citation extraction + resolution index              | Planned                      |
-| 8     | Search (PostgreSQL FTS + pgvector), network, evidence paths                                               | Planned                      |
-| 9     | AI research layer (retrieval-before-composition, withhold-on-unresolved), evaluation sets                 | Planned                      |
-| 10    | Review workflows, public mode content authoring, access control, hardening                                | Planned                      |
+| Phase | Scope                                                                                                     | Status                                                                                    |
+| ----- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1–3   | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                |
+| **4** | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                              |
+| **5** | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B) |
+| 6     | Real database / evidence model and API-backed repository contracts                                        | **Next** (not started)                                                                    |
+| 5B    | UI/UX visual parity remediation against `docs/design/Design.html`                                         | Scheduled after Phase 6, before Phase 7                                                   |
+| 7     | KSC public record discovery + controlled 10–20 document ingestion (first real KSC data)                   | Not started                                                                               |
+| 8     | Parsing, exact citations, resolution index, search                                                        | Planned                                                                                   |
+| 9     | Real evidence network and timeline                                                                        | Planned                                                                                   |
+| 10    | Judgment, findings and evidence matrix                                                                    | Planned                                                                                   |
+| 11    | Citation-first AI / RAG                                                                                   | Planned                                                                                   |
+| 12    | Appeal research, red team and statement comparison                                                        | Planned                                                                                   |
+| 13    | Gradual full public corpus ingestion and production hardening                                             | Planned                                                                                   |
+| 14    | External media and public statements intelligence                                                         | Post-core / later                                                                         |
+
+## Roadmap
+
+The persistent execution plan is `docs/roadmap/` (installed 2026-09-19):
+`00_MASTER_ROADMAP.md` is the high-level plan and each `PHASE_*.md` is the
+execution specification for one milestone. Planned order from here:
+6 → 5B → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. The table above is the status
+record; the roadmap files hold scope and acceptance criteria. Repository code,
+migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
 

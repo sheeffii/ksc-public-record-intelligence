@@ -107,8 +107,29 @@ truncates.
 
 If documentation conflicts: 1 repository code · 2 database schema / migrations ·
 3 automated tests · 4 current Git state · 5 `docs/DECISIONS.md` ·
-6 `docs/PROJECT_STATE.md` · 7 `MEMORY.md` · 8 conversation history.
+6 `docs/PROJECT_STATE.md` · 7 `MEMORY.md` · 8 `docs/roadmap/` ·
+9 conversation history.
 Repository reality beats stale memory. If `MEMORY.md` is wrong, fix `MEMORY.md`.
+
+# Project Roadmap
+
+The persistent implementation roadmap lives in `docs/roadmap/`.
+`docs/roadmap/00_MASTER_ROADMAP.md` is the high-level plan; each
+`PHASE_*.md` file is the detailed execution specification for one milestone.
+
+At the beginning of a development milestone:
+
+1. read `docs/roadmap/00_MASTER_ROADMAP.md`;
+2. determine the active milestone from `MEMORY.md` and `docs/PROJECT_STATE.md`;
+3. read the complete roadmap file for that milestone;
+4. inspect repository / Git reality;
+5. execute only that milestone;
+6. never automatically begin the next milestone.
+
+The roadmap is planning documentation. Repository code, migrations, tests and
+current Git state remain authoritative if they conflict with stale roadmap text.
+Do not reformat `docs/roadmap/` (it is in `.prettierignore`); report real
+contradictions rather than silently editing roadmap files.
 
 # Session Startup Procedure
 
