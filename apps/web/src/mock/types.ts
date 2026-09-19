@@ -40,6 +40,12 @@ export interface MockDocument {
   page: number;
   paragraphs: { number: number; text: string }[];
   citation: Citation;
+  /**
+   * Set by the API repository. `not_public` means the record exists in the
+   * public docket but its text is not public (ROUTE_MAP.md §8); paragraphs are
+   * then empty. Absent for bundled mock data, which is always public.
+   */
+  visibility?: "public" | "public_redacted" | "not_public";
 }
 
 export interface MockSearchResult {

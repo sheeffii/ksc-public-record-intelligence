@@ -1,0 +1,123 @@
+/**
+ * `ApiRepository` — the read API behind the screen-facing contract.
+ *
+ * Every method maps API records through `mappers.ts`; nothing is fabricated
+ * for surfaces the API does not serve yet (`getPath`, `getAnswer` return
+ * empty until Phase 9 / Phase 11).
+ */
+
+import type { AnswerBlock, Witness } from "@ksc/shared";
+import type {
+  DirectoryKind,
+  DirectoryRow,
+  DocumentView,
+  EvidenceRow,
+  NetworkView,
+  PathHop,
+  PersonDossier,
+  ResearchRepository,
+  SearchResult,
+  TimelineItem,
+} from "../contract";
+import { ApiClient, type ApiClientOptions } from "./client";
+import * as map from "./mappers";
+import type {
+  ApiClaim,
+  ApiDocumentChunk,
+  ApiDocumentDetail,
+  ApiDocumentSummary,
+  ApiEvent,
+  ApiExhibit,
+  ApiFindingSummary,
+  ApiIncident,
+  ApiNetwork,
+  ApiPage,
+  ApiPerson,
+  ApiSearch,
+  ApiWitness,
+} from "./types";
+
+const PAGE = { limit: 200, offset: 0 } as const;
+
+export function createApiRepository(options: ApiClientOptions): ResearchRepository {
+  const client = new ApiClient(options);
+
+  async function page<T>(path: string): Promise<T[]> {
+    const result = await client.get<ApiPage<T>>(path, PAGE);
+    return result?.items ?? [];
+  }
+
+  const directories: Record<DirectoryKind, () => Promise<DirectoryRow[]>> = {
+    documents: async () => (await page<ApiDocumentSummary>("/documents")).map(map.documentRow),
+    people: async () => (await page<ApiPerson>("/people")).map(map.personRow),
+    witnesses: async () => (await page<ApiWitness>("/witnesses")).map(map.witnessRow),
+    exhibits: async () => (await page<ApiExhibit>("/exhibits")).map(map.exhibitRow),
+    incidents: async () => (await page<ApiIncident>("/incidents")).map(map.incidentRow),
+    findings: async () =>
+      (await page<ApiFindingSummary>("/findings"))
+        .map(map.findingRow)
+        .filter((row): row is DirectoryRow => row !== null),
+  };
+
+  return {
+    getDirectory: (kind) => directories[kind](),
+
+    async getPerson(slug: string): Promise<PersonDossier | null> {
+      const person = await client.get<ApiPerson>(`/people/${encodeURIComponent(slug)}`);
+      return person ? map.toPerson(person) : null;
+    },
+
+    async getWitness(code: string): Promise<Witness | null> {
+      const witness = await client.get<ApiWitness>(`/witnesses/${encodeURIComponent(code)}`);
+      return witness ? map.toWitness(witness) : null;
+    },
+
+    async getDocument(id: string): Promise<DocumentView | null> {
+      const document = await client.get<ApiDocumentDetail>(`/documents/${id}`);
+      if (!document) return null;
+      // The API lists only public versions; the newest is last.
+      const version = document.versions.at(-1);
+      const chunks = version
+        ? await page<ApiDocumentChunk>(`/document-versions/${version.official_version_ref}/chunks`)
+        : [];
+      return map.toDocument(document, chunks);
+    },
+
+    async search(query: string): Promise<readonly SearchResult[]> {
+      const result = await client.get<ApiSearch>("/search", { q: query });
+      return (result?.hits ?? []).map(map.toSearchResult);
+    },
+
+    async getNetwork(): Promise<NetworkView> {
+      const network = await client.get<ApiNetwork>("/network");
+      if (!network) return { nodes: [], edges: [] };
+      const edges = network.edges
+        .map(map.toNetworkEdge)
+        .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
+      const used = new Set(edges.flatMap((edge) => [edge.from, edge.to]));
+      const nodes = network.nodes.filter((node) => used.has(node.id));
+      return {
+        nodes: nodes.map((node, index) => map.toNetworkNode(node, index, nodes.length)),
+        edges,
+      };
+    },
+
+    // Evidence paths are computed over the real graph in Phase 9.
+    async getPath(): Promise<readonly PathHop[]> {
+      return [];
+    },
+
+    async getTimeline(): Promise<readonly TimelineItem[]> {
+      return (await page<ApiEvent>("/events")).map(map.toTimelineItem);
+    },
+
+    async getEvidence(): Promise<readonly EvidenceRow[]> {
+      return (await page<ApiClaim>("/claims")).flatMap(map.toEvidenceRows);
+    },
+
+    // No AI run exists before Phase 11; nothing is composed client-side.
+    async getAnswer(): Promise<readonly AnswerBlock[]> {
+      return map.NO_ANSWER;
+    },
+  };
+}
