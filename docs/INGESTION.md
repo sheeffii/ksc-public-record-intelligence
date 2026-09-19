@@ -34,6 +34,14 @@ verify        human review queue for parse quality and ambiguous citations
 
 Each stage updates `documents.ingestion_state` and writes to `audit_log`.
 
+Since Phase 6 the schema the pipeline writes into exists (`docs/DATA_MODEL.md`):
+`source_records` for discovery provenance (source system, external id, discovery
+URL, canonical URL, raw metadata) kept separate from the normalized
+`documents` / `document_versions` and from the stored object; `ingestion_jobs`
+for cursor / checkpoint / counts; `record_identifiers` for the identifier index
+the resolver reads; `citations` for the persisted resolution. No code that
+fetches, parses or resolves exists yet.
+
 ## Citation resolution at ingest (ADR-005)
 
 Resolution is part of ingestion, not of request handling. Re-ingesting a document

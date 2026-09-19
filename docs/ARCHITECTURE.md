@@ -58,28 +58,59 @@ docs/               this documentation; docs/design is the approved UX (read-onl
 - **Primitives**: `DataTable` + `DensityToggle`, `Panel`, filters, `SkeletonBlock`,
   `EmptyState` (three required lines), `ErrorState` (names its scope), `GapNotice`,
   `Modal`, `Drawer` (Radix Dialog).
-- Talks to the API at `NEXT_PUBLIC_API_URL` (browser) / `API_INTERNAL_URL` (server).
-  No data fetching exists yet.
+- **Repository boundary** (`src/data/`, ADR-008 → ADR-009): screens consume
+  screen-facing types through `ResearchRepository`, an asynchronous contract with
+  two adapters — `createMockRepositoryAdapter()` (the bundled Phase 5 mock, the
+  default) and `createApiRepository()` (the read API). `getRepository()` chooses
+  from `NEXT_PUBLIC_DATA_SOURCE=mock|api`; the base URL is `API_INTERNAL_URL` on
+  the server and `NEXT_PUBLIC_API_URL` in the browser. `src/data/api/mappers.ts`
+  is the only place that knows the wire shapes: it turns unresolved citations
+  into `resolved: false`, drops human-rejected facts, keeps protected witnesses
+  code-only, and never builds a citation display string. Screens still import
+  the synchronous mock directly; moving them onto `getRepository()` is Phase 5B
+  work, not a contract change.
 
 ## API (`apps/api`)
 
 - `create_app()` in `ksc_api/main.py`; routers under `ksc_api/routers/`.
-- Phase 4 endpoints: `GET /health` (liveness), `GET /ready` (PostgreSQL, pgvector,
+- System endpoints: `GET /health` (liveness), `GET /ready` (PostgreSQL, pgvector,
   Redis, MinIO; 503 when any is down), `GET /version`.
-- Settings via `pydantic-settings` (`ksc_api/config.py`). No AI key is required.
-- Sync SQLAlchemy 2.0 with psycopg 3; sessions are FastAPI dependencies.
-- Alembic migrations in `apps/api/alembic/`; `0001` enables `vector` and creates
-  `cases`, `documents`, `audit_log`.
-- `ksc-seed` inserts public metadata for KSC-BC-2020-06 (idempotent). The container
-  entrypoint runs migrations then seed before serving.
+- **Read API** (`ksc_api/routers/records.py`, prefix `/api/v1`): `case`,
+  `documents` (+ `document-versions/{ref}/pages|chunks`), `people`, `witnesses`,
+  `exhibits`, `incidents`, `findings`, `claims`, `arguments`, `events`,
+  `transcripts/{ref}`, `citations/{id}`, `citations/resolve?ref=`, `network`,
+  `relationships`, `search`. Lists paginate with `limit` (≤ 200) / `offset` and
+  return `{items, total, limit, offset}`. There is no write endpoint.
+- **Layering**: router → `RecordRepository` (`ksc_api/repositories/records.py`,
+  one instance per request, scoped to the configured case) → `mappers.py` →
+  Pydantic read models in `ksc_api/schemas/`. Raw ORM objects never leave the
+  repository. `filters.py` holds the fail-closed rules every query applies:
+  visibility `public` / `public_redacted` only, human-rejected facts withheld,
+  anything depending on an unresolved citation withheld, both ends of an edge
+  public. A document that exists but is not public is _stated_
+  (`visibility: not_public`, no versions) instead of a 404. The `WitnessRead`
+  serializer omits `public` structurally for anything not explicitly public.
+- Settings via `pydantic-settings` (`ksc_api/config.py`); `CASE_ID` selects the
+  case the API serves (the case is never a route segment). No AI key is required.
+- Sync SQLAlchemy 2.0 with psycopg 3; sessions are FastAPI dependencies. Enum
+  columns persist member _values_ (`db_enum`), matching the PostgreSQL types.
+- Alembic migrations in `apps/api/alembic/`: `0001` (foundation) and `0002` (the
+  evidence model, `docs/DATA_MODEL.md`). Enum types are created and dropped
+  explicitly; `alembic check` is part of the integration suite.
+- `ksc-seed` inserts public metadata for KSC-BC-2020-06 (idempotent);
+  `ksc-demo-fixture` loads the synthetic `KSC-DEMO-0000` evidence graph used by
+  tests. The container entrypoint runs migrations then seed before serving.
 
 ## Database
 
 PostgreSQL 16 with the **pgvector** extension enabled from the first migration so
-later phases can add embedding columns without a privileged step. Phase 4 holds only
-three tables; the planned schema is in `docs/DATA_MODEL.md`. Search will use
-PostgreSQL full-text + pgvector before any separate search engine is considered
-(ADR-002).
+later phases can add embedding columns without a privileged step. Phase 6 holds
+the normalized evidence model — 37 tables described in `docs/DATA_MODEL.md` —
+with provenance, visibility, verification and versioning as first-class columns,
+the `citations` resolution index, the `record_identifiers` lookup, and a
+`graph_nodes` registry that gives polymorphic graph references real foreign keys
+(ADR-010). Search will use PostgreSQL full-text + pgvector before any separate
+search engine is considered (ADR-002).
 
 ## Object storage
 
@@ -131,9 +162,11 @@ can never resolve to a W-code (DESIGN_DECISIONS.md §18.2).
 
 ### Evidence graph
 
-Nodes are record entities; **every edge is a persisted citation**. Edges without a
-resolvable citation are not created, so they cannot be drawn. Paths are computed
-per request and ordered by hop count only.
+Implemented as schema and read API in Phase 6: nodes are registry rows over
+record entities; **every edge carries a `citation_id`** (`NOT NULL`,
+`RESTRICT`). Edges whose citation is unresolved exist in the table but are never
+returned; rejected edges likewise. Paths over the real graph (`getPath`) are
+Phase 9 and are computed per request, ordered by hop count only.
 
 ### AI layer (docs/AI_METHODS.md)
 

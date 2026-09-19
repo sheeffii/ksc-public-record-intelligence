@@ -1,124 +1,178 @@
 # Data model
 
-## Phase 4 — implemented
-
-Three tables, created by Alembic revision `0001`. The `vector` extension is enabled
-in the same migration; no vector column exists yet.
-
-### `cases`
-
-| column                  | type               | notes                                                            |
-| ----------------------- | ------------------ | ---------------------------------------------------------------- |
-| id                      | uuid pk            | internal only                                                    |
-| case_number             | varchar(64) unique | official, e.g. `KSC-BC-2020-06`; what routes and citations use   |
-| title                   | text               | official case name                                               |
-| court                   | varchar(255)       | Kosovo Specialist Chambers                                       |
-| seat                    | varchar(255)       | nullable                                                         |
-| official_source_url     | varchar(512)       | root of the court's public site; specific URLs are never guessed |
-| description             | text               | nullable                                                         |
-| created_at / updated_at | timestamptz        |                                                                  |
-
-Seeded row: `KSC-BC-2020-06` only. No other case content.
-
-### `documents`
-
-| column                  | type            | notes                                                                                           |
-| ----------------------- | --------------- | ----------------------------------------------------------------------------------------------- |
-| id                      | uuid pk         | internal only                                                                                   |
-| case_id                 | uuid fk → cases | restrict delete                                                                                 |
-| official_ref            | varchar(128)    | e.g. `KSC-BC-2020-06/F01234/RED`; unique per case                                               |
-| filing_number           | varchar(32)     | e.g. `F01234`; indexed for citation resolution                                                  |
-| title                   | text            |                                                                                                 |
-| document_type           | varchar(64)     | filing / decision / judgment / transcript / exhibit … (constrained later)                       |
-| language                | varchar(16)     | document language — independent of interface language                                           |
-| document_date           | date            | **never merged with** `filing_date`                                                             |
-| filing_date             | date            | **never inferred from** `document_date`                                                         |
-| public_state            | enum            | `public` · `public_redacted` · `not_held` — "exists but not public" is distinguishable from 404 |
-| ingestion_state         | enum            | `discovered` · `downloaded` · `parsed` · `indexed` · `failed`                                   |
-| source_url              | varchar(1024)   | the official public URL the bytes came from                                                     |
-| storage_key             | varchar(512)    | MinIO object key                                                                                |
-| sha256                  | varchar(64)     | integrity of stored bytes                                                                       |
-| page_count              | int             |                                                                                                 |
-| created_at / updated_at | timestamptz     |                                                                                                 |
-
-No rows exist. Phase 4 ingests nothing.
-
-### `audit_log`
-
-| column                  | type         | notes                                                          |
-| ----------------------- | ------------ | -------------------------------------------------------------- |
-| id                      | uuid pk      |                                                                |
-| occurred_at             | timestamptz  | indexed                                                        |
-| actor                   | varchar(128) | `system:seed`, worker name, reviewer id                        |
-| action                  | varchar(64)  | indexed, e.g. `case.seeded`                                    |
-| entity_type / entity_id | varchar      |                                                                |
-| detail                  | jsonb        | must never contain document text or protected-witness identity |
-
-### Invariants tested
-
-- Exactly these three tables exist (`tests/unit/test_models.py`).
-- No column name contains score / rank / rating / weight / priority / probability /
-  likelihood (DESIGN_DECISIONS.md §2, enforced for every future table too).
-- `document_date` and `filing_date` are separate, independently nullable columns.
-
-## Planned entities (not implemented)
-
-Order roughly follows the ingestion pipeline. All identifiers are the record's own.
-
-| entity                | purpose                                              | key provenance fields                                                                     |
-| --------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `document_versions`   | RED / CONF-lifted / corrected versions of one filing | version label, supersedes, official_ref                                                   |
-| `document_pages`      | page-level text, running head, redaction extents     | page number, redactions[] with extent                                                     |
-| `transcripts`         | hearing sessions                                     | session date, public/closed ranges                                                        |
-| `transcript_segments` | Q/A blocks with T. page and line ranges              | t_from, t_to, line_from, line_to, kind (direct/cross/redirect/panel/closed), content_held |
-| `witnesses`           | W-code, protection state, protective measures        | `public` sub-record **absent** (not null) when protected                                  |
-| `exhibits`            | P-/D- numbered items                                 | tendering party, through-witness, admitted date, document date, document_id               |
-| `people`              | named persons in the public record                   | aliases, public roles; **no score field**                                                 |
-| `organizations`       | units and bodies                                     | variants                                                                                  |
-| `locations`           | places with recorded name variants                   | variants[] (Qirez / Çirez / Cirez / Ćirez)                                                |
-| `incidents`           | alleged events                                       | event date range, location, charges pleaded ("as charged — not a determination")          |
-| `claims`              | stated claims direction labels are measured against  | text, source citation                                                                     |
-| `findings`            | court findings in judgment order                     | para_from, para_to, mode of liability, counts, verification                               |
-| `citations`           | **the resolution index**                             | see below                                                                                 |
-| `relationships`       | graph edges                                          | from, to, type, `citation_id` NOT NULL                                                    |
-| `arguments`           | SPO / defence positions                              | party, text, citations                                                                    |
-| `research_notes`      | user notes storing the source set, not rendered text | citation set                                                                              |
-| `ai_runs`             | every AI invocation                                  | model, prompt version, retrieval set, output blocks, unresolved count                     |
-| `verifications`       | reviewer state per fact                              | state, reviewed_by, reviewed_at                                                           |
-
-### `citations` — the resolution index (ADR-005)
+Implemented by Alembic revisions `0001` (Phase 4 foundation) and `0002` (Phase 6
+evidence model). 37 tables; the `vector` extension is enabled, no vector column
+exists yet. Models live in `apps/api/src/ksc_api/models/`; every enum below is a
+named PostgreSQL type whose values are the lower-case strings shown.
 
 ```
-citations
-  id                  uuid
-  raw_text            text        "F01234/RED, para. 45", "T. 4,226, lines 8–19"
-  source_document_id  uuid        where the citation appears
-  source_locator      jsonb       page / ¶ / line where it appears
-  target_kind         enum        document | document_version | transcript_segment | exhibit | witness | finding | decision
-  target_id           uuid?       resolved target, NULL when unresolved
-  target_locator      jsonb?      page / paraFrom–paraTo / lineFrom–lineTo
-  resolution_state    enum        resolved | unresolved | ambiguous
-  resolution_method   enum        exact_id | pattern | manual | …
-  confidence          numeric     0–1, deterministic methods = 1.0
-  verification_state  enum        verified | ai-flagged | unresolved | needs-evidence | unreviewed
-  display             text        canonical string ("Judgment · ¶8421–8427")
-  resolved_at         timestamptz
+PRIMARY COURT SOURCE → source_records → documents / document_versions
+      → pages · sections · chunks · transcripts · segments
+      → citations (resolution index) → claims · findings · arguments
+      → graph_nodes / relationships → search · network · analysis → AI (audited)
 ```
 
-Rules:
+## Vocabularies
 
-- Resolution happens at ingest. The API reads `resolution_state`; it never re-resolves per request.
-- `UNRESOLVED` is persisted as such. Nothing substitutes a plausible target.
-- Anything that depends on a citation (chip, edge, path hop, AI answer) checks the
-  index and withholds itself when the citation is not `resolved`.
-- `display` is pre-formatted so the client never reconstructs a citation string.
+| enum                       | values                                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `visibility`               | `public` · `public_redacted` · `not_public` · `unknown` · `private_authorized` — public mode returns only the first two; `not_public` states "exists in the docket, text not public" (ROUTE_MAP.md §8)                                                                                                                                                                    |
+| `verification_state`       | `unreviewed` · `ai_flagged` · `human_verified` · `human_rejected` · `needs_more_evidence` · `unresolved` — the two human states require `verified_by` + `verified_at` (CHECK); rejected facts never surface                                                                                                                                                               |
+| `resolution_state`         | `resolved` · `unresolved` · `ambiguous` · `invalid` — only `resolved` may carry a target; everything else displays the literal `UNRESOLVED`                                                                                                                                                                                                                               |
+| `resolution_method`        | `exact_id` · `pattern` · `manual` · `none`                                                                                                                                                                                                                                                                                                                                |
+| `citation_type`            | `document` · `document_version` · `page` · `paragraph` · `transcript` · `transcript_line` · `exhibit` · `witness` · `finding` · `decision` · `url` · `unknown`                                                                                                                                                                                                            |
+| `source_system`            | `ksc_case_page` · `ksc_public_court_records` · `ksc_public_hearing` · `other_official_ksc`                                                                                                                                                                                                                                                                                |
+| `document_version_type`    | `original` · `public_redacted` · `corrected` · `reclassified` · `translation` · `other`                                                                                                                                                                                                                                                                                   |
+| `document_ingestion_state` | `discovered` · `downloaded` · `parsed` · `indexed` · `failed`                                                                                                                                                                                                                                                                                                             |
+| `text_extraction_method`   | `none` · `native_text` · `ocr` · `manual`                                                                                                                                                                                                                                                                                                                                 |
+| `examination_type`         | `direct` · `cross` · `redirect` · `recross` · `judge_question` · `unknown`                                                                                                                                                                                                                                                                                                |
+| `witness_identity_status`  | `public` · `protected_code` · `unknown` — anything but `public` is protected                                                                                                                                                                                                                                                                                              |
+| `party`                    | `spo` · `defence` · `victims_counsel` · `court` · `other`                                                                                                                                                                                                                                                                                                                 |
+| `date_type`                | `event` · `document` · `filing` · `testimony` · `decision` — never merged (DESIGN_DECISIONS.md §7)                                                                                                                                                                                                                                                                        |
+| `date_precision`           | `exact` · `month_only` · `year_only` · `range` · `approximate` · `unknown`                                                                                                                                                                                                                                                                                                |
+| `claim_origin`             | `source_extracted` · `human` · `ai_extracted` — AI-extracted never means verified                                                                                                                                                                                                                                                                                         |
+| `claim_stance`             | `supports` · `contradicts` · `qualifies` · `neutral` · `unclear` — scoped to the claim, never to a person                                                                                                                                                                                                                                                                 |
+| `finding_link_type`        | `relies_on` · `supports` · `qualifies` · `context`                                                                                                                                                                                                                                                                                                                        |
+| `argument_response_kind`   | `responds_to` · `disputes` · `concurs_with` · `rules_on`                                                                                                                                                                                                                                                                                                                  |
+| `relationship_type`        | `mentioned_in` · `co_mention` · `testified_about` · `testified_at` · `cited_in` · `relies_on` · `supports` · `contradicts` · `qualifies` · `disputes` · `responds_to` · `associated_with` · `located_at` · `occurred_at` · `member_of` · `held_position_in` · `authored` · `filed_by` · `challenged_by` · `corroborated_by` · `part_of_incident` · `precedes` · `follows` |
+| `entity_kind`              | `person` · `witness` · `organization` · `location` · `document` · `document_version` · `exhibit` · `incident` · `event` · `claim` · `finding` · `argument` · `hearing` · `transcript`                                                                                                                                                                                     |
+| `identifier_kind`          | `filing` · `filing_version` · `exhibit` · `witness` · `transcript` · `finding` · `other`                                                                                                                                                                                                                                                                                  |
+| `answer_block_kind`        | `court` · `evidence` · `testimony` · `spo` · `defence` · `ai`                                                                                                                                                                                                                                                                                                             |
+| `ai_run_status`            | `pending` · `completed` · `failed`                                                                                                                                                                                                                                                                                                                                        |
+| `ingestion_job_status`     | `pending` · `running` · `completed` · `failed` · `cancelled`                                                                                                                                                                                                                                                                                                              |
 
-### Provenance requirements for every future table
+Common columns: every table has a `uuid` primary key (internal only; routes and
+citations use the record's own identifier). Fact tables carry
+`verification_state`, `verified_by`, `verified_at` (the `VerificationMixin`).
+Most tables carry `created_at` / `updated_at`.
 
-1. Every fact row carries at least one `citation_id` (or is itself a primary record).
-2. Protected witnesses: the schema for the public variant is a separate table or
-   sub-record that does not exist for protected codes — not nullable columns.
-3. Dates are typed: `event`, `document`, `filing`, `testimony`, `decision`. A record
-   with several dates stores several typed dates; none is merged.
-4. Verification is a first-class column with reviewer identity, never a boolean.
-5. Nothing stores a score, rank, weight, centrality or probability of any person.
+## Case and discovery provenance
+
+| table            | purpose                                                                                                          | key columns / rules                                                                                                                                                                                                                                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cases`          | top-level container; `KSC-BC-2020-06` seeded, `KSC-DEMO-0000` synthetic fixture                                  | `case_number` unique, `title`, `court`, `seat`, `official_source_url`, `description`                                                                                                                                                                                                                                                      |
+| `source_records` | **where** a record was discovered, separate from **what** entity it became and from the stored file (roadmap §6) | `source_system`, `external_record_id` (unique per case + system), `record_type`, `language`, `discovery_url`, `canonical_source_url`, `title`, `visibility`, `raw_metadata` jsonb, `discovered_at`, `last_seen_at`; optional true FKs `document_id`, `document_version_id`, `hearing_id`, `transcript_id`. Nothing is fetched in Phase 6. |
+
+## Documents
+
+| table               | purpose                                                      | key columns / rules                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `documents`         | the logical filing / decision / judgment / transcript record | `official_ref` (unique per case), `filing_number` (indexed), `title`, `document_type`, `language`, `filing_party`, `document_date` / `filing_date` / `public_date` (three independent nullable dates), `visibility`, `ingestion_state`, `source_url`                                                                                                                                    |
+| `document_versions` | one publicly available artifact of a document                | `official_version_ref` (unique per document, e.g. `F01234/RED`), `version_type`, `version_label`, `visibility`, `public_date`, `source_url`, `storage_key`, `sha256` (**unique** when set — identical bytes are a duplicate, not a version), `mime_type`, `page_count`, `text_extraction_method`, `supersedes_version_id`. A public-redacted or corrected version is never overwritten. |
+| `document_pages`    | page text as published                                       | `page_number` ≥ 1, unique per version; `text`, `running_head`, `has_redactions`, `redaction_extents` jsonb — describes the public artifact, never reconstructs                                                                                                                                                                                                                          |
+| `document_sections` | heading hierarchy                                            | `sequence` (unique per version), `level`, `heading`, `parent_section_id`, page and paragraph ranges                                                                                                                                                                                                                                                                                     |
+| `document_chunks`   | structural retrieval spans (no embedding yet)                | `sequence` (unique per version), `section_id`, page / paragraph ranges, `text`, `char_count`                                                                                                                                                                                                                                                                                            |
+
+## Hearings and transcripts
+
+| table                 | purpose                        | key columns / rules                                                                                                                                                                                                                                                                                                         |
+| --------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hearings`            | a court session                | `hearing_date`, `session_sequence` (unique with date per case), `session_label`, `hearing_type`, `official_ref`, `source_url`, `visibility`                                                                                                                                                                                 |
+| `transcripts`         | the transcript of a hearing    | `hearing_id`, `document_version_id` (unique when set — the official PDF), `official_ref`, `language`, `visibility`, `page_from` / `page_to` (running T. pages), `text_extraction_method`                                                                                                                                    |
+| `transcript_segments` | Q/A blocks with T. coordinates | `sequence` (unique per transcript), `page_number` ≥ 1 nullable, `line_from` ≥ 1 / `line_to` ≥ `line_from` nullable (`line_to` needs `line_from`), `speaker`, `speaker_role`, `witness_id` nullable, `examination_type`, `text`, `closed_session` — a closed-session segment must have empty text. Lines are never invented. |
+| `witness_appearances` | witness × hearing              | unique pair; `transcript_id`, `testimony_date`, page range                                                                                                                                                                                                                                                                  |
+
+## Actors
+
+| table            | purpose                                          | key columns / rules                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `persons`        | named persons in the public record               | `slug` (unique per case), `display_name`, `public_role`, `description`. **No score / rank / weight / probability column exists anywhere** (unit-tested over every table).                                                                                                                                                                                                                                                         |
+| `person_aliases` | name variants                                    | `alias` unique per person, `language`                                                                                                                                                                                                                                                                                                                                                                                             |
+| `witnesses`      | W-codes; a witness is not automatically a person | `code` (unique per case), `identity_status`, `person_id` nullable, `public_name` nullable, `called_by`, `protective_measures` jsonb. **CHECK**: `identity_status = 'protected_code'` ⇒ `person_id IS NULL AND public_name IS NULL`; `public_name` only when `identity_status = 'public'`. The API serialises a `public` block only for an explicitly public witness with a stored name; the block is absent, not null, otherwise. |
+| `organizations`  | units and bodies                                 | `slug`, `name`, `kind`, `name_variants` jsonb                                                                                                                                                                                                                                                                                                                                                                                     |
+| `locations`      | places with recorded spellings                   | `slug`, `name`, `name_variants` jsonb (Qirez / Çirez / Cirez / Ćirez are never merged away), `kind`                                                                                                                                                                                                                                                                                                                               |
+
+## Evidence
+
+| table                    | purpose                                                              | key columns / rules                                                                                                                                                                                                                      |
+| ------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exhibits`               | P-/D-numbered items                                                  | `official_exhibit_id` (unique per case), `title`, `description`, `tendered_by`, `through_witness_id`, `admitted_date`, `document_date`, `document_version_id` (public artifact), `visibility`                                            |
+| `incidents`              | alleged events in case material — "as charged", not a determination  | `slug`, `title`, `summary`, `location_id`, `date_from` / `date_to` (`date_to ≥ date_from`), `date_precision`, `charges_pleaded` jsonb                                                                                                    |
+| `events`                 | typed timeline items                                                 | `title`, `date_type` (five types, never merged), `date_from` / `date_to`, `date_precision` (a known precision needs a date), optional `incident_id`, `document_id`, `hearing_id`, `citation_id` (provenance of the date)                 |
+| `claims`                 | a proposition that exists in the research system — not a truth claim | `claim_key` (unique per case), `text`, `origin`, `created_by`, `source_citation_id`, verification                                                                                                                                        |
+| `claim_mentions`         | claim → exact citation with stance                                   | unique (claim, citation); `stance`, `quote_text` (verbatim or nothing), `note`, verification                                                                                                                                             |
+| `findings`               | court findings in the Court's words                                  | `finding_key` (unique per case), `judgment_document_id`, `text`, `para_from` ≥ 1 / `para_to`, `person_id`, `incident_id`, `charge_ref`, `legal_element`, `mode_of_liability`, `citation_id` (its own resolved coordinates), verification |
+| `finding_evidence_links` | finding → citation                                                   | unique (finding, citation, link_type); `link_type`, `court_cited`, `court_cited_para` (only when `court_cited`), verification                                                                                                            |
+| `arguments`              | party (or Court) positions, distinct from findings                   | `argument_key` (unique per case), `party`, `title`, `text`, `document_id`, paragraph range, `citation_id`, `finding_id`, verification                                                                                                    |
+| `argument_responses`     | argument ↔ argument                                                  | unique (argument, response, kind); `response_kind`, `citation_id`, `note`; no self-response                                                                                                                                              |
+
+## Citations — the resolution index (ADR-005)
+
+`citations` separates three things:
+
+- **source coordinate** — where the citing text appears: `source_document_version_id`,
+  `source_page`, `source_para`, `source_transcript_segment_id`, `source_url`;
+- **the reference itself** — `raw_text`, `normalized_text`, `citation_type`;
+- **resolved target** — real foreign keys `target_document_id`,
+  `target_document_version_id`, `target_transcript_id`,
+  `target_transcript_segment_id`, `target_exhibit_id`, `target_witness_id`,
+  `target_finding_id`, with `target_page`, `target_para_from/to`,
+  `target_line_from/to`.
+
+Resolution columns: `resolution_state`, `resolution_method`,
+`resolution_confidence` (0–1; about the string match, never about a person or
+evidential weight), `resolved_at`, `display` (pre-formatted, e.g.
+`F01234 · ¶45–46`), plus verification.
+
+CHECKs: `resolved` ⇔ at least one target set and `resolved_at` present; anything
+not resolved has **no** target and `display = 'UNRESOLVED'`; ranges are ordered;
+pages ≥ 1. Ambiguous references are therefore never silently mapped.
+
+`record_identifiers` is the lookup the resolver uses: `identifier`,
+`normalized_identifier` (upper-cased, whitespace-collapsed), `identifier_kind`,
+`entity_kind`, `is_primary`, and exactly one of `document_id`,
+`document_version_id`, `exhibit_id`, `witness_id`, `transcript_id`, `finding_id`
+(CHECK). Unique on (case, normalized identifier, entity kind); a lookup that
+returns several rows is `ambiguous`. `GET /api/v1/citations/resolve?ref=` exposes
+it. The full resolver (extraction + normalisation + persistence) is Phase 8.
+
+## Graph
+
+`graph_nodes` is a registry row per entity that can take part in the network:
+`entity_kind`, `label`, and exactly one non-NULL foreign key among
+`person_id`, `witness_id`, `organization_id`, `location_id`, `document_id`,
+`exhibit_id`, `incident_id`, `event_id`, `claim_id`, `finding_id`,
+`argument_id`, `hearing_id` (CHECK `num_nonnulls(...) = 1`, and the kind must
+match the populated key). Each key is `ON DELETE CASCADE` and unique, so a node
+cannot outlive its entity and an entity has at most one node. This is how
+polymorphic references keep true referential integrity (ADR-010).
+
+`relationships`: `from_node_id`, `to_node_id`, `relationship_type`,
+`citation_id NOT NULL` (`ON DELETE RESTRICT` — a citation in use cannot be
+deleted), `note`, verification. Unique on (from, to, type, citation); no self
+loops. Public queries include an edge only when its citation is resolved, it is
+not human-rejected, and both endpoints are public.
+
+## Research notes and AI audit
+
+| table             | purpose                               | key columns / rules                                                                                                                                                                                        |
+| ----------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `research_notes`  | human notes, apart from evidence      | `author`, `title`, `body`, `provenance` (CHECK `= 'human'`); `research_note_citations` stores the source set                                                                                               |
+| `prompt_versions` | every prompt text ever used           | `name` + `version` unique, `template`, `template_sha256`                                                                                                                                                   |
+| `ai_runs`         | every AI invocation (none exist yet)  | `provider`, `model`, `temperature`, `status`, `requested_by`, `input_sha256`, `retrieved_citation_ids` jsonb, `input_tokens`, `output_tokens`, `cost_usd`, `started_at`, `finished_at`, `error`, `extra`   |
+| `ai_outputs`      | answer blocks in API order            | `sequence` unique per run, `kind`, `text`, `unresolved_citation_count`, verification (a human state needs a named reviewer — AI output can never auto-promote); `ai_output_citations` links the cited rows |
+| `ingestion_jobs`  | schema foundation only                | `source_system`, `job_type`, `status`, `cursor` / `checkpoint` jsonb, four non-negative counts, timestamps, `error_summary`                                                                                |
+| `audit_log`       | append-only system / reviewer actions | `occurred_at`, `actor`, `action`, `entity_type`, `entity_id`, `detail` jsonb — never document text or protected identity                                                                                   |
+
+## Invariants tested
+
+- The table set is exactly the 3 Phase 4 + 34 Phase 6 tables; `alembic check`
+  reports no drift between models and the migrated schema.
+- No column name contains score / rank / rating / weight / priority /
+  probability / likelihood — enforced over every table, present and future.
+- `0001 → 0002` preserves `cases`, `documents` (`public_state` → `visibility`)
+  and `audit_log`; `head → base → head` is clean, including enum types.
+- Protected witness without identity; page and line validation; SHA-256
+  duplicates; resolved/unresolved target consistency; mandatory relationship
+  provenance; node registry exactly-one-target; reviewer-required verification.
+- The synthetic fixture (`ksc-demo-fixture`, case `KSC-DEMO-0000`) proves
+  Document → Version → Page → Citation, Witness → Transcript → Segment →
+  Citation, Claim → Mention → Citation → Source, Finding → Evidence Link →
+  Citation → Source and Relationship → Citation → Source. Nothing in it is a real
+  record.
+
+## Not yet
+
+- Embedding column on `document_chunks` (added by the phase that generates
+  embeddings); full-text search; the citation resolver itself; real rows for
+  `KSC-BC-2020-06` (Phase 7 onward).

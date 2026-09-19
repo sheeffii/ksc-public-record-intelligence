@@ -295,3 +295,109 @@ Consequences:
 
 Relevant files:
 `apps/web/src/mock/types.ts`, `apps/web/src/mock/repository.ts`
+
+---
+
+## ADR-009 — Asynchronous repository contract with mock and API adapters
+
+Date: 2026-09-20
+
+Status: Accepted
+
+Context:
+ADR-008 gave Phase 5 screens a synchronous `MockRepository` over bundled data.
+Phase 6 adds a read API. A network-backed repository cannot be synchronous, and
+the screens must not be rewritten to prove that the API can replace the mock.
+
+Decision:
+`apps/web/src/data/contract.ts` defines `ResearchRepository`: the same ten
+domain reads as the mock, returning promises of the same screen-facing types.
+Two adapters implement it — `createMockRepositoryAdapter()` wrapping the Phase 5
+mock, and `createApiRepository()` over `/api/v1`. `getRepository()` selects one
+from `NEXT_PUBLIC_DATA_SOURCE` (default `mock`). Wire shapes are mapped in one
+module (`api/mappers.ts`) that enforces the fail-closed rules client-side too:
+an unresolved citation becomes `resolved: false` with the literal `UNRESOLVED`,
+rejected facts are dropped, a witness is public only when the API sent a
+complete `public` block, and `getPath` / `getAnswer` return empty until their
+backends exist rather than composing anything.
+
+Alternatives:
+
+- Make the API synchronous-looking with React `use()` / suspense — rejected:
+  couples the boundary to a rendering strategy Phase 5B has not chosen yet.
+- Rewrite screens to the async contract now — rejected: visual work is Phase 5B;
+  the swap is proven by a contract test running the same assertions over both
+  adapters.
+
+Consequences:
+
+- Screens keep importing `@/mock` in Phase 6; nothing user-visible changes.
+- Phase 5B moves screens onto `getRepository()`; Phase 7 makes `api` the
+  default once real records exist.
+- `MockDocument.visibility` is an optional field so the API adapter can state
+  "exists, not public" without a screen change.
+
+Relevant files:
+`apps/web/src/data/contract.ts`, `apps/web/src/data/api/{client,mappers,repository}.ts`,
+`apps/web/src/data/mock-adapter.ts`, `apps/web/src/data/index.ts`,
+`apps/web/src/data/contract.test.ts`
+
+---
+
+## ADR-010 — Evidence model: node registry, visibility, verification with reviewer
+
+Date: 2026-09-20
+
+Status: Accepted
+
+Context:
+The evidence graph needs edges between many entity kinds; citations need typed
+targets; the roadmap requires that polymorphic references not pretend to be
+foreign keys; public mode must fail closed; and no AI path may ever promote a
+fact to a human verification state.
+
+Decision:
+
+1. **Node registry.** `graph_nodes` holds one row per graph-capable entity with
+   exactly one non-NULL foreign key (`CHECK num_nonnulls(...) = 1`, kind must
+   match, each key unique, `ON DELETE CASCADE`). `relationships` reference nodes,
+   so referential integrity is real end to end. `citations` and
+   `record_identifiers` use the same pattern with per-kind target columns.
+2. **Visibility vocabulary.** `public`, `public_redacted`, `not_public`,
+   `unknown`, `private_authorized`. Default queries return only the first two.
+   `not_public` replaces Phase 4's `not_held` so "exists in the docket, text not
+   public" stays statable (ROUTE_MAP.md §8): by-reference reads return the
+   metadata and no versions; listings exclude it.
+3. **Verification requires a reviewer.** Every fact table carries
+   `verification_state`, `verified_by`, `verified_at`, and a CHECK that
+   `human_verified` / `human_rejected` need both reviewer fields. AI code has no
+   reviewer identity to supply, so auto-promotion is impossible at the schema.
+4. **Enum values, not names.** Enum columns use `db_enum()` so PostgreSQL stores
+   the lower-case member values that migrations declare. (The Phase 4 `Document`
+   mapping would have stored member names; no row had exercised it.)
+5. **Migration 0002 is in-place.** `documents.public_state` → `visibility` with
+   a data-mapping `UPDATE`; artifact columns move to `document_versions`; enum
+   types are created and dropped explicitly; the integration suite proves
+   `0001 → 0002` with rows present and `head → base → head`.
+
+Alternatives:
+
+- Generic `(entity_kind, entity_id)` columns on `relationships` — rejected: no
+  foreign key, orphan edges possible, exactly what the roadmap forbids.
+- Separate `verifications` table — deferred: `audit_log` already records
+  history; per-row reviewer columns are what queries and CHECKs need now.
+- `not_held` kept alongside the four roadmap states — rejected: one vocabulary.
+
+Consequences:
+
+- Adding a new graph-capable entity means one FK column on `graph_nodes` and
+  one enum value; the CHECKs are generated from a single mapping.
+- Deleting an entity cascades to its node and edges; a citation pointing at it
+  keeps existing with its target nulled (it becomes unresolved), never re-pointed.
+- `document_versions.sha256` is unique: identical bytes are a duplicate, not a
+  new version.
+
+Relevant files:
+`apps/api/src/ksc_api/models/{graph,citation,enums,mixins,document}.py`,
+`apps/api/alembic/versions/0002_evidence_model.py`,
+`tests/integration/{test_constraints,test_migrations}.py`

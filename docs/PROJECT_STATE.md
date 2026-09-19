@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-19
+Last updated: 2026-09-20
 
 ## Milestones
 
@@ -12,8 +12,8 @@ Last updated: 2026-09-19
 | 1–3   | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                |
 | **4** | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                              |
 | **5** | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B) |
-| 6     | Real database / evidence model and API-backed repository contracts                                        | **Next** (not started)                                                                    |
-| 5B    | UI/UX visual parity remediation against `docs/design/Design.html`                                         | Scheduled after Phase 6, before Phase 7                                                   |
+| **6** | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                              |
+| 5B    | UI/UX visual parity remediation against `docs/design/Design.html`                                         | **Next** (not started); before Phase 7                                                    |
 | 7     | KSC public record discovery + controlled 10–20 document ingestion (first real KSC data)                   | Not started                                                                               |
 | 8     | Parsing, exact citations, resolution index, search                                                        | Planned                                                                                   |
 | 9     | Real evidence network and timeline                                                                        | Planned                                                                                   |
@@ -86,10 +86,10 @@ Shared / docs
 
 ## Unfinished / deferred (by design)
 
-- Real web → API data fetching and persistent interaction state (Phase 6).
-- Real database/evidence entities beyond the Phase 4 Case, Document and AuditLog
-  foundation (Phase 6).
-- Ingestion, parsing and the persisted citation-resolution index (Phase 7 or later).
+- Screens reading through `getRepository()` and persistent interaction state
+  (Phase 5B / Phase 7).
+- Ingestion, parsing and the citation resolver that fills `citations` and
+  `record_identifiers` (Phase 7 / Phase 8).
 - Search over real records, production-scale graph rendering and real AI retrieval
   remain later phases.
 - Albanian legal terminology needs specialist review against official KSC texts.
@@ -115,6 +115,30 @@ Shared / docs
 - Documentation discrepancy retained without redesign: `HANDOFF.md` says 83
   components while `COMPONENTS.md` inventories 91; its “Nine rules” summary lists ten.
 
+## Completed features (Phase 6)
+
+- Branch `feat/phase-6-evidence-model` from `main` (`3e9f8f8`); tag
+  `phase-6-complete`.
+- Alembic `0002`: 34 new tables on top of the Phase 4 three; `documents`
+  migrated in place (`public_state` → `visibility`, artifact columns →
+  `document_versions`); 23 explicit enum types; upgrade with data, `alembic
+check` and `head → base → head` are integration-tested.
+- Models under `apps/api/src/ksc_api/models/` with schema-level rules:
+  protected witness without identity, page/line validation, unique SHA-256,
+  resolved-only targets, mandatory relationship provenance, node registry with
+  real FKs, reviewer-required human verification, human-only research notes.
+- Read API `/api/v1` (24 routes) with Pydantic contracts, case scoping,
+  pagination, public-only filtering and structural witness protection.
+- Synthetic fixture `KSC-DEMO-0000` (`ksc-demo-fixture`) covering the five
+  required traversals plus rejected / unresolved negative rows.
+- Frontend `apps/web/src/data/`: `ResearchRepository`, mock adapter (default),
+  `ApiRepository` with fail-closed mappers, `getRepository()` selection,
+  swap-ability contract test.
+- Docs: `DATA_MODEL.md` rewritten, `ARCHITECTURE.md`, `DEVELOPMENT.md`,
+  `INGESTION.md`, ADR-009, ADR-010.
+- Not done by design: screens still read the sync mock; no path engine; no AI
+  run; no embedding column; no real record.
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -134,9 +158,9 @@ None — nothing parsed.
 
 | Suite                                    | Count        | Last result                                        |
 | ---------------------------------------- | ------------ | -------------------------------------------------- |
-| Backend unit (pytest)                    | 10           | pass                                               |
-| Backend integration (pytest, live infra) | 11           | pass                                               |
-| Frontend (vitest)                        | 147          | pass                                               |
+| Backend unit (pytest)                    | 31           | pass                                               |
+| Backend integration (pytest, live infra) | 51           | pass                                               |
+| Frontend (vitest)                        | 176          | pass                                               |
 | E2E (playwright)                         | 31 specs × 2 | 62 pass locally; requires running stack + browsers |
 | Evaluation                               | 0            | reserved directory                                 |
 
@@ -144,10 +168,11 @@ Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all 
 
 ## Deployment state
 
-Local only: `docker compose up --build` verified 2026-09-19 with all five services
-healthy. Git: Phase 5 is on `feat/phase-5-approved-ui`; Phase 4 tag
-`phase-4-complete` remains at `b99f514`. Remote `origin` is configured but nothing
-was pushed. No remote deployment or production workflow.
+Local only: stack verified 2026-09-20 with all five services healthy after
+rebuilding the API image (migration `0002` applied by the entrypoint). Git:
+Phase 6 is on `feat/phase-6-evidence-model`, tag `phase-6-complete`; `main` =
+`origin/main` = `3e9f8f8` (Phase 5). Phase 6 is not pushed. No remote deployment
+or production workflow.
 
 ## Verification limitations
 
