@@ -344,3 +344,27 @@
     display: none;
   }
 }
+
+/* Date-type glyph colours (DESIGN_SYSTEM: event · document · filing · testimony · decision).
+   Mapped onto the source palette tokens; never a severity. */
+.date-event {
+  color: var(--incident);
+  border: 1px solid var(--incident);
+}
+.date-document {
+  color: var(--doc);
+  border: 1px solid var(--doc);
+}
+.date-filing {
+  color: var(--doc);
+  border: 1px dashed var(--doc);
+}
+.date-testimony {
+  color: var(--witness);
+  border: 1px solid var(--witness);
+  border-radius: 999px;
+}
+.date-decision {
+  color: var(--court);
+  border: 1px solid var(--court);
+}

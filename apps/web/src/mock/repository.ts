@@ -13,10 +13,11 @@ import {
   mockTimeline,
 } from "./data";
 import type { MockRepository } from "./types";
+import { generatedRows } from "./volume";
 
 /** Phase 5 adapter. Screens depend on this contract, not scattered mock objects. */
 export const mockRepository: MockRepository = {
-  getDirectory: getDirectoryRows,
+  getDirectory: (kind) => [...getDirectoryRows(kind), ...generatedRows(kind)],
   getPerson: (slug) => ({ ...mockPerson, slug }),
   getWitness: (code) =>
     code === mockProtectedWitness.code ? mockProtectedWitness : { ...mockPublicWitness, code },

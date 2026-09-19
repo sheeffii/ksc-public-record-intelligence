@@ -1,90 +1,69 @@
 "use client";
 
-import type { AnswerBlockKind, DateType, SourceType } from "@ksc/shared";
+import type { DateType, Direction } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { ActiveFilters, FilterOption, FilterSection } from "@/components/primitives/Filter";
 import { Panel } from "@/components/primitives/Panel";
+import { EmptyState } from "@/components/primitives/States";
 import {
-  AiAnalysisBlock,
   CitationChip,
   DirectionBadge,
-  ProvenanceBoundary,
   RecordBlock,
   ScopeNote,
   SourceBadge,
   VerificationBadge,
+  AiAnalysisBlock,
 } from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
-import { courtCitation, exhibitCitation, mockRepository, transcriptCitation } from "@/mock";
-import { ActionLink, DemoNotice, ScreenHeader, TabStrip, WorkspaceGrid } from "./ScreenChrome";
+import {
+  courtCitation,
+  exhibitCitation,
+  mockRepository,
+  transcriptCitation,
+  type MockNetworkNode,
+  type MockTimelineItem,
+} from "@/mock";
+import { DirectoryScreen } from "./DirectoryScreen";
+import { ActionLink, DemoNotice, ScreenHeader, TabStrip } from "./ScreenChrome";
+import {
+  KeyValue,
+  NoteStrip,
+  RailIndex,
+  SectionCard,
+  Segmented,
+  StatStrip,
+  ToolButton,
+  Toolbar,
+} from "./Workspace";
 
-const sourceForAnswer: Record<
-  Exclude<AnswerBlockKind, "ai">,
-  Exclude<SourceType, "ai" | "incident" | "location" | "organisation">
-> = { court: "court", evidence: "exhibit", testimony: "witness", spo: "spo", defence: "defence" };
+export { AiResearchScreen, AppealScreen, ArgumentLabScreen, PublicScreen } from "./AnalysisScreens";
+
+// ------------------------------------------------ evidence explorer -------
 
 export function EvidenceExplorerScreen() {
-  const t = useTranslations("phase5");
-  const rows = mockRepository.getDirectory("exhibits");
-  return (
-    <AppShell>
-      <ScreenHeader
-        eyebrow={t("allRecords")}
-        title={t("exhibits")}
-        description={t("mockNotice")}
-        actions={
-          <>
-            <button className="border-border bg-surface-raised rounded-control border px-3 py-1.5 text-[11px]">
-              {t("filter")}
-            </button>
-            <button className="border-border bg-surface-raised rounded-control border px-3 py-1.5 text-[11px]">
-              {t("export")}
-            </button>
-          </>
-        }
-      />
-      <WorkspaceGrid
-        right={
-          <Panel title={t("viewDetails")}>
-            <SourceBadge type="exhibit" />
-            <h2 className="text-fg mt-2 font-semibold">P00123</h2>
-            <p className="text-fg-secondary mt-2 text-[11px]">
-              Generic sample record with mock provenance.
-            </p>
-            <div className="mt-3">
-              <CitationChip citation={exhibitCitation} />
-            </div>
-          </Panel>
-        }
-      >
-        <div className="space-y-3">
-          <DemoNotice />
-          <Panel padded={false}>
-            {rows.map((row) => (
-              <Link
-                key={row.id}
-                href={row.href}
-                className="border-border-faint hover:bg-surface-raised grid grid-cols-[100px_minmax(0,1fr)_100px_150px] items-center gap-3 border-b px-3 py-3 text-[11px]"
-              >
-                <span className="identifier text-doc">{row.id}</span>
-                <span>
-                  <strong className="text-fg block">{row.title}</strong>
-                  <small className="text-fg-secondary">{row.description}</small>
-                </span>
-                <span className="tabular text-right">{row.references}</span>
-                <VerificationBadge state={row.verification} />
-              </Link>
-            ))}
-          </Panel>
-        </div>
-      </WorkspaceGrid>
-    </AppShell>
-  );
+  const t = useTranslations("screens");
+  return <DirectoryScreen kind="exhibits" screenTitle={t("exhibits")} />;
 }
+
+// ------------------------------------------------------------ network -----
+
+const NODE_KINDS = [
+  "person",
+  "witness",
+  "exhibit",
+  "incident",
+  "court",
+  "location",
+  "organisation",
+  "spo",
+  "defence",
+] as const;
 
 export function NetworkScreen() {
   const t = useTranslations("phase5");
+  const tb = useTranslations("phase5b");
   const footer = useTranslations("footer");
   const { nodes, edges } = mockRepository.getNetwork();
   const [selectedNode, setSelectedNode] = useState(nodes[0]!);
@@ -94,6 +73,16 @@ export function NetworkScreen() {
   const [query, setQuery] = useState("");
   const [isolated, setIsolated] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [depth, setDepth] = useState<"1" | "2" | "3">("2");
+  const [layout, setLayout] = useState<"force" | "radial">("force");
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [detent, setDetent] = useState<"peek" | "half" | "full">("peek");
+  const detentClass = {
+    peek: "max-lg:max-h-[22dvh]",
+    half: "max-lg:max-h-[45dvh]",
+    full: "max-lg:max-h-[85dvh]",
+  }[detent];
   const dragStart = useRef<{
     pointerX: number;
     pointerY: number;
@@ -102,26 +91,28 @@ export function NetworkScreen() {
   } | null>(null);
   const neighbourIds = new Set(
     edges
-      .filter((edge) => edge.from === selectedNode.id || edge.to === selectedNode.id)
-      .flatMap((edge) => [edge.from, edge.to]),
+      .filter((e) => e.from === selectedNode.id || e.to === selectedNode.id)
+      .flatMap((e) => [e.from, e.to]),
   );
-  const visibleNodes = isolated
-    ? nodes.filter((node) => neighbourIds.has(node.id))
-    : expanded
-      ? nodes
-      : nodes.slice(0, 3);
-  const visibleNodeIds = new Set(visibleNodes.map((node) => node.id));
+  const visibleNodes = (
+    isolated ? nodes.filter((n) => neighbourIds.has(n.id)) : expanded ? nodes : nodes.slice(0, 3)
+  ).slice(0, depth === "1" ? 3 : depth === "2" ? 5 : nodes.length);
+  const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
   const visibleEdges = edges.filter(
-    (edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to),
+    (e) =>
+      visibleNodeIds.has(e.from) &&
+      visibleNodeIds.has(e.to) &&
+      (!verifiedOnly || e.verification === "verified"),
   );
-  const listedNodes = nodes.filter((node) =>
-    node.label.toLowerCase().includes(query.trim().toLowerCase()),
+  const listedNodes = nodes.filter((n) =>
+    n.label.toLowerCase().includes(query.trim().toLowerCase()),
   );
+  const degree = (id: string) => edges.filter((e) => e.from === id || e.to === id).length;
 
   function handleGraphAction(key: string) {
-    if (key === "zoomIn") setZoom((value) => Math.min(1.4, value + 0.1));
-    if (key === "zoomOut") setZoom((value) => Math.max(0.7, value - 0.1));
-    if (key === "isolate") setIsolated((value) => !value);
+    if (key === "zoomIn") setZoom((v) => Math.min(1.4, v + 0.1));
+    if (key === "zoomOut") setZoom((v) => Math.max(0.7, v - 0.1));
+    if (key === "isolate") setIsolated((v) => !v);
     if (key === "expand") setExpanded(true);
     if (key === "collapseGraph") setExpanded(false);
     if (key === "reset") {
@@ -130,8 +121,83 @@ export function NetworkScreen() {
       setIsolated(false);
       setExpanded(true);
       setQuery("");
+      setDepth("2");
+      setVerifiedOnly(false);
     }
   }
+  const position = (node: MockNetworkNode, index: number) =>
+    layout === "force"
+      ? { x: node.x, y: node.y }
+      : {
+          x: 50 + 34 * Math.cos((index / Math.max(visibleNodes.length, 1)) * Math.PI * 2),
+          y: 50 + 34 * Math.sin((index / Math.max(visibleNodes.length, 1)) * Math.PI * 2),
+        };
+  const inspector = (
+    <div className="space-y-3 p-3">
+      <Panel title={t("nodeInspector")}>
+        <div className="flex items-center gap-2">
+          <NodeGlyph type={selectedNode.type} />
+          <p className="text-fg font-semibold">{selectedNode.label}</p>
+        </div>
+        <div className="mt-2">
+          <KeyValue
+            rows={[
+              { key: "type", label: tb("typeBadges"), value: selectedNode.type },
+              { key: "edges", label: tb("counts"), value: degree(selectedNode.id) },
+              { key: "docs", label: t("documents"), value: 2 },
+              { key: "findings", label: t("courtFindings"), value: 1 },
+            ]}
+          />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <ToolButton
+            onClick={() => {
+              setIsolated(true);
+            }}
+          >
+            {tb("recentre")}
+          </ToolButton>
+          <ActionLink href={`/network/path?from=${selectedNode.id}`}>
+            {t("findConnection")}
+          </ActionLink>
+        </div>
+      </Panel>
+      <Panel title={t("whyConnection")}>
+        <p className="text-fg text-[11px]">{selectedEdge.relation}</p>
+        <p className="text-fg-muted mt-1 text-[10px]">
+          {selectedEdge.from} → {selectedEdge.to}
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <SourceBadge type={selectedEdge.sourceType} />
+          <VerificationBadge state={selectedEdge.verification} size="sm" />
+        </div>
+        <div className="mt-2">
+          <CitationChip citation={selectedEdge.citation} />
+        </div>
+        <div className="mt-3">
+          <ActionLink href={`/documents/${selectedEdge.citation.docId}`}>
+            {t("openSource")}
+          </ActionLink>
+        </div>
+        <p className="governance-text mt-3">{footer("network")}</p>
+      </Panel>
+      <Panel title={t("graphTextAlternative")}>
+        <ul className="space-y-1 text-[10px]">
+          {edges.map((e) => (
+            <li key={e.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedEdge(e)}
+                className="text-left hover:underline"
+              >
+                {e.from} → {e.to} · {e.relation}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    </div>
+  );
   return (
     <AppShell footer={footer("network")}>
       <ScreenHeader
@@ -139,42 +205,105 @@ export function NetworkScreen() {
         title={t("network")}
         description={footer("network")}
         actions={
-          <ActionLink href="/network/path?from=demo-research-subject">
+          <ActionLink href="/network/path?from=demo-research-subject" primary>
             {t("findConnection")}
           </ActionLink>
         }
       />
-      <div className="border-border-subtle flex flex-wrap gap-2 border-b px-4 py-2">
+      <Toolbar>
         <input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder={t("searchWithin")}
           aria-label={t("searchWithin")}
-          className="border-border bg-surface-raised rounded-control min-w-44 border px-3 py-1 text-[10px]"
+          className="border-border bg-surface-raised rounded-control h-8 min-w-44 border px-3 text-[11px]"
         />
+        <Segmented
+          label={tb("layout")}
+          value={layout}
+          onChange={setLayout}
+          options={[
+            { key: "force", label: `${tb("layout")}: A` },
+            { key: "radial", label: "B" },
+          ]}
+        />
+        <Segmented
+          label={tb("depth")}
+          value={depth}
+          onChange={setDepth}
+          options={[
+            { key: "1", label: `${tb("depth")} 1` },
+            { key: "2", label: "2" },
+            { key: "3", label: "3" },
+          ]}
+        />
+        <ToolButton pressed={verifiedOnly} onClick={() => setVerifiedOnly((v) => !v)}>
+          {tb("filters")}
+        </ToolButton>
         {["zoomIn", "zoomOut", "reset", "isolate", "expand", "collapseGraph"].map((key) => (
-          <button
+          <ToolButton
             key={key}
             onClick={() => handleGraphAction(key)}
-            aria-pressed={key === "isolate" ? isolated : undefined}
-            className="border-border bg-surface-raised rounded-control border px-3 py-1 text-[10px]"
+            pressed={key === "isolate" ? isolated : undefined}
           >
             {t(key)}
-          </button>
+          </ToolButton>
         ))}
-      </div>
-      <div className="grid min-h-[690px] flex-1 lg:grid-cols-[220px_minmax(0,1fr)_300px]">
-        <aside className="border-border bg-surface hidden border-r p-3 lg:block">
+        <ToolButton onClick={() => undefined}>{tb("saveView")}</ToolButton>
+        <ToolButton onClick={() => undefined}>{t("export")}</ToolButton>
+        <ToolButton pressed={fullscreen} onClick={() => setFullscreen((v) => !v)}>
+          {tb("fullscreen")}
+        </ToolButton>
+        <span className="rounded-badge bg-surface-raised text-fg-muted ml-auto px-2 py-0.5 text-[10px]">
+          {tb("resolvingDepth", { d: depth })}
+        </span>
+      </Toolbar>
+      <div
+        className={`grid min-h-[690px] flex-1 ${fullscreen ? "" : "lg:grid-cols-[220px_minmax(0,1fr)_280px]"}`}
+      >
+        <aside
+          className={`border-border bg-surface space-y-3 border-r p-3 ${fullscreen ? "hidden" : "hidden lg:block"}`}
+        >
+          <Panel title={tb("legend")}>
+            <ul className="space-y-1">
+              {NODE_KINDS.map((k) => (
+                <li key={k} className="flex items-center gap-2 text-[10px]">
+                  <NodeGlyph type={k} />
+                  <span className="text-fg-secondary">{tb(`nodeShapes.${k}`)}</span>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+          <FilterSection title={tb("dateSlider")}>
+            <input
+              type="range"
+              min="1998"
+              max="2025"
+              defaultValue="2025"
+              aria-label={tb("dateSlider")}
+              className="w-full"
+            />
+            <p className="tabular text-fg-muted text-[10px]">1998 — 2025</p>
+          </FilterSection>
+          <FilterSection title={tb("verificationFilter")}>
+            <FilterOption
+              label="verified"
+              count={edges.filter((e) => e.verification === "verified").length}
+              checked={verifiedOnly}
+              onChange={setVerifiedOnly}
+            />
+          </FilterSection>
           <Panel title={t("allRecords")}>
-            <div className="space-y-2">
-              {listedNodes.map((node) => (
+            <div className="space-y-1">
+              {listedNodes.map((n) => (
                 <button
-                  key={node.id}
-                  onClick={() => setSelectedNode(node)}
-                  className="hover:bg-surface-raised rounded-control flex w-full items-center gap-2 px-2 py-1.5 text-left"
+                  key={n.id}
+                  type="button"
+                  onClick={() => setSelectedNode(n)}
+                  className="hover:bg-surface-raised rounded-control flex w-full items-center gap-2 px-2 py-1 text-left"
                 >
-                  <NodeGlyph type={node.type} />
-                  <span className="text-[10px]">{node.label}</span>
+                  <NodeGlyph type={n.type} />
+                  <span className="text-[10px]">{n.label}</span>
                 </button>
               ))}
             </div>
@@ -216,8 +345,10 @@ export function NetworkScreen() {
           >
             <svg className="absolute inset-0 size-full" aria-hidden>
               {visibleEdges.map((edge) => {
-                const a = visibleNodes.find((node) => node.id === edge.from)!;
-                const b = visibleNodes.find((node) => node.id === edge.to)!;
+                const ai = visibleNodes.findIndex((n) => n.id === edge.from);
+                const bi = visibleNodes.findIndex((n) => n.id === edge.to);
+                const a = position(visibleNodes[ai]!, ai);
+                const b = position(visibleNodes[bi]!, bi);
                 return (
                   <line
                     key={edge.id}
@@ -225,70 +356,79 @@ export function NetworkScreen() {
                     y1={`${a.y}%`}
                     x2={`${b.x}%`}
                     y2={`${b.y}%`}
-                    stroke="var(--border)"
-                    strokeWidth="2"
+                    stroke={edge.id === selectedEdge.id ? "var(--accent)" : "var(--border)"}
+                    strokeWidth={edge.id === selectedEdge.id ? 3 : 2}
                     onClick={() => setSelectedEdge(edge)}
                     className="cursor-pointer"
                   />
                 );
               })}
             </svg>
-            {visibleNodes.map((node) => (
-              <button
-                key={node.id}
-                onClick={() => setSelectedNode(node)}
-                style={{ left: `${node.x}%`, top: `${node.y}%` }}
-                className="border-accent bg-surface text-fg absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border px-3 py-2 text-[9px]"
-              >
-                {node.label}
-              </button>
-            ))}
+            {visibleNodes.map((node, i) => {
+              const p = position(node, i);
+              return (
+                <button
+                  key={node.id}
+                  type="button"
+                  onClick={() => setSelectedNode(node)}
+                  onDoubleClick={() => setIsolated(true)}
+                  style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                  className={`absolute z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border px-3 py-2 text-[10px] ${node.id === selectedNode.id ? "border-accent bg-surface-high text-fg" : "border-border bg-surface text-fg"}`}
+                >
+                  <NodeGlyph type={node.type} />
+                  {node.label}
+                </button>
+              );
+            })}
           </div>
-          <p className="governance-text bg-bg-deep/80 absolute right-4 bottom-4 max-w-xs rounded px-3 py-2">
+          <div className="absolute top-3 left-3 flex gap-1 lg:hidden">
+            <ToolButton onClick={() => setIsolated((v) => !v)} pressed={isolated}>
+              {tb("filters")}
+            </ToolButton>
+          </div>
+          <svg
+            aria-label={tb("minimap")}
+            role="img"
+            className="border-border bg-surface/80 absolute top-3 right-3 h-16 w-24 rounded border"
+            viewBox="0 0 100 100"
+          >
+            {visibleNodes.map((n, i) => {
+              const p = position(n, i);
+              return (
+                <circle
+                  key={n.id}
+                  cx={p.x}
+                  cy={p.y}
+                  r="4"
+                  fill={n.id === selectedNode.id ? "var(--accent)" : "var(--border)"}
+                />
+              );
+            })}
+          </svg>
+          <p className="governance-text bg-bg-deep/80 absolute bottom-4 left-4 max-w-xs rounded px-3 py-2">
             {footer("network")}
           </p>
         </main>
         <details
           open
-          className="border-border bg-surface max-lg:rounded-t-sheet max-lg:shadow-sheet border-l max-lg:fixed max-lg:right-0 max-lg:bottom-14 max-lg:left-0 max-lg:z-30 max-lg:max-h-[42dvh] max-lg:overflow-auto max-lg:border-t"
+          className={`border-border bg-surface max-lg:rounded-t-sheet max-lg:shadow-sheet border-l max-lg:fixed max-lg:right-0 max-lg:bottom-14 max-lg:left-0 max-lg:z-30 ${detentClass} max-lg:overflow-auto max-lg:border-t ${fullscreen ? "lg:hidden" : ""}`}
         >
-          <summary className="text-fg-secondary cursor-pointer list-none px-4 py-2 text-center text-[10px] font-semibold tracking-[0.16em] uppercase lg:hidden">
-            {t("viewDetails")}
+          <summary className="text-fg-secondary flex cursor-pointer list-none items-center justify-between px-4 py-2 text-[10px] font-semibold tracking-[0.16em] uppercase lg:hidden">
+            <span>
+              {t("viewDetails")} · {selectedNode.label}
+            </span>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                setDetent((d) => (d === "peek" ? "half" : d === "half" ? "full" : "peek"));
+              }}
+              className="border-border rounded-control border px-2 py-0.5 tracking-normal normal-case"
+            >
+              {detent}
+            </button>
           </summary>
-          <div className="p-3">
-            <Panel title={t("nodeInspector")}>
-              <NodeGlyph type={selectedNode.type} />
-              <p className="text-fg mt-2 font-semibold">{selectedNode.label}</p>
-            </Panel>
-            <Panel className="mt-3" title={t("whyConnection")}>
-              <p className="text-fg text-[11px]">{selectedEdge.relation}</p>
-              <div className="mt-2">
-                <SourceBadge type={selectedEdge.sourceType} />
-              </div>
-              <div className="mt-2">
-                <CitationChip citation={selectedEdge.citation} />
-              </div>
-              <div className="mt-2">
-                <VerificationBadge state={selectedEdge.verification} />
-              </div>
-              <div className="mt-3">
-                <ActionLink href={`/documents/${selectedEdge.citation.docId}`}>
-                  {t("openSource")}
-                </ActionLink>
-              </div>
-            </Panel>
-            <Panel className="mt-3" title={t("graphTextAlternative")}>
-              <ul className="space-y-2 text-[10px]">
-                {edges.map((edge) => (
-                  <li key={edge.id}>
-                    <button onClick={() => setSelectedEdge(edge)}>
-                      {edge.from} → {edge.to}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          </div>
+          {inspector}
         </details>
       </div>
     </AppShell>
@@ -296,624 +436,872 @@ export function NetworkScreen() {
 }
 
 function NodeGlyph({ type }: { type: string }) {
-  return (
-    <span
-      aria-hidden
-      className={`inline-block size-4 border ${type === "protected" ? "border-witness rounded-full border-dashed" : type === "incident" ? "border-incident rotate-45" : type === "court" ? "border-court rounded" : "border-accent rounded-full"}`}
-    />
-  );
+  const shape =
+    type === "protected" || type === "witness"
+      ? `border-witness rounded-full ${type === "protected" ? "border-dashed" : ""}`
+      : type === "incident"
+        ? "border-incident rotate-45"
+        : type === "court"
+          ? "border-court rounded"
+          : type === "exhibit"
+            ? "border-doc rounded-sm"
+            : type === "spo"
+              ? "border-spo rounded"
+              : type === "defence"
+                ? "border-defence rounded"
+                : type === "location"
+                  ? "border-location rounded-full"
+                  : type === "organisation"
+                    ? "border-organisation"
+                    : "border-accent rounded-full";
+  return <span aria-hidden className={`inline-block size-3.5 shrink-0 border ${shape}`} />;
 }
+
+// ------------------------------------------------------- evidence path ----
 
 export function EvidencePathScreen() {
   const t = useTranslations("phase5");
+  const tb = useTranslations("phase5b");
   const footer = useTranslations("footer");
   const hops = mockRepository.getPath();
+  const { nodes } = mockRepository.getNetwork();
+  const [maxHops, setMaxHops] = useState<"1" | "2" | "3">("3");
+  const [from, setFrom] = useState("demo-research-subject");
+  const [to, setTo] = useState("F-DEMO-01");
+  const [openHop, setOpenHop] = useState(1);
+  const [alternate, setAlternate] = useState(0);
+  const shown = hops.slice(0, Number(maxHops) + 1);
+  const complete = shown.length === hops.length;
+  const label = (id: string) => nodes.find((n) => n.id === id)?.label ?? id;
   return (
     <AppShell footer={footer("network")}>
       <ScreenHeader
-        eyebrow={t("findConnection")}
-        title={t("findConnection")}
-        description={t("pathBanner")}
-        actions={<ActionLink href="/network">{t("viewNetwork")}</ActionLink>}
+        eyebrow={t("network")}
+        title={tb("pathCanvas")}
+        description={t("pathLimit")}
+        actions={<ActionLink href="/network">{tb("openInNetwork")}</ActionLink>}
       />
-      <WorkspaceGrid
-        right={
-          <>
-            <Panel title={t("cannotTell")}>
-              <ul className="space-y-2 text-[11px]">
-                <li>✕ {t("cannotRealWorld")}</li>
-                <li>✕ {t("cannotKnowledge")}</li>
-                <li>✕ {t("cannotSignificance")}</li>
-                <li className="text-verified">✓ {t("canTell")}</li>
-              </ul>
-            </Panel>
-            <Panel className="mt-3" title={t("results")} footer={t("pathLimit")}>
-              <p className="tabular text-fg text-[20px] font-bold">{hops.length}</p>
-              <span className="text-fg-muted text-[10px]">hops · {hops.length} citations</span>
-            </Panel>
-          </>
-        }
-      >
-        <div className="space-y-4">
+      <Toolbar>
+        <span className="section-label">{tb("entityPicker")}</span>
+        <label className="text-[11px]">
+          <span className="text-fg-secondary mr-1">{tb("fromEntity")}</span>
+          <select
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="border-border bg-surface-raised rounded-control h-8 border px-2 text-[11px]"
+          >
+            {nodes.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-[11px]">
+          <span className="text-fg-secondary mr-1">{tb("toEntity")}</span>
+          <select
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="border-border bg-surface-raised rounded-control h-8 border px-2 text-[11px]"
+          >
+            {nodes.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Segmented
+          label={tb("maxHops")}
+          value={maxHops}
+          onChange={setMaxHops}
+          options={[
+            { key: "1", label: "1" },
+            { key: "2", label: "2" },
+            { key: "3", label: "3" },
+          ]}
+        />
+        <ToolButton primary onClick={() => setOpenHop(1)}>
+          {tb("findPath")}
+        </ToolButton>
+      </Toolbar>
+      <div className="border-border bg-surface-raised text-fg border-b px-4 py-2 text-[11px]">
+        {t("pathBanner")}
+      </div>
+      <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_322px]">
+        <div className="min-w-0 space-y-3">
           <DemoNotice />
-          <div className="border-border bg-bg-graph rounded-card flex min-h-48 items-center gap-2 overflow-x-auto border p-6">
-            {hops.map((hop, index) => (
-              <div key={hop.id} className="contents">
-                <div className="min-w-28 text-center">
-                  <NodeGlyph type={index === 0 ? "person" : hop.sourceType} />
-                  <p className="text-fg mt-2 text-[9px]">{hop.from}</p>
-                </div>
-                <div className="min-w-32 text-center">
-                  <span className="bg-accent inline-flex size-6 items-center justify-center rounded-full text-[10px] text-white">
-                    {hop.index}
-                  </span>
-                  <div className="border-accent mt-2 border-t"></div>
-                  <small className="text-fg-muted">{hop.relation}</small>
-                </div>
-                {index === hops.length - 1 ? (
-                  <div className="min-w-28 text-center">
-                    <NodeGlyph type="court" />
-                    <p className="text-fg mt-2 text-[9px]">{hop.to}</p>
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-          <div className="space-y-2">
-            {hops.map((hop) => (
-              <Panel
-                key={hop.id}
-                title={`${hop.index}. ${hop.from} → ${hop.to}`}
-                actions={<VerificationBadge state={hop.verification} />}
-              >
-                <p className="text-fg-secondary mb-2 text-[11px]">
-                  {hop.relation} · {hop.date} · {hop.dateType}
-                </p>
-                <CitationChip citation={hop.citation} />
-              </Panel>
-            ))}
-          </div>
+          <SectionCard title={tb("pathCanvas")}>
+            <ol className="flex flex-col gap-2 md:flex-row md:items-center md:overflow-x-auto">
+              {shown.map((hop, i) => (
+                <li key={hop.id} className="flex flex-col gap-2 md:flex-row md:items-center">
+                  {i === 0 ? <PathNode label={label(hop.from)} /> : null}
+                  <button
+                    type="button"
+                    onClick={() => setOpenHop(hop.index)}
+                    className={`border-border rounded-control flex items-center gap-1 border border-dashed px-2 py-1 text-[10px] ${openHop === hop.index ? "bg-surface-high text-fg" : "text-fg-secondary"}`}
+                  >
+                    <span className="tabular">{hop.index}</span> {hop.relation}
+                  </button>
+                  <PathNode label={label(hop.to)} />
+                </li>
+              ))}
+            </ol>
+            {!complete ? (
+              <EmptyState
+                className="mt-3"
+                title={tb("noPath", { n: maxHops })}
+                reason={tb("noPathReason")}
+                action={<ToolButton onClick={() => setMaxHops("3")}>{tb("raiseLimit")}</ToolButton>}
+              />
+            ) : null}
+          </SectionCard>
+          <SectionCard title={tb("hopInspector")}>
+            <ol className="divide-border-faint divide-y">
+              {shown.map((hop) => (
+                <li key={hop.id} className="py-2">
+                  <button
+                    type="button"
+                    onClick={() => setOpenHop(hop.index)}
+                    aria-expanded={openHop === hop.index}
+                    className="grid w-full grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2 text-left text-[11px]"
+                  >
+                    <span className="tabular bg-surface-raised inline-flex size-6 items-center justify-center rounded-full text-[10px]">
+                      {hop.index}
+                    </span>
+                    <span className="min-w-0 truncate">
+                      <span className="text-fg">{label(hop.from)}</span> →{" "}
+                      <span className="text-fg">{label(hop.to)}</span> · {hop.relation}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <SourceBadge type={hop.sourceType} size="sm" />
+                      <VerificationBadge state={hop.verification} size="sm" />
+                    </span>
+                  </button>
+                  {openHop === hop.index ? (
+                    <div className="mt-2 ml-9 space-y-2">
+                      <p className="text-fg-body font-serif text-[12px]">
+                        “Generic verbatim excerpt for hop {hop.index} (demo).”
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CitationChip citation={hop.citation} />
+                        <span
+                          className={`rounded-badge px-1.5 py-0.5 text-[10px] date-${hop.dateType}`}
+                        >
+                          {hop.date} · {hop.dateType}
+                        </span>
+                        <ActionLink href={`/documents/${hop.citation.docId}`}>
+                          {t("openSource")}
+                        </ActionLink>
+                      </div>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+          </SectionCard>
         </div>
-      </WorkspaceGrid>
+        <aside className="min-w-0 space-y-3">
+          <Panel title={tb("composition")}>
+            <KeyValue
+              rows={[
+                { key: "h", label: tb("hops"), value: shown.length },
+                { key: "c", label: tb("citationsBacking"), value: shown.length },
+                {
+                  key: "v",
+                  label: tb("humanVerified"),
+                  value: shown.filter((h) => h.verification === "verified").length,
+                },
+                { key: "t", label: tb("intermediateTypes"), value: "exhibit · incident · witness" },
+              ]}
+            />
+          </Panel>
+          <Panel title={tb("alternates")}>
+            <ol className="space-y-1">
+              {[
+                { hops: 4, via: "P00123 · I-DEMO-01 · W01234" },
+                { hops: 5, via: "T-DEMO-01 · P00123" },
+              ].map((a, i) => (
+                <li key={i}>
+                  <button
+                    type="button"
+                    onClick={() => setAlternate(i)}
+                    aria-current={alternate === i ? "true" : undefined}
+                    className={`rounded-control w-full px-2 py-1.5 text-left text-[11px] ${alternate === i ? "bg-surface-high text-fg" : "text-fg-secondary"}`}
+                  >
+                    <span className="tabular">
+                      {a.hops} {tb("hops").toLowerCase()}
+                    </span>{" "}
+                    · {tb("viaRefs")} {a.via}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </Panel>
+          <Panel title={t("cannotTell")}>
+            <ul className="text-fg-secondary list-disc space-y-1 pl-4 text-[11px]">
+              <li>{t("cannotRealWorld")}</li>
+              <li>{t("cannotKnowledge")}</li>
+              <li>{t("cannotSignificance")}</li>
+            </ul>
+            <p className="text-fg mt-2 text-[11px]">{t("canTell")}</p>
+          </Panel>
+          <NoteStrip>{footer("network")}</NoteStrip>
+        </aside>
+      </div>
     </AppShell>
   );
 }
 
+function PathNode({ label }: { label: string }) {
+  return (
+    <span className="border-accent bg-surface text-fg rounded-full border px-3 py-1.5 text-[11px] whitespace-nowrap">
+      {label}
+    </span>
+  );
+}
+
+// ------------------------------------------------------------ timeline ----
+
+const LANES = [
+  "events",
+  "documents",
+  "hearings",
+  "testimony",
+  "decisions",
+  "judgment",
+  "appeal",
+] as const;
+const LANE_FOR: Record<DateType, (typeof LANES)[number]> = {
+  event: "events",
+  document: "documents",
+  filing: "documents",
+  testimony: "testimony",
+  decision: "decisions",
+};
+
 export function TimelineScreen() {
   const t = useTranslations("phase5");
+  const tb = useTranslations("phase5b");
   const items = mockRepository.getTimeline();
-  const label: Record<DateType, string> = {
+  const [visible, setVisible] = useState<Set<(typeof LANES)[number]>>(new Set(LANES));
+  const [selected, setSelected] = useState<MockTimelineItem | null>(items[0] ?? null);
+  const [zoom, setZoom] = useState({ historical: 1, proceedings: 1 });
+  const [filters, setFilters] = useState<{ id: string; label: string }[]>([
+    { id: "witness", label: "W01234" },
+  ]);
+  const dateLabel: Record<DateType, string> = {
     event: t("event"),
     document: t("document"),
     filing: t("filing"),
     testimony: t("testimonyDate"),
     decision: t("decision"),
   };
+  const era = (item: MockTimelineItem) =>
+    item.dateType === "event" ? "historical" : "proceedings";
   return (
     <AppShell footer={t("sequenceNote")}>
       <ScreenHeader
-        eyebrow={t("dateTypes")}
-        title={t("viewTimeline")}
-        description={t("sequenceNote")}
+        eyebrow={t("allRecords")}
+        title={t("dateTypes")}
+        description={tb("dateMergeNote")}
       />
-      <div className="mx-auto w-full max-w-[1440px] p-4">
-        <DemoNotice />
-        <div className="border-border bg-surface rounded-card mt-4 overflow-hidden border">
-          <div className="border-border-subtle grid grid-cols-[44%_56%] border-b">
-            <div className="p-3">
-              <span className="section-label">Events</span>
-            </div>
-            <div className="border-border border-l-2 border-dashed p-3">
-              <span className="section-label">Proceedings</span>
-            </div>
-          </div>
-          {items.map((item) => (
-            <Link
-              key={item.id}
-              href={item.href}
-              className="border-border-faint hover:bg-surface-raised grid grid-cols-[160px_minmax(0,1fr)] items-center border-b p-3"
-            >
-              <span className="text-fg-muted text-[10px]">{label[item.dateType]}</span>
-              <span>
-                <strong className="text-fg text-[11px]">{item.label}</strong>
-                <small className="text-fg-muted ml-3">{item.date}</small>
+      <Toolbar>
+        <ActiveFilters
+          filters={filters}
+          onRemove={(id) => setFilters((f) => f.filter((x) => x.id !== id))}
+          onClearAll={() => setFilters([])}
+        />
+        <div className="ml-auto flex flex-wrap items-center gap-1">
+          {(["historical", "proceedings"] as const).map((e) => (
+            <span key={e} className="inline-flex items-center gap-1 text-[10px]">
+              <span className="text-fg-secondary">
+                {tb(e === "historical" ? "eraHistorical" : "eraProceedings")}
               </span>
-            </Link>
+              <ToolButton
+                ariaLabel={`${tb("zoomEra", { era: e })} −`}
+                onClick={() => setZoom((z) => ({ ...z, [e]: Math.max(0.5, z[e] - 0.25) }))}
+              >
+                −
+              </ToolButton>
+              <ToolButton
+                ariaLabel={`${tb("zoomEra", { era: e })} +`}
+                onClick={() => setZoom((z) => ({ ...z, [e]: Math.min(2, z[e] + 0.25) }))}
+              >
+                +
+              </ToolButton>
+            </span>
           ))}
         </div>
+      </Toolbar>
+      <div className="border-border-subtle flex flex-wrap gap-3 border-b px-4 py-1.5 text-[10px]">
+        {(Object.keys(dateLabel) as DateType[]).map((d) => (
+          <span key={d} className={`rounded-badge px-1.5 py-0.5 date-${d}`}>
+            {dateLabel[d]}
+          </span>
+        ))}
+      </div>
+      <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_314px]">
+        <div className="min-w-0 space-y-3">
+          <DemoNotice />
+          <div className="border-border-subtle bg-surface rounded-card hidden overflow-x-auto border md:block">
+            <div className="grid grid-cols-[140px_minmax(0,1fr)]">
+              <div className="border-border-faint border-r border-b p-2 text-[10px]">
+                {tb("layers")}
+              </div>
+              <div
+                className="border-border-faint grid border-b text-[10px]"
+                style={{ gridTemplateColumns: `${zoom.historical}fr ${zoom.proceedings}fr` }}
+              >
+                <div className="border-border-faint border-r p-2">
+                  <span className="text-fg-secondary">{tb("eraHistorical")}</span>{" "}
+                  <span className="tabular text-fg-muted">1998 — 2000</span>
+                </div>
+                <div className="p-2">
+                  <span className="text-fg-secondary">{tb("eraProceedings")}</span>{" "}
+                  <span className="tabular text-fg-muted">2020 — 2025</span>
+                </div>
+              </div>
+              {LANES.map((lane) => {
+                const laneItems = items.filter((i) => LANE_FOR[i.dateType] === lane);
+                const on = visible.has(lane);
+                return (
+                  <div key={lane} className="contents">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisible((v) => {
+                          const n = new Set(v);
+                          if (n.has(lane)) n.delete(lane);
+                          else n.add(lane);
+                          return n;
+                        })
+                      }
+                      aria-pressed={on}
+                      className={`border-border-faint border-r border-b p-2 text-left text-[11px] ${on ? "text-fg" : "text-fg-muted line-through"}`}
+                    >
+                      {tb(`lanes.${lane}`)}
+                    </button>
+                    <div
+                      className="border-border-faint relative min-h-11 border-b"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: `${zoom.historical}fr ${zoom.proceedings}fr`,
+                      }}
+                    >
+                      <div className="border-border-faint border-r" />
+                      <div />
+                      {on && laneItems.length === 0 ? (
+                        <span className="text-fg-muted absolute inset-y-0 left-2 flex items-center text-[10px]">
+                          {tb("emptyLane")}
+                        </span>
+                      ) : null}
+                      {on
+                        ? laneItems.map((item, i) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setSelected(item)}
+                              aria-pressed={selected?.id === item.id}
+                              className={`rounded-badge absolute top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] date-${item.dateType} bg-surface`}
+                              style={{
+                                left:
+                                  era(item) === "historical" ? `${10 + i * 12}%` : `${55 + i * 8}%`,
+                              }}
+                            >
+                              {item.label}
+                            </button>
+                          ))
+                        : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <ol className="space-y-2 md:hidden">
+            {items.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(item)}
+                  className="border-border-subtle bg-surface rounded-card w-full border p-2 text-left text-[11px]"
+                >
+                  <span
+                    className={`rounded-badge mr-2 px-1.5 py-0.5 text-[10px] date-${item.dateType}`}
+                  >
+                    {dateLabel[item.dateType]}
+                  </span>
+                  {item.label}
+                  <span className="text-fg-muted block text-[10px]">
+                    {tb(`lanes.${LANE_FOR[item.dateType]}`)} · {item.date}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+          <NoteStrip>{t("sequenceNote")}</NoteStrip>
+        </div>
+        <aside className="min-w-0 space-y-3">
+          <Panel title={tb("cardDetail")}>
+            {selected ? (
+              <>
+                <h2 className="text-fg text-[13px] font-semibold">{selected.label}</h2>
+                <p className="text-fg-muted text-[10px]">
+                  {tb("drawnOn")}: {tb(`lanes.${LANE_FOR[selected.dateType]}`)}
+                </p>
+                <h3 className="section-label mt-3">{tb("attachedDates")}</h3>
+                <ul className="mt-1 space-y-1 text-[11px]">
+                  <li className="flex justify-between">
+                    <span className={`rounded-badge px-1.5 date-${selected.dateType}`}>
+                      {dateLabel[selected.dateType]}
+                    </span>
+                    <span className="tabular">{selected.date}</span>
+                  </li>
+                  {selected.dateType === "filing" ? (
+                    <li className="flex justify-between">
+                      <span className="rounded-badge date-document px-1.5">
+                        {dateLabel.document}
+                      </span>
+                      <span className="tabular">Demo document date</span>
+                    </li>
+                  ) : null}
+                </ul>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <CitationChip citation={courtCitation} size="sm" />
+                  <ActionLink href={selected.href}>{t("open")}</ActionLink>
+                </div>
+                <h3 className="section-label mt-3">{tb("linkedFrom")}</h3>
+                <ul className="mt-1 text-[11px]">
+                  <li>
+                    <Link href="/witnesses/W01234" className="text-accent identifier">
+                      W01234
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/incidents/I-DEMO-01" className="text-accent">
+                      I-DEMO-01
+                    </Link>
+                  </li>
+                </ul>
+              </>
+            ) : (
+              <p className="text-fg-secondary text-[11px]">{tb("selectCard")}</p>
+            )}
+          </Panel>
+          <NoteStrip tone="legal">{tb("dateMergeNote")}</NoteStrip>
+        </aside>
       </div>
     </AppShell>
   );
 }
+
+// ------------------------------------------------------------ incident ----
+
+const INCIDENT_TABS = [
+  "overview",
+  "evidence",
+  "findings",
+  "witnesses",
+  "documents",
+  "timeline",
+  "network",
+  "arguments",
+  "research",
+] as const;
 
 export function IncidentScreen({ id }: { id: string }) {
   const t = useTranslations("phase5");
-  const footer = useTranslations("footer");
+  const tb = useTranslations("phase5b");
   const evidence = mockRepository.getEvidence();
-  const tabs = [
-    "overview",
-    "courtFindings",
-    "testimony",
-    "evidenceMatrix",
-    "spo",
-    "defence",
-    "viewTimeline",
-    "network",
-    "potentialIssues",
-  ].map((key) => ({ key, label: t(key as never), href: `?tab=${key}` }));
+  const [direction, setDirection] = useState<Direction | "all">("all");
+  const [courtCited, setCourtCited] = useState<"all" | "yes" | "no">("all");
+  const [sortDir, setSortDir] = useState(false);
+  const cited = (i: number) => i % 2 === 0;
+  const rows = evidence
+    .map((row, i) => ({ ...row, cited: cited(i) }))
+    .filter(
+      (r) =>
+        (direction === "all" || r.direction === direction) &&
+        (courtCited === "all" || (courtCited === "yes") === r.cited),
+    );
+  const sorted = sortDir ? [...rows].sort((a, b) => a.direction.localeCompare(b.direction)) : rows;
+  const summary = (["supports", "contradicts", "qualifies", "neutral"] as const).map((d) => ({
+    key: d,
+    label: tb(d),
+    value: evidence.filter((e) => e.direction === d).length,
+  }));
   return (
-    <AppShell crumbs={[{ label: id }]} footer={footer("neutrality")}>
-      <ScreenHeader
-        eyebrow={id}
-        title="Illustrative recorded event"
-        description={t("chargeNote")}
-        actions={<SourceBadge type="incident" />}
-      />
-      <TabStrip tabs={tabs} />
-      <WorkspaceGrid
-        right={
-          <Panel title={t("positions")}>
-            <RecordBlock sourceType="spo" citations={[courtCitation]}>
-              Generic illustrative SPO position.
-            </RecordBlock>
-            <div className="mt-3">
-              <RecordBlock sourceType="defence" citations={[courtCitation]}>
-                Generic illustrative Defence position.
-              </RecordBlock>
+    <AppShell
+      footer={tb("incidentFooter")}
+      crumbs={[{ label: t("incidents"), href: "/incidents" }, { label: id }]}
+    >
+      <header className="border-border-subtle bg-bg-deep border-b px-4 py-4">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-wrap items-start gap-4">
+          <span
+            aria-hidden
+            className="border-incident mt-1 inline-block size-8 shrink-0 rotate-45 border-2"
+          />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-fg text-[24px] leading-tight font-bold tracking-[-0.02em]">
+              Illustrative recorded event
+            </h1>
+            <p className="text-fg-secondary mt-1 text-[11px]">
+              <span className="identifier">{id}</span> · {tb("eventDates")}:{" "}
+              <span className="tabular">1999-05-01 — 1999-05-03</span> · {tb("location")}: Demo
+              Village ({tb("recordedVariants")}: Fshati Demo · Demo-Village)
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="rounded-badge border-border bg-surface-raised border px-1.5 py-0.5 text-[10px]">
+                Count 1 · demo
+              </span>
+              <span className="rounded-badge border-border bg-surface-raised border px-1.5 py-0.5 text-[10px]">
+                Count 3 · demo
+              </span>
+              <span className="text-fg-muted text-[10px]">{t("chargeNote")}</span>
             </div>
-          </Panel>
-        }
-      >
-        <div className="space-y-3">
-          <DemoNotice />
-          <Panel title={t("evidenceMatrix")} footer={<ScopeNote />}>
-            {evidence.map((row) => (
-              <div
-                key={row.id}
-                className="border-border-faint grid gap-2 border-b py-3 md:grid-cols-[130px_minmax(0,1fr)_120px_150px]"
-              >
-                <div>
-                  <SourceBadge type={row.sourceType} />
-                </div>
-                <p className="text-fg-body text-[11px]">{row.claim}</p>
-                <DirectionBadge direction={row.direction} />
-                <div>
-                  <VerificationBadge state={row.verification} />
-                  <div className="mt-1">
-                    <CitationChip citation={row.citation} size="sm" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </Panel>
+          </div>
+          <div className="flex gap-2">
+            <ActionLink href={`/timeline?incident=${id}`}>{t("viewTimeline")}</ActionLink>
+            <ActionLink href={`/network?focus=${id}`}>{t("viewNetwork")}</ActionLink>
+            <ActionLink href="/ai" primary>
+              {t("askAi")}
+            </ActionLink>
+          </div>
         </div>
-      </WorkspaceGrid>
-    </AppShell>
-  );
-}
-
-export function FindingDetailScreen({ id }: { id: string }) {
-  const t = useTranslations("phase5");
-  const footer = useTranslations("footer");
-  const evidence = mockRepository.getEvidence();
-  const steps = [
-    "courtFinding",
-    "evidenceReliedUpon",
-    "whatSourcesSay",
-    "otherMaterial",
-    "trialArguments",
-    "courtResponse",
-    "potentialIssues",
-    "redTeam",
-    "sourceAudit",
-  ] as const;
-  return (
-    <AppShell crumbs={[{ label: id }]} footer={footer("sourceNote")}>
-      <ScreenHeader
-        eyebrow={id}
-        title="Illustrative finding"
-        description={t("mockNotice")}
-        actions={<ActionLink href="/appeal/argument/new">{t("sendToLab")}</ActionLink>}
-      />
+      </header>
       <TabStrip
-        tabs={[
-          { key: "chain", label: "Chain" },
-          { key: "quotes", label: t("whatSourcesSay") },
-          { key: "arguments", label: t("arguments") },
-          { key: "annotations", label: t("addNote") },
-        ]}
+        tabs={INCIDENT_TABS.map((k) => ({
+          key: k,
+          label:
+            k === "evidence"
+              ? t("evidenceMatrix")
+              : k === "witnesses"
+                ? tb("witnesses")
+                : tb(`tabs.${k}`),
+        }))}
+        active="evidence"
       />
-      <WorkspaceGrid
-        left={
-          <Panel title={t("overview")}>
-            <ol className="space-y-2">
-              {steps.map((step, index) => (
-                <li key={step}>
-                  <a href={`#${step}`} className="text-accent text-[10px]">
-                    {String(index + 1).padStart(2, "0")} · {t(step)}
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </Panel>
-        }
-        right={
-          <>
-            <AiAnalysisBlock title={t("potentialIssues")} citations={[courtCitation]}>
-              Generic question surfaced for human review. {t("noPrediction")}
-            </AiAnalysisBlock>
-            <Panel className="mt-3" title={t("sourceAudit")}>
-              <dl className="grid grid-cols-2 gap-2 text-[11px]">
-                <dt>{t("citationStatus")}</dt>
-                <dd className="text-verified">3 / 3</dd>
-                <dt>{t("verificationStatus")}</dt>
-                <dd>
-                  <VerificationBadge state="verified" />
-                </dd>
-              </dl>
-            </Panel>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          {steps.map((step, index) => (
-            <section id={step} key={step} className="scroll-mt-24">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="bg-surface-high text-fg inline-flex size-6 items-center justify-center rounded-full text-[10px]">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <h2 className="text-fg text-[14px] font-semibold">{t(step)}</h2>
-              </div>
-              {step === "courtFinding" ? (
-                <RecordBlock sourceType="court" citations={[courtCitation]}>
-                  <p className="font-serif">
-                    Generic sample finding. It contains no assertion about a real person.
-                  </p>
-                </RecordBlock>
-              ) : step === "evidenceReliedUpon" || step === "whatSourcesSay" ? (
-                <div className="space-y-2">
-                  <RecordBlock sourceType="exhibit" citations={[exhibitCitation]}>
-                    Generic sample exhibit passage.
-                  </RecordBlock>
-                  <RecordBlock sourceType="witness" citations={[transcriptCitation]}>
-                    Generic sample testimony passage.
-                  </RecordBlock>
-                </div>
-              ) : step === "otherMaterial" ? (
-                <Panel footer={<ScopeNote />}>
-                  {evidence.map((row) => (
-                    <div key={row.id} className="flex items-center justify-between border-b py-2">
-                      <span className="text-[10px]">{row.claim}</span>
-                      <DirectionBadge direction={row.direction} />
-                    </div>
-                  ))}
-                </Panel>
-              ) : step === "trialArguments" ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  <RecordBlock sourceType="defence" citations={[courtCitation]}>
-                    Generic Defence argument.
-                  </RecordBlock>
-                  <RecordBlock sourceType="spo" citations={[courtCitation]}>
-                    Generic SPO argument.
-                  </RecordBlock>
-                </div>
-              ) : step === "potentialIssues" || step === "redTeam" ? (
-                <>
-                  <ProvenanceBoundary />
-                  <AiAnalysisBlock citations={[courtCitation]}>
-                    Mock analysis for human review. {t("noPrediction")}
-                  </AiAnalysisBlock>
-                </>
-              ) : (
-                <RecordBlock sourceType="court" citations={[courtCitation]}>
-                  Generic source-backed content for this chain step.
-                </RecordBlock>
-              )}
-            </section>
-          ))}
-        </div>
-      </WorkspaceGrid>
-    </AppShell>
-  );
-}
-
-export function AppealScreen() {
-  const t = useTranslations("phase5");
-  const categories = [
-    "Evidence Assessment",
-    "Error of Law",
-    "Error of Fact",
-    "Reasoning",
-    "Mode of Liability",
-    "Procedural Fairness",
-    "Sentencing",
-    "Other",
-  ];
-  return (
-    <AppShell footer={t("noPrediction")}>
-      <ScreenHeader
-        eyebrow={t("appealReview")}
-        title={t("potentialIssues")}
-        description={t("noPrediction")}
-      />
-      <WorkspaceGrid
-        left={
-          <Panel title={t("issueCategories")}>
-            <ul className="space-y-2">
-              {categories.map((category) => (
-                <li key={category}>
-                  <button className="text-accent text-[11px]">{category}</button>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        }
-        right={
-          <Panel title={t("missingMaterial")}>
-            <p className="text-fg-secondary text-[11px]">
-              Generic public-record gap stated explicitly; nothing is inferred.
-            </p>
-          </Panel>
-        }
-      >
-        <div className="space-y-3">
+      <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-3">
           <DemoNotice />
-          {categories.slice(0, 3).map((category, index) => (
-            <Panel
-              key={category}
-              label={category}
-              title={`Illustrative issue ${index + 1}`}
-              actions={<VerificationBadge state="unreviewed" />}
-            >
-              <div className="grid gap-3 md:grid-cols-2">
-                <RecordBlock sourceType="court" citations={[courtCitation]}>
-                  Generic court reasoning at issue.
-                </RecordBlock>
-                <RecordBlock sourceType="defence" citations={[courtCitation]}>
-                  Generic Defence position.
-                </RecordBlock>
-                <RecordBlock sourceType="spo" citations={[courtCitation]}>
-                  Generic SPO position.
-                </RecordBlock>
-                <AiAnalysisBlock citations={[courtCitation]}>
-                  Potential issue for human review. {t("noPrediction")}
-                </AiAnalysisBlock>
+          <StatStrip label={tb("directionSummary")} items={summary} columns={4} />
+          <SectionCard
+            title={t("evidenceMatrix")}
+            aside={
+              <div className="flex flex-wrap gap-2">
+                <Segmented
+                  label={tb("directionFilter")}
+                  value={direction}
+                  onChange={setDirection}
+                  options={[
+                    { key: "all", label: tb("allCategories") },
+                    { key: "supports", label: tb("supports") },
+                    { key: "contradicts", label: tb("contradicts") },
+                    { key: "qualifies", label: tb("qualifies") },
+                    { key: "neutral", label: tb("neutral") },
+                  ]}
+                />
+                <Segmented
+                  label={tb("courtCitedFilter")}
+                  value={courtCited}
+                  onChange={setCourtCited}
+                  options={[
+                    { key: "all", label: tb("allCategories") },
+                    { key: "yes", label: tb("yes") },
+                    { key: "no", label: tb("no") },
+                  ]}
+                />
+                <ToolButton pressed={sortDir} onClick={() => setSortDir((v) => !v)}>
+                  {t("sort")}
+                </ToolButton>
               </div>
-              <div className="mt-3">
-                <ActionLink href="/appeal/argument/new">{t("sendToLab")}</ActionLink>
-              </div>
-            </Panel>
-          ))}
+            }
+          >
+            <ScopeNote />
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="text-fg-secondary text-left">
+                    {(["source", "claim", "direction", "courtCited", "verification"] as const).map(
+                      (c) => (
+                        <th
+                          key={c}
+                          className="border-border-faint border-b px-2 py-1.5 font-medium"
+                        >
+                          {tb(`matrixColumns.${c}`)}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((row) => (
+                    <tr key={row.id} className="border-border-faint border-b align-top">
+                      <td className="px-2 py-2">
+                        <SourceBadge type={row.sourceType} size="sm" />
+                        <div className="mt-1">
+                          <CitationChip citation={row.citation} size="sm" />
+                        </div>
+                      </td>
+                      <td className="px-2 py-2 font-serif text-[12px]">{row.claim}</td>
+                      <td className="px-2 py-2">
+                        <DirectionBadge direction={row.direction} />
+                      </td>
+                      <td className="tabular px-2 py-2">
+                        {row.cited ? `${tb("yes")} · ¶46` : tb("no")}
+                      </td>
+                      <td className="px-2 py-2">
+                        <VerificationBadge state={row.verification} size="sm" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {sorted.length === 0 ? (
+              <p className="text-fg-secondary mt-2 text-[11px]">{tb("noContrary")}</p>
+            ) : null}
+            <p className="text-fg-muted mt-2 text-[10px]">{tb("matrixNote")}</p>
+          </SectionCard>
         </div>
-      </WorkspaceGrid>
-    </AppShell>
-  );
-}
-
-export function ArgumentLabScreen({ id }: { id: string }) {
-  const t = useTranslations("phase5");
-  const [stage, setStage] = useState(1);
-  const actions = [
-    "researchSupport",
-    "findContrary",
-    "checkCitations",
-    "findDefence",
-    "findSpo",
-    "findCourt",
-  ] as const;
-  const stages = [
-    { title: t("defenceAnalyst"), source: "defence" as const },
-    { title: t("spoRedTeam"), source: "spo" as const },
-    { title: t("neutralReviewer"), source: "court" as const },
-  ];
-  return (
-    <AppShell>
-      <ScreenHeader eyebrow={id} title={t("argumentEditor")} description={t("mockNotice")} />
-      <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4">
-        <DemoNotice />
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_292px]">
-          <Panel title={t("argumentEditor")}>
-            <textarea
-              defaultValue="Generic sample research argument. [F01234 · ¶45–46]"
-              className="border-border bg-bg text-fg rounded-control min-h-52 w-full border p-3 text-[12px]"
-            />
-            <p className="governance-text mt-2">
-              The editor flags absence of citation only. It does not evaluate whether an argument is
-              correct.
+        <aside className="min-w-0 space-y-3">
+          <RecordBlock sourceType="court" title={t("courtFinding")} citations={[courtCitation]}>
+            <p className="font-serif">
+              “Generic demo wording of a court finding about this event.”
             </p>
-          </Panel>
-          <Panel title={t("actions")}>
-            <div className="grid gap-2">
-              {actions.map((key) => (
-                <button
-                  key={key}
-                  className="border-border bg-surface-raised text-fg rounded-control border px-3 py-2 text-left text-[11px]"
-                >
-                  {t(key)}
-                </button>
-              ))}
+          </RecordBlock>
+          <RecordBlock sourceType="spo" title={t("spo")} citations={[courtCitation]}>
+            Demo prosecution position, shown as an argument.
+          </RecordBlock>
+          <RecordBlock sourceType="defence" title={t("defence")} citations={[courtCitation]}>
+            Demo defence position, shown separately with the same treatment.
+          </RecordBlock>
+          <Panel title={tb("witnessesInRecord")}>
+            <div className="flex flex-wrap gap-1.5">
+              <Link
+                href="/witnesses/W01234"
+                className="rounded-badge border-witness identifier border border-dashed px-1.5 py-0.5 text-[10px]"
+              >
+                W01234
+              </Link>
+              <Link
+                href="/witnesses/W04567"
+                className="rounded-badge border-witness border px-1.5 py-0.5 text-[10px]"
+              >
+                W04567
+              </Link>
             </div>
           </Panel>
-        </div>
-        <div className="flex gap-2">
-          {stages.map((item, index) => (
-            <button
-              key={item.title}
-              onClick={() => setStage(index + 1)}
-              className={`rounded-control border px-3 py-2 text-[11px] ${stage === index + 1 ? "border-accent bg-surface-high" : "border-border bg-surface"}`}
-            >
-              {index + 1}. {item.title}
-            </button>
-          ))}
-        </div>
-        <div className="grid gap-3 lg:grid-cols-3">
-          {stages.map((item, index) => (
-            <RecordBlock
-              key={item.title}
-              sourceType={item.source}
-              title={item.title}
-              citations={[courtCitation]}
-            >
-              <p>Generic review output with a source citation.</p>
-              {index === 2 ? (
-                <ul className="mt-3 space-y-1 text-[10px]">
-                  <li>{t("unsupported")}</li>
-                  <li>{t("missingCitations")}</li>
-                  <li>{t("ignoredEvidence")}</li>
-                  <li>{t("unanswered")}</li>
-                  <li>{t("factualDisputes")}</li>
-                  <li>
-                    {t("legalQuestions")} — {t("legalDecline")}
-                  </li>
-                  <li>{t("humanReview")}</li>
-                </ul>
-              ) : null}
-            </RecordBlock>
-          ))}
-        </div>
+        </aside>
       </div>
     </AppShell>
   );
 }
 
-export function AiResearchScreen() {
+// ------------------------------------------------------------- finding ----
+
+const CHAIN = [
+  "courtFinding",
+  "evidenceReliedUpon",
+  "whatSourcesSay",
+  "otherMaterial",
+  "trialArguments",
+  "courtResponse",
+  "potentialIssues",
+  "redTeam",
+  "sourceAudit",
+] as const;
+
+export function FindingDetailScreen({ id }: { id: string }) {
   const t = useTranslations("phase5");
-  const footer = useTranslations("footer");
-  const answer = mockRepository.getAnswer();
-  const record = answer.filter((block) => block.kind !== "ai");
-  const ai = answer.filter((block) => block.kind === "ai");
+  const tb = useTranslations("phase5b");
+  const evidence = mockRepository.getEvidence();
+  const [tab, setTab] = useState<"chain" | "quotes" | "arguments" | "annotations">("chain");
+  const index = CHAIN.map((k, i) => ({
+    id: `step-${k}`,
+    label: t(k),
+    number: String(i + 1).padStart(2, "0"),
+  }));
+  const direction = (["supports", "contradicts", "qualifies", "neutral"] as const).map((d) => ({
+    key: d,
+    label: tb(d),
+    value: evidence.filter((e) => e.direction === d).length,
+    href: `/incidents/I-DEMO-01?tab=evidence&direction=${d}`,
+  }));
   return (
-    <AppShell footer={footer("sourceNote")}>
+    <AppShell crumbs={[{ label: t("courtFindings"), href: "/findings" }, { label: id }]}>
       <ScreenHeader
-        eyebrow={t("askAi")}
-        title="How does the sample record address this research question?"
+        eyebrow={<span className="identifier">{id} · Judgment ¶45–46</span>}
+        title="Illustrative finding"
         description={t("mockNotice")}
         actions={
           <>
-            <ActionLink href="/network">{t("viewEvidenceGraph")}</ActionLink>
-            <ActionLink href="/appeal/argument/new">{t("createArgument")}</ActionLink>
+            <ActionLink href="/appeal/argument/new">{t("sendToLab")}</ActionLink>
+            <Segmented
+              label={t("viewDetails")}
+              value={tab}
+              onChange={setTab}
+              options={[
+                { key: "chain", label: tb("chainIndex") },
+                { key: "quotes", label: tb("verbatim") },
+                { key: "arguments", label: t("arguments") },
+                { key: "annotations", label: t("addNote") },
+              ]}
+            />
           </>
         }
       />
-      <WorkspaceGrid
-        left={
-          <Panel title={t("results")}>
-            <p className="text-fg text-[11px]">Demo research session</p>
+      <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 lg:grid-cols-[236px_minmax(0,1fr)] xl:grid-cols-[236px_minmax(0,1fr)_316px]">
+        <RailIndex
+          label={tb("chainIndex")}
+          items={index}
+          extra={
+            <Panel title={tb("relatedFindings")}>
+              <ul className="space-y-1 text-[11px]">
+                <li>
+                  <Link href="/findings/FD-DEMO-2002" className="text-accent">
+                    FD-DEMO-2002
+                  </Link>{" "}
+                  · Demo record 02
+                </li>
+              </ul>
+            </Panel>
+          }
+        />
+        <ol className="border-border-subtle relative min-w-0 space-y-3 border-l pl-6">
+          {CHAIN.map((step, i) => (
+            <li key={step} className="relative">
+              <span
+                aria-hidden
+                className="bg-surface-high text-fg tabular absolute top-3 -left-[35px] inline-flex size-5 items-center justify-center rounded-full text-[10px]"
+              >
+                {i + 1}
+              </span>
+              <SectionCard
+                id={`step-${step}`}
+                number={String(i + 1).padStart(2, "0")}
+                title={t(step)}
+              >
+                {step === "courtFinding" ? (
+                  <RecordBlock sourceType="court" citations={[courtCitation]}>
+                    <p className="font-serif text-[13px]">
+                      “Generic demo wording of the finding, quoted verbatim with its paragraph
+                      range.”
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      <VerificationBadge state="verified" size="sm" />
+                      <span className="text-fg-muted text-[10px]">demo-reviewer · 2026-09-20</span>
+                    </div>
+                  </RecordBlock>
+                ) : null}
+                {step === "evidenceReliedUpon" ? (
+                  <ul className="divide-border-faint divide-y">
+                    {evidence.map((row) => (
+                      <li
+                        key={row.id}
+                        className="flex flex-wrap items-center gap-2 py-1.5 text-[11px]"
+                      >
+                        <SourceBadge type={row.sourceType} size="sm" />
+                        <span className="min-w-0 flex-1">{row.claim}</span>
+                        <CitationChip citation={row.citation} size="sm" />
+                        <span className="text-fg-muted text-[10px]">{tb("extent")}: 1 ¶</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {step === "whatSourcesSay" ? (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {[transcriptCitation, exhibitCitation].map((c) => (
+                      <RecordBlock key={c.display} sourceType={c.sourceType} citations={[c]}>
+                        <p className="font-serif">“Generic verbatim demo excerpt.”</p>
+                        <p className="text-fg-muted mt-1 text-[10px]">
+                          {tb("speaker")}: {c.sourceType === "witness" ? "W01234" : "—"}
+                        </p>
+                      </RecordBlock>
+                    ))}
+                  </div>
+                ) : null}
+                {step === "otherMaterial" ? (
+                  <>
+                    <StatStrip items={direction} label={tb("directionCounts")} columns={4} />
+                    <ScopeNote />
+                    <p className="text-fg-secondary mt-2 text-[11px]">
+                      {evidence.some((e) => e.direction === "contradicts") ? "" : tb("noContrary")}
+                    </p>
+                  </>
+                ) : null}
+                {step === "trialArguments" ? (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <RecordBlock sourceType="spo" citations={[courtCitation]}>
+                      Demo SPO submission.
+                    </RecordBlock>
+                    <RecordBlock sourceType="defence" citations={[courtCitation]}>
+                      Demo Defence submission.
+                    </RecordBlock>
+                  </div>
+                ) : null}
+                {step === "courtResponse" ? (
+                  <RecordBlock sourceType="court" citations={[courtCitation]}>
+                    <p className="font-serif">
+                      “Generic demo wording of the Panel’s response to both submissions.”
+                    </p>
+                  </RecordBlock>
+                ) : null}
+                {step === "potentialIssues" ? (
+                  <ul className="space-y-1 text-[11px]">
+                    <li className="flex justify-between gap-2">
+                      <span>
+                        {tb("categories.evidence")} · demo question about the extent of the cited
+                        passage
+                      </span>
+                      <span className="rounded-badge bg-surface-raised px-1.5 text-[10px]">
+                        {tb("reviewStates.awaiting")}
+                      </span>
+                    </li>
+                  </ul>
+                ) : null}
+                {step === "redTeam" ? (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <Panel title={t("defenceAnalyst")}>
+                      <p className="text-[11px]">Demo counter-reading, cited.</p>
+                    </Panel>
+                    <Panel title={t("spoRedTeam")}>
+                      <p className="text-[11px]">Demo response, cited.</p>
+                    </Panel>
+                  </div>
+                ) : null}
+                {step === "sourceAudit" ? (
+                  <KeyValue
+                    rows={[
+                      { key: "t", label: tb("audit.citationsTotal"), value: 4 },
+                      { key: "r", label: tb("audit.citationsResolved"), value: 4 },
+                      { key: "h", label: tb("audit.humanVerified"), value: 2 },
+                      { key: "d", label: tb("audit.redacted"), value: 0 },
+                    ]}
+                  />
+                ) : null}
+              </SectionCard>
+            </li>
+          ))}
+        </ol>
+        <aside className="min-w-0 space-y-3 lg:col-span-2 xl:col-span-1">
+          <Panel title={tb("analysis")}>
+            <StatStrip items={direction} columns={2} />
           </Panel>
-        }
-        right={
-          <>
-            <Panel title={t("sourcesUsed")}>
-              <div className="space-y-2">
-                <CitationChip citation={courtCitation} />
-                <CitationChip citation={transcriptCitation} />
-                <CitationChip citation={exhibitCitation} />
-              </div>
-            </Panel>
-            <Panel className="mt-3" title={t("citationStatus")}>
-              <VerificationBadge state="verified" />
-              <p className="text-fg-muted mt-2 text-[10px]">3 / 3</p>
-            </Panel>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          <DemoNotice />
-          {record.map((block, index) => (
-            <RecordBlock
-              key={`${block.kind}-${index}`}
-              sourceType={sourceForAnswer[block.kind as Exclude<AnswerBlockKind, "ai">]}
-              title={block.kind}
-              citations={block.citations}
-              previewCitations
-            >
-              <p>{block.text}</p>
-            </RecordBlock>
-          ))}
-          <ProvenanceBoundary />
-          {ai.map((block, index) => (
-            <AiAnalysisBlock
-              key={index}
-              title={t("neutralReview")}
-              citations={block.citations}
-              previewCitations
-            >
-              {block.text}
-            </AiAnalysisBlock>
-          ))}
-          <div className="flex flex-wrap gap-2">
-            <button className="border-border bg-surface-raised rounded-control border px-3 py-2 text-[11px]">
-              {t("openAllSources")}
-            </button>
-            <button className="border-border bg-surface-raised rounded-control border px-3 py-2 text-[11px]">
-              {t("saveNote")}
-            </button>
-          </div>
-        </div>
-      </WorkspaceGrid>
-    </AppShell>
-  );
-}
-
-export function PublicScreen() {
-  const t = useTranslations("phase5");
-  const footer = useTranslations("footer");
-  const entries = [
-    "whatDecided",
-    "whoTestified",
-    "whichEvidence",
-    "whatHappened",
-    "howConnected",
-    "readSource",
-  ] as const;
-  return (
-    <AppShell mode="light" footer={footer("sourceNote")}>
-      <ScreenHeader
-        eyebrow={t("beforeBegin")}
-        title={t("simpleIntro")}
-        description={t("mockNotice")}
-      />
-      <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-8">
-        <Panel title={t("beforeBegin")}>
-          <p className="text-fg-body text-[12px]">{t("simpleIntro")}</p>
-        </Panel>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {entries.map((key) => (
-            <Link
-              key={key}
-              href={key === "readSource" ? "/documents/F01234" : "/public/demo"}
-              className="border-border bg-surface hover:bg-surface-raised rounded-card border p-4"
-            >
-              <h2 className="text-fg text-[14px] font-semibold">{t(key)}</h2>
-              <p className="text-fg-secondary mt-2 text-[11px]">
-                Generic demo explanation with a route back to the source.
-              </p>
-            </Link>
-          ))}
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Panel title={t("plainLanguage")}>
-            <p className="text-fg-body text-[13px]">
-              A generic sample finding records a limited conclusion based on the cited public
-              material.
-            </p>
-            <div className="mt-3">
-              <CitationChip citation={courtCitation} />
+          <Panel title={tb("issuesReview")}>
+            <KeyValue
+              rows={[{ key: "s", label: tb("reviewState"), value: tb("reviewStates.awaiting") }]}
+            />
+            <div className="mt-2">
+              <ActionLink href="/appeal">{t("appealReview")}</ActionLink>
             </div>
           </Panel>
-          <RecordBlock sourceType="court" title={t("originalText")} citations={[courtCitation]}>
-            <p className="font-serif">
-              Generic demonstrative record wording shown beside, never replaced by, the explanation.
-            </p>
-          </RecordBlock>
-        </div>
-        <Panel title={t("doesNotMean")}>
-          <ul className="space-y-2 text-[11px]">
-            <li>— It does not create a conclusion about any real person.</li>
-            <li>— It does not replace the cited record.</li>
-            <li>— Other sample material may point in another direction.</li>
-          </ul>
-        </Panel>
+          <AiAnalysisBlock citations={[courtCitation]}>
+            Demo analysis of where the sources address the finding. No prediction is produced.
+          </AiAnalysisBlock>
+          <NoteStrip>{t("noPrediction")}</NoteStrip>
+        </aside>
       </div>
     </AppShell>
   );

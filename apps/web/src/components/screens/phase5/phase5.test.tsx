@@ -49,9 +49,9 @@ describe("Phase 5 safety contracts", () => {
     expect(isolate).toHaveAttribute("aria-pressed", "false");
     expect(within(graph).getByRole("button", { name: "Illustrative finding" })).toBeInTheDocument();
 
-    const inspectorToggle = screen.getByText(messagesEn.phase5.viewDetails, {
-      selector: "summary",
-    });
+    const inspectorToggle = screen
+      .getByText(new RegExp(messagesEn.phase5.viewDetails))
+      .closest("summary")!;
     expect(inspectorToggle.closest("details")).toHaveAttribute("open");
     await user.click(inspectorToggle);
     expect(inspectorToggle.closest("details")).not.toHaveAttribute("open");
