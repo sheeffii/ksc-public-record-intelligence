@@ -7,8 +7,8 @@ Live checkpoint. Answers “where exactly did we stop?”. Keep concise; no logs
 Current branch: `feat/phase-7-controlled-ingestion` (cut from `eaeb4ce`, the
 Phase 5B checkpoint on `feat/phase-5b-visual-parity`; 5B itself is not on `main`).
 Phase 7 commits: `86fbcfa` feat(api) · `fc4304b` feat(ingestion) · `448f5fb` docs ·
-then the real-corpus commits (see `git log --oneline -8`); tag `phase-7-complete`
-on the last of them.
+`f6ba449` feat(ingestion) real corpus · `7a867c9` test(ingestion) · `4979fc3` docs;
+tag `phase-7-complete` → HEAD of this branch (`git rev-parse phase-7-complete`).
 Tags: `phase-7-complete` · `phase-5b-complete` → `eaeb4ce` · `phase-6-complete` →
 `bdf7293` (on `main`, pushed) · `phase-5-complete` · `phase-4-complete`.
 Remote: `main` = `origin/main` = `bdf7293`. Nothing since is pushed; never push
