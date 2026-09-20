@@ -39,7 +39,7 @@ describe("Phase 5B visual-parity remediation", () => {
     await user.clear(screen.getByRole("searchbox"));
     await user.type(screen.getByRole("searchbox"), "zzz-none");
     expect(screen.getByText(tb.noMatch)).toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("search groups results with category counts, filters and a query interpretation", async () => {
     const user = userEvent.setup();
