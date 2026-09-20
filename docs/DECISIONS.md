@@ -693,3 +693,59 @@ Relevant files:
 `workers/ingestion/src/ksc_ingestion/evidence_pipeline.py`,
 `apps/api/src/ksc_api/repositories/records.py`,
 `docs/ingestion/PHASE9_QUALITY_GATE.md`.
+
+---
+
+## ADR-015 — Exact finding matrix and honest incomplete-source handling
+
+Date: 2026-09-21
+
+Status: Accepted
+
+Context:
+Phase 10 requires a real finding/evidence matrix, but the controlled corpus does
+not contain the Trial Judgment or every underlying party filing. A structural
+demo alone would not exercise provenance against real Court material, while
+substituting a trial brief for the Judgment would misstate the source.
+
+Decision:
+
+1. A `Finding` keeps an exact adjudicative document version and exact paragraph
+   passage. Canonical text is copied from persisted parsed paragraphs and must
+   match them; no AI or human paraphrase replaces it.
+2. A `FindingEvidenceLink` records whether its basis is an explicit Court
+   citation or a separately reviewed related public record. `court_cited` must
+   agree with that basis. Supporting, qualifying, contrary, and contextual
+   directions are stored only when independently established.
+3. Party positions remain `Argument` records and Court responses remain
+   `ArgumentResponse` records. A position available only through the Court's
+   summary is marked `court_summary` with the missing underlying filing
+   reference; it is not presented as the direct party source.
+4. The per-finding audit includes unresolved citations, missing underlying
+   sources, ambiguous versions, missing transcript coordinates, unverified
+   relationships, visibility, and explicit-versus-related counts. Unresolved
+   links remain visible as unresolved and are never navigable as resolved.
+5. The available real benchmark is the procedural finding at `F03752`
+   paragraphs 12–16. It is labelled a Court decision, not a Trial Judgment.
+   The absent Trial Judgment, `F03743`, and `F03746` remain explicit quality-gate
+   limitations.
+6. Network paths can assist navigation but never create a finding-evidence
+   relationship. No model call, legal conclusion, or person/judicial/outcome
+   score is part of Phase 10.
+
+Consequences:
+
+- Migration `0006` adds exact document-version provenance, relationship basis
+  and category, party-source scope, response verification, and optional
+  finding-linked human notes.
+- The same API handles a complete future Trial Judgment matrix without changing
+  the provenance contract; adding that source requires a new reviewed data run,
+  not fabricated placeholders.
+- Phase 10 can pass its capability and real-data gate while the report remains
+  explicit that a full merits matrix is not yet available.
+
+Relevant files:
+`apps/api/alembic/versions/0006_judgment_findings_matrix.py`,
+`workers/ingestion/src/ksc_ingestion/{findings_pipeline,findings_quality_gate}.py`,
+`apps/api/src/ksc_api/repositories/records.py`,
+`docs/ingestion/PHASE10_QUALITY_GATE.md`.

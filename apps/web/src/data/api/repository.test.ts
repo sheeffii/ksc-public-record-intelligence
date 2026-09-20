@@ -40,6 +40,17 @@ describe("ApiRepository", () => {
     ]);
   });
 
+  it("loads a provenance-backed finding matrix without conflating party positions", async () => {
+    const { repo, stub } = repository();
+    const finding = await repo.getFinding("FD-DEMO-001");
+    expect(finding?.evidence[0]?.courtCited).toBe(true);
+    expect(finding?.evidence[0]?.source.targetPath).toContain("para=12");
+    expect(finding?.arguments[0]?.party).toBe("spo");
+    expect(finding?.arguments[0]?.sourceScope).toBe("court_summary");
+    expect(finding?.audit.sourcesMissing).toBe(1);
+    expect(stub.calls).toEqual(["/findings/FD-DEMO-001/matrix"]);
+  });
+
   it("states a not-public document without fetching content", async () => {
     const { repo, stub } = repository();
     const document = await repo.getDocument("F-DEMO-004");

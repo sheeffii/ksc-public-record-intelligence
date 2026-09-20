@@ -50,6 +50,7 @@ from ksc_api.models import (
     DocumentChunk,
     DocumentIngestionState,
     DocumentPage,
+    DocumentParagraph,
     DocumentSection,
     DocumentVersion,
     DocumentVersionType,
@@ -309,6 +310,21 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
     )
     session.add_all([intro, findings_section])
     session.flush()
+    for sequence, paragraph_number in enumerate((12, 13, 14)):
+        text = f"Synthetic judgment paragraph {paragraph_number} for structural tests."
+        session.add(
+            DocumentParagraph(
+                id=demo_id(f"paragraph:F-DEMO-001/RED:{paragraph_number}"),
+                document_version_id=judgment_red.id,
+                sequence=sequence,
+                paragraph_number=paragraph_number,
+                pdf_page_index_from=1,
+                pdf_page_index_to=1,
+                page_from=2,
+                page_to=2,
+                text=text,
+            )
+        )
     for seq, (section, para_from, para_to, text) in enumerate(
         [
             (intro, 1, 9, "Demo chunk: introduction (synthetic)."),
@@ -525,6 +541,7 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
         case_id=case.id,
         finding_key="FD-DEMO-001",
         judgment_document_id=judgment.id,
+        judgment_version_id=judgment_red.id,
         text="The Panel finds that the synthetic demo event occurred as described (demo text).",
         para_from=12,
         para_to=14,
@@ -772,6 +789,16 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
                 link_type=link_type,
                 court_cited=court_cited,
                 court_cited_para=para,
+                relationship_basis=(
+                    "explicit_court_citation" if court_cited else "related_public_record"
+                ),
+                source_category=(
+                    "witness_testimony"
+                    if citation is c_transcript
+                    else "document_exhibit"
+                    if citation is c_exhibit
+                    else "spo_argument"
+                ),
                 verification_state=VerificationState.HUMAN_VERIFIED,
                 verified_by="demo-reviewer",
                 verified_at=_REVIEWED_AT,
@@ -787,6 +814,7 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
         title="Demo prosecution position (synthetic)",
         text="The prosecution submits (demo) that the synthetic event occurred.",
         document_id=spo_filing.id,
+        document_version_id=spo_version.id,
         para_from=5,
         para_to=5,
         citation_id=c_spo.id,
@@ -800,6 +828,7 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
         title="Demo defence position (synthetic)",
         text="The defence submits (demo) that the synthetic event is not established.",
         document_id=defence_filing.id,
+        document_version_id=defence_version.id,
         para_from=8,
         para_to=8,
         citation_id=c_defence.id,
@@ -813,6 +842,7 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
         title="Demo Panel response (synthetic)",
         text="The Panel addressed both positions at paragraphs 12–14 (demo).",
         document_id=judgment.id,
+        document_version_id=judgment_red.id,
         para_from=12,
         para_to=14,
         citation_id=c_judgment_para.id,
@@ -828,6 +858,9 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
                 response_argument_id=defence_argument.id,
                 response_kind=ArgumentResponseKind.DISPUTES,
                 citation_id=c_defence.id,
+                verification_state=VerificationState.HUMAN_VERIFIED,
+                verified_by="demo-reviewer",
+                verified_at=_REVIEWED_AT,
             ),
             ArgumentResponse(
                 id=demo_id("response:2"),
@@ -835,6 +868,9 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
                 response_argument_id=court_argument.id,
                 response_kind=ArgumentResponseKind.RULES_ON,
                 citation_id=c_judgment_para.id,
+                verification_state=VerificationState.HUMAN_VERIFIED,
+                verified_by="demo-reviewer",
+                verified_at=_REVIEWED_AT,
             ),
             ArgumentResponse(
                 id=demo_id("response:3"),
@@ -842,6 +878,9 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
                 response_argument_id=court_argument.id,
                 response_kind=ArgumentResponseKind.RULES_ON,
                 citation_id=c_judgment_para.id,
+                verification_state=VerificationState.HUMAN_VERIFIED,
+                verified_by="demo-reviewer",
+                verified_at=_REVIEWED_AT,
             ),
         ]
     )

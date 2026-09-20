@@ -226,6 +226,9 @@ class FindingEvidenceLinkRead(ReadModel):
     link_type: FindingLinkType
     court_cited: bool
     court_cited_para: int | None
+    relationship_basis: Literal["explicit_court_citation", "related_public_record"]
+    source_category: str
+    note: str | None
     verification_state: VerificationState
     citation: CitationRead
 
@@ -236,8 +239,11 @@ class ArgumentRead(ReadModel):
     title: str
     text: str
     document_ref: str | None
+    document_version_ref: str | None
     para_from: int | None
     para_to: int | None
+    source_scope: Literal["direct_source", "court_summary", "source_missing"]
+    underlying_source_ref: str | None
     verification_state: VerificationState
     citation: CitationRead | None
 
@@ -245,7 +251,62 @@ class ArgumentRead(ReadModel):
 class ArgumentResponseRead(ReadModel):
     response_kind: str
     argument: ArgumentRead
+    verification_state: VerificationState
     citation: CitationRead | None
+
+
+class JudgmentSectionRead(ReadModel):
+    heading: str
+    level: int = Field(ge=0)
+    para_from: int | None
+    para_to: int | None
+
+
+class JudgmentParagraphRead(ReadModel):
+    paragraph_number: int = Field(ge=1)
+    page_from: int | None
+    pdf_page_index_from: int = Field(ge=0)
+    text: str
+
+
+class JudgmentStructureRead(ReadModel):
+    document_ref: str
+    document_title: str
+    document_type: str
+    version_ref: str | None
+    visibility: Visibility
+    source_url: str | None
+    sections: list[JudgmentSectionRead]
+    paragraphs: list[JudgmentParagraphRead]
+
+
+class HumanNoteRead(ReadModel):
+    author: str
+    title: str
+    body: str
+    provenance: Literal["human"]
+    citations: list[CitationRead]
+
+
+class SourceAuditIssueRead(ReadModel):
+    code: str
+    detail: str
+
+
+class FindingSourceAuditRead(ReadModel):
+    citations_total: int = Field(ge=0)
+    citations_resolved: int = Field(ge=0)
+    citations_unresolved: int = Field(ge=0)
+    citations_ambiguous: int = Field(ge=0)
+    citations_invalid: int = Field(ge=0)
+    sources_missing: int = Field(ge=0)
+    ambiguous_versions: int = Field(ge=0)
+    transcript_coordinates_missing: int = Field(ge=0)
+    relationships_unverified: int = Field(ge=0)
+    public_redacted_sources: int = Field(ge=0)
+    explicitly_cited_by_court: int = Field(ge=0)
+    related_not_explicit: int = Field(ge=0)
+    issues: list[SourceAuditIssueRead]
 
 
 class FindingSummary(ReadModel):
@@ -267,6 +328,12 @@ class FindingDetail(FindingSummary):
     mode_of_liability: str | None
     evidence_links: list[FindingEvidenceLinkRead]
     arguments: list[ArgumentRead]
+    court_responses: list[ArgumentResponseRead]
+    judgment: JudgmentStructureRead
+    human_notes: list[HumanNoteRead]
+    source_audit: FindingSourceAuditRead
+    corroboration_categories: dict[str, int]
+    corroboration_note: str
 
 
 class TranscriptSegmentRead(ReadModel):

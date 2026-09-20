@@ -49,9 +49,12 @@ from ksc_api.schemas.records import (
     ExhibitRead,
     FindingDetail,
     FindingEvidenceLinkRead,
+    FindingSourceAuditRead,
     FindingSummary,
     GraphNodeRead,
+    HumanNoteRead,
     IncidentRead,
+    JudgmentStructureRead,
     PersonRead,
     ReferenceCounts,
     RelationshipRead,
@@ -412,6 +415,9 @@ def to_evidence_link(link: FindingEvidenceLink) -> FindingEvidenceLinkRead:
         link_type=link.link_type,
         court_cited=link.court_cited,
         court_cited_para=link.court_cited_para,
+        relationship_basis=link.relationship_basis,
+        source_category=link.source_category,
+        note=link.note,
         verification_state=link.verification_state,
         citation=to_citation(link.citation),
     )
@@ -425,10 +431,17 @@ def to_argument(argument: Argument) -> ArgumentRead:
         title=argument.title,
         text=argument.text,
         document_ref=argument.document.official_ref if argument.document is not None else None,
+        document_version_ref=(
+            argument.document_version.official_version_ref
+            if argument.document_version is not None
+            else None
+        ),
         para_from=argument.para_from,
         para_to=argument.para_to,
+        source_scope=argument.source_scope,
+        underlying_source_ref=argument.underlying_source_ref,
         verification_state=argument.verification_state,
-        citation=to_citation(citation) if citation is not None and citation.is_resolved else None,
+        citation=to_citation(citation) if citation is not None else None,
     )
 
 
@@ -437,7 +450,8 @@ def to_argument_response(response: ArgumentResponse) -> ArgumentResponseRead:
     return ArgumentResponseRead(
         response_kind=response.response_kind.value,
         argument=to_argument(response.response_argument),
-        citation=to_citation(citation) if citation is not None and citation.is_resolved else None,
+        verification_state=response.verification_state,
+        citation=to_citation(citation) if citation is not None else None,
     )
 
 
@@ -463,6 +477,12 @@ def to_finding_detail(
     counts: ReferenceCounts,
     links: list[FindingEvidenceLink],
     arguments: list[Argument],
+    *,
+    court_responses: list[ArgumentResponseRead],
+    judgment: JudgmentStructureRead,
+    human_notes: list[HumanNoteRead],
+    source_audit: FindingSourceAuditRead,
+    corroboration_categories: dict[str, int],
 ) -> FindingDetail:
     summary = to_finding_summary(finding, counts)
     return FindingDetail(
@@ -471,6 +491,14 @@ def to_finding_detail(
         mode_of_liability=finding.mode_of_liability,
         evidence_links=[to_evidence_link(link) for link in links],
         arguments=[to_argument(a) for a in arguments],
+        court_responses=court_responses,
+        judgment=judgment,
+        human_notes=human_notes,
+        source_audit=source_audit,
+        corroboration_categories=corroboration_categories,
+        corroboration_note=(
+            "No additional corroborating source has been identified in the indexed public record."
+        ),
     )
 
 

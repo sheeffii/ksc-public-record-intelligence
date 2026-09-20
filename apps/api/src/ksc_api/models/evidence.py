@@ -260,6 +260,14 @@ class Finding(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
         nullable=False,
         index=True,
     )
+    judgment_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("document_versions.id", ondelete="RESTRICT"),
+        index=True,
+    )
+    extraction_origin: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="manual", server_default="manual"
+    )
     # Exact court text.
     text: Mapped[str] = mapped_column(Text, nullable=False)
     para_from: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -279,6 +287,7 @@ class Finding(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     )
 
     judgment_document: Mapped[Document] = relationship()
+    judgment_version: Mapped[DocumentVersion | None] = relationship()
     person: Mapped[Person | None] = relationship()
     incident: Mapped[Incident | None] = relationship()
     citation: Mapped[Citation | None] = relationship(foreign_keys=[citation_id])
@@ -295,6 +304,20 @@ class FindingEvidenceLink(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin
         ),
         CheckConstraint(
             "court_cited OR court_cited_para IS NULL", name="cited_para_needs_court_cited"
+        ),
+        CheckConstraint(
+            "relationship_basis IN ('explicit_court_citation', 'related_public_record')",
+            name="relationship_basis_allowed",
+        ),
+        CheckConstraint(
+            "court_cited = (relationship_basis = 'explicit_court_citation')",
+            name="court_cited_matches_basis",
+        ),
+        CheckConstraint(
+            "source_category IN ('court_finding', 'spo_argument', 'defence_argument', "
+            "'witness_testimony', 'document_exhibit', 'court_response', 'human_note', "
+            "'ai_analysis', 'other')",
+            name="source_category_allowed",
         ),
         human_verification_requires_reviewer(),
     )
@@ -319,6 +342,17 @@ class FindingEvidenceLink(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin
         Boolean, nullable=False, default=False, server_default="false"
     )
     court_cited_para: Mapped[int | None] = mapped_column(Integer)
+    relationship_basis: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="related_public_record",
+        server_default="related_public_record",
+    )
+    source_category: Mapped[str] = mapped_column(String(32), nullable=False)
+    extraction_origin: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="manual", server_default="manual"
+    )
+    note: Mapped[str | None] = mapped_column(Text)
 
     finding: Mapped[Finding] = relationship(back_populates="evidence_links")
     citation: Mapped[Citation] = relationship()
@@ -333,6 +367,10 @@ class Argument(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
         CheckConstraint(
             "para_to IS NULL OR para_from IS NULL OR para_to >= para_from", name="para_range"
         ),
+        CheckConstraint(
+            "source_scope IN ('direct_source', 'court_summary', 'source_missing')",
+            name="source_scope_allowed",
+        ),
         human_verification_requires_reviewer(),
     )
 
@@ -346,6 +384,9 @@ class Argument(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     document_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("documents.id", ondelete="SET NULL"), index=True
     )
+    document_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="SET NULL"), index=True
+    )
     para_from: Mapped[int | None] = mapped_column(Integer)
     para_to: Mapped[int | None] = mapped_column(Integer)
     citation_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -354,8 +395,16 @@ class Argument(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     finding_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("findings.id", ondelete="SET NULL"), index=True
     )
+    source_scope: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="direct_source", server_default="direct_source"
+    )
+    underlying_source_ref: Mapped[str | None] = mapped_column(String(255))
+    extraction_origin: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="manual", server_default="manual"
+    )
 
     document: Mapped[Document | None] = relationship()
+    document_version: Mapped[DocumentVersion | None] = relationship()
     citation: Mapped[Citation | None] = relationship()
     finding: Mapped[Finding | None] = relationship()
     responses: Mapped[list[ArgumentResponse]] = relationship(
@@ -365,7 +414,7 @@ class Argument(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     )
 
 
-class ArgumentResponse(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class ArgumentResponse(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     """`response_argument` responds to / disputes / concurs with / rules on `argument`."""
 
     __tablename__ = "argument_responses"
@@ -374,6 +423,7 @@ class ArgumentResponse(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "argument_id", "response_argument_id", "response_kind", name="uq_argument_responses"
         ),
         CheckConstraint("argument_id <> response_argument_id", name="no_self_response"),
+        human_verification_requires_reviewer(),
     )
 
     argument_id: Mapped[uuid.UUID] = mapped_column(
@@ -395,6 +445,9 @@ class ArgumentResponse(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("citations.id", ondelete="SET NULL")
     )
     note: Mapped[str | None] = mapped_column(Text)
+    extraction_origin: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="manual", server_default="manual"
+    )
 
     argument: Mapped[Argument] = relationship(
         back_populates="responses", foreign_keys=[argument_id]

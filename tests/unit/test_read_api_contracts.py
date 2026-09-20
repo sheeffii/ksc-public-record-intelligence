@@ -40,6 +40,7 @@ def test_read_routes_are_registered_under_v1(client):
         "/api/v1/incidents/{slug}",
         "/api/v1/findings",
         "/api/v1/findings/{finding_key}",
+        "/api/v1/findings/{finding_key}/matrix",
         "/api/v1/claims",
         "/api/v1/claims/{claim_key}",
         "/api/v1/arguments",

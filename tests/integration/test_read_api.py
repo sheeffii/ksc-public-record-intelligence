@@ -92,7 +92,7 @@ def test_person_exhibit_incident_details(demo_client):
     assert demo_client.get(f"{V1}/people/nobody").status_code == 404
 
 
-def test_finding_detail_carries_only_resolved_evidence(demo_client):
+def test_finding_detail_exposes_structured_matrix_and_source_audit(demo_client):
     body = demo_client.get(f"{V1}/findings/FD-DEMO-001").json()
     assert body["judgment_ref"] == "KSC-DEMO-0000/F-DEMO-001"
     assert body["citation"]["display"] == "F-DEMO-001 · ¶12\u201314"  # canonical EN DASH
@@ -101,8 +101,18 @@ def test_finding_detail_carries_only_resolved_evidence(demo_client):
     assert all(link["citation"]["resolved"] for link in body["evidence_links"])
     court_cited = [link for link in body["evidence_links"] if link["court_cited"]]
     assert all(link["court_cited_para"] == 13 for link in court_cited)
+    assert all(link["relationship_basis"] == "explicit_court_citation" for link in court_cited)
     parties = {a["party"] for a in body["arguments"]}
     assert parties == {"spo", "defence", "court"}
+    assert body["judgment"]["version_ref"] == "F-DEMO-001/RED"
+    assert body["judgment"]["sections"]
+    assert len(body["court_responses"]) == 2
+    assert all(item["argument"]["party"] == "court" for item in body["court_responses"])
+    assert body["source_audit"]["citations_total"] >= 4
+    assert body["source_audit"]["citations_unresolved"] == 0
+    assert body["corroboration_note"].startswith("No additional corroborating source")
+    matrix = demo_client.get(f"{V1}/findings/FD-DEMO-001/matrix")
+    assert matrix.status_code == 200 and matrix.json() == body
     listing = demo_client.get(f"{V1}/findings").json()
     assert listing["total"] == 1 and "evidence_links" not in listing["items"][0]
 

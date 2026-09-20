@@ -32,6 +32,8 @@ from ksc_ingestion.capture_import import SourceImportError, import_capture
 from ksc_ingestion.corpus_manifest import build_manifest, validate_manifest_file, write_manifest
 from ksc_ingestion.evidence_pipeline import Phase9Pipeline
 from ksc_ingestion.fetch import HttpFetcher
+from ksc_ingestion.findings_pipeline import Phase10Pipeline
+from ksc_ingestion.findings_quality_gate import run_phase10_gate, write_phase10_report
 from ksc_ingestion.parse_pipeline import Phase8Pipeline
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor, RunOutcome
 from ksc_ingestion.probe import probe, record_probe
@@ -250,6 +252,44 @@ def cmd_build_evidence(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_build_findings(args: argparse.Namespace) -> int:
+    """Build the hand-reviewed real finding benchmark; performs no network access."""
+    settings = get_settings()
+    result = Phase10Pipeline(get_sessionmaker(), case_number=settings.case_id).run()
+    print(
+        f"findings={result.findings} evidence_links={result.evidence_links} "
+        f"party_arguments={result.party_arguments} court_responses={result.court_responses} "
+        f"missing_underlying_party_sources={result.missing_underlying_party_sources}"
+    )
+    return 0
+
+
+def cmd_gate_findings(args: argparse.Namespace) -> int:
+    """Audit the Phase 10 real-data benchmark and its known source gaps."""
+    settings = get_settings()
+    manifest = Path(args.manifest)
+    with get_sessionmaker()() as session:
+        report = run_phase10_gate(
+            session,
+            case_number=settings.case_id,
+            manifest_path=manifest,
+            generated_at=args.generated_at,
+        )
+    print(
+        f"findings={report.findings} exact_mappings={report.exact_paragraph_mappings} "
+        f"explicit_links={report.explicit_court_cited_links} "
+        f"party_positions={report.party_positions} court_responses={report.court_responses} "
+        f"trial_judgment_present={str(report.trial_judgment_present).lower()} "
+        f"passed={str(report.passed).lower()}"
+    )
+    for item in report.missing_official_material:
+        print(f"  missing: {item}")
+    if args.json:
+        write_phase10_report(report, Path(args.json))
+        print(f"report written to {args.json}")
+    return 0 if report.passed else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ksc-ingest", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -301,6 +341,20 @@ def build_parser() -> argparse.ArgumentParser:
         "build-evidence", help="build citation-backed graph edges and source-backed timeline events"
     )
     p_evidence.set_defaults(func=cmd_build_evidence)
+    p_findings = sub.add_parser(
+        "build-findings",
+        help="build the hand-reviewed finding/evidence benchmark from held public records",
+    )
+    p_findings.set_defaults(func=cmd_build_findings)
+    p_findings_gate = sub.add_parser(
+        "gate-findings", help="audit the Phase 10 finding matrix against the controlled corpus"
+    )
+    p_findings_gate.add_argument(
+        "--manifest", default="docs/ingestion/manifests/phase7-controlled-corpus.json"
+    )
+    p_findings_gate.add_argument("--generated-at", default="2026-09-21")
+    p_findings_gate.add_argument("--json")
+    p_findings_gate.set_defaults(func=cmd_gate_findings)
     return parser
 
 

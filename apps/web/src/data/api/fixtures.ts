@@ -12,6 +12,7 @@ import type {
   ApiEvent,
   ApiEvidencePath,
   ApiExhibit,
+  ApiFindingDetail,
   ApiFindingSummary,
   ApiIncident,
   ApiNetwork,
@@ -202,6 +203,81 @@ export const finding: ApiFindingSummary = {
   counts,
 };
 
+export const findingDetail: ApiFindingDetail = {
+  ...finding,
+  legal_element: "demo procedural issue",
+  mode_of_liability: null,
+  evidence_links: [
+    {
+      link_type: "relies_on",
+      court_cited: true,
+      court_cited_para: 12,
+      relationship_basis: "explicit_court_citation",
+      source_category: "document_exhibit",
+      note: "Explicit demo citation.",
+      verification_state: "human_verified",
+      citation: {
+        ...resolvedCitation,
+        target_path: "/documents/F-DEMO-001?version=F-DEMO-001%2FRED&para=12",
+        source_path: "/documents/F-DEMO-001?version=F-DEMO-001%2FRED&para=12",
+      },
+    },
+  ],
+  arguments: [
+    {
+      argument_key: "AR-DEMO-SPO",
+      party: "spo",
+      title: "SPO position",
+      text: "Synthetic SPO position.",
+      document_ref: "KSC-DEMO-0000/F-DEMO-001",
+      document_version_ref: "F-DEMO-001/RED",
+      para_from: 10,
+      para_to: 10,
+      source_scope: "court_summary",
+      underlying_source_ref: "F-DEMO-MISSING",
+      verification_state: "human_verified",
+      citation: resolvedCitation,
+    },
+  ],
+  court_responses: [],
+  judgment: {
+    document_ref: "KSC-DEMO-0000/F-DEMO-001",
+    document_title: "Demo judgment (synthetic)",
+    document_type: "judgment",
+    version_ref: "F-DEMO-001/RED",
+    visibility: "public_redacted",
+    source_url: "https://example.invalid/demo/F-DEMO-001",
+    sections: [{ heading: "II. Findings", level: 0, para_from: 10, para_to: 20 }],
+    paragraphs: [
+      {
+        paragraph_number: 12,
+        page_from: 2,
+        pdf_page_index_from: 1,
+        text: "The Panel finds (demo text).",
+      },
+    ],
+  },
+  human_notes: [],
+  source_audit: {
+    citations_total: 2,
+    citations_resolved: 2,
+    citations_unresolved: 0,
+    citations_ambiguous: 0,
+    citations_invalid: 0,
+    sources_missing: 1,
+    ambiguous_versions: 0,
+    transcript_coordinates_missing: 0,
+    relationships_unverified: 0,
+    public_redacted_sources: 1,
+    explicitly_cited_by_court: 1,
+    related_not_explicit: 0,
+    issues: [{ code: "underlying_party_source_missing", detail: "Synthetic source missing." }],
+  },
+  corroboration_categories: { document_exhibit: 1 },
+  corroboration_note:
+    "No additional corroborating source has been identified in the indexed public record.",
+};
+
 export const events: ApiEvent[] = [
   {
     id: "e-1",
@@ -388,6 +464,7 @@ export const routes: Record<string, unknown> = {
   "/exhibits": page([exhibit]),
   "/incidents": page([incident]),
   "/findings": page([finding]),
+  "/findings/FD-DEMO-001/matrix": findingDetail,
   "/events": page(events),
   "/claims": page([claim]),
   "/network": network,

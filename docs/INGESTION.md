@@ -52,6 +52,10 @@ parse        held MinIO PDF only → native text pages → numbered paragraphs /
 resolve      exact citation extraction → record_identifiers / held-coordinate
              lookup → persisted RESOLVED / AMBIGUOUS / UNRESOLVED / INVALID
 index        generated PostgreSQL tsvector columns + GIN indexes; no embeddings
+project      resolved citations → provenance-backed network edges; persisted
+             source dates → typed timeline events (`ksc-ingest build-evidence`)
+findings     hand-reviewed exact Court passages → finding/evidence/party-response
+             matrix (`ksc-ingest build-findings`); no text inference or AI
 ```
 
 Item statuses: `downloaded` · `metadata_only` (URLs recorded, bytes not
@@ -109,6 +113,17 @@ and is never backfilled from the PDF index. Citation source character spans and
 all target coordinates are persisted. Non-resolved citations keep no target and
 display `UNRESOLVED`. Search is lexical PostgreSQL FTS plus exact normalized
 identifier lookup (ADR-013); embeddings remain unauthorized and absent.
+
+## Phase 10 finding matrix
+
+`ksc-ingest build-findings` reads only held parsed records and performs no
+network request. It copies the exact reviewed Court passage, creates exact
+paragraph targets, and persists only explicitly established relationships.
+`ksc-ingest gate-findings --json <path>` checks paragraph identity, citation
+source coordinates, relationship review states, party separation, and missing
+official sources. The current controlled corpus lacks the Trial Judgment, so
+the real benchmark is a narrowly scoped Court decision and that limitation is
+kept explicit in `docs/ingestion/PHASE10_QUALITY_GATE.md`.
 
 ## Date and language rules
 

@@ -11,6 +11,7 @@ export function createMockRepositoryAdapter(
     getPerson: async (slug) => source.getPerson(slug),
     getWitness: async (code) => source.getWitness(code),
     getDocument: async (id) => source.getDocument(id),
+    getFinding: async () => null,
     search: async (query) => source.search(query),
     getNetwork: async () => source.getNetwork(),
     getPath: async () => source.getPath(),

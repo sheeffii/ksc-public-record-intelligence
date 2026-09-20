@@ -27,6 +27,8 @@ from ksc_api.config import Settings, get_settings
 from ksc_api.db.session import get_session
 from ksc_api.models import (
     Argument,
+    ArgumentResponse,
+    ArgumentResponseKind,
     Case,
     Citation,
     Claim,
@@ -35,6 +37,7 @@ from ksc_api.models import (
     DocumentChunk,
     DocumentPage,
     DocumentParagraph,
+    DocumentSection,
     DocumentVersion,
     EntityKind,
     Event,
@@ -52,11 +55,13 @@ from ksc_api.models import (
     Relationship,
     RelationshipOrigin,
     RelationshipType,
+    ResearchNote,
     ResolutionState,
     SourceRecord,
     Transcript,
     TranscriptSegment,
     VerificationState,
+    Visibility,
     Witness,
     normalize_identifier,
 )
@@ -82,15 +87,21 @@ from ksc_api.schemas.records import (
     EvidencePathRead,
     ExhibitRead,
     FindingDetail,
+    FindingSourceAuditRead,
     FindingSummary,
     GraphNodeRead,
+    HumanNoteRead,
     IncidentRead,
+    JudgmentParagraphRead,
+    JudgmentSectionRead,
+    JudgmentStructureRead,
     NetworkRead,
     PersonRead,
     ReferenceCounts,
     RelationshipRead,
     SearchHit,
     SearchRead,
+    SourceAuditIssueRead,
     TranscriptRead,
     WitnessRead,
 )
@@ -470,6 +481,7 @@ class RecordRepository:
             select(Finding)
             .options(
                 selectinload(Finding.judgment_document),
+                selectinload(Finding.judgment_version),
                 selectinload(Finding.person),
                 selectinload(Finding.incident),
                 selectinload(Finding.citation).options(*CITATION_LOAD),
@@ -498,11 +510,9 @@ class RecordRepository:
         links = self.session.scalars(
             select(FindingEvidenceLink)
             .options(selectinload(FindingEvidenceLink.citation).options(*CITATION_LOAD))
-            .join(Citation, FindingEvidenceLink.citation_id == Citation.id)
             .where(
                 FindingEvidenceLink.finding_id == finding.id,
                 not_rejected(FindingEvidenceLink),
-                citation_resolved(),
             )
             .order_by(FindingEvidenceLink.link_type, FindingEvidenceLink.created_at)
         ).all()
@@ -510,13 +520,257 @@ class RecordRepository:
             select(Argument)
             .options(
                 selectinload(Argument.document),
+                selectinload(Argument.document_version),
                 selectinload(Argument.citation).options(*CITATION_LOAD),
             )
             .where(Argument.finding_id == finding.id, not_rejected(Argument))
             .order_by(Argument.party, Argument.argument_key)
         ).all()
+        argument_ids = [argument.id for argument in arguments]
+        responses = (
+            self.session.scalars(
+                select(ArgumentResponse)
+                .options(
+                    selectinload(ArgumentResponse.response_argument).options(
+                        selectinload(Argument.document),
+                        selectinload(Argument.document_version),
+                        selectinload(Argument.citation).options(*CITATION_LOAD),
+                    ),
+                    selectinload(ArgumentResponse.citation).options(*CITATION_LOAD),
+                )
+                .where(
+                    ArgumentResponse.argument_id.in_(argument_ids),
+                    not_rejected(ArgumentResponse),
+                )
+                .order_by(ArgumentResponse.created_at)
+            ).all()
+            if argument_ids
+            else []
+        )
+        responses = [
+            response
+            for response in responses
+            if response.response_kind == ArgumentResponseKind.RULES_ON
+            and response.response_argument.party == Party.COURT
+        ]
+        notes = self.session.scalars(
+            select(ResearchNote)
+            .options(selectinload(ResearchNote.citations).options(*CITATION_LOAD))
+            .where(ResearchNote.finding_id == finding.id)
+            .order_by(ResearchNote.created_at)
+        ).all()
+        version = finding.judgment_version
+        if version is None:
+            version = self.session.scalar(
+                select(DocumentVersion)
+                .where(
+                    DocumentVersion.document_id == finding.judgment_document_id,
+                    public_visibility(DocumentVersion.visibility),
+                )
+                .order_by(DocumentVersion.public_date.desc().nullslast())
+                .limit(1)
+            )
+        sections: Sequence[DocumentSection] = []
+        paragraphs: Sequence[DocumentParagraph] = []
+        if version is not None:
+            sections = self.session.scalars(
+                select(DocumentSection)
+                .where(
+                    DocumentSection.document_version_id == version.id,
+                    or_(
+                        DocumentSection.para_from.is_(None),
+                        DocumentSection.para_to.is_(None),
+                        and_(
+                            DocumentSection.para_from <= (finding.para_to or finding.para_from),
+                            DocumentSection.para_to >= finding.para_from,
+                        ),
+                    ),
+                )
+                .order_by(DocumentSection.sequence)
+            ).all()
+            paragraphs = self.session.scalars(
+                select(DocumentParagraph)
+                .where(
+                    DocumentParagraph.document_version_id == version.id,
+                    DocumentParagraph.paragraph_number >= finding.para_from,
+                    DocumentParagraph.paragraph_number <= (finding.para_to or finding.para_from),
+                )
+                .order_by(DocumentParagraph.paragraph_number)
+            ).all()
+
+        judgment = JudgmentStructureRead(
+            document_ref=finding.judgment_document.official_ref,
+            document_title=finding.judgment_document.title,
+            document_type=finding.judgment_document.document_type,
+            version_ref=version.official_version_ref if version is not None else None,
+            visibility=(
+                version.visibility if version is not None else finding.judgment_document.visibility
+            ),
+            source_url=(
+                version.source_url if version is not None else finding.judgment_document.source_url
+            ),
+            sections=[
+                JudgmentSectionRead(
+                    heading=section.heading,
+                    level=section.level,
+                    para_from=section.para_from,
+                    para_to=section.para_to,
+                )
+                for section in sections
+            ],
+            paragraphs=[
+                JudgmentParagraphRead(
+                    paragraph_number=paragraph.paragraph_number,
+                    page_from=paragraph.page_from,
+                    pdf_page_index_from=paragraph.pdf_page_index_from,
+                    text=paragraph.text,
+                )
+                for paragraph in paragraphs
+            ],
+        )
+        response_reads = [mappers.to_argument_response(response) for response in responses]
+        note_reads = [
+            HumanNoteRead(
+                author=note.author,
+                title=note.title,
+                body=note.body,
+                provenance="human",
+                citations=[mappers.to_citation(citation) for citation in note.citations],
+            )
+            for note in notes
+        ]
+        source_audit = self._finding_source_audit(finding, links, arguments, responses, notes)
+        categories: dict[str, int] = {}
+        for link in links:
+            categories[link.source_category] = categories.get(link.source_category, 0) + 1
         counts = self._counts(EntityKind.FINDING, [finding.id]).get(finding.id, mappers.ZERO_COUNTS)
-        return mappers.to_finding_detail(finding, counts, list(links), list(arguments))
+        return mappers.to_finding_detail(
+            finding,
+            counts,
+            list(links),
+            list(arguments),
+            court_responses=response_reads,
+            judgment=judgment,
+            human_notes=note_reads,
+            source_audit=source_audit,
+            corroboration_categories=categories,
+        )
+
+    @staticmethod
+    def _finding_source_audit(
+        finding: Finding,
+        links: Sequence[FindingEvidenceLink],
+        arguments: Sequence[Argument],
+        responses: Sequence[ArgumentResponse],
+        notes: Sequence[ResearchNote],
+    ) -> FindingSourceAuditRead:
+        citations: dict[uuid.UUID, Citation] = {}
+        if finding.citation is not None:
+            citations[finding.citation.id] = finding.citation
+        for link in links:
+            citations[link.citation.id] = link.citation
+        for argument in arguments:
+            if argument.citation is not None:
+                citations[argument.citation.id] = argument.citation
+        for response in responses:
+            if response.citation is not None:
+                citations[response.citation.id] = response.citation
+        for note in notes:
+            for citation in note.citations:
+                citations[citation.id] = citation
+
+        states = [citation.resolution_state for citation in citations.values()]
+        missing_arguments = [
+            argument
+            for argument in arguments
+            if argument.source_scope in {"court_summary", "source_missing"}
+        ]
+        transcript_missing = sum(
+            1
+            for citation in citations.values()
+            if (citation.target_transcript_id or citation.target_transcript_segment_id)
+            and (citation.target_page is None or citation.target_line_from is None)
+        )
+        unverified = (
+            sum(link.verification_state != VerificationState.HUMAN_VERIFIED for link in links)
+            + sum(
+                argument.verification_state != VerificationState.HUMAN_VERIFIED
+                for argument in arguments
+            )
+            + sum(
+                response.verification_state != VerificationState.HUMAN_VERIFIED
+                for response in responses
+            )
+        )
+        redacted = sum(
+            1
+            for citation in citations.values()
+            if (
+                citation.target_document_version is not None
+                and citation.target_document_version.visibility == Visibility.PUBLIC_REDACTED
+            )
+            or (
+                citation.target_document is not None
+                and citation.target_document.visibility == Visibility.PUBLIC_REDACTED
+            )
+        )
+        issues: list[SourceAuditIssueRead] = []
+        for argument in missing_arguments:
+            ref = argument.underlying_source_ref or "unidentified underlying source"
+            issues.append(
+                SourceAuditIssueRead(
+                    code="underlying_party_source_missing",
+                    detail=(
+                        f"{argument.party.value} position is available only as the Court's "
+                        f"summary; {ref} is not held in the controlled corpus."
+                    ),
+                )
+            )
+        unresolved = states.count(ResolutionState.UNRESOLVED)
+        ambiguous = states.count(ResolutionState.AMBIGUOUS)
+        invalid = states.count(ResolutionState.INVALID)
+        if unresolved:
+            issues.append(
+                SourceAuditIssueRead(
+                    code="unresolved_citation",
+                    detail=f"{unresolved} linked citation(s) unresolved.",
+                )
+            )
+        if ambiguous:
+            issues.append(
+                SourceAuditIssueRead(
+                    code="ambiguous_version", detail=f"{ambiguous} linked citation(s) ambiguous."
+                )
+            )
+        if transcript_missing:
+            issues.append(
+                SourceAuditIssueRead(
+                    code="transcript_coordinate_missing",
+                    detail=f"{transcript_missing} transcript citation(s) lack exact line coordinates.",
+                )
+            )
+        if unverified:
+            issues.append(
+                SourceAuditIssueRead(
+                    code="relationship_unverified",
+                    detail=f"{unverified} finding relationship(s) are not human verified.",
+                )
+            )
+        return FindingSourceAuditRead(
+            citations_total=len(citations),
+            citations_resolved=states.count(ResolutionState.RESOLVED),
+            citations_unresolved=unresolved,
+            citations_ambiguous=ambiguous,
+            citations_invalid=invalid,
+            sources_missing=len(missing_arguments) + unresolved,
+            ambiguous_versions=ambiguous,
+            transcript_coordinates_missing=transcript_missing,
+            relationships_unverified=unverified,
+            public_redacted_sources=redacted,
+            explicitly_cited_by_court=sum(link.court_cited for link in links),
+            related_not_explicit=sum(not link.court_cited for link in links),
+            issues=issues,
+        )
 
     # ------------------------------------------------------------- claims --
     def list_claims(self, *, limit: int, offset: int) -> Page[ClaimRead]:

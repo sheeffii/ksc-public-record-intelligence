@@ -23,6 +23,9 @@ import type {
   DirectoryRow,
   DocumentView,
   EvidenceRow,
+  FindingArgumentView,
+  FindingCitationView,
+  FindingView,
   NetworkEdge,
   NetworkNode,
   PersonDossier,
@@ -39,6 +42,7 @@ import type {
   ApiEvent,
   ApiExhibit,
   ApiFindingSummary,
+  ApiFindingDetail,
   ApiGraphNode,
   ApiIncident,
   ApiParty,
@@ -222,6 +226,104 @@ export function findingRow(finding: ApiFindingSummary): DirectoryRow | null {
     references: references(finding.counts),
     verification,
     href: `/findings/${finding.finding_key}`,
+  };
+}
+
+function findingCitation(citation: ApiCitation): FindingCitationView {
+  return {
+    citation: toCitation(citation),
+    targetPath: citation.target_path ?? undefined,
+    sourcePath: citation.source_path ?? undefined,
+    rawText: citation.raw_text,
+    resolutionState: citation.resolution_state,
+  };
+}
+
+function findingArgument(argument: ApiFindingDetail["arguments"][number]): FindingArgumentView {
+  return {
+    key: argument.argument_key,
+    party: argument.party,
+    title: argument.title,
+    text: argument.text,
+    documentRef: argument.document_ref ?? undefined,
+    versionRef: argument.document_version_ref ?? undefined,
+    paraFrom: argument.para_from ?? undefined,
+    paraTo: argument.para_to ?? undefined,
+    sourceScope: argument.source_scope,
+    underlyingSourceRef: argument.underlying_source_ref ?? undefined,
+    verification: toVerification(argument.verification_state) ?? "unreviewed",
+    source: argument.citation ? findingCitation(argument.citation) : undefined,
+  };
+}
+
+export function toFinding(finding: ApiFindingDetail): FindingView {
+  return {
+    key: finding.finding_key,
+    text: finding.text,
+    paraFrom: finding.para_from,
+    paraTo: finding.para_to ?? undefined,
+    chargeRef: finding.charge_ref ?? undefined,
+    legalElement: finding.legal_element ?? undefined,
+    modeOfLiability: finding.mode_of_liability ?? undefined,
+    verification: toVerification(finding.verification_state) ?? "unreviewed",
+    source: finding.citation ? findingCitation(finding.citation) : undefined,
+    adjudicativeRecord: {
+      ref: finding.judgment.document_ref,
+      title: finding.judgment.document_title,
+      documentType: finding.judgment.document_type,
+      versionRef: finding.judgment.version_ref ?? undefined,
+      visibility: finding.judgment.visibility,
+      sourceUrl: finding.judgment.source_url ?? undefined,
+      sections: finding.judgment.sections.map((section) => ({
+        heading: section.heading,
+        level: section.level,
+        paraFrom: section.para_from ?? undefined,
+        paraTo: section.para_to ?? undefined,
+      })),
+      paragraphs: finding.judgment.paragraphs.map((paragraph) => ({
+        number: paragraph.paragraph_number,
+        page: paragraph.page_from ?? undefined,
+        pdfPageIndex: paragraph.pdf_page_index_from,
+        text: paragraph.text,
+      })),
+    },
+    evidence: finding.evidence_links.map((link) => ({
+      linkType: link.link_type,
+      courtCited: link.court_cited,
+      courtCitedPara: link.court_cited_para ?? undefined,
+      relationshipBasis: link.relationship_basis,
+      sourceCategory: link.source_category,
+      note: link.note ?? undefined,
+      verification: toVerification(link.verification_state) ?? "unreviewed",
+      source: findingCitation(link.citation),
+    })),
+    arguments: finding.arguments.map(findingArgument),
+    courtResponses: finding.court_responses.map((response) => ({
+      kind: response.response_kind,
+      response: findingArgument(response.argument),
+      verification: toVerification(response.verification_state) ?? "unreviewed",
+      source: response.citation ? findingCitation(response.citation) : undefined,
+    })),
+    humanNotes: finding.human_notes.map((note) => ({
+      author: note.author,
+      title: note.title,
+      body: note.body,
+      sources: note.citations.map(findingCitation),
+    })),
+    audit: {
+      citationsTotal: finding.source_audit.citations_total,
+      citationsResolved: finding.source_audit.citations_resolved,
+      citationsUnresolved: finding.source_audit.citations_unresolved,
+      citationsAmbiguous: finding.source_audit.citations_ambiguous,
+      sourcesMissing: finding.source_audit.sources_missing,
+      relationshipsUnverified: finding.source_audit.relationships_unverified,
+      publicRedactedSources: finding.source_audit.public_redacted_sources,
+      explicitlyCitedByCourt: finding.source_audit.explicitly_cited_by_court,
+      relatedNotExplicit: finding.source_audit.related_not_explicit,
+      issues: finding.source_audit.issues,
+    },
+    corroborationCategories: finding.corroboration_categories,
+    corroborationNote: finding.corroboration_note,
   };
 }
 

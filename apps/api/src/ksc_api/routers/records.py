@@ -169,6 +169,12 @@ def read_finding(finding_key: str, repo: Repo) -> FindingDetail:
     return _or_404(repo.get_finding(finding_key), "finding")
 
 
+@router.get("/findings/{finding_key}/matrix", response_model=FindingDetail)
+def read_finding_matrix(finding_key: str, repo: Repo) -> FindingDetail:
+    """Queryable finding/evidence matrix with the same fail-closed public view."""
+    return _or_404(repo.get_finding(finding_key), "finding")
+
+
 # ---------------------------------------------------------------- claims --
 @router.get("/claims", response_model=Page[ClaimRead])
 def list_claims(

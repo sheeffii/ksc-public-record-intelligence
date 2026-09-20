@@ -1,0 +1,35 @@
+{
+  "phase": 10,
+  "generated_at": "2026-09-21",
+  "case_number": "KSC-BC-2020-06",
+  "input_manifest": "docs/ingestion/manifests/phase7-controlled-corpus.json",
+  "input_manifest_sha256": "df27eca54a5f1d127064b22b7669702475bc32d558deb162ea11a5a1c9087b99",
+  "controlled_records": 22,
+  "trial_judgment_present": false,
+  "benchmark_record_ref": "KSC-BC-2020-06/F03752",
+  "benchmark_record_type": "decision",
+  "findings": 1,
+  "exact_paragraph_mappings": 1,
+  "explicit_court_cited_links": 1,
+  "explicit_links_resolved": 1,
+  "explicit_links_with_exact_source_coordinate": 1,
+  "unsupported_relied_upon_labels": 0,
+  "party_positions": 2,
+  "party_positions_by_party": {
+    "spo": 1,
+    "defence": 1
+  },
+  "court_responses": 2,
+  "human_verified_relationships": 6,
+  "unresolved_linked_citations": 0,
+  "missing_underlying_party_sources": ["F03743", "F03746"],
+  "contrary_links": 0,
+  "human_notes": 0,
+  "ai_generated_findings": 0,
+  "missing_official_material": [
+    "Public Trial Judgment for KSC-BC-2020-06",
+    "Underlying public party filing F03743",
+    "Underlying public party filing F03746"
+  ],
+  "passed": true
+}

@@ -145,6 +145,7 @@ class FindingLinkType(enum.StrEnum):
     RELIES_ON = "relies_on"
     SUPPORTS = "supports"
     QUALIFIES = "qualifies"
+    CONTRARY = "contrary"
     CONTEXT = "context"
 
 

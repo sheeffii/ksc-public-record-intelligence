@@ -176,6 +176,93 @@ export interface ApiFindingSummary {
   counts: ApiReferenceCounts;
 }
 
+export type ApiFindingLinkType = "relies_on" | "supports" | "qualifies" | "contrary" | "context";
+
+export interface ApiFindingEvidenceLink {
+  link_type: ApiFindingLinkType;
+  court_cited: boolean;
+  court_cited_para: number | null;
+  relationship_basis: "explicit_court_citation" | "related_public_record";
+  source_category: string;
+  note: string | null;
+  verification_state: ApiVerificationState;
+  citation: ApiCitation;
+}
+
+export interface ApiArgument {
+  argument_key: string;
+  party: ApiParty;
+  title: string;
+  text: string;
+  document_ref: string | null;
+  document_version_ref: string | null;
+  para_from: number | null;
+  para_to: number | null;
+  source_scope: "direct_source" | "court_summary" | "source_missing";
+  underlying_source_ref: string | null;
+  verification_state: ApiVerificationState;
+  citation: ApiCitation | null;
+}
+
+export interface ApiArgumentResponse {
+  response_kind: string;
+  argument: ApiArgument;
+  verification_state: ApiVerificationState;
+  citation: ApiCitation | null;
+}
+
+export interface ApiFindingDetail extends ApiFindingSummary {
+  legal_element: string | null;
+  mode_of_liability: string | null;
+  evidence_links: ApiFindingEvidenceLink[];
+  arguments: ApiArgument[];
+  court_responses: ApiArgumentResponse[];
+  judgment: {
+    document_ref: string;
+    document_title: string;
+    document_type: string;
+    version_ref: string | null;
+    visibility: ApiVisibility;
+    source_url: string | null;
+    sections: {
+      heading: string;
+      level: number;
+      para_from: number | null;
+      para_to: number | null;
+    }[];
+    paragraphs: {
+      paragraph_number: number;
+      page_from: number | null;
+      pdf_page_index_from: number;
+      text: string;
+    }[];
+  };
+  human_notes: {
+    author: string;
+    title: string;
+    body: string;
+    provenance: "human";
+    citations: ApiCitation[];
+  }[];
+  source_audit: {
+    citations_total: number;
+    citations_resolved: number;
+    citations_unresolved: number;
+    citations_ambiguous: number;
+    citations_invalid: number;
+    sources_missing: number;
+    ambiguous_versions: number;
+    transcript_coordinates_missing: number;
+    relationships_unverified: number;
+    public_redacted_sources: number;
+    explicitly_cited_by_court: number;
+    related_not_explicit: number;
+    issues: { code: string; detail: string }[];
+  };
+  corroboration_categories: Record<string, number>;
+  corroboration_note: string;
+}
+
 export interface ApiEvent {
   id: string;
   title: string;

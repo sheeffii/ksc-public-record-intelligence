@@ -29,6 +29,7 @@ import type {
   ApiEvent,
   ApiEvidencePath,
   ApiExhibit,
+  ApiFindingDetail,
   ApiFindingSummary,
   ApiIncident,
   ApiNetwork,
@@ -83,6 +84,13 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
         ? await page<ApiDocumentChunk>(`/document-versions/${version.official_version_ref}/chunks`)
         : [];
       return map.toDocument(document, chunks, version);
+    },
+
+    async getFinding(key: string) {
+      const finding = await client.get<ApiFindingDetail>(
+        `/findings/${encodeURIComponent(key)}/matrix`,
+      );
+      return finding ? map.toFinding(finding) : null;
     },
 
     async search(query: string): Promise<readonly SearchResult[]> {
