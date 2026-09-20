@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "phase": 8,
+  "generated_at": "2026-09-20T14:10:00Z",
+  "case_number": "KSC-BC-2020-06",
+  "bundle_id": "2026-09-20-corpus-01",
+  "input_manifest": "docs/ingestion/manifests/phase7-controlled-corpus.json",
+  "input_manifest_sha256": "df27eca54a5f1d127064b22b7669702475bc32d558deb162ea11a5a1c9087b99",
+  "status": "PASS",
+  "corpus": {
+    "records": 22,
+    "documents": 19,
+    "versions": 22,
+    "parsed_versions": 22,
+    "native_text_versions": 22,
+    "review_required_versions": 0,
+    "pages": 1979,
+    "paragraphs": 1233,
+    "chunks": 1592,
+    "transcript_segments": 607
+  },
+  "citations": {
+    "total": 14205,
+    "resolved": 23,
+    "ambiguous": 0,
+    "unresolved": 14105,
+    "invalid": 77,
+    "nonresolved_with_nonliteral_display": 0,
+    "nonresolved_with_target": 0,
+    "missing_source_coordinates": 0
+  },
+  "checks": {
+    "manifest_version_set_exact": true,
+    "manifest_page_counts_exact": true,
+    "pdf_indices_contiguous": true,
+    "printed_pages_not_synthesized": true,
+    "all_extraction_native_text": true,
+    "all_parser_version_2": true,
+    "all_versions_indexed": true,
+    "transcript_page_line_coordinates_valid": true,
+    "closed_session_text_withheld": true,
+    "citation_source_spans_present": true,
+    "citation_states_fail_closed": true,
+    "exact_source_paths_present": true,
+    "exact_identifier_search": true,
+    "phrase_search": true,
+    "keyword_search": true,
+    "document_filter_search": true,
+    "transcript_filter_search": true,
+    "fake_citation_suite": true,
+    "synthetic_ambiguity_suite": true
+  },
+  "transcripts": [
+    {
+      "official_ref": "KSC-BC-2020-06/T/2026-02-16",
+      "page_from": 29008,
+      "page_to": 29147,
+      "segments": 318
+    },
+    {
+      "official_ref": "KSC-BC-2020-06/T/2026-02-18",
+      "page_from": 29148,
+      "page_to": 29238,
+      "segments": 144
+    },
+    {
+      "official_ref": "KSC-BC-2020-06/T/2026-02-18/sqi",
+      "page_from": 1,
+      "page_to": 103,
+      "segments": 145
+    }
+  ],
+  "notes": [
+    "No OCR was used because every controlled PDF exposes a native text layer.",
+    "No embeddings or model calls were used; Phase 8 search is PostgreSQL lexical FTS plus exact identifier lookup.",
+    "Zero ambiguous citations occurred naturally in this small corpus; the ambiguity state is covered by deterministic integration tests.",
+    "Unresolved and invalid references remain persisted with display UNRESOLVED and no target foreign key."
+  ]
+}

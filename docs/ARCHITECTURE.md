@@ -1,8 +1,7 @@
 # Architecture
 
 KSC Public Record Intelligence is a citation-first research platform over the public
-record of **KSC-BC-2020-06**. This document describes the system as it exists after
-Phase 4 (engineering foundation) and the layers planned above it.
+record of **KSC-BC-2020-06**. This document describes the system through Phase 8.
 
 ## The authoritative hierarchy
 
@@ -67,8 +66,8 @@ docs/               this documentation; docs/design is the approved UX (read-onl
   is the only place that knows the wire shapes: it turns unresolved citations
   into `resolved: false`, drops human-rejected facts, keeps protected witnesses
   code-only, and never builds a citation display string. Screens still import
-  the synchronous mock directly; moving them onto `getRepository()` is Phase 5B
-  work, not a contract change.
+  the synchronous mock directly except the Phase 8 Search and Document Reader
+  routes, which server-load through `getRepository()` and can consume real API data.
 
 ## API (`apps/api`)
 
@@ -76,7 +75,7 @@ docs/               this documentation; docs/design is the approved UX (read-onl
 - System endpoints: `GET /health` (liveness), `GET /ready` (PostgreSQL, pgvector,
   Redis, MinIO; 503 when any is down), `GET /version`.
 - **Read API** (`ksc_api/routers/records.py`, prefix `/api/v1`): `case`,
-  `documents` (+ `document-versions/{ref}/pages|chunks`), `people`, `witnesses`,
+  `documents` (+ `document-versions/{ref}/pages|paragraphs|chunks`), `people`, `witnesses`,
   `exhibits`, `incidents`, `findings`, `claims`, `arguments`, `events`,
   `transcripts/{ref}`, `citations/{id}`, `citations/resolve?ref=`, `network`,
   `relationships`, `search`. Lists paginate with `limit` (≤ 200) / `offset` and
@@ -94,8 +93,9 @@ docs/               this documentation; docs/design is the approved UX (read-onl
   case the API serves (the case is never a route segment). No AI key is required.
 - Sync SQLAlchemy 2.0 with psycopg 3; sessions are FastAPI dependencies. Enum
   columns persist member _values_ (`db_enum`), matching the PostgreSQL types.
-- Alembic migrations in `apps/api/alembic/`: `0001` (foundation) and `0002` (the
-  evidence model, `docs/DATA_MODEL.md`). Enum types are created and dropped
+- Alembic migrations in `apps/api/alembic/`: `0001` (foundation), `0002` (the
+  evidence model), `0003` (ingestion provenance), and `0004` (Phase 8 parsing,
+  citation coordinates and FTS). Enum types are created and dropped
   explicitly; `alembic check` is part of the integration suite.
 - `ksc-seed` inserts public metadata for KSC-BC-2020-06 (idempotent);
   `ksc-demo-fixture` loads the synthetic `KSC-DEMO-0000` evidence graph used by
@@ -116,7 +116,7 @@ search engine is considered (ADR-002).
 
 MinIO (S3-compatible) holds original document bytes under `MINIO_BUCKET_DOCUMENTS`.
 Every stored object will carry a SHA-256 and the official public URL it came from.
-Nothing is stored yet.
+The controlled corpus holds 22 hash-addressed official public PDFs; no bulk corpus.
 
 ## Redis
 
@@ -129,19 +129,14 @@ rate limiting. Only connectivity is verified in Phase 4.
   `ksc-ingest`) — Phase 7: operator capture bundle → discovery provenance
   (`source_records`) → normalization → public-only gate → SHA-256 → MinIO →
   `documents` / `document_versions` (+ hearings / transcripts) → job items and
-  audit log. Official hosts only; a bot-mitigation challenge is a recorded
-  failure, never bypassed (ADR-011). Parsing, citation extraction and
-  resolution are Phase 8. See docs/INGESTION.md.
+  audit log; then held-object native parsing, structural chunks, transcript lines,
+  deterministic citation resolution and lexical indexing. Official hosts only;
+  a bot-mitigation challenge is a recorded failure, never bypassed (ADR-011).
 - **analysis** (placeholder) — embeddings, retrieval, AI analysis, relationship extraction,
   potential-issue surfacing. All output is `AI ANALYSIS`, cited, and withheld when
   any citation is `UNRESOLVED`.
 
-## Future layers
-
-### Ingestion beyond Phase 7 (docs/INGESTION.md)
-
-Parsing, segmentation, citation extraction and the wider corpus remain later
-phases. Controlled, per-document, auditable (ADR-003).
+## Derived layers
 
 ### Citation resolution index (ADR-005)
 
@@ -154,14 +149,16 @@ DOCUMENT INGESTION → CITATION EXTRACTION → CITATION RESOLUTION
 
 Each extracted raw citation (`F01234`, `F01234/RED`, `P00123`, `W01234`, transcript
 page/line, judgment paragraph, other decisions) is stored with its resolved target,
-a confidence, and a verification state. Unresolvable citations persist as
+a deterministic-match confidence, and a verification state. Unresolvable citations persist as
 `UNRESOLVED` and block rendering of dependent content. The runtime never guesses.
 
 ### Search
 
-PostgreSQL full-text search over segments and metadata, with pgvector for semantic
-retrieval. Protected-witness records live in an index with no name field so a name
-can never resolve to a W-code (DESIGN_DECISIONS.md §18.2).
+Phase 8 uses PostgreSQL generated `tsvector` columns and GIN indexes over public
+metadata, structural chunks and transcript segments, plus exact normalized
+identifier lookup. Results retain version and PDF/printed page/paragraph/line
+coordinates. pgvector remains installed but no embeddings or semantic retrieval
+are authorized yet.
 
 ### Evidence graph
 

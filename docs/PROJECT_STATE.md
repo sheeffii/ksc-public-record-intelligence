@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-20 (Phase 7 complete)
+Last updated: 2026-09-20 (Phase 8 complete)
 
 ## Milestones
 
@@ -15,7 +15,7 @@ Last updated: 2026-09-20 (Phase 7 complete)
 | **6**  | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                                             |
 | **5B** | **UI/UX visual parity remediation against `docs/design/Design.html`**                                     | ✅ **Complete (2026-09-20)**                                                                             |
 | **7**  | **KSC public record discovery + controlled document ingestion (first real KSC data)**                     | ✅ **Complete (2026-09-20)** — 22 real public records, quality gate 22/22, idempotent (ADR-011, ADR-012) |
-| 8      | Parsing, exact citations, resolution index, search                                                        | **Next** (not started; requires explicit authorisation)                                                  |
+| **8**  | **Parsing, exact citations, resolution index, search**                                                    | ✅ **Complete (2026-09-20)** — controlled-corpus quality gate PASS (ADR-013)                             |
 | 9      | Real evidence network and timeline                                                                        | Planned                                                                                                  |
 | 10     | Judgment, findings and evidence matrix                                                                    | Planned                                                                                                  |
 | 11     | Citation-first AI / RAG                                                                                   | Planned                                                                                                  |
@@ -209,8 +209,26 @@ check` and `head → base → head` are integration-tested.
   `corpus_manifest.py`; tests
   +17 (15 unit, 2 integration). Docs: `CONTROLLED_CORPUS.md`,
   `OFFICIAL_SOURCES.md` (verified vs not yet verified), ADR-012.
-- Not done by design: no parsing / segmentation / citation extraction (Phase 8);
-  no admin UI (API + CLI status view); raw PCR DOM parser interface unfilled.
+- No admin UI (API + CLI status view); raw PCR DOM parser interface remains
+  unfilled because no raw official PCR page is held.
+
+## Completed features (Phase 8)
+
+- Migration `0004` adds parser provenance, exact PDF/source coordinate layers,
+  numbered paragraphs, citation audit fields, and generated PostgreSQL FTS
+  vectors with GIN indexes.
+- The held-object parser processed all 22 controlled versions using native text:
+  1,979 pages, 1,233 numbered paragraphs, 1,592 structural chunks, and 607
+  transcript segments. No OCR was needed and no version requires review.
+- Deterministic extraction persists exact raw references and source character
+  spans. The resolver uses `record_identifiers` and held coordinates only;
+  resolved, ambiguous, unresolved, and invalid are terminal persisted states.
+- PostgreSQL search supports exact identifiers, phrases, keywords, document/date/
+  party/language/source filters, transcript text, and exact reader target paths.
+- The server-rendered Search and Document Reader routes now use the configured
+  repository (`mock` or `api`); real mode does not render demo content panels.
+- Real-corpus evaluation: `docs/ingestion/PHASE8_QUALITY_GATE.md` and the tracked
+  `phase8-controlled-corpus-quality.json` report. No new documents were fetched.
 
 ## Technical debt / notes
 
@@ -225,14 +243,21 @@ check` and `head → base → head` are integration-tested.
 
 ## Known parser / data issues
 
-None — nothing parsed.
+- The controlled corpus produced no naturally ambiguous citation. The state is
+  exercised with an overlapping-transcript fixture and always remains targetless.
+- Native-text parsing is deliberately conservative. Unrecognized structures stay
+  as page chunks; speaker, line, paragraph, and printed-page coordinates are never
+  inferred. OCR is not implemented because none of the 22 inputs requires it.
+- Citation extraction is intentionally broad and preserves 14,105 syntactically
+  valid references as unresolved; corpus expansion, not fuzzy matching, may resolve
+  them in Phase 13.
 
 ## Test / evaluation status
 
 | Suite                                    | Count        | Last result                                        |
 | ---------------------------------------- | ------------ | -------------------------------------------------- |
-| Backend unit (pytest)                    | 160          | pass                                               |
-| Backend integration (pytest, live infra) | 65           | pass                                               |
+| Backend unit (pytest)                    | 168          | pass                                               |
+| Backend integration (pytest, live infra) | 68           | pass                                               |
 | Frontend (vitest)                        | 188          | pass                                               |
 | E2E (playwright)                         | 48 specs × 2 | 96 pass locally; requires running stack + browsers |
 | Evaluation                               | 0            | reserved directory                                 |
@@ -242,13 +267,15 @@ Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all 
 ## Deployment state
 
 Local only: stack verified 2026-09-20 with all five services healthy after
-rebuilding the API image (migration `0003` applied; ingestion status endpoint
+rebuilding the API image (migration `0004` applied; ingestion status endpoint
 live). Git:
 Phase 6 tag `phase-6-complete` = `bdf7293`. Phase 5B is on `feat/phase-5b-visual-parity`, tag
 `phase-5b-complete`, not pushed. Phase 5B and Phase 7 were
 fast-forwarded into `main` on 2026-09-20: `main` = `origin/main` = `96e402a`,
 tags `phase-5b-complete` and `phase-7-complete` pushed. No remote deployment
-or production workflow.
+or production workflow. Phase 8 is complete on `feat/phase-8-parsing-search`;
+local tag `phase-8-complete` marks its final documentation checkpoint. Neither
+the branch nor tag has been pushed or merged.
 
 ## Verification limitations
 
@@ -260,8 +287,9 @@ original copy exists locally. See MEMORY.md → Current Problems.
 ## Ingestion state
 
 Real case `KSC-BC-2020-06` (bundle `2026-09-20-corpus-01`): source records 22 ·
-documents 19 · versions 22 (fetched 22 · not_fetched 0 · failed 0) · hearings
-2 · transcripts 3 · MinIO objects 22 · parsed 0 · indexed 0 · transcripts
-parsed 0 · failed 0 · jobs 4 (1 `live_probe` blocked, 3 `capture_bundle`).
+documents 19 · versions 22 (fetched 22 · parsed 22 · not_fetched 0 · failed 0) ·
+hearings 2 · transcripts 3 · MinIO objects 22 · indexed documents 19 · pages
+1,979 · paragraphs 1,233 · chunks 1,592 · transcript segments 607 · citations
+14,205 (23 resolved · 0 ambiguous · 14,105 unresolved · 77 invalid) · failed 0.
 Bytes came from the operator's browser downloads matched by SHA-256; the
 pipeline itself fetched nothing from the court site (ADR-011).

@@ -1,6 +1,6 @@
 # Ingestion
 
-**Status (Phase 7 complete, 2026-09-20): 22 real public records of
+**Status (Phase 8 complete, 2026-09-20): 22 real public records of
 `KSC-BC-2020-06` ingested from operator capture bundle `2026-09-20-corpus-01`
 — 22 source records, 19 documents, 22 versions (all bytes held), 2 hearings,
 3 transcripts; quality gate 22/22; idempotent re-run verified
@@ -8,8 +8,8 @@
 answer automated clients with a Cloudflare challenge, which is an access
 control (ADR-011, `docs/ingestion/OFFICIAL_SOURCES.md`). Records enter through
 operator capture bundles (`docs/ingestion/OPERATOR_CAPTURE.md`), imported with
-`ksc-ingest import-capture` and verified with `ksc-ingest gate`. Parsing beyond
-validation is Phase 8.
+`ksc-ingest import-capture` and verified with `ksc-ingest gate`. All 22 held
+versions are parsed and indexed; see `docs/ingestion/PHASE8_QUALITY_GATE.md`.
 
 ## Rules that precede any code
 
@@ -46,6 +46,12 @@ job          ingestion_jobs (cursor, checkpoint, counts) · ingestion_job_items
              (one terminal status per record) · audit_log
 gate         re-read every record from the database and the object store and
              compare with the bundle (quality_gate)
+parse        held MinIO PDF only → native text pages → numbered paragraphs /
+             sections → structural chunks; transcripts additionally preserve
+             printed page and explicit line ranges (pdf_parser, parse_pipeline)
+resolve      exact citation extraction → record_identifiers / held-coordinate
+             lookup → persisted RESOLVED / AMBIGUOUS / UNRESOLVED / INVALID
+index        generated PostgreSQL tsvector columns + GIN indexes; no embeddings
 ```
 
 Item statuses: `downloaded` · `metadata_only` (URLs recorded, bytes not
@@ -94,13 +100,15 @@ treats `operator_manifest` values as needing a second look.
 challenge is reported as `blocked_by_access_control`; `--record` persists it as
 a one-item job. This is the only network path and it stores no record.
 
-## Later stages (Phase 8+)
+## Phase 8 parsing and indexing
 
-parse · segment · redaction extents · citation extraction · resolution
-(ADR-005) · index · human verification queue. `document_versions.
-text_extraction_method` stays `none` in Phase 7; `artifacts.inspect_pdf` reads
-only the page count and looks for the case number on page 1 as a validation
-step.
+`ksc-ingest parse` reads only already-held objects; it has no network path.
+Parser name/version, timestamp, extraction method, review state, and notes are
+persisted per version. PDF page index is always present; printed page is nullable
+and is never backfilled from the PDF index. Citation source character spans and
+all target coordinates are persisted. Non-resolved citations keep no target and
+display `UNRESOLVED`. Search is lexical PostgreSQL FTS plus exact normalized
+identifier lookup (ADR-013); embeddings remain unauthorized and absent.
 
 ## Date and language rules
 

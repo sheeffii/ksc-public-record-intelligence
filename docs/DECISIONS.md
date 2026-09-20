@@ -567,3 +567,68 @@ Relevant files:
 `docs/ingestion/{CONTROLLED_CORPUS,OFFICIAL_SOURCES,OPERATOR_CAPTURE}.md`,
 `tests/unit/ingestion/test_snapshot_and_import.py`,
 `tests/integration/test_ingestion_pipeline.py`
+
+---
+
+## ADR-013 — Native structural parsing, coordinate layers, and lexical search
+
+Date: 2026-09-20
+
+Status: Accepted
+
+Context:
+Phase 8 must make the 22 held public versions searchable and citable without
+inventing legal coordinates. The corpus contains filings with printed `n of N`
+headers and three transcripts with explicit 25-line page layouts. All artifacts
+have usable native text. The pre-existing ADR-005 schema requires persisted,
+fail-closed citation resolution rather than request-time guessing.
+
+Decision:
+
+1. Parse only bytes already held in MinIO. `ksc-ingest parse` has no discovery or
+   network path. Record parser name/version, extraction method, timestamp, review
+   state, and notes on each version.
+2. Keep zero-based PDF index, printed/source page, judgment paragraph, transcript
+   page, and transcript line as separate fields. A missing printed coordinate is
+   NULL and requires review; it is never replaced by the PDF index.
+3. Prefer native-text legal structure. Persist numbered paragraphs, detected
+   sections, transcript segments, and structural chunks. Table-of-contents dot
+   leaders are not paragraphs. Speaker and examination metadata are stored only
+   when explicit. Closed-session segments carry no text.
+4. Extract exact raw citation substrings and source character spans. Resolve only
+   through persisted identifiers and parsed held coordinates. A unique exact
+   match is `RESOLVED`; multiple matches are `AMBIGUOUS`; syntactically valid but
+   absent targets are `UNRESOLVED`; contradictory cases or impossible held
+   coordinates are `INVALID`. Every non-resolved state has no target and displays
+   exactly `UNRESOLVED`.
+5. Search uses PostgreSQL generated `tsvector` columns with GIN indexes and exact
+   identifier lookup. Phrase, keyword and filters retain exact navigation data.
+   pgvector remains available but no embeddings or model calls are introduced.
+6. Search and Document Reader server routes use the repository selected by
+   `NEXT_PUBLIC_DATA_SOURCE`; when real records are supplied, demo-only content is
+   suppressed.
+
+Alternatives:
+
+- OCR every artifact — rejected because all controlled inputs have native text;
+  unnecessary OCR would weaken coordinate fidelity. OCR remains a future,
+  explicitly labelled fallback for an artifact that actually needs it.
+- Fuzzy citation matching — rejected because it could silently select a false
+  source. Corpus expansion may resolve currently unresolved identifiers later.
+- Embeddings in Phase 8 — rejected because lexical and exact-ID search satisfy the
+  controlled gate without adding model provenance or semantic ranking opacity.
+
+Consequences:
+
+- Migration `0004` adds coordinate/provenance columns, numbered paragraphs, and
+  search indexes. Resolver results are durable and auditable.
+- The controlled corpus is queryable without expanding it. Search snippets and
+  UI links point to held version coordinates, while source URLs remain available.
+- The parser remains conservative: unrecognized material is retained as page
+  chunks or explicitly marked for review, never assigned fabricated structure.
+
+Relevant files:
+`apps/api/alembic/versions/0004_parsing_citations_search.py`,
+`workers/ingestion/src/ksc_ingestion/{pdf_parser,parse_pipeline,citation_resolution}.py`,
+`apps/api/src/ksc_api/repositories/records.py`,
+`docs/ingestion/PHASE8_QUALITY_GATE.md`.
