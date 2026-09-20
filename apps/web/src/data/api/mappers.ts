@@ -35,6 +35,7 @@ import type {
   ApiDocumentChunk,
   ApiDocumentDetail,
   ApiDocumentSummary,
+  ApiDocumentVersion,
   ApiEvent,
   ApiExhibit,
   ApiFindingSummary,
@@ -265,7 +266,11 @@ export function toWitness(witness: ApiWitness): Witness {
   };
 }
 
-export function toDocument(document: ApiDocumentDetail, chunks: ApiDocumentChunk[]): DocumentView {
+export function toDocument(
+  document: ApiDocumentDetail,
+  chunks: ApiDocumentChunk[],
+  version: ApiDocumentVersion | undefined = document.versions.at(-1),
+): DocumentView {
   const routeId = documentRouteId(document.official_ref);
   const visibility: DocumentView["visibility"] =
     document.visibility === "public" || document.visibility === "public_redacted"
@@ -293,11 +298,17 @@ export function toDocument(document: ApiDocumentDetail, chunks: ApiDocumentChunk
       display: ref,
     },
     visibility,
+    pageCount: version?.page_count ?? undefined,
+    documentDate: document.document_date ?? undefined,
+    filingDate: document.filing_date ?? undefined,
+    versionRef: version?.official_version_ref,
+    sourceUrl: version?.source_url ?? document.source_url ?? undefined,
   };
 }
 
 const SEARCH_HREF: Record<ApiSearchHit["category"], (ref: string) => string> = {
   documents: (ref) => documentHref(ref),
+  transcripts: (ref) => documentHref(ref),
   people: (ref) => `/people/${ref}`,
   witnesses: (ref) => `/witnesses/${ref}`,
   exhibits: (ref) => `/exhibits?q=${encodeURIComponent(ref)}`,
@@ -312,7 +323,7 @@ export function toSearchResult(hit: ApiSearchHit): SearchResult {
     category: hit.category,
     title: hit.protected ? hit.ref : hit.title,
     context: hit.protected ? "" : (hit.context ?? ""),
-    href: SEARCH_HREF[hit.category](hit.ref),
+    href: hit.target_path ?? SEARCH_HREF[hit.category](hit.ref),
   };
 }
 

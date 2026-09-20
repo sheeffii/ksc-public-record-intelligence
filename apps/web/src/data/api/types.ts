@@ -49,6 +49,8 @@ export interface ApiCitation {
   para_to: number | null;
   line_from: number | null;
   line_to: number | null;
+  pdf_page_index?: number | null;
+  target_path?: string | null;
   resolution_state: ApiResolutionState;
   resolved: boolean;
   display: string;
@@ -70,6 +72,11 @@ export interface ApiDocumentVersion {
   mime_type: string | null;
   page_count: number | null;
   fetched_at: string | null;
+  text_extraction_method?: string;
+  parsed_at?: string | null;
+  parser_name?: string | null;
+  parser_version?: string | null;
+  parse_requires_review?: boolean;
   supersedes_version_ref: string | null;
 }
 
@@ -94,6 +101,9 @@ export interface ApiDocumentDetail extends ApiDocumentSummary {
 
 export interface ApiDocumentChunk {
   sequence: number;
+  chunk_kind?: string;
+  pdf_page_index_from?: number | null;
+  pdf_page_index_to?: number | null;
   page_from: number | null;
   page_to: number | null;
   para_from: number | null;
@@ -213,11 +223,28 @@ export interface ApiNetwork {
 
 export interface ApiSearchHit {
   category:
-    "documents" | "people" | "witnesses" | "exhibits" | "incidents" | "findings" | "locations";
+    | "documents"
+    | "transcripts"
+    | "people"
+    | "witnesses"
+    | "exhibits"
+    | "incidents"
+    | "findings"
+    | "locations";
   ref: string;
   title: string;
   context: string | null;
   protected: boolean;
+  match_kind?: "exact_identifier" | "title" | "phrase" | "keyword";
+  version_ref?: string | null;
+  pdf_page_index?: number | null;
+  page?: number | null;
+  para_from?: number | null;
+  para_to?: number | null;
+  line_from?: number | null;
+  line_to?: number | null;
+  source_url?: string | null;
+  target_path?: string | null;
 }
 
 export interface ApiSearch {

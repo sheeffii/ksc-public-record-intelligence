@@ -46,11 +46,16 @@ export interface MockDocument {
    * then empty. Absent for bundled mock data, which is always public.
    */
   visibility?: "public" | "public_redacted" | "not_public";
+  pageCount?: number;
+  documentDate?: string;
+  filingDate?: string;
+  versionRef?: string;
+  sourceUrl?: string;
 }
 
 export interface MockSearchResult {
   id: string;
-  category: MockDirectory | "locations";
+  category: MockDirectory | "locations" | "transcripts";
   title: string;
   context: string;
   href: string;

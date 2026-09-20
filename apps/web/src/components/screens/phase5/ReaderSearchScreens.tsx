@@ -3,6 +3,7 @@
 import type { SourceType, VerificationState } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   ActiveFilters,
@@ -21,7 +22,13 @@ import {
   VerificationBadge,
 } from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
-import { courtCitation, mockRepository, transcriptCitation, type MockSearchResult } from "@/mock";
+import {
+  courtCitation,
+  mockRepository,
+  transcriptCitation,
+  type MockDocument,
+  type MockSearchResult,
+} from "@/mock";
 import { ActionLink, DemoNotice, ScreenHeader, TabStrip } from "./ScreenChrome";
 import { KeyValue, NoteStrip, SectionCard, Segmented, ToolButton, Toolbar } from "./Workspace";
 
@@ -34,19 +41,28 @@ const TOC = [
   { id: "disposition", label: "IV. Disposition", page: 48 },
 ];
 
-export function DocumentReaderScreen({ id }: { id: string }) {
+export function DocumentReaderScreen({
+  id,
+  initialDocument,
+  initialPage,
+}: {
+  id: string;
+  initialDocument?: MockDocument;
+  initialPage?: number;
+}) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
-  const document = mockRepository.getDocument(id);
-  const isTranscript = id.startsWith("T-");
-  const [page, setPage] = useState(document.page);
+  const isReal = initialDocument !== undefined;
+  const document = initialDocument ?? mockRepository.getDocument(id);
+  const isTranscript = !isReal && id.startsWith("T-");
+  const [page, setPage] = useState(initialPage ?? document.page);
   const [panelTab, setPanelTab] = useState<
     "summary" | "mentions" | "people" | "exhibits" | "findings" | "citations"
   >("summary");
   const [inDoc, setInDoc] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const total = 52;
+  const total = document.pageCount ?? 52;
   const paragraphs = document.paragraphs.filter(
     (p) => !inDoc || p.text.toLowerCase().includes(inDoc.toLowerCase()),
   );
@@ -55,6 +71,7 @@ export function DocumentReaderScreen({ id }: { id: string }) {
   return (
     <AppShell
       mode="light"
+      showDemoFlag={!isReal}
       crumbs={[{ label: t("documents"), href: "/documents" }, { label: document.id }]}
     >
       <div className="flex min-w-0 flex-1 flex-col">
@@ -74,6 +91,11 @@ export function DocumentReaderScreen({ id }: { id: string }) {
             </span>
           </nav>
           <div className="ml-auto flex flex-wrap items-center gap-1">
+            {isReal ? (
+              <span className="rounded-badge bg-surface-high text-fg-secondary px-2 py-1 text-[10px]">
+                {tb("realDataNotice")}
+              </span>
+            ) : null}
             <ToolButton
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               ariaLabel={t("previous")}
@@ -120,12 +142,12 @@ export function DocumentReaderScreen({ id }: { id: string }) {
                   {
                     key: "doc",
                     label: tb("docMeta.docDate"),
-                    value: <span className="tabular">2024-01-15</span>,
+                    value: <span className="tabular">{document.documentDate ?? "—"}</span>,
                   },
                   {
                     key: "filing",
                     label: tb("docMeta.filingDate"),
-                    value: <span className="tabular">2024-01-16</span>,
+                    value: <span className="tabular">{document.filingDate ?? "—"}</span>,
                   },
                   {
                     key: "pages",
@@ -133,7 +155,11 @@ export function DocumentReaderScreen({ id }: { id: string }) {
                     value: <span className="tabular">{total}</span>,
                   },
                   { key: "lang", label: tb("docMeta.language"), value: document.language },
-                  { key: "version", label: tb("docMeta.version"), value: "RED" },
+                  {
+                    key: "version",
+                    label: tb("docMeta.version"),
+                    value: document.versionRef ?? "—",
+                  },
                   { key: "public", label: tb("docMeta.publicState"), value: tb("redactedVersion") },
                 ]}
               />
@@ -148,46 +174,52 @@ export function DocumentReaderScreen({ id }: { id: string }) {
                 className="border-border bg-surface text-fg rounded-control h-8 w-full border px-3 text-[11px]"
               />
             </label>
-            <Panel title={tb("tableOfContents")}>
-              <ol className="space-y-1 text-[11px]">
-                {TOC.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => setPage(item.page)}
-                      aria-current={page >= item.page ? "location" : undefined}
-                      className={`flex w-full justify-between gap-2 text-left ${page >= item.page ? "text-fg" : "text-fg-secondary"}`}
-                    >
-                      <span>{item.label}</span>
-                      <span className="tabular text-fg-muted">p. {item.page}</span>
-                    </button>
+            {!isReal ? (
+              <Panel title={tb("tableOfContents")}>
+                <ol className="space-y-1 text-[11px]">
+                  {TOC.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => setPage(item.page)}
+                        aria-current={page >= item.page ? "location" : undefined}
+                        className={`flex w-full justify-between gap-2 text-left ${page >= item.page ? "text-fg" : "text-fg-secondary"}`}
+                      >
+                        <span>{item.label}</span>
+                        <span className="tabular text-fg-muted">p. {item.page}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              </Panel>
+            ) : null}
+            {!isReal ? (
+              <Panel title={tb("docMeta.version")}>
+                <ul className="space-y-1 text-[11px]">
+                  <li className="identifier text-fg">{document.id}/RED</li>
+                  <li className="identifier text-fg-muted">
+                    {document.id} · {tb("notAvailable")}
                   </li>
-                ))}
-              </ol>
-            </Panel>
-            <Panel title={tb("docMeta.version")}>
-              <ul className="space-y-1 text-[11px]">
-                <li className="identifier text-fg">{document.id}/RED</li>
-                <li className="identifier text-fg-muted">
-                  {document.id} · {tb("notAvailable")}
-                </li>
-              </ul>
-            </Panel>
+                </ul>
+              </Panel>
+            ) : null}
           </aside>
           <div className="bg-surface-alt flex min-w-0 justify-center overflow-x-auto p-3 md:p-6">
             <article className="shadow-page bg-surface text-fg-body min-h-[760px] w-full max-w-[600px] px-6 py-8 md:px-[60px] md:py-[52px]">
-              <div className="border-court bg-surface-raised text-fg rounded-card mb-4 border-l-2 px-3 py-2 text-[11px]">
-                {tb("citedBanner", { ref: "F-DEMO-01" })} ·{" "}
-                <Link href="/findings/F-DEMO-01" className="text-accent font-semibold">
-                  {t("courtFindings")} →
-                </Link>
-              </div>
+              {!isReal ? (
+                <div className="border-court bg-surface-raised text-fg rounded-card mb-4 border-l-2 px-3 py-2 text-[11px]">
+                  {tb("citedBanner", { ref: "F-DEMO-01" })} ·{" "}
+                  <Link href="/findings/F-DEMO-01" className="text-accent font-semibold">
+                    {t("courtFindings")} →
+                  </Link>
+                </div>
+              ) : null}
               <p className="identifier text-fg-muted mb-4 text-[10px]">
                 {document.id} · {t("page")} {page}
               </p>
               {isTranscript ? (
                 <TranscriptPage />
-              ) : page === 2 ? (
+              ) : !isReal && page === 2 ? (
                 <GapNotice
                   kind="redaction"
                   reference={`${document.id}/RED`}
@@ -211,12 +243,15 @@ export function DocumentReaderScreen({ id }: { id: string }) {
                   </p>
                 ))
               )}
-              <section className="border-border-faint mt-8 border-t pt-3">
-                <h3 className="section-label mb-1">{tb("footnotes")}</h3>
-                <p className="text-fg-secondary text-[10.5px] leading-relaxed">
-                  1. Demo footnote; cites <CitationChip citation={transcriptCitation} size="sm" />.
-                </p>
-              </section>
+              {!isReal ? (
+                <section className="border-border-faint mt-8 border-t pt-3">
+                  <h3 className="section-label mb-1">{tb("footnotes")}</h3>
+                  <p className="text-fg-secondary text-[10.5px] leading-relaxed">
+                    1. Demo footnote; cites <CitationChip citation={transcriptCitation} size="sm" />
+                    .
+                  </p>
+                </section>
+              ) : null}
             </article>
           </div>
           <aside
@@ -241,12 +276,12 @@ export function DocumentReaderScreen({ id }: { id: string }) {
               ))}
             </div>
             <div className="space-y-3 p-3">
-              {panelTab === "summary" ? (
+              {!isReal && panelTab === "summary" ? (
                 <AiAnalysisBlock citations={[courtCitation]}>
                   {"Demo AI summary of the sample document. Analysis only — never the record."}
                 </AiAnalysisBlock>
               ) : null}
-              {panelTab === "findings" || panelTab === "summary" ? (
+              {!isReal && (panelTab === "findings" || panelTab === "summary") ? (
                 <RecordBlock sourceType="court" title={t("courtFindings")}>
                   <Link
                     href="/findings/F-DEMO-01"
@@ -259,7 +294,7 @@ export function DocumentReaderScreen({ id }: { id: string }) {
                   </div>
                 </RecordBlock>
               ) : null}
-              {panelTab === "people" || panelTab === "mentions" ? (
+              {!isReal && (panelTab === "people" || panelTab === "mentions") ? (
                 <Panel title={tb("researchTabs.people")}>
                   <ul className="space-y-2 text-[11px]">
                     <li>
@@ -276,7 +311,7 @@ export function DocumentReaderScreen({ id }: { id: string }) {
                   </ul>
                 </Panel>
               ) : null}
-              {panelTab === "exhibits" ? (
+              {!isReal && panelTab === "exhibits" ? (
                 <Panel title={t("exhibits")}>
                   <Link
                     href="/documents/P00123?page=4"
@@ -286,7 +321,7 @@ export function DocumentReaderScreen({ id }: { id: string }) {
                   </Link>
                 </Panel>
               ) : null}
-              {panelTab === "citations" ? (
+              {!isReal && panelTab === "citations" ? (
                 <Panel title={t("citationStatus")}>
                   <KeyValue
                     rows={[
@@ -357,14 +392,24 @@ const PATTERNS: readonly { re: RegExp; kind: string }[] = [
   { re: /^".+"$/, kind: '"exact phrase"' },
 ];
 
-export function SearchScreen({ initialQuery = "" }: { initialQuery?: string }) {
+export function SearchScreen({
+  initialQuery = "",
+  initialResults,
+}: {
+  initialQuery?: string;
+  initialResults?: readonly MockSearchResult[];
+}) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
+  const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<Category | "all">("all");
   const [sources, setSources] = useState<Set<SourceType>>(new Set());
   const [verif, setVerif] = useState<Set<VerificationState>>(new Set());
-  const results = useMemo(() => mockRepository.search(query), [query]);
+  const results = useMemo(
+    () => initialResults ?? mockRepository.search(query),
+    [initialResults, query],
+  );
   const filtered = results.filter(
     (r) =>
       (category === "all" || r.category === category) &&
@@ -382,11 +427,14 @@ export function SearchScreen({ initialQuery = "" }: { initialQuery?: string }) {
   ];
 
   return (
-    <AppShell>
+    <AppShell showDemoFlag={initialResults === undefined}>
       <ScreenHeader eyebrow={t("search")} title={t("search")} description={tb("searchSyntax")} />
       <form
         role="search"
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          router.push(`/search?q=${encodeURIComponent(query)}`);
+        }}
         className="border-border-subtle bg-bg-deep border-b px-4 py-3"
       >
         <div className="mx-auto flex w-full max-w-[1440px] flex-wrap gap-2">
@@ -481,7 +529,8 @@ export function SearchScreen({ initialQuery = "" }: { initialQuery?: string }) {
           </FilterSection>
         </FilterRail>
         <div className="min-w-0 space-y-3">
-          <DemoNotice />
+          {initialResults === undefined ? <DemoNotice /> : null}
+          {initialResults !== undefined ? <NoteStrip>{tb("realDataNotice")}</NoteStrip> : null}
           <ActiveFilters
             filters={activeFilters}
             onRemove={(id) => {

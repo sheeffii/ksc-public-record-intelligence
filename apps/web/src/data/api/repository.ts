@@ -72,15 +72,16 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       return witness ? map.toWitness(witness) : null;
     },
 
-    async getDocument(id: string): Promise<DocumentView | null> {
+    async getDocument(id: string, versionRef?: string): Promise<DocumentView | null> {
       const document = await client.get<ApiDocumentDetail>(`/documents/${id}`);
       if (!document) return null;
-      // The API lists only public versions; the newest is last.
-      const version = document.versions.at(-1);
+      const version = versionRef
+        ? document.versions.find((candidate) => candidate.official_version_ref === versionRef)
+        : document.versions.at(-1);
       const chunks = version
         ? await page<ApiDocumentChunk>(`/document-versions/${version.official_version_ref}/chunks`)
         : [];
-      return map.toDocument(document, chunks);
+      return map.toDocument(document, chunks, version);
     },
 
     async search(query: string): Promise<readonly SearchResult[]> {

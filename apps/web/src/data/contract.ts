@@ -43,7 +43,7 @@ export interface ResearchRepository {
   getDirectory(kind: DirectoryKind): Promise<readonly DirectoryRow[]>;
   getPerson(slug: string): Promise<PersonDossier | null>;
   getWitness(code: string): Promise<Witness | null>;
-  getDocument(id: string): Promise<DocumentView | null>;
+  getDocument(id: string, versionRef?: string): Promise<DocumentView | null>;
   search(query: string): Promise<readonly SearchResult[]>;
   getNetwork(): Promise<NetworkView>;
   getPath(): Promise<readonly PathHop[]>;
