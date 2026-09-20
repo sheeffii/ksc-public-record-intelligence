@@ -109,6 +109,27 @@ describe("Phase 5B visual-parity remediation", () => {
     expect(screen.getByText(tb.attachedDates)).toBeInTheDocument();
   });
 
+  it("renders real timeline uncertainty without inventing an exact date", () => {
+    renderWithProviders(
+      <TimelineScreen
+        initialItems={[
+          {
+            id: "real-approx",
+            label: "Approximate source date",
+            date: "2024-05-01",
+            dateType: "event",
+            datePrecision: "approximate",
+            href: "/timeline",
+            sourceUrl: "https://www.scp-ks.org/",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText(/≈ 2024-05-01 \(approximate\)/)).toBeInTheDocument();
+    expect(screen.getByText(tb.realDataNotice)).toBeInTheDocument();
+    expect(screen.queryByText(messagesEn.phase5.mockNotice)).toBeNull();
+  });
+
   it("incident matrix filters by direction and court-cited and carries the required notes", async () => {
     const user = userEvent.setup();
     renderWithProviders(<IncidentScreen id="I-DEMO-01" />);

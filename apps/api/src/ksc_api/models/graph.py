@@ -13,10 +13,12 @@ never implies wrongdoing, responsibility, agreement, endorsement or guilt.
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     ForeignKey,
     Index,
     String,
@@ -27,7 +29,13 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ksc_api.db.base import Base
-from ksc_api.models.enums import EntityKind, RelationshipType, db_enum
+from ksc_api.models.enums import (
+    DatePrecision,
+    EntityKind,
+    RelationshipOrigin,
+    RelationshipType,
+    db_enum,
+)
 from ksc_api.models.mixins import (
     TimestampMixin,
     UUIDPrimaryKeyMixin,
@@ -155,6 +163,22 @@ class Relationship(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base)
         index=True,
     )
     note: Mapped[str | None] = mapped_column(Text)
+    source_category: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="court", server_default="court"
+    )
+    extraction_origin: Mapped[RelationshipOrigin] = mapped_column(
+        db_enum(RelationshipOrigin, name="relationship_origin"),
+        nullable=False,
+        default=RelationshipOrigin.SOURCE_DOCUMENTED,
+        server_default=RelationshipOrigin.SOURCE_DOCUMENTED.value,
+    )
+    relationship_date: Mapped[date | None] = mapped_column(Date)
+    date_precision: Mapped[DatePrecision] = mapped_column(
+        db_enum(DatePrecision, name="date_precision"),
+        nullable=False,
+        default=DatePrecision.UNKNOWN,
+        server_default=DatePrecision.UNKNOWN.value,
+    )
 
     from_node: Mapped[GraphNode] = relationship(
         back_populates="outgoing", foreign_keys=[from_node_id]

@@ -89,7 +89,7 @@ Most tables carry `created_at` / `updated_at`.
 | ------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `exhibits`               | P-/D-numbered items                                                  | `official_exhibit_id` (unique per case), `title`, `description`, `tendered_by`, `through_witness_id`, `admitted_date`, `document_date`, `document_version_id` (public artifact), `visibility`                                            |
 | `incidents`              | alleged events in case material — "as charged", not a determination  | `slug`, `title`, `summary`, `location_id`, `date_from` / `date_to` (`date_to ≥ date_from`), `date_precision`, `charges_pleaded` jsonb                                                                                                    |
-| `events`                 | typed timeline items                                                 | `title`, `date_type` (five types, never merged), `date_from` / `date_to`, `date_precision` (a known precision needs a date), optional `incident_id`, `document_id`, `hearing_id`, `citation_id` (provenance of the date)                 |
+| `events`                 | typed timeline items                                                 | `title`, `date_type` (five types, never merged), `date_from` / `date_to`, `date_precision` (a known precision needs a date), optional `incident_id`, `document_id`, `hearing_id`, `citation_id`, `source_record_id`, `extraction_origin` |
 | `claims`                 | a proposition that exists in the research system — not a truth claim | `claim_key` (unique per case), `text`, `origin`, `created_by`, `source_citation_id`, verification                                                                                                                                        |
 | `claim_mentions`         | claim → exact citation with stance                                   | unique (claim, citation); `stance`, `quote_text` (verbatim or nothing), `note`, verification                                                                                                                                             |
 | `findings`               | court findings in the Court's words                                  | `finding_key` (unique per case), `judgment_document_id`, `text`, `para_from` ≥ 1 / `para_to`, `person_id`, `incident_id`, `charge_ref`, `legal_element`, `mode_of_liability`, `citation_id` (its own resolved coordinates), verification |
@@ -142,9 +142,12 @@ polymorphic references keep true referential integrity (ADR-010).
 
 `relationships`: `from_node_id`, `to_node_id`, `relationship_type`,
 `citation_id NOT NULL` (`ON DELETE RESTRICT` — a citation in use cannot be
-deleted), `note`, verification. Unique on (from, to, type, citation); no self
+deleted), `source_category`, `extraction_origin` (`source_documented`,
+`deterministic_citation`, or `analytical`), optional relationship date and its
+precision, `note`, verification. Unique on (from, to, type, citation); no self
 loops. Public queries include an edge only when its citation is resolved, it is
-not human-rejected, and both endpoints are public.
+not human-rejected, and both endpoints are public. Evidence-path traversal also
+excludes analytical edges; every returned hop therefore has its own citation.
 
 ## Research notes and AI audit
 

@@ -632,3 +632,64 @@ Relevant files:
 `workers/ingestion/src/ksc_ingestion/{pdf_parser,parse_pipeline,citation_resolution}.py`,
 `apps/api/src/ksc_api/repositories/records.py`,
 `docs/ingestion/PHASE8_QUALITY_GATE.md`.
+
+---
+
+## ADR-014 — Deterministic citation graph and source-metadata timeline
+
+Date: 2026-09-20
+
+Status: Accepted
+
+Context:
+Phase 9 needs real network and timeline data from the controlled corpus without
+turning co-occurrence into an asserted relationship or deriving dates the
+official metadata does not state. Phase 8 resolved 23 citations exactly; the
+controlled set is small enough that rendering scale can be measured directly.
+
+Decision:
+
+1. A resolved citation between two different public documents creates one
+   directed `CITED_IN` edge from the cited document to the citing document.
+   The edge retains the exact citation, source category, extraction origin,
+   verification state, and the citing document's date when present. A
+   self-citation is omitted because graph self-loops are prohibited.
+2. No person association, co-mention, agreement, responsibility, wrongdoing or
+   other semantic relationship is inferred. Analytical relationships remain a
+   separate explicit origin and are excluded from evidence paths by default.
+3. Evidence paths are deterministic shortest-hop breadth-first searches over
+   public, resolved, non-rejected, non-analytical edges. Each hop serialises its
+   own citation. Hop count is a navigation criterion, not importance.
+4. Timeline events are projected only from persisted document dates and hearing
+   dates. Date type and precision remain separate; missing types stay absent.
+   Every projected event links to its source record and relevant document or
+   hearing.
+5. The projection is deterministic and idempotent. It reads the database only
+   and does not discover, download, or expand the corpus.
+6. Keep the accessible SVG network engine for the measured controlled graph of
+   13 nodes and 22 edges. Reconsider WebGL only after real scale demonstrates a
+   need.
+
+Alternatives:
+
+- Entity extraction and co-mention edges — rejected for Phase 9 because they
+  would require analytical review and could imply unsupported association.
+- Build paths over all stored relationships — rejected because analytical or
+  unresolved hops are not independently auditable.
+- Infer filing dates from document dates — rejected because the source fields
+  have distinct meanings and absent dates must remain absent.
+
+Consequences:
+
+- The real graph is intentionally documentary: it answers why each connection
+  exists without claiming what the cited source proves.
+- The timeline has only the categories actually present in the controlled
+  source data; empty categories are represented as absent, not synthesized.
+- Migration `0005` adds edge origin/category/date provenance and event source
+  provenance. The Phase 9 quality report records the measured corpus scale.
+
+Relevant files:
+`apps/api/alembic/versions/0005_real_evidence_network_timeline.py`,
+`workers/ingestion/src/ksc_ingestion/evidence_pipeline.py`,
+`apps/api/src/ksc_api/repositories/records.py`,
+`docs/ingestion/PHASE9_QUALITY_GATE.md`.

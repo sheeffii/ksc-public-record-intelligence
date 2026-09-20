@@ -404,6 +404,7 @@
     "findings": "Findings",
     "locations": "Locations",
     "sourceType": "Source type",
+    "relationshipType": "Relationship type",
     "availability": "Availability",
     "publicVersion": "Public",
     "redactedVersion": "Public redacted",

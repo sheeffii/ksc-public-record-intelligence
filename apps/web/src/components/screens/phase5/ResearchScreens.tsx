@@ -4,6 +4,7 @@ import type { DateType, Direction } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import type { NetworkView, PathHop, TimelineItem } from "@/data";
 import { ActiveFilters, FilterOption, FilterSection } from "@/components/primitives/Filter";
 import { Panel } from "@/components/primitives/Panel";
 import { EmptyState } from "@/components/primitives/States";
@@ -61,11 +62,12 @@ const NODE_KINDS = [
   "defence",
 ] as const;
 
-export function NetworkScreen() {
+export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const footer = useTranslations("footer");
-  const { nodes, edges } = mockRepository.getNetwork();
+  const realData = initialNetwork !== undefined;
+  const { nodes, edges } = initialNetwork ?? mockRepository.getNetwork();
   const [selectedNode, setSelectedNode] = useState(nodes[0]!);
   const [selectedEdge, setSelectedEdge] = useState(edges[0]!);
   const [zoom, setZoom] = useState(1);
@@ -76,6 +78,15 @@ export function NetworkScreen() {
   const [depth, setDepth] = useState<"1" | "2" | "3">("2");
   const [layout, setLayout] = useState<"force" | "radial">("force");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [relationFilter, setRelationFilter] = useState("all");
+  const [entityFilter, setEntityFilter] = useState("all");
+  const edgeYears = edges.flatMap((edge) =>
+    edge.relationshipDate ? [Number(edge.relationshipDate.slice(0, 4))] : [],
+  );
+  const minYear = edgeYears.length ? Math.min(...edgeYears) : 1998;
+  const newestYear = edgeYears.length ? Math.max(...edgeYears) : 2025;
+  const [maxYear, setMaxYear] = useState(newestYear);
   const [fullscreen, setFullscreen] = useState(false);
   const [detent, setDetent] = useState<"peek" | "half" | "full">("peek");
   const detentClass = {
@@ -94,15 +105,25 @@ export function NetworkScreen() {
       .filter((e) => e.from === selectedNode.id || e.to === selectedNode.id)
       .flatMap((e) => [e.from, e.to]),
   );
+  const typeFilteredNodes = nodes.filter(
+    (node) => entityFilter === "all" || node.entityKind === entityFilter,
+  );
   const visibleNodes = (
-    isolated ? nodes.filter((n) => neighbourIds.has(n.id)) : expanded ? nodes : nodes.slice(0, 3)
+    isolated
+      ? typeFilteredNodes.filter((n) => neighbourIds.has(n.id))
+      : expanded
+        ? typeFilteredNodes
+        : typeFilteredNodes.slice(0, 3)
   ).slice(0, depth === "1" ? 3 : depth === "2" ? 5 : nodes.length);
   const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
   const visibleEdges = edges.filter(
     (e) =>
       visibleNodeIds.has(e.from) &&
       visibleNodeIds.has(e.to) &&
-      (!verifiedOnly || e.verification === "verified"),
+      (!verifiedOnly || e.verification === "verified") &&
+      (sourceFilter === "all" || e.sourceType === sourceFilter) &&
+      (relationFilter === "all" || e.relation === relationFilter) &&
+      (!e.relationshipDate || Number(e.relationshipDate.slice(0, 4)) <= maxYear),
   );
   const listedNodes = nodes.filter((n) =>
     n.label.toLowerCase().includes(query.trim().toLowerCase()),
@@ -123,6 +144,10 @@ export function NetworkScreen() {
       setQuery("");
       setDepth("2");
       setVerifiedOnly(false);
+      setSourceFilter("all");
+      setRelationFilter("all");
+      setEntityFilter("all");
+      setMaxYear(newestYear);
     }
   }
   const position = (node: MockNetworkNode, index: number) =>
@@ -174,8 +199,13 @@ export function NetworkScreen() {
         <div className="mt-2">
           <CitationChip citation={selectedEdge.citation} />
         </div>
+        {selectedEdge.sourceCoordinate ? (
+          <p className="identifier text-fg-muted mt-2 text-[10px]">
+            {selectedEdge.sourceCoordinate}
+          </p>
+        ) : null}
         <div className="mt-3">
-          <ActionLink href={`/documents/${selectedEdge.citation.docId}`}>
+          <ActionLink href={selectedEdge.sourcePath ?? `/documents/${selectedEdge.citation.docId}`}>
             {t("openSource")}
           </ActionLink>
         </div>
@@ -201,11 +231,15 @@ export function NetworkScreen() {
   return (
     <AppShell footer={footer("network")}>
       <ScreenHeader
+        realData={realData}
         eyebrow={t("network")}
         title={t("network")}
         description={footer("network")}
         actions={
-          <ActionLink href="/network/path?from=demo-research-subject" primary>
+          <ActionLink
+            href={`/network/path?from=${selectedNode.id}&to=${edges[0]?.to ?? selectedNode.id}`}
+            primary
+          >
             {t("findConnection")}
           </ActionLink>
         }
@@ -261,6 +295,7 @@ export function NetworkScreen() {
       <div
         className={`grid min-h-[690px] flex-1 ${fullscreen ? "" : "lg:grid-cols-[220px_minmax(0,1fr)_280px]"}`}
       >
+        {realData ? <span className="sr-only">{tb("realDataNotice")}</span> : null}
         <aside
           className={`border-border bg-surface space-y-3 border-r p-3 ${fullscreen ? "hidden" : "hidden lg:block"}`}
         >
@@ -277,13 +312,61 @@ export function NetworkScreen() {
           <FilterSection title={tb("dateSlider")}>
             <input
               type="range"
-              min="1998"
-              max="2025"
-              defaultValue="2025"
+              min={minYear}
+              max={newestYear}
+              value={maxYear}
+              onChange={(event) => setMaxYear(Number(event.target.value))}
               aria-label={tb("dateSlider")}
               className="w-full"
             />
-            <p className="tabular text-fg-muted text-[10px]">1998 — 2025</p>
+            <p className="tabular text-fg-muted text-[10px]">
+              {minYear} — {maxYear}
+            </p>
+          </FilterSection>
+          <FilterSection title={tb("sourceType")}>
+            <select
+              aria-label={tb("sourceType")}
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.target.value)}
+              className="border-border bg-surface-raised rounded-control w-full border p-1 text-[10px]"
+            >
+              <option value="all">{t("allRecords")}</option>
+              {[...new Set(edges.map((edge) => edge.sourceType))].map((source) => (
+                <option key={source} value={source}>
+                  {source}
+                </option>
+              ))}
+            </select>
+          </FilterSection>
+          <FilterSection title={tb("relationshipType")}>
+            <select
+              aria-label={tb("relationshipType")}
+              value={relationFilter}
+              onChange={(event) => setRelationFilter(event.target.value)}
+              className="border-border bg-surface-raised rounded-control w-full border p-1 text-[10px]"
+            >
+              <option value="all">{t("allRecords")}</option>
+              {[...new Set(edges.map((edge) => edge.relation))].map((relation) => (
+                <option key={relation} value={relation}>
+                  {relation}
+                </option>
+              ))}
+            </select>
+          </FilterSection>
+          <FilterSection title={tb("typeBadges")}>
+            <select
+              aria-label={tb("typeBadges")}
+              value={entityFilter}
+              onChange={(event) => setEntityFilter(event.target.value)}
+              className="border-border bg-surface-raised rounded-control w-full border p-1 text-[10px]"
+            >
+              <option value="all">{t("allRecords")}</option>
+              {[...new Set(nodes.map((node) => node.entityKind).filter(Boolean))].map((kind) => (
+                <option key={kind} value={kind}>
+                  {kind}
+                </option>
+              ))}
+            </select>
           </FilterSection>
           <FilterSection title={tb("verificationFilter")}>
             <FilterOption
@@ -459,15 +542,26 @@ function NodeGlyph({ type }: { type: string }) {
 
 // ------------------------------------------------------- evidence path ----
 
-export function EvidencePathScreen() {
+export function EvidencePathScreen({
+  initialNetwork,
+  initialHops,
+  initialFrom,
+  initialTo,
+}: {
+  initialNetwork?: NetworkView;
+  initialHops?: readonly PathHop[];
+  initialFrom?: string;
+  initialTo?: string;
+}) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const footer = useTranslations("footer");
-  const hops = mockRepository.getPath();
-  const { nodes } = mockRepository.getNetwork();
+  const realData = initialNetwork !== undefined;
+  const hops = initialHops ?? mockRepository.getPath();
+  const { nodes } = initialNetwork ?? mockRepository.getNetwork();
   const [maxHops, setMaxHops] = useState<"1" | "2" | "3">("3");
-  const [from, setFrom] = useState("demo-research-subject");
-  const [to, setTo] = useState("F-DEMO-01");
+  const [from, setFrom] = useState(initialFrom ?? nodes[0]?.id ?? "");
+  const [to, setTo] = useState(initialTo ?? nodes[1]?.id ?? nodes[0]?.id ?? "");
   const [openHop, setOpenHop] = useState(1);
   const [alternate, setAlternate] = useState(0);
   const shown = hops.slice(0, Number(maxHops) + 1);
@@ -476,6 +570,7 @@ export function EvidencePathScreen() {
   return (
     <AppShell footer={footer("network")}>
       <ScreenHeader
+        realData={realData}
         eyebrow={t("network")}
         title={tb("pathCanvas")}
         description={t("pathLimit")}
@@ -521,16 +616,16 @@ export function EvidencePathScreen() {
             { key: "3", label: "3" },
           ]}
         />
-        <ToolButton primary onClick={() => setOpenHop(1)}>
+        <ActionLink href={`/network/path?from=${from}&to=${to}&maxHops=${maxHops}`} primary>
           {tb("findPath")}
-        </ToolButton>
+        </ActionLink>
       </Toolbar>
       <div className="border-border bg-surface-raised text-fg border-b px-4 py-2 text-[11px]">
         {t("pathBanner")}
       </div>
       <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_322px]">
         <div className="min-w-0 space-y-3">
-          <DemoNotice />
+          {realData ? <NoteStrip>{tb("realDataNotice")}</NoteStrip> : <DemoNotice />}
           <SectionCard title={tb("pathCanvas")}>
             <ol className="flex flex-col gap-2 md:flex-row md:items-center md:overflow-x-auto">
               {shown.map((hop, i) => (
@@ -580,9 +675,13 @@ export function EvidencePathScreen() {
                   </button>
                   {openHop === hop.index ? (
                     <div className="mt-2 ml-9 space-y-2">
-                      <p className="text-fg-body font-serif text-[12px]">
-                        “Generic verbatim excerpt for hop {hop.index} (demo).”
-                      </p>
+                      {realData ? (
+                        <p className="text-fg-body text-[12px]">{hop.note}</p>
+                      ) : (
+                        <p className="text-fg-body font-serif text-[12px]">
+                          “Generic verbatim excerpt for hop {hop.index} (demo).”
+                        </p>
+                      )}
                       <div className="flex flex-wrap items-center gap-2">
                         <CitationChip citation={hop.citation} />
                         <span
@@ -590,7 +689,7 @@ export function EvidencePathScreen() {
                         >
                           {hop.date} · {hop.dateType}
                         </span>
-                        <ActionLink href={`/documents/${hop.citation.docId}`}>
+                        <ActionLink href={hop.sourcePath ?? `/documents/${hop.citation.docId}`}>
                           {t("openSource")}
                         </ActionLink>
                       </div>
@@ -616,28 +715,30 @@ export function EvidencePathScreen() {
               ]}
             />
           </Panel>
-          <Panel title={tb("alternates")}>
-            <ol className="space-y-1">
-              {[
-                { hops: 4, via: "P00123 · I-DEMO-01 · W01234" },
-                { hops: 5, via: "T-DEMO-01 · P00123" },
-              ].map((a, i) => (
-                <li key={i}>
-                  <button
-                    type="button"
-                    onClick={() => setAlternate(i)}
-                    aria-current={alternate === i ? "true" : undefined}
-                    className={`rounded-control w-full px-2 py-1.5 text-left text-[11px] ${alternate === i ? "bg-surface-high text-fg" : "text-fg-secondary"}`}
-                  >
-                    <span className="tabular">
-                      {a.hops} {tb("hops").toLowerCase()}
-                    </span>{" "}
-                    · {tb("viaRefs")} {a.via}
-                  </button>
-                </li>
-              ))}
-            </ol>
-          </Panel>
+          {!realData ? (
+            <Panel title={tb("alternates")}>
+              <ol className="space-y-1">
+                {[
+                  { hops: 4, via: "P00123 · I-DEMO-01 · W01234" },
+                  { hops: 5, via: "T-DEMO-01 · P00123" },
+                ].map((a, i) => (
+                  <li key={i}>
+                    <button
+                      type="button"
+                      onClick={() => setAlternate(i)}
+                      aria-current={alternate === i ? "true" : undefined}
+                      className={`rounded-control w-full px-2 py-1.5 text-left text-[11px] ${alternate === i ? "bg-surface-high text-fg" : "text-fg-secondary"}`}
+                    >
+                      <span className="tabular">
+                        {a.hops} {tb("hops").toLowerCase()}
+                      </span>{" "}
+                      · {tb("viaRefs")} {a.via}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </Panel>
+          ) : null}
           <Panel title={t("cannotTell")}>
             <ul className="text-fg-secondary list-disc space-y-1 pl-4 text-[11px]">
               <li>{t("cannotRealWorld")}</li>
@@ -680,16 +781,17 @@ const LANE_FOR: Record<DateType, (typeof LANES)[number]> = {
   decision: "decisions",
 };
 
-export function TimelineScreen() {
+export function TimelineScreen({ initialItems }: { initialItems?: readonly TimelineItem[] }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
-  const items = mockRepository.getTimeline();
+  const realData = initialItems !== undefined;
+  const items = initialItems ?? mockRepository.getTimeline();
   const [visible, setVisible] = useState<Set<(typeof LANES)[number]>>(new Set(LANES));
   const [selected, setSelected] = useState<MockTimelineItem | null>(items[0] ?? null);
   const [zoom, setZoom] = useState({ historical: 1, proceedings: 1 });
-  const [filters, setFilters] = useState<{ id: string; label: string }[]>([
-    { id: "witness", label: "W01234" },
-  ]);
+  const [filters, setFilters] = useState<{ id: string; label: string }[]>(
+    realData ? [] : [{ id: "witness", label: "W01234" }],
+  );
   const dateLabel: Record<DateType, string> = {
     event: t("event"),
     document: t("document"),
@@ -699,9 +801,16 @@ export function TimelineScreen() {
   };
   const era = (item: MockTimelineItem) =>
     item.dateType === "event" ? "historical" : "proceedings";
+  const itemYears = items
+    .map((item) => Number(item.date.slice(0, 4)))
+    .filter((year) => Number.isFinite(year));
+  const timelineRange = itemYears.length
+    ? `${Math.min(...itemYears)} — ${Math.max(...itemYears)}`
+    : "—";
   return (
     <AppShell footer={t("sequenceNote")}>
       <ScreenHeader
+        realData={realData}
         eyebrow={t("allRecords")}
         title={t("dateTypes")}
         description={tb("dateMergeNote")}
@@ -743,7 +852,7 @@ export function TimelineScreen() {
       </div>
       <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_314px]">
         <div className="min-w-0 space-y-3">
-          <DemoNotice />
+          {realData ? <NoteStrip>{tb("realDataNotice")}</NoteStrip> : <DemoNotice />}
           <div className="border-border-subtle bg-surface rounded-card hidden overflow-x-auto border md:block">
             <div className="grid grid-cols-[140px_minmax(0,1fr)]">
               <div className="border-border-faint border-r border-b p-2 text-[10px]">
@@ -755,11 +864,13 @@ export function TimelineScreen() {
               >
                 <div className="border-border-faint border-r p-2">
                   <span className="text-fg-secondary">{tb("eraHistorical")}</span>{" "}
-                  <span className="tabular text-fg-muted">1998 — 2000</span>
+                  <span className="tabular text-fg-muted">{realData ? "—" : "1998 — 2000"}</span>
                 </div>
                 <div className="p-2">
                   <span className="text-fg-secondary">{tb("eraProceedings")}</span>{" "}
-                  <span className="tabular text-fg-muted">2020 — 2025</span>
+                  <span className="tabular text-fg-muted">
+                    {realData ? timelineRange : "2020 — 2025"}
+                  </span>
                 </div>
               </div>
               {LANES.map((lane) => {
@@ -856,9 +967,16 @@ export function TimelineScreen() {
                     <span className={`rounded-badge px-1.5 date-${selected.dateType}`}>
                       {dateLabel[selected.dateType]}
                     </span>
-                    <span className="tabular">{selected.date}</span>
+                    <span className="tabular">
+                      {selected.datePrecision === "approximate" ? "≈ " : ""}
+                      {selected.date}
+                      {selected.dateTo ? ` — ${selected.dateTo}` : ""}
+                      {selected.datePrecision && selected.datePrecision !== "exact"
+                        ? ` (${selected.datePrecision})`
+                        : ""}
+                    </span>
                   </li>
-                  {selected.dateType === "filing" ? (
+                  {!realData && selected.dateType === "filing" ? (
                     <li className="flex justify-between">
                       <span className="rounded-badge date-document px-1.5">
                         {dateLabel.document}
@@ -868,22 +986,31 @@ export function TimelineScreen() {
                   ) : null}
                 </ul>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <CitationChip citation={courtCitation} size="sm" />
+                  {!realData ? <CitationChip citation={courtCitation} size="sm" /> : null}
                   <ActionLink href={selected.href}>{t("open")}</ActionLink>
+                  {selected.sourceUrl ? (
+                    <a className="text-accent text-[11px] underline" href={selected.sourceUrl}>
+                      {t("openSource")}
+                    </a>
+                  ) : null}
                 </div>
-                <h3 className="section-label mt-3">{tb("linkedFrom")}</h3>
-                <ul className="mt-1 text-[11px]">
-                  <li>
-                    <Link href="/witnesses/W01234" className="text-accent identifier">
-                      W01234
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/incidents/I-DEMO-01" className="text-accent">
-                      I-DEMO-01
-                    </Link>
-                  </li>
-                </ul>
+                {!realData ? (
+                  <>
+                    <h3 className="section-label mt-3">{tb("linkedFrom")}</h3>
+                    <ul className="mt-1 text-[11px]">
+                      <li>
+                        <Link href="/witnesses/W01234" className="text-accent identifier">
+                          W01234
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/incidents/I-DEMO-01" className="text-accent">
+                          I-DEMO-01
+                        </Link>
+                      </li>
+                    </ul>
+                  </>
+                ) : null}
               </>
             ) : (
               <p className="text-fg-secondary text-[11px]">{tb("selectCard")}</p>

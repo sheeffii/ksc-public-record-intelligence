@@ -242,6 +242,14 @@ class RelationshipType(enum.StrEnum):
     FOLLOWS = "follows"
 
 
+class RelationshipOrigin(enum.StrEnum):
+    """How a relationship entered the graph; never a measure of evidential weight."""
+
+    SOURCE_DOCUMENTED = "source_documented"
+    DETERMINISTIC_CITATION = "deterministic_citation"
+    ANALYTICAL = "analytical"
+
+
 class AnswerBlockKind(enum.StrEnum):
     COURT = "court"
     EVIDENCE = "evidence"

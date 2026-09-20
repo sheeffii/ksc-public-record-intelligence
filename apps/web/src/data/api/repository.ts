@@ -27,6 +27,7 @@ import type {
   ApiDocumentDetail,
   ApiDocumentSummary,
   ApiEvent,
+  ApiEvidencePath,
   ApiExhibit,
   ApiFindingSummary,
   ApiIncident,
@@ -103,9 +104,31 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       };
     },
 
-    // Evidence paths are computed over the real graph in Phase 9.
-    async getPath(): Promise<readonly PathHop[]> {
-      return [];
+    async getPath(
+      fromNodeId?: string,
+      toNodeId?: string,
+      maxHops = 6,
+    ): Promise<readonly PathHop[]> {
+      if (!fromNodeId || !toNodeId) return [];
+      const result = await client.get<ApiEvidencePath>("/network/path", {
+        from_node_id: fromNodeId,
+        to_node_id: toNodeId,
+        max_hops: maxHops,
+      });
+      if (!result?.found) return [];
+      return result.hops.flatMap((hop, index) => {
+        const edge = map.toNetworkEdge(hop);
+        return edge
+          ? [
+              {
+                ...edge,
+                index: index + 1,
+                date: hop.relationship_date ?? "",
+                dateType: "document" as const,
+              },
+            ]
+          : [];
+      });
     },
 
     async getTimeline(): Promise<readonly TimelineItem[]> {

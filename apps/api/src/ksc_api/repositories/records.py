@@ -13,6 +13,7 @@ Rules applied to every query:
 from __future__ import annotations
 
 import uuid
+from collections import deque
 from collections.abc import Sequence
 from datetime import date
 from typing import Annotated, Any
@@ -49,9 +50,13 @@ from ksc_api.models import (
     Person,
     RecordIdentifier,
     Relationship,
+    RelationshipOrigin,
+    RelationshipType,
     ResolutionState,
+    SourceRecord,
     Transcript,
     TranscriptSegment,
+    VerificationState,
     Witness,
     normalize_identifier,
 )
@@ -74,6 +79,7 @@ from ksc_api.schemas.records import (
     DocumentParagraphRead,
     DocumentSummary,
     EventRead,
+    EvidencePathRead,
     ExhibitRead,
     FindingDetail,
     FindingSummary,
@@ -92,6 +98,7 @@ from ksc_api.schemas.records import (
 # Eager-load everything `mappers.to_citation` touches, so serialisation never
 # lazy-loads after the session is gone.
 CITATION_LOAD = (
+    selectinload(Citation.source_document_version).selectinload(DocumentVersion.document),
     selectinload(Citation.target_document),
     selectinload(Citation.target_document_version).selectinload(DocumentVersion.document),
     selectinload(Citation.target_transcript)
@@ -567,10 +574,12 @@ class RecordRepository:
     # ------------------------------------------------------------- events --
     def list_events(self, *, limit: int, offset: int) -> Page[EventRead]:
         stmt = (
-            select(Event, Incident, Document)
+            select(Event, Incident, Document, Hearing, SourceRecord)
             .options(selectinload(Event.citation).options(*CITATION_LOAD))
             .outerjoin(Incident, Event.incident_id == Incident.id)
             .outerjoin(Document, Event.document_id == Document.id)
+            .outerjoin(Hearing, Event.hearing_id == Hearing.id)
+            .outerjoin(SourceRecord, Event.source_record_id == SourceRecord.id)
             .where(
                 Event.case_id == self.case.id,
                 or_(Event.document_id.is_(None), public_visibility(Document.visibility)),
@@ -581,7 +590,10 @@ class RecordRepository:
             select(func.count()).select_from(stmt.order_by(None).subquery())
         )
         rows = self.session.execute(stmt.limit(limit).offset(offset)).all()
-        items = [mappers.to_event(event, incident, document) for event, incident, document in rows]
+        items = [
+            mappers.to_event(event, incident, document, hearing, source_record)
+            for event, incident, document, hearing, source_record in rows
+        ]
         return Page(items=items, total=int(total or 0), limit=limit, offset=offset)
 
     # -------------------------------------------------------- transcripts --
@@ -649,16 +661,90 @@ class RecordRepository:
         return ResolveResult(query=raw, normalized=normalized, state=state, matches=matches)
 
     # ------------------------------------------------------------ network --
-    def network(self, *, limit: int = 500) -> NetworkRead:
+    def network(
+        self,
+        *,
+        limit: int = 500,
+        source_category: str | None = None,
+        verification_state: VerificationState | None = None,
+        relationship_type: RelationshipType | None = None,
+        entity_kind: EntityKind | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> NetworkRead:
+        stmt = self._public_edges_stmt()
+        if source_category:
+            stmt = stmt.where(Relationship.source_category == source_category)
+        if verification_state:
+            stmt = stmt.where(Relationship.verification_state == verification_state)
+        if relationship_type:
+            stmt = stmt.where(Relationship.relationship_type == relationship_type)
+        if date_from:
+            stmt = stmt.where(Relationship.relationship_date >= date_from)
+        if date_to:
+            stmt = stmt.where(Relationship.relationship_date <= date_to)
+        if entity_kind:
+            candidate_ids = select(GraphNode.id).where(GraphNode.entity_kind == entity_kind)
+            stmt = stmt.where(
+                or_(
+                    Relationship.from_node_id.in_(candidate_ids),
+                    Relationship.to_node_id.in_(candidate_ids),
+                )
+            )
         edges = self.session.scalars(
-            self._public_edges_stmt()
-            .options(selectinload(Relationship.citation).options(*CITATION_LOAD))
+            stmt.options(selectinload(Relationship.citation).options(*CITATION_LOAD))
             .order_by(Relationship.created_at)
             .limit(limit)
         ).all()
         node_ids = {e.from_node_id for e in edges} | {e.to_node_id for e in edges}
         nodes = self._nodes(node_ids)
         return NetworkRead(nodes=nodes, edges=[mappers.to_relationship(e) for e in edges])
+
+    def evidence_path(
+        self, *, from_node_id: uuid.UUID, to_node_id: uuid.UUID, max_hops: int
+    ) -> EvidencePathRead:
+        """Neutral shortest-hop BFS over public, resolved, source-backed edges only."""
+        if from_node_id == to_node_id:
+            return EvidencePathRead(found=True, nodes=self._nodes({from_node_id}), hops=[])
+        edges = list(
+            self.session.scalars(
+                self._public_edges_stmt()
+                .where(Relationship.extraction_origin != RelationshipOrigin.ANALYTICAL)
+                .options(selectinload(Relationship.citation).options(*CITATION_LOAD))
+                .order_by(Relationship.id)
+            ).all()
+        )
+        adjacency: dict[uuid.UUID, list[tuple[uuid.UUID, Relationship]]] = {}
+        for edge in edges:
+            adjacency.setdefault(edge.from_node_id, []).append((edge.to_node_id, edge))
+            adjacency.setdefault(edge.to_node_id, []).append((edge.from_node_id, edge))
+        queue: deque[tuple[uuid.UUID, list[Relationship]]] = deque([(from_node_id, [])])
+        seen = {from_node_id}
+        found: list[Relationship] | None = None
+        while queue:
+            current, path = queue.popleft()
+            if len(path) >= max_hops:
+                continue
+            for neighbour, edge in adjacency.get(current, []):
+                if neighbour in seen:
+                    continue
+                next_path = [*path, edge]
+                if neighbour == to_node_id:
+                    found = next_path
+                    queue.clear()
+                    break
+                seen.add(neighbour)
+                queue.append((neighbour, next_path))
+        if found is None:
+            return EvidencePathRead(found=False, nodes=[], hops=[])
+        node_ids = {from_node_id, to_node_id}
+        for edge in found:
+            node_ids.update((edge.from_node_id, edge.to_node_id))
+        return EvidencePathRead(
+            found=True,
+            nodes=self._nodes(node_ids),
+            hops=[mappers.to_relationship(edge) for edge in found],
+        )
 
     def list_relationships(
         self, *, node_id: uuid.UUID | None, limit: int, offset: int

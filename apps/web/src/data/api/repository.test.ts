@@ -78,6 +78,14 @@ describe("ApiRepository", () => {
     expect(await repo.getAnswer()).toEqual([]);
   });
 
+  it("loads independently cited evidence-path hops", async () => {
+    const { repo, stub } = repository();
+    const hops = await repo.getPath("n-person", "n-org", 4);
+    expect(hops).toHaveLength(1);
+    expect(hops[0]?.citation.resolved).toBe(true);
+    expect(stub.calls).toEqual(["/network/path?from_node_id=n-person&to_node_id=n-org&max_hops=4"]);
+  });
+
   it("surfaces non-404 failures as ApiError", async () => {
     const failing = createApiRepository({
       baseUrl: "http://api.test",

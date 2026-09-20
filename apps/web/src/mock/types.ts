@@ -68,6 +68,8 @@ export interface MockNetworkNode {
   type: SourceType | "person" | "protected";
   x: number;
   y: number;
+  ref?: string;
+  entityKind?: string;
 }
 
 export interface MockNetworkEdge {
@@ -78,6 +80,12 @@ export interface MockNetworkEdge {
   sourceType: Exclude<SourceType, "ai">;
   citation: Citation;
   verification: VerificationState;
+  extractionOrigin?: "source_documented" | "deterministic_citation" | "analytical";
+  relationshipDate?: string;
+  datePrecision?: string;
+  note?: string;
+  sourcePath?: string;
+  sourceCoordinate?: string;
 }
 
 export interface MockPathHop extends MockNetworkEdge {
@@ -92,6 +100,11 @@ export interface MockTimelineItem {
   date: string;
   dateType: DateType;
   href: string;
+  dateTo?: string;
+  datePrecision?: string;
+  sourceUrl?: string;
+  sourceSystem?: string;
+  extractionOrigin?: string;
 }
 
 export interface MockEvidenceRow {

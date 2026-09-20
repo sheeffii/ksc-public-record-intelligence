@@ -30,6 +30,7 @@ from ksc_api.repositories.ingestion import IngestionStatusRepository
 from ksc_ingestion.capture import BundleError, load_bundle
 from ksc_ingestion.capture_import import SourceImportError, import_capture
 from ksc_ingestion.corpus_manifest import build_manifest, validate_manifest_file, write_manifest
+from ksc_ingestion.evidence_pipeline import Phase9Pipeline
 from ksc_ingestion.fetch import HttpFetcher
 from ksc_ingestion.parse_pipeline import Phase8Pipeline
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor, RunOutcome
@@ -238,6 +239,17 @@ def cmd_parse(args: argparse.Namespace) -> int:
     return 0 if not any(version.requires_review for version in result.versions) else 1
 
 
+def cmd_build_evidence(args: argparse.Namespace) -> int:
+    """Project already-resolved citations and source dates; performs no network access."""
+    settings = get_settings()
+    result = Phase9Pipeline(get_sessionmaker(), case_number=settings.case_id).run()
+    print(
+        f"nodes={result.nodes} edges={result.edges} events={result.events} "
+        f"self_citations_skipped={result.skipped_self_citations}"
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ksc-ingest", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -285,6 +297,10 @@ def build_parser() -> argparse.ArgumentParser:
         "parse", help="parse held PDFs, persist exact coordinates, citations and search text"
     )
     p_parse.set_defaults(func=cmd_parse)
+    p_evidence = sub.add_parser(
+        "build-evidence", help="build citation-backed graph edges and source-backed timeline events"
+    )
+    p_evidence.set_defaults(func=cmd_build_evidence)
     return parser
 
 

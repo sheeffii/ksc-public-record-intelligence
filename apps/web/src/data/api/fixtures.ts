@@ -10,6 +10,7 @@ import type {
   ApiDocumentDetail,
   ApiDocumentSummary,
   ApiEvent,
+  ApiEvidencePath,
   ApiExhibit,
   ApiFindingSummary,
   ApiIncident,
@@ -335,6 +336,12 @@ export const network: ApiNetwork = {
   ],
 };
 
+export const evidencePath: ApiEvidencePath = {
+  found: true,
+  nodes: network.nodes.slice(0, 2),
+  hops: [network.edges[0]!],
+};
+
 export const search: ApiSearch = {
   query: "demo",
   hits: [
@@ -384,6 +391,7 @@ export const routes: Record<string, unknown> = {
   "/events": page(events),
   "/claims": page([claim]),
   "/network": network,
+  "/network/path": evidencePath,
   "/search": search,
 };
 

@@ -1,7 +1,7 @@
 # workers/ingestion — `ksc_ingestion`
 
-Controlled, public-only ingestion and parsing of official KSC records
-(roadmap Phases 7–8).
+Controlled, public-only ingestion, parsing and evidence projection of official
+KSC records (roadmap Phases 7–9).
 
 ```text
 sources.py    official host allowlist; URL classification / canonicalization
@@ -20,8 +20,9 @@ pipeline.py   Ingestor: SourceRecord → Document → DocumentVersion → job it
 pdf_parser.py native-text page / paragraph / transcript parser; exact coordinates
 citation_resolution.py exact extraction and deterministic persisted resolution
 parse_pipeline.py held object → structured text → citations → lexical index
+evidence_pipeline.py resolved citations → cited-in edges; source dates → events
 probe.py      one live request; a challenge becomes a recorded failure
-cli.py        ksc-ingest import-capture | bundle | gate | export-corpus | parse | probe | status
+cli.py        ksc-ingest import-capture | bundle | gate | export-corpus | parse | build-evidence | probe | status
 ```
 
 Commands (host side, `make infra` running):
@@ -35,6 +36,7 @@ Commands (host side, `make infra` running):
 .venv/bin/ksc-ingest gate data/captures/<bundle-id> --json <report.json>
 .venv/bin/ksc-ingest status
 .venv/bin/ksc-ingest parse  # held objects only; no discovery or download
+.venv/bin/ksc-ingest build-evidence  # DB projection only; no network access
 ```
 
 Rules: official hosts only; a bot-mitigation challenge is an access control and

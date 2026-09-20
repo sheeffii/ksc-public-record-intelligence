@@ -404,6 +404,7 @@
     "findings": "Konstatime",
     "locations": "Vendndodhje",
     "sourceType": "Lloji i burimit",
+    "relationshipType": "Lloji i marrëdhënies",
     "availability": "Disponueshmëria",
     "publicVersion": "Publik",
     "redactedVersion": "Publik i redaktuar",

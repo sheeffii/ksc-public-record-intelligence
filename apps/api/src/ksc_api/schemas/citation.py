@@ -35,6 +35,16 @@ class CitationRead(ReadModel):
     line_to: int | None = None
     pdf_page_index: int | None = Field(default=None, ge=0)
     target_path: str | None = None
+    # Exact occurrence of this reference in the citing source. These are kept
+    # separate from the target coordinates above and are never synthesized.
+    source_document_version_ref: str | None = None
+    source_page: int | None = Field(default=None, ge=1)
+    source_pdf_page_index: int | None = Field(default=None, ge=0)
+    source_para: int | None = None
+    source_char_start: int | None = Field(default=None, ge=0)
+    source_char_end: int | None = Field(default=None, ge=0)
+    source_url: str | None = None
+    source_path: str | None = None
     resolution_state: ResolutionState
     resolved: bool
     display: str

@@ -9,7 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from ksc_api.models import Party
+from ksc_api.models import EntityKind, Party, RelationshipType, VerificationState
 from ksc_api.repositories import RecordRepository, get_repository
 from ksc_api.schemas.citation import CitationRead, ResolveResult
 from ksc_api.schemas.common import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
@@ -23,6 +23,7 @@ from ksc_api.schemas.records import (
     DocumentParagraphRead,
     DocumentSummary,
     EventRead,
+    EvidencePathRead,
     ExhibitRead,
     FindingDetail,
     FindingSummary,
@@ -217,8 +218,35 @@ def read_citation(citation_id: uuid.UUID, repo: Repo) -> CitationRead:
 
 # --------------------------------------------------------------- network --
 @router.get("/network", response_model=NetworkRead)
-def read_network(repo: Repo, limit: Annotated[int, Query(ge=1, le=2000)] = 500) -> NetworkRead:
-    return repo.network(limit=limit)
+def read_network(
+    repo: Repo,
+    limit: Annotated[int, Query(ge=1, le=2000)] = 500,
+    source_category: str | None = None,
+    verification_state: VerificationState | None = None,
+    relationship_type: RelationshipType | None = None,
+    entity_kind: EntityKind | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> NetworkRead:
+    return repo.network(
+        limit=limit,
+        source_category=source_category,
+        verification_state=verification_state,
+        relationship_type=relationship_type,
+        entity_kind=entity_kind,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
+@router.get("/network/path", response_model=EvidencePathRead)
+def read_evidence_path(
+    repo: Repo,
+    from_node_id: uuid.UUID,
+    to_node_id: uuid.UUID,
+    max_hops: Annotated[int, Query(ge=1, le=8)] = 6,
+) -> EvidencePathRead:
+    return repo.evidence_path(from_node_id=from_node_id, to_node_id=to_node_id, max_hops=max_hops)
 
 
 @router.get("/relationships", response_model=Page[RelationshipRead])

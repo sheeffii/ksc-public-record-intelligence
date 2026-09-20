@@ -1,0 +1,28 @@
+{
+  "phase": 9,
+  "generated_at": "2026-09-20",
+  "case_number": "KSC-BC-2020-06",
+  "input_manifest": "docs/ingestion/manifests/phase7-controlled-corpus.json",
+  "input_manifest_sha256": "df27eca54a5f1d127064b22b7669702475bc32d558deb162ea11a5a1c9087b99",
+  "controlled_records": 22,
+  "resolved_citations": 23,
+  "self_citations_skipped": 1,
+  "graph_nodes": 13,
+  "graph_edges": 22,
+  "edges_missing_citation": 0,
+  "self_edges": 0,
+  "analytical_edges": 0,
+  "timeline_events": 19,
+  "timeline_events_missing_source_record": 0,
+  "timeline_by_type": {
+    "document": 11,
+    "testimony": 2,
+    "decision": 6
+  },
+  "date_precision": {
+    "exact": 19
+  },
+  "graph_engine": "svg",
+  "graph_engine_reason": "13 nodes and 22 edges are well within the measured controlled-corpus SVG envelope",
+  "passed": true
+}

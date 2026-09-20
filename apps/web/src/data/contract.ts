@@ -46,7 +46,7 @@ export interface ResearchRepository {
   getDocument(id: string, versionRef?: string): Promise<DocumentView | null>;
   search(query: string): Promise<readonly SearchResult[]>;
   getNetwork(): Promise<NetworkView>;
-  getPath(): Promise<readonly PathHop[]>;
+  getPath(fromNodeId?: string, toNodeId?: string, maxHops?: number): Promise<readonly PathHop[]>;
   getTimeline(): Promise<readonly TimelineItem[]>;
   getEvidence(): Promise<readonly EvidenceRow[]>;
   getAnswer(): Promise<readonly AnswerBlock[]>;

@@ -9,11 +9,13 @@ export function ScreenHeader({
   title,
   description,
   actions,
+  realData = false,
 }: {
   eyebrow?: ReactNode;
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
+  realData?: boolean;
 }) {
   return (
     <header className="border-border-subtle bg-bg-deep border-b px-4 py-4">
@@ -30,7 +32,7 @@ export function ScreenHeader({
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <DemoDataFlag />
+          {realData ? null : <DemoDataFlag />}
           {actions}
         </div>
       </div>

@@ -338,6 +338,8 @@ export function toNetworkNode(node: ApiGraphNode, index: number, total: number):
     type: type ?? "court",
     x: Math.round(400 + 300 * Math.cos(angle)),
     y: Math.round(300 + 220 * Math.sin(angle)),
+    ref: node.ref,
+    entityKind: node.entity_kind,
   };
 }
 
@@ -350,9 +352,22 @@ export function toNetworkEdge(edge: ApiRelationship): NetworkEdge | null {
     from: edge.from_node_id,
     to: edge.to_node_id,
     relation: edge.relationship_type,
-    sourceType: citation.sourceType,
+    sourceType: edge.source_category ?? citation.sourceType,
     citation,
     verification,
+    extractionOrigin: edge.extraction_origin,
+    relationshipDate: edge.relationship_date ?? undefined,
+    datePrecision: edge.date_precision,
+    note: edge.note ?? undefined,
+    sourcePath: edge.citation.source_path ?? undefined,
+    sourceCoordinate:
+      [
+        edge.citation.source_document_version_ref,
+        edge.citation.source_page ? `p. ${edge.citation.source_page}` : undefined,
+        edge.citation.source_para ? `¶${edge.citation.source_para}` : undefined,
+      ]
+        .filter(Boolean)
+        .join(" · ") || undefined,
   };
 }
 
@@ -363,7 +378,18 @@ export function toTimelineItem(event: ApiEvent): TimelineItem {
     : event.incident_slug
       ? `/incidents/${event.incident_slug}`
       : "/timeline";
-  return { id: event.id, label: event.title, date: event.date_from ?? NO_DATE, dateType, href };
+  return {
+    id: event.id,
+    label: event.title,
+    date: event.date_from ?? NO_DATE,
+    dateType,
+    href,
+    dateTo: event.date_to ?? undefined,
+    datePrecision: event.date_precision,
+    sourceUrl: event.source_url ?? undefined,
+    sourceSystem: event.source_system ?? undefined,
+    extractionOrigin: event.extraction_origin,
+  };
 }
 
 export function toEvidenceRows(claim: ApiClaim): EvidenceRow[] {

@@ -162,11 +162,19 @@ are authorized yet.
 
 ### Evidence graph
 
-Implemented as schema and read API in Phase 6: nodes are registry rows over
-record entities; **every edge carries a `citation_id`** (`NOT NULL`,
-`RESTRICT`). Edges whose citation is unresolved exist in the table but are never
-returned; rejected edges likewise. Paths over the real graph (`getPath`) are
-Phase 9 and are computed per request, ordered by hop count only.
+Nodes are registry rows over record entities; **every edge carries a
+`citation_id`** (`NOT NULL`, `RESTRICT`). Phase 9 projects resolved inter-document
+citations from the controlled corpus as deterministic `CITED_IN` edges with an
+explicit source category, extraction origin and optional typed date. Edges whose
+citation is unresolved or rejected are never returned. `GET /api/v1/network/path`
+runs a bounded breadth-first search over public source-backed edges only; each
+returned hop includes its own citation and ordering is by hop count only.
+
+The same database-only projection creates timeline events from persisted
+document and hearing dates. Date type and precision remain separate, and each
+projected event points to its official `source_record`. At the measured Phase 9
+scale (13 nodes, 22 edges), the existing SVG renderer remains performant and
+retains its textual alternative; WebGL is deferred until real scale requires it.
 
 ### AI layer (docs/AI_METHODS.md)
 

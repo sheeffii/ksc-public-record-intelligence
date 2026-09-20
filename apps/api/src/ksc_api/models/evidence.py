@@ -55,6 +55,7 @@ if TYPE_CHECKING:
     from ksc_api.models.actor import Location, Person, Witness
     from ksc_api.models.citation import Citation
     from ksc_api.models.document import Document, DocumentVersion
+    from ksc_api.models.source_record import SourceRecord
 
 
 class Exhibit(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -164,8 +165,15 @@ class Event(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     citation_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("citations.id", ondelete="SET NULL")
     )
+    source_record_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("source_records.id", ondelete="SET NULL"), index=True
+    )
+    extraction_origin: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="manual", server_default="manual"
+    )
 
     citation: Mapped[Citation | None] = relationship()
+    source_record: Mapped[SourceRecord | None] = relationship()
 
 
 class Claim(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):

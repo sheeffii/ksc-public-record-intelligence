@@ -19,6 +19,7 @@ from ksc_api.models.enums import (
     ExaminationType,
     FindingLinkType,
     Party,
+    RelationshipOrigin,
     RelationshipType,
     VerificationState,
     Visibility,
@@ -198,6 +199,10 @@ class EventRead(ReadModel):
     incident_slug: str | None
     document_ref: str | None
     citation: CitationRead | None
+    hearing_ref: str | None
+    source_system: str | None
+    source_url: str | None
+    extraction_origin: str
 
 
 class ClaimMentionRead(ReadModel):
@@ -309,11 +314,21 @@ class RelationshipRead(ReadModel):
     verification_state: VerificationState
     citation: CitationRead
     note: str | None
+    source_category: str
+    extraction_origin: RelationshipOrigin
+    relationship_date: date | None
+    date_precision: DatePrecision
 
 
 class NetworkRead(ReadModel):
     nodes: list[GraphNodeRead]
     edges: list[RelationshipRead]
+
+
+class EvidencePathRead(ReadModel):
+    found: bool
+    nodes: list[GraphNodeRead]
+    hops: list[RelationshipRead]
 
 
 SearchCategory = Literal[

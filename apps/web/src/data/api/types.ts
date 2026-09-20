@@ -51,6 +51,14 @@ export interface ApiCitation {
   line_to: number | null;
   pdf_page_index?: number | null;
   target_path?: string | null;
+  source_document_version_ref?: string | null;
+  source_page?: number | null;
+  source_pdf_page_index?: number | null;
+  source_para?: number | null;
+  source_char_start?: number | null;
+  source_char_end?: number | null;
+  source_url?: string | null;
+  source_path?: string | null;
   resolution_state: ApiResolutionState;
   resolved: boolean;
   display: string;
@@ -179,6 +187,10 @@ export interface ApiEvent {
   incident_slug: string | null;
   document_ref: string | null;
   citation: ApiCitation | null;
+  hearing_ref?: string | null;
+  source_system?: string | null;
+  source_url?: string | null;
+  extraction_origin?: string;
 }
 
 export interface ApiClaimMention {
@@ -214,11 +226,21 @@ export interface ApiRelationship {
   verification_state: ApiVerificationState;
   citation: ApiCitation;
   note: string | null;
+  source_category?: "court" | "witness" | "spo" | "defence" | "exhibit";
+  extraction_origin?: "source_documented" | "deterministic_citation" | "analytical";
+  relationship_date?: string | null;
+  date_precision?: string;
 }
 
 export interface ApiNetwork {
   nodes: ApiGraphNode[];
   edges: ApiRelationship[];
+}
+
+export interface ApiEvidencePath {
+  found: boolean;
+  nodes: ApiGraphNode[];
+  hops: ApiRelationship[];
 }
 
 export interface ApiSearchHit {

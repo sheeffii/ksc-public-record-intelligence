@@ -22,10 +22,12 @@ from ksc_api.models import (
     Finding,
     FindingEvidenceLink,
     GraphNode,
+    Hearing,
     Incident,
     Party,
     Person,
     Relationship,
+    SourceRecord,
     Transcript,
     TranscriptSegment,
     Witness,
@@ -141,11 +143,44 @@ def to_citation(citation: Citation) -> CitationRead:
         line_to=citation.target_line_to,
         pdf_page_index=citation.target_pdf_page_index,
         target_path=_citation_target_path(citation),
+        source_document_version_ref=(
+            citation.source_document_version.official_version_ref
+            if citation.source_document_version is not None
+            else None
+        ),
+        source_page=citation.source_page,
+        source_pdf_page_index=citation.source_pdf_page_index,
+        source_para=citation.source_para,
+        source_char_start=citation.source_char_start,
+        source_char_end=citation.source_char_end,
+        source_url=citation.source_url,
+        source_path=_citation_source_path(citation),
         resolution_state=citation.resolution_state,
         resolved=citation.is_resolved,
         display=citation.display,
         verification_state=citation.verification_state,
     )
+
+
+def _citation_source_path(citation: Citation) -> str | None:
+    version = citation.source_document_version
+    if version is None:
+        return None
+    route_id = version.document.official_ref.split("/", 1)[-1]
+    if "/" in route_id:
+        path = (
+            f"/documents/transcript?document={quote(route_id, safe='')}"
+            f"&version={quote(version.official_version_ref, safe='')}"
+        )
+    else:
+        path = f"/documents/{quote(route_id, safe='')}?version={quote(version.official_version_ref, safe='')}"
+    if citation.source_page is not None:
+        path += f"&page={citation.source_page}"
+    elif citation.source_pdf_page_index is not None:
+        path += f"&pdfPage={citation.source_pdf_page_index}"
+    if citation.source_para is not None:
+        path += f"&para={citation.source_para}"
+    return path
 
 
 def _citation_target_path(citation: Citation) -> str | None:
@@ -320,7 +355,13 @@ def to_incident(incident: Incident, counts: ReferenceCounts) -> IncidentRead:
     )
 
 
-def to_event(event: Event, incident: Incident | None, document: Document | None) -> EventRead:
+def to_event(
+    event: Event,
+    incident: Incident | None,
+    document: Document | None,
+    hearing: Hearing | None,
+    source_record: SourceRecord | None,
+) -> EventRead:
     citation = event.citation
     return EventRead(
         id=event.id,
@@ -333,6 +374,14 @@ def to_event(event: Event, incident: Incident | None, document: Document | None)
         incident_slug=incident.slug if incident is not None else None,
         document_ref=document.official_ref if document is not None else None,
         citation=to_citation(citation) if citation is not None and citation.is_resolved else None,
+        hearing_ref=hearing.official_ref if hearing is not None else None,
+        source_system=source_record.source_system.value if source_record is not None else None,
+        source_url=(
+            source_record.canonical_source_url or source_record.discovery_url
+            if source_record is not None
+            else None
+        ),
+        extraction_origin=event.extraction_origin,
     )
 
 
@@ -471,4 +520,8 @@ def to_relationship(edge: Relationship) -> RelationshipRead:
         verification_state=edge.verification_state,
         citation=to_citation(edge.citation),
         note=edge.note,
+        source_category=edge.source_category,
+        extraction_origin=edge.extraction_origin,
+        relationship_date=edge.relationship_date,
+        date_precision=edge.date_precision,
     )

@@ -209,6 +209,9 @@ class Citation(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     candidate_identifiers: Mapped[list[str] | None] = mapped_column(JSONB)
 
     target_document: Mapped[Document | None] = relationship(foreign_keys=[target_document_id])
+    source_document_version: Mapped[DocumentVersion | None] = relationship(
+        foreign_keys=[source_document_version_id]
+    )
     target_document_version: Mapped[DocumentVersion | None] = relationship(
         foreign_keys=[target_document_version_id]
     )

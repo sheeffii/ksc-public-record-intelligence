@@ -133,6 +133,30 @@ def test_network_withholds_rejected_and_unresolved_edges(demo_client):
     assert rels["total"] == 2
 
 
+def test_evidence_path_uses_only_cited_edges_and_invents_no_hops(demo_client):
+    network = demo_client.get(f"{V1}/network").json()
+    edge = network["edges"][0]
+    path = demo_client.get(
+        f"{V1}/network/path",
+        params={"from_node_id": edge["from_node_id"], "to_node_id": edge["to_node_id"]},
+    ).json()
+    assert path["found"] is True
+    assert path["hops"]
+    assert all(hop["citation"]["resolved"] for hop in path["hops"])
+    assert all(hop["citation"]["source_document_version_ref"] for hop in path["hops"])
+    assert all(hop["citation"]["source_path"] for hop in path["hops"])
+    assert all(hop["extraction_origin"] != "analytical" for hop in path["hops"])
+
+    missing = demo_client.get(
+        f"{V1}/network/path",
+        params={
+            "from_node_id": "00000000-0000-0000-0000-000000000001",
+            "to_node_id": "00000000-0000-0000-0000-000000000002",
+        },
+    ).json()
+    assert missing == {"found": False, "nodes": [], "hops": []}
+
+
 def test_events_keep_the_five_date_types(demo_client):
     body = demo_client.get(f"{V1}/events").json()
     assert {e["date_type"] for e in body["items"]} == {
@@ -143,6 +167,11 @@ def test_events_keep_the_five_date_types(demo_client):
         "decision",
     }
     assert all(e["citation"] is None or e["citation"]["resolved"] for e in body["items"])
+    assert all(
+        e["date_precision"]
+        in {"exact", "range", "approximate", "month_only", "year_only", "unknown"}
+        for e in body["items"]
+    )
 
 
 def test_transcript_segments_closed_session_has_no_text(demo_client):
