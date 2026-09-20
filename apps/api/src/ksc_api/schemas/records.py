@@ -67,6 +67,11 @@ class DocumentVersionRead(ReadModel):
     mime_type: str | None
     page_count: int | None
     fetched_at: datetime | None
+    text_extraction_method: str
+    parsed_at: datetime | None
+    parser_name: str | None
+    parser_version: str | None
+    parse_requires_review: bool
     supersedes_version_ref: str | None
 
 
@@ -91,7 +96,9 @@ class DocumentDetail(DocumentSummary):
 
 
 class DocumentPageRead(ReadModel):
-    page_number: int
+    pdf_page_index: int = Field(ge=0)
+    page_number: int | None
+    printed_page_label: str | None
     text: str | None
     running_head: str | None
     has_redactions: bool
@@ -102,10 +109,23 @@ class DocumentChunkRead(ReadModel):
     """A structural span (section / paragraph range) of a public version."""
 
     sequence: int
+    chunk_kind: str
+    pdf_page_index_from: int | None
+    pdf_page_index_to: int | None
     page_from: int | None
     page_to: int | None
     para_from: int | None
     para_to: int | None
+    text: str
+
+
+class DocumentParagraphRead(ReadModel):
+    sequence: int
+    paragraph_number: int = Field(ge=1)
+    pdf_page_index_from: int = Field(ge=0)
+    pdf_page_index_to: int = Field(ge=0)
+    page_from: int | None
+    page_to: int | None
     text: str
 
 
@@ -246,6 +266,7 @@ class FindingDetail(FindingSummary):
 
 class TranscriptSegmentRead(ReadModel):
     sequence: int
+    pdf_page_index: int | None
     page_number: int | None
     line_from: int | None
     line_to: int | None
@@ -296,7 +317,14 @@ class NetworkRead(ReadModel):
 
 
 SearchCategory = Literal[
-    "documents", "people", "witnesses", "exhibits", "incidents", "findings", "locations"
+    "documents",
+    "transcripts",
+    "people",
+    "witnesses",
+    "exhibits",
+    "incidents",
+    "findings",
+    "locations",
 ]
 
 
@@ -306,6 +334,16 @@ class SearchHit(ReadModel):
     title: str
     context: str | None
     protected: bool = False
+    match_kind: Literal["exact_identifier", "title", "phrase", "keyword"] = "keyword"
+    version_ref: str | None = None
+    pdf_page_index: int | None = None
+    page: int | None = None
+    para_from: int | None = None
+    para_to: int | None = None
+    line_from: int | None = None
+    line_to: int | None = None
+    source_url: str | None = None
+    target_path: str | None = None
 
 
 class SearchRead(ReadModel):

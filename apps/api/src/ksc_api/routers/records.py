@@ -4,10 +4,12 @@ scopes to the configured case and fails closed on visibility."""
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from ksc_api.models import Party
 from ksc_api.repositories import RecordRepository, get_repository
 from ksc_api.schemas.citation import CitationRead, ResolveResult
 from ksc_api.schemas.common import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
@@ -18,6 +20,7 @@ from ksc_api.schemas.records import (
     DocumentChunkRead,
     DocumentDetail,
     DocumentPageRead,
+    DocumentParagraphRead,
     DocumentSummary,
     EventRead,
     ExhibitRead,
@@ -84,6 +87,19 @@ def list_document_chunks(
 ) -> Page[DocumentChunkRead]:
     return _or_404(
         repo.list_document_chunks(version_ref, limit=limit, offset=offset), "document version"
+    )
+
+
+@router.get(
+    "/document-versions/{version_ref:path}/paragraphs",
+    response_model=Page[DocumentParagraphRead],
+)
+def list_document_paragraphs(
+    version_ref: str, repo: Repo, limit: Limit = DEFAULT_PAGE_SIZE, offset: Offset = 0
+) -> Page[DocumentParagraphRead]:
+    return _or_404(
+        repo.list_document_paragraphs(version_ref, limit=limit, offset=offset),
+        "document version",
     )
 
 
@@ -181,7 +197,7 @@ def list_events(
 
 
 # ----------------------------------------------------------- transcripts --
-@router.get("/transcripts/{official_ref}", response_model=TranscriptRead)
+@router.get("/transcripts/{official_ref:path}", response_model=TranscriptRead)
 def read_transcript(official_ref: str, repo: Repo) -> TranscriptRead:
     return _or_404(repo.get_transcript(official_ref), "transcript")
 
@@ -217,5 +233,26 @@ def list_relationships(
 
 # ---------------------------------------------------------------- search --
 @router.get("/search", response_model=SearchRead)
-def search(repo: Repo, q: Annotated[str, Query(max_length=200)] = "") -> SearchRead:
-    return repo.search(q)
+def search(
+    repo: Repo,
+    q: Annotated[str, Query(max_length=200)] = "",
+    mode: Annotated[str, Query(pattern="^(auto|exact|phrase|keyword)$")] = "auto",
+    document_type: str | None = None,
+    language: str | None = None,
+    filing_party: Party | None = None,
+    source_type: Annotated[
+        str | None, Query(pattern="^(document|transcript|court|spo|defence)$")
+    ] = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> SearchRead:
+    return repo.search(
+        q,
+        mode=mode,
+        document_type=document_type,
+        language=language,
+        filing_party=filing_party,
+        source_type=source_type,
+        date_from=date_from,
+        date_to=date_to,
+    )

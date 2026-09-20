@@ -33,6 +33,8 @@ class CitationRead(ReadModel):
     para_to: int | None = None
     line_from: int | None = None
     line_to: int | None = None
+    pdf_page_index: int | None = Field(default=None, ge=0)
+    target_path: str | None = None
     resolution_state: ResolutionState
     resolved: bool
     display: str

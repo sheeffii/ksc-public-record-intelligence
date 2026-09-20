@@ -44,3 +44,4 @@ def test_in_memory_store_never_overwrites() -> None:
     store.put("k", b"second", "application/pdf")
     assert store.exists("k")
     assert store.objects["k"] == b"first"
+    assert store.get("k") == b"first"

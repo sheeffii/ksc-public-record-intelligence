@@ -25,6 +25,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    Computed,
     Date,
     DateTime,
     ForeignKey,
@@ -34,7 +35,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ksc_api.db.base import Base
@@ -65,6 +66,7 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "documents"
     __table_args__ = (
         UniqueConstraint("case_id", "official_ref", name="uq_documents_case_official_ref"),
+        Index("ix_documents_search_vector", "search_vector", postgresql_using="gin"),
     )
 
     case_id: Mapped[uuid.UUID] = mapped_column(
@@ -99,6 +101,15 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     # Official public URL the logical record was discovered at. Never guessed.
     source_url: Mapped[str | None] = mapped_column(String(1024))
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        Computed(
+            "to_tsvector('simple', coalesce(title, '') || ' ' || "
+            "coalesce(official_ref, '') || ' ' || coalesce(filing_number, ''))",
+            persisted=True,
+        ),
+        deferred=True,
+    )
 
     case: Mapped[Case] = relationship(back_populates="documents")
     versions: Mapped[list[DocumentVersion]] = relationship(
@@ -183,6 +194,13 @@ class DocumentVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=TextExtractionMethod.NONE,
         server_default=TextExtractionMethod.NONE.value,
     )
+    parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    parser_name: Mapped[str | None] = mapped_column(String(64))
+    parser_version: Mapped[str | None] = mapped_column(String(32))
+    parse_requires_review: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    parse_notes: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     supersedes_version_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="SET NULL")
     )
@@ -190,10 +208,17 @@ class DocumentVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     document: Mapped[Document] = relationship(back_populates="versions")
     supersedes: Mapped[DocumentVersion | None] = relationship(remote_side="DocumentVersion.id")
     pages: Mapped[list[DocumentPage]] = relationship(
-        back_populates="version", cascade="all, delete-orphan", order_by="DocumentPage.page_number"
+        back_populates="version",
+        cascade="all, delete-orphan",
+        order_by="DocumentPage.pdf_page_index",
     )
     sections: Mapped[list[DocumentSection]] = relationship(
         back_populates="version", cascade="all, delete-orphan", order_by="DocumentSection.sequence"
+    )
+    paragraphs: Mapped[list[DocumentParagraph]] = relationship(
+        back_populates="version",
+        cascade="all, delete-orphan",
+        order_by="DocumentParagraph.sequence",
     )
     chunks: Mapped[list[DocumentChunk]] = relationship(
         back_populates="version", cascade="all, delete-orphan", order_by="DocumentChunk.sequence"
@@ -210,16 +235,25 @@ class DocumentPage(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "document_pages"
     __table_args__ = (
         UniqueConstraint(
+            "document_version_id", "pdf_page_index", name="uq_document_pages_version_pdf_index"
+        ),
+        UniqueConstraint(
             "document_version_id", "page_number", name="uq_document_pages_version_page"
         ),
-        CheckConstraint("page_number >= 1", name="page_number_positive"),
+        CheckConstraint("pdf_page_index >= 0", name="pdf_page_index_non_negative"),
+        CheckConstraint("page_number IS NULL OR page_number >= 1", name="page_number_positive"),
     )
 
     document_version_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="CASCADE"), nullable=False
     )
-    # The real printed page number. Stored only when known.
-    page_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Zero-based index in the held PDF. This is always exact and is never
+    # substituted for a printed/source page number.
+    pdf_page_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    # The real printed/source page number. NULL when the artifact does not
+    # expose one confidently (never filled from the PDF index).
+    page_number: Mapped[int | None] = mapped_column(Integer)
+    printed_page_label: Mapped[str | None] = mapped_column(String(64))
     text: Mapped[str | None] = mapped_column(Text)
     running_head: Mapped[str | None] = mapped_column(String(512))
     has_redactions: Mapped[bool] = mapped_column(
@@ -230,6 +264,46 @@ class DocumentPage(UUIDPrimaryKeyMixin, Base):
     redaction_extents: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
 
     version: Mapped[DocumentVersion] = relationship(back_populates="pages")
+
+
+class DocumentParagraph(UUIDPrimaryKeyMixin, Base):
+    """A numbered paragraph whose coordinate is printed in the source.
+
+    Unnumbered prose remains page/chunk text; it is never assigned a made-up
+    paragraph number.
+    """
+
+    __tablename__ = "document_paragraphs"
+    __table_args__ = (
+        UniqueConstraint(
+            "document_version_id", "sequence", name="uq_document_paragraphs_version_sequence"
+        ),
+        UniqueConstraint(
+            "document_version_id",
+            "paragraph_number",
+            name="uq_document_paragraphs_version_number",
+        ),
+        CheckConstraint("sequence >= 0", name="sequence_non_negative"),
+        CheckConstraint("paragraph_number >= 1", name="paragraph_number_positive"),
+        CheckConstraint("pdf_page_index_from >= 0", name="pdf_page_index_from_non_negative"),
+        CheckConstraint("pdf_page_index_to >= pdf_page_index_from", name="pdf_page_index_range"),
+        CheckConstraint(
+            "page_to IS NULL OR page_from IS NULL OR page_to >= page_from", name="page_range"
+        ),
+    )
+
+    document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="CASCADE"), nullable=False
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    paragraph_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    pdf_page_index_from: Mapped[int] = mapped_column(Integer, nullable=False)
+    pdf_page_index_to: Mapped[int] = mapped_column(Integer, nullable=False)
+    page_from: Mapped[int | None] = mapped_column(Integer)
+    page_to: Mapped[int | None] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+
+    version: Mapped[DocumentVersion] = relationship(back_populates="paragraphs")
 
 
 class DocumentSection(UUIDPrimaryKeyMixin, Base):
@@ -281,6 +355,16 @@ class DocumentChunk(UUIDPrimaryKeyMixin, Base):
         CheckConstraint(
             "page_to IS NULL OR page_from IS NULL OR page_to >= page_from", name="page_range"
         ),
+        CheckConstraint(
+            "pdf_page_index_to IS NULL OR pdf_page_index_from IS NULL OR "
+            "pdf_page_index_to >= pdf_page_index_from",
+            name="pdf_page_index_range",
+        ),
+        CheckConstraint(
+            "chunk_kind IN ('paragraph', 'page', 'section', 'transcript_page')",
+            name="chunk_kind_known",
+        ),
+        Index("ix_document_chunks_search_vector", "search_vector", postgresql_using="gin"),
     )
 
     document_version_id: Mapped[uuid.UUID] = mapped_column(
@@ -290,11 +374,19 @@ class DocumentChunk(UUIDPrimaryKeyMixin, Base):
         UUID(as_uuid=True), ForeignKey("document_sections.id", ondelete="SET NULL")
     )
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunk_kind: Mapped[str] = mapped_column(String(32), nullable=False, default="page")
+    pdf_page_index_from: Mapped[int | None] = mapped_column(Integer)
+    pdf_page_index_to: Mapped[int | None] = mapped_column(Integer)
     page_from: Mapped[int | None] = mapped_column(Integer)
     page_to: Mapped[int | None] = mapped_column(Integer)
     para_from: Mapped[int | None] = mapped_column(Integer)
     para_to: Mapped[int | None] = mapped_column(Integer)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     char_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        Computed("to_tsvector('simple', coalesce(text, ''))", persisted=True),
+        deferred=True,
+    )
 
     version: Mapped[DocumentVersion] = relationship(back_populates="chunks")

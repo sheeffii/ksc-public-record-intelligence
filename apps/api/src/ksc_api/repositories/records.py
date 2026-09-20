@@ -14,10 +14,12 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from datetime import date
 from typing import Annotated, Any
+from urllib.parse import quote
 
 from fastapi import Depends
-from sqlalchemy import Select, and_, func, or_, select
+from sqlalchemy import Select, and_, false, func, or_, select
 from sqlalchemy.orm import Session, aliased, selectinload
 
 from ksc_api.config import Settings, get_settings
@@ -31,6 +33,7 @@ from ksc_api.models import (
     Document,
     DocumentChunk,
     DocumentPage,
+    DocumentParagraph,
     DocumentVersion,
     EntityKind,
     Event,
@@ -42,6 +45,7 @@ from ksc_api.models import (
     Incident,
     Location,
     Organization,
+    Party,
     Person,
     RecordIdentifier,
     Relationship,
@@ -67,6 +71,7 @@ from ksc_api.schemas.records import (
     DocumentChunkRead,
     DocumentDetail,
     DocumentPageRead,
+    DocumentParagraphRead,
     DocumentSummary,
     EventRead,
     ExhibitRead,
@@ -261,7 +266,11 @@ class RecordRepository:
             .options(selectinload(Document.versions).selectinload(DocumentVersion.supersedes))
             .where(
                 Document.case_id == self.case.id,
-                or_(Document.official_ref == ref, Document.filing_number == ref),
+                or_(
+                    Document.official_ref == ref,
+                    Document.official_ref == f"{self.case.case_number}/{ref}",
+                    Document.filing_number == ref,
+                ),
             )
         )
         if document is None:
@@ -285,11 +294,30 @@ class RecordRepository:
         stmt = (
             select(DocumentPage)
             .where(DocumentPage.document_version_id == version.id)
-            .order_by(DocumentPage.page_number)
+            .order_by(DocumentPage.pdf_page_index)
         )
         rows, total = self._paginate(stmt, limit, offset)
         return Page(
             items=[mappers.to_document_page(p) for p in rows],
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
+
+    def list_document_paragraphs(
+        self, version_ref: str, *, limit: int, offset: int
+    ) -> Page[DocumentParagraphRead] | None:
+        version = self._public_version(version_ref)
+        if version is None:
+            return None
+        stmt = (
+            select(DocumentParagraph)
+            .where(DocumentParagraph.document_version_id == version.id)
+            .order_by(DocumentParagraph.sequence)
+        )
+        rows, total = self._paginate(stmt, limit, offset)
+        return Page(
+            items=[mappers.to_document_paragraph(p) for p in rows],
             total=total,
             limit=limit,
             offset=offset,
@@ -678,119 +706,447 @@ class RecordRepository:
         return str(getattr(entity, _NODE_REF_ATTR[kind])), False
 
     # ------------------------------------------------------------- search --
-    def search(self, q: str, *, per_category: int = 10) -> SearchRead:
-        """Minimal identifier/title search. Real search is Phase 8."""
+    def search(
+        self,
+        q: str,
+        *,
+        per_category: int = 10,
+        mode: str = "auto",
+        document_type: str | None = None,
+        language: str | None = None,
+        filing_party: Party | None = None,
+        source_type: str | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> SearchRead:
+        """Exact-ID and PostgreSQL FTS over parsed public source text."""
+        query = q.strip()
         hits: list[SearchHit] = []
-        if not q.strip():
+        if not query:
             return SearchRead(query=q, hits=hits)
-        for document in self.session.scalars(
-            select(Document)
-            .where(
+        seen: set[tuple[str, str, str | None, int | None, int | None]] = set()
+
+        def add(hit: SearchHit) -> None:
+            key = (hit.category, hit.ref, hit.version_ref, hit.pdf_page_index, hit.line_from)
+            if key not in seen:
+                seen.add(key)
+                hits.append(hit)
+
+        normalized = normalize_identifier(query)
+        with_case = normalize_identifier(f"{self.case.case_number}/{query}")
+        identifiers = self.session.scalars(
+            select(RecordIdentifier).where(
+                RecordIdentifier.case_id == self.case.id,
+                RecordIdentifier.normalized_identifier.in_([normalized, with_case]),
+            )
+        ).all()
+        for identifier in identifiers:
+            document, version, transcript = self._identifier_records(identifier)
+            if document is None or document.visibility.value not in _PUBLIC:
+                continue
+            if not self._document_matches_filters(
+                document,
+                document_type=document_type,
+                language=language,
+                filing_party=filing_party,
+                source_type=source_type,
+                date_from=date_from,
+                date_to=date_to,
+                transcript=transcript is not None,
+            ):
+                continue
+            add(
+                SearchHit(
+                    category="transcripts" if transcript is not None else "documents",
+                    ref=(
+                        transcript.official_ref
+                        if transcript is not None and transcript.official_ref is not None
+                        else document.official_ref
+                    ),
+                    title=document.title,
+                    context=identifier.identifier,
+                    match_kind="exact_identifier",
+                    version_ref=version.official_version_ref if version is not None else None,
+                    source_url=version.source_url if version is not None else document.source_url,
+                    target_path=_document_target_path(document, version),
+                )
+            )
+        if mode == "exact":
+            return SearchRead(query=q, hits=hits)
+
+        phrase = mode == "phrase" or (len(query) >= 2 and query[0] == query[-1] == '"')
+        lexical_query = query[1:-1] if phrase else query
+        tsquery = (
+            func.phraseto_tsquery("simple", lexical_query)
+            if phrase
+            else func.websearch_to_tsquery("simple", lexical_query)
+        )
+        match_kind = "phrase" if phrase else "keyword"
+
+        document_stmt = self._apply_document_filters(
+            select(Document).where(
                 Document.case_id == self.case.id,
                 public_visibility(Document.visibility),
-                _ilike_any(q, Document.title, Document.official_ref, Document.filing_number),
-            )
-            .order_by(Document.official_ref)
-            .limit(per_category)
-        ):
-            hits.append(
+                Document.search_vector.op("@@")(tsquery),
+            ),
+            document_type=document_type,
+            language=language,
+            filing_party=filing_party,
+            source_type=source_type,
+            date_from=date_from,
+            date_to=date_to,
+            transcript=False,
+        )
+        documents = self.session.scalars(
+            document_stmt.order_by(
+                func.ts_rank_cd(Document.search_vector, tsquery).desc(), Document.official_ref
+            ).limit(per_category)
+        ).all()
+        for document in documents:
+            add(
                 SearchHit(
                     category="documents",
                     ref=document.official_ref,
                     title=document.title,
                     context=document.document_type,
+                    match_kind="title",
+                    source_url=document.source_url,
+                    target_path=_document_target_path(document, None),
                 )
             )
-        for person in self.session.scalars(
-            select(Person)
-            .where(Person.case_id == self.case.id, _ilike_any(q, Person.display_name, Person.slug))
-            .order_by(Person.display_name)
-            .limit(per_category)
-        ):
-            hits.append(
-                SearchHit(
-                    category="people",
-                    ref=person.slug,
-                    title=person.display_name,
-                    context=person.public_role,
-                )
-            )
-        for witness in self.session.scalars(
-            select(Witness)
-            .where(Witness.case_id == self.case.id, Witness.code.ilike(f"%{q}%"))
-            .order_by(Witness.code)
-            .limit(per_category)
-        ):
-            hits.append(
-                SearchHit(
-                    category="witnesses",
-                    ref=witness.code,
-                    title=witness.code,
-                    context=None,
-                    protected=witness.is_protected,
-                )
-            )
-        for exhibit in self.session.scalars(
-            select(Exhibit)
+
+        chunk_stmt = self._apply_document_filters(
+            select(DocumentChunk, DocumentVersion, Document)
+            .join(DocumentVersion, DocumentChunk.document_version_id == DocumentVersion.id)
+            .join(Document, DocumentVersion.document_id == Document.id)
             .where(
-                Exhibit.case_id == self.case.id,
-                public_visibility(Exhibit.visibility),
-                _ilike_any(q, Exhibit.official_exhibit_id, Exhibit.title),
-            )
-            .order_by(Exhibit.official_exhibit_id)
-            .limit(per_category)
-        ):
-            hits.append(
+                Document.case_id == self.case.id,
+                Document.document_type != "transcript",
+                public_visibility(Document.visibility),
+                public_visibility(DocumentVersion.visibility),
+                DocumentChunk.search_vector.op("@@")(tsquery),
+            ),
+            document_type=document_type,
+            language=language,
+            filing_party=filing_party,
+            source_type=source_type,
+            date_from=date_from,
+            date_to=date_to,
+            transcript=False,
+        )
+        chunk_rows = self.session.execute(
+            chunk_stmt.order_by(
+                func.ts_rank_cd(DocumentChunk.search_vector, tsquery).desc(),
+                Document.official_ref,
+                DocumentChunk.sequence,
+            ).limit(per_category)
+        ).all()
+        for chunk, version, document in chunk_rows:
+            add(
                 SearchHit(
-                    category="exhibits",
-                    ref=exhibit.official_exhibit_id,
-                    title=exhibit.title,
-                    context=exhibit.official_exhibit_id,
+                    category="documents",
+                    ref=document.official_ref,
+                    title=document.title,
+                    context=_context_excerpt(chunk.text, lexical_query),
+                    match_kind=match_kind,
+                    version_ref=version.official_version_ref,
+                    pdf_page_index=chunk.pdf_page_index_from,
+                    page=chunk.page_from,
+                    para_from=chunk.para_from,
+                    para_to=chunk.para_to,
+                    source_url=version.source_url,
+                    target_path=_document_target_path(
+                        document,
+                        version,
+                        pdf_page_index=chunk.pdf_page_index_from,
+                        paragraph=chunk.para_from,
+                    ),
                 )
             )
-        for incident in self.session.scalars(
-            select(Incident)
-            .where(Incident.case_id == self.case.id, _ilike_any(q, Incident.title, Incident.slug))
-            .order_by(Incident.slug)
-            .limit(per_category)
-        ):
-            hits.append(
+
+        transcript_stmt = self._apply_document_filters(
+            select(TranscriptSegment, Transcript, DocumentVersion, Document)
+            .join(Transcript, TranscriptSegment.transcript_id == Transcript.id)
+            .join(DocumentVersion, Transcript.document_version_id == DocumentVersion.id)
+            .join(Document, DocumentVersion.document_id == Document.id)
+            .where(
+                Document.case_id == self.case.id,
+                public_visibility(Document.visibility),
+                public_visibility(DocumentVersion.visibility),
+                public_visibility(Transcript.visibility),
+                TranscriptSegment.closed_session.is_(False),
+                TranscriptSegment.search_vector.op("@@")(tsquery),
+            ),
+            document_type=document_type,
+            language=language,
+            filing_party=filing_party,
+            source_type=source_type,
+            date_from=date_from,
+            date_to=date_to,
+            transcript=True,
+        )
+        segment_rows = self.session.execute(
+            transcript_stmt.order_by(
+                func.ts_rank_cd(TranscriptSegment.search_vector, tsquery).desc(),
+                Transcript.official_ref,
+                TranscriptSegment.sequence,
+            ).limit(per_category)
+        ).all()
+        for segment, transcript, version, document in segment_rows:
+            add(
                 SearchHit(
-                    category="incidents",
-                    ref=incident.slug,
-                    title=incident.title,
-                    context=incident.summary,
+                    category="transcripts",
+                    ref=transcript.official_ref or version.official_version_ref,
+                    title=document.title,
+                    context=_context_excerpt(segment.text, lexical_query),
+                    match_kind=match_kind,
+                    version_ref=version.official_version_ref,
+                    pdf_page_index=segment.pdf_page_index,
+                    page=segment.page_number,
+                    line_from=segment.line_from,
+                    line_to=segment.line_to,
+                    source_url=version.source_url,
+                    target_path=_document_target_path(
+                        document,
+                        version,
+                        pdf_page_index=segment.pdf_page_index,
+                        page=segment.page_number,
+                        line=segment.line_from,
+                    ),
                 )
             )
-        for finding in self.session.scalars(
-            self._findings_stmt()
-            .where(_ilike_any(q, Finding.finding_key, Finding.text))
-            .order_by(Finding.finding_key)
-            .limit(per_category)
-        ):
-            hits.append(
-                SearchHit(
-                    category="findings",
-                    ref=finding.finding_key,
-                    title=finding.finding_key,
-                    context=finding.text,
+
+        # Preserve the structured-record search surface introduced before
+        # Phase 8. These records do not participate in full-text ranking, but
+        # remain discoverable by their public labels and identifiers.
+        if not any((document_type, language, filing_party, source_type, date_from, date_to)):
+            for person in self.session.scalars(
+                select(Person)
+                .where(
+                    Person.case_id == self.case.id,
+                    _ilike_any(query, Person.display_name, Person.slug),
                 )
-            )
-        for location in self.session.scalars(
-            select(Location)
-            .where(Location.case_id == self.case.id, _ilike_any(q, Location.name, Location.slug))
-            .order_by(Location.name)
-            .limit(per_category)
-        ):
-            hits.append(
-                SearchHit(
-                    category="locations",
-                    ref=location.slug,
-                    title=location.name,
-                    context=location.kind,
+                .order_by(Person.display_name)
+                .limit(per_category)
+            ):
+                add(
+                    SearchHit(
+                        category="people",
+                        ref=person.slug,
+                        title=person.display_name,
+                        context=person.public_role,
+                        match_kind="title",
+                    )
                 )
-            )
+            for witness in self.session.scalars(
+                select(Witness)
+                .where(Witness.case_id == self.case.id, Witness.code.ilike(f"%{query}%"))
+                .order_by(Witness.code)
+                .limit(per_category)
+            ):
+                add(
+                    SearchHit(
+                        category="witnesses",
+                        ref=witness.code,
+                        title=witness.code,
+                        context=None,
+                        protected=witness.is_protected,
+                        match_kind="exact_identifier",
+                    )
+                )
+            for exhibit in self.session.scalars(
+                select(Exhibit)
+                .where(
+                    Exhibit.case_id == self.case.id,
+                    public_visibility(Exhibit.visibility),
+                    _ilike_any(query, Exhibit.official_exhibit_id, Exhibit.title),
+                )
+                .order_by(Exhibit.official_exhibit_id)
+                .limit(per_category)
+            ):
+                add(
+                    SearchHit(
+                        category="exhibits",
+                        ref=exhibit.official_exhibit_id,
+                        title=exhibit.title,
+                        context=exhibit.official_exhibit_id,
+                        match_kind="title",
+                    )
+                )
+            for incident in self.session.scalars(
+                select(Incident)
+                .where(
+                    Incident.case_id == self.case.id,
+                    _ilike_any(query, Incident.title, Incident.slug),
+                )
+                .order_by(Incident.slug)
+                .limit(per_category)
+            ):
+                add(
+                    SearchHit(
+                        category="incidents",
+                        ref=incident.slug,
+                        title=incident.title,
+                        context=incident.summary,
+                        match_kind="title",
+                    )
+                )
+            for finding in self.session.scalars(
+                self._findings_stmt()
+                .where(_ilike_any(query, Finding.finding_key, Finding.text))
+                .order_by(Finding.finding_key)
+                .limit(per_category)
+            ):
+                add(
+                    SearchHit(
+                        category="findings",
+                        ref=finding.finding_key,
+                        title=finding.finding_key,
+                        context=finding.text,
+                        match_kind="keyword",
+                    )
+                )
+            for location in self.session.scalars(
+                select(Location)
+                .where(
+                    Location.case_id == self.case.id,
+                    _ilike_any(query, Location.name, Location.slug),
+                )
+                .order_by(Location.name)
+                .limit(per_category)
+            ):
+                add(
+                    SearchHit(
+                        category="locations",
+                        ref=location.slug,
+                        title=location.name,
+                        context=location.kind,
+                        match_kind="title",
+                    )
+                )
         return SearchRead(query=q, hits=hits)
+
+    def _identifier_records(
+        self, identifier: RecordIdentifier
+    ) -> tuple[Document | None, DocumentVersion | None, Transcript | None]:
+        document = None
+        version = None
+        transcript = None
+        if identifier.document_id is not None:
+            document = self.session.get(Document, identifier.document_id)
+        elif identifier.document_version_id is not None:
+            version = self.session.get(DocumentVersion, identifier.document_version_id)
+            document = version.document if version is not None else None
+        elif identifier.transcript_id is not None:
+            transcript = self.session.get(Transcript, identifier.transcript_id)
+            version = transcript.document_version if transcript is not None else None
+            document = version.document if version is not None else None
+        return document, version, transcript
+
+    @staticmethod
+    def _document_matches_filters(
+        document: Document,
+        *,
+        document_type: str | None,
+        language: str | None,
+        filing_party: Party | None,
+        source_type: str | None,
+        date_from: date | None,
+        date_to: date | None,
+        transcript: bool,
+    ) -> bool:
+        if document_type and document.document_type != document_type:
+            return False
+        if language and document.language != language:
+            return False
+        if filing_party and document.filing_party != filing_party:
+            return False
+        if source_type == "transcript" and not transcript:
+            return False
+        if source_type == "document" and transcript:
+            return False
+        if source_type in {"court", "spo", "defence"} and (
+            document.filing_party is None or document.filing_party.value != source_type
+        ):
+            return False
+        record_date = document.document_date or document.filing_date or document.public_date
+        if date_from and (record_date is None or record_date < date_from):
+            return False
+        return not (date_to and (record_date is None or record_date > date_to))
+
+    @staticmethod
+    def _apply_document_filters(
+        stmt: Select[Any],
+        *,
+        document_type: str | None,
+        language: str | None,
+        filing_party: Party | None,
+        source_type: str | None,
+        date_from: date | None,
+        date_to: date | None,
+        transcript: bool,
+    ) -> Select[Any]:
+        if document_type:
+            stmt = stmt.where(Document.document_type == document_type)
+        if language:
+            stmt = stmt.where(Document.language == language)
+        if filing_party:
+            stmt = stmt.where(Document.filing_party == filing_party)
+        if source_type == "transcript" and not transcript:
+            stmt = stmt.where(false())
+        if source_type == "document" and transcript:
+            stmt = stmt.where(false())
+        if source_type in {"court", "spo", "defence"}:
+            stmt = stmt.where(Document.filing_party == Party(source_type))
+        record_date = func.coalesce(
+            Document.document_date, Document.filing_date, Document.public_date
+        )
+        if date_from:
+            stmt = stmt.where(record_date >= date_from)
+        if date_to:
+            stmt = stmt.where(record_date <= date_to)
+        return stmt
+
+
+def _document_target_path(
+    document: Document,
+    version: DocumentVersion | None,
+    *,
+    pdf_page_index: int | None = None,
+    paragraph: int | None = None,
+    page: int | None = None,
+    line: int | None = None,
+) -> str:
+    route_id = document.official_ref.split("/", 1)[-1]
+    if "/" in route_id:
+        path = "/documents/transcript"
+        params = [f"document={quote(route_id, safe='')}"]
+    else:
+        path = f"/documents/{quote(route_id, safe='')}"
+        params = []
+    if version is not None:
+        params.append(f"version={quote(version.official_version_ref, safe='')}")
+    if pdf_page_index is not None:
+        params.append(f"pdfPage={pdf_page_index}")
+    if paragraph is not None:
+        params.append(f"para={paragraph}")
+    if page is not None:
+        params.append(f"page={page}")
+    if line is not None:
+        params.append(f"line={line}")
+    return path + (f"?{'&'.join(params)}" if params else "")
+
+
+def _context_excerpt(text: str, query: str, *, width: int = 360) -> str:
+    compact = " ".join(text.split())
+    if len(compact) <= width:
+        return compact
+    index = compact.casefold().find(query.casefold())
+    if index < 0:
+        return compact[:width].rstrip() + "…"
+    start = max(0, index - width // 3)
+    end = min(len(compact), start + width)
+    return ("…" if start else "") + compact[start:end].strip() + ("…" if end < len(compact) else "")
 
 
 # ---------------------------------------------------------------- tables --

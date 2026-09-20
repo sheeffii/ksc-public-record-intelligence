@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    Computed,
     Date,
     ForeignKey,
     Index,
@@ -21,7 +22,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ksc_api.db.base import Base
@@ -124,6 +125,9 @@ class TranscriptSegment(UUIDPrimaryKeyMixin, Base):
         UniqueConstraint("transcript_id", "sequence", name="uq_transcript_segments_sequence"),
         CheckConstraint("sequence >= 0", name="sequence_non_negative"),
         CheckConstraint("page_number IS NULL OR page_number >= 1", name="page_number_positive"),
+        CheckConstraint(
+            "pdf_page_index IS NULL OR pdf_page_index >= 0", name="pdf_page_index_non_negative"
+        ),
         CheckConstraint("line_from IS NULL OR line_from >= 1", name="line_from_positive"),
         CheckConstraint(
             "line_to IS NULL OR line_from IS NULL OR line_to >= line_from", name="line_range"
@@ -132,6 +136,7 @@ class TranscriptSegment(UUIDPrimaryKeyMixin, Base):
         # A closed-session segment records that content exists but is not
         # public; it carries no text.
         CheckConstraint("NOT closed_session OR text = ''", name="closed_session_has_no_text"),
+        Index("ix_transcript_segments_search_vector", "search_vector", postgresql_using="gin"),
     )
 
     transcript_id: Mapped[uuid.UUID] = mapped_column(
@@ -139,6 +144,9 @@ class TranscriptSegment(UUIDPrimaryKeyMixin, Base):
     )
     # Deterministic order within the transcript.
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Zero-based page index in the held PDF, distinct from the running
+    # transcript page number below.
+    pdf_page_index: Mapped[int | None] = mapped_column(Integer)
     page_number: Mapped[int | None] = mapped_column(Integer)
     line_from: Mapped[int | None] = mapped_column(Integer)
     line_to: Mapped[int | None] = mapped_column(Integer)
@@ -156,6 +164,11 @@ class TranscriptSegment(UUIDPrimaryKeyMixin, Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     closed_session: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
+    )
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        Computed("to_tsvector('simple', coalesce(text, ''))", persisted=True),
+        deferred=True,
     )
 
     transcript: Mapped[Transcript] = relationship(back_populates="segments")

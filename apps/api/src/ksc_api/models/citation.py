@@ -35,7 +35,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ksc_api.db.base import Base
@@ -107,6 +107,23 @@ class Citation(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
             name="line_range",
         ),
         CheckConstraint("target_page IS NULL OR target_page >= 1", name="target_page_positive"),
+        CheckConstraint(
+            "source_pdf_page_index IS NULL OR source_pdf_page_index >= 0",
+            name="source_pdf_page_index_non_negative",
+        ),
+        CheckConstraint(
+            "source_char_start IS NULL OR source_char_start >= 0",
+            name="source_char_start_non_negative",
+        ),
+        CheckConstraint(
+            "source_char_end IS NULL OR source_char_start IS NULL OR "
+            "source_char_end >= source_char_start",
+            name="source_char_range",
+        ),
+        CheckConstraint(
+            "target_pdf_page_index IS NULL OR target_pdf_page_index >= 0",
+            name="target_pdf_page_index_non_negative",
+        ),
         human_verification_requires_reviewer(),
         Index("ix_citations_case_resolution", "case_id", "resolution_state"),
     )
@@ -128,7 +145,10 @@ class Citation(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
         UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="SET NULL"), index=True
     )
     source_page: Mapped[int | None] = mapped_column(Integer)
+    source_pdf_page_index: Mapped[int | None] = mapped_column(Integer)
     source_para: Mapped[int | None] = mapped_column(Integer)
+    source_char_start: Mapped[int | None] = mapped_column(Integer)
+    source_char_end: Mapped[int | None] = mapped_column(Integer)
     source_transcript_segment_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("transcript_segments.id", ondelete="SET NULL")
     )
@@ -142,6 +162,7 @@ class Citation(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
         UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="SET NULL"), index=True
     )
     target_page: Mapped[int | None] = mapped_column(Integer)
+    target_pdf_page_index: Mapped[int | None] = mapped_column(Integer)
     target_para_from: Mapped[int | None] = mapped_column(Integer)
     target_para_to: Mapped[int | None] = mapped_column(Integer)
     target_transcript_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -182,6 +203,10 @@ class Citation(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     display: Mapped[str] = mapped_column(
         String(255), nullable=False, default=UNRESOLVED_DISPLAY, server_default=UNRESOLVED_DISPLAY
     )
+    # Audit detail for every terminal state. Ambiguous candidates are stored
+    # as identifiers only; no candidate is silently selected as the target.
+    resolution_detail: Mapped[str | None] = mapped_column(Text)
+    candidate_identifiers: Mapped[list[str] | None] = mapped_column(JSONB)
 
     target_document: Mapped[Document | None] = relationship(foreign_keys=[target_document_id])
     target_document_version: Mapped[DocumentVersion | None] = relationship(

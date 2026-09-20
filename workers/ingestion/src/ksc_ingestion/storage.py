@@ -33,6 +33,8 @@ class ObjectStore(Protocol):
 
     def put(self, key: str, data: bytes, content_type: str) -> None: ...
 
+    def get(self, key: str) -> bytes: ...
+
 
 @dataclass
 class InMemoryObjectStore:
@@ -45,6 +47,9 @@ class InMemoryObjectStore:
 
     def put(self, key: str, data: bytes, content_type: str) -> None:
         self.objects.setdefault(key, data)
+
+    def get(self, key: str) -> bytes:
+        return self.objects[key]
 
 
 class MinioObjectStore:
@@ -76,3 +81,11 @@ class MinioObjectStore:
         self._client.put_object(
             self.bucket, key, io.BytesIO(data), length=len(data), content_type=content_type
         )
+
+    def get(self, key: str) -> bytes:
+        response = self._client.get_object(self.bucket, key)
+        try:
+            return response.read()
+        finally:
+            response.close()
+            response.release_conn()

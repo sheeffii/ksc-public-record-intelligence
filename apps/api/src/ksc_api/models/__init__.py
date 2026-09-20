@@ -20,6 +20,7 @@ from ksc_api.models.document import (
     DocumentChunk,
     DocumentIngestionState,
     DocumentPage,
+    DocumentParagraph,
     DocumentSection,
     DocumentVersion,
 )
@@ -97,6 +98,7 @@ __all__ = [
     "DocumentChunk",
     "DocumentIngestionState",
     "DocumentPage",
+    "DocumentParagraph",
     "DocumentSection",
     "DocumentVersion",
     "DocumentVersionType",

@@ -277,6 +277,7 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
             DocumentPage(
                 id=demo_id(f"page:F-DEMO-001/RED:{number}"),
                 document_version_id=judgment_red.id,
+                pdf_page_index=number - 1,
                 page_number=number,
                 text=text,
                 running_head="KSC-DEMO-0000/F-DEMO-001/RED",

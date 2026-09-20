@@ -21,6 +21,7 @@ from ksc_api.models import (
 
 PHASE4_TABLES = {"cases", "documents", "audit_log"}
 PHASE7_TABLES = {"ingestion_job_items"}
+PHASE8_TABLES = {"document_paragraphs"}
 PHASE6_TABLES = {
     "source_records",
     "document_versions",
@@ -65,7 +66,9 @@ def _checks(table_name: str) -> set[str]:
 
 
 def test_schema_contains_phase4_foundation_and_phase6_evidence_model():
-    assert set(Base.metadata.tables) == PHASE4_TABLES | PHASE6_TABLES | PHASE7_TABLES
+    assert set(Base.metadata.tables) == (
+        PHASE4_TABLES | PHASE6_TABLES | PHASE7_TABLES | PHASE8_TABLES
+    )
 
 
 def test_document_keeps_the_three_date_types_separate():
@@ -185,3 +188,12 @@ def test_transcript_segments_never_invent_lines_or_closed_session_text():
         "ck_transcript_segments_line_to_needs_line_from",
         "ck_transcript_segments_closed_session_has_no_text",
     } <= checks
+
+
+def test_pdf_indices_are_distinct_from_nullable_printed_coordinates():
+    page = Base.metadata.tables["document_pages"].columns
+    assert page["pdf_page_index"].nullable is False
+    assert page["page_number"].nullable is True
+    segment = Base.metadata.tables["transcript_segments"].columns
+    assert segment["pdf_page_index"].nullable is True
+    assert segment["page_number"].nullable is True

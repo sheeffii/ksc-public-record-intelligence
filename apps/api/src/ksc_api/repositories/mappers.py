@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 from ksc_api.models import (
     Argument,
     ArgumentResponse,
@@ -13,6 +15,7 @@ from ksc_api.models import (
     Document,
     DocumentChunk,
     DocumentPage,
+    DocumentParagraph,
     DocumentVersion,
     Event,
     Exhibit,
@@ -37,6 +40,7 @@ from ksc_api.schemas.records import (
     DocumentChunkRead,
     DocumentDetail,
     DocumentPageRead,
+    DocumentParagraphRead,
     DocumentSummary,
     DocumentVersionRead,
     EventRead,
@@ -135,11 +139,55 @@ def to_citation(citation: Citation) -> CitationRead:
         para_to=citation.target_para_to,
         line_from=citation.target_line_from,
         line_to=citation.target_line_to,
+        pdf_page_index=citation.target_pdf_page_index,
+        target_path=_citation_target_path(citation),
         resolution_state=citation.resolution_state,
         resolved=citation.is_resolved,
         display=citation.display,
         verification_state=citation.verification_state,
     )
+
+
+def _citation_target_path(citation: Citation) -> str | None:
+    if not citation.is_resolved:
+        return None
+    if citation.target_transcript is not None:
+        transcript = citation.target_transcript
+        version = transcript.document_version
+        if version is None:
+            return None
+        document = version.document
+        route_id = document.official_ref.split("/", 1)[-1]
+        if "/" in route_id:
+            path = (
+                f"/documents/transcript?document={quote(route_id, safe='')}"
+                f"&version={quote(version.official_version_ref, safe='')}"
+            )
+        else:
+            path = f"/documents/{quote(route_id, safe='')}?version={quote(version.official_version_ref, safe='')}"
+        if citation.target_page is not None:
+            path += f"&page={citation.target_page}"
+            if citation.target_line_from is not None:
+                path += f"&line={citation.target_line_from}"
+        return path
+    version = citation.target_document_version
+    target_document = version.document if version is not None else citation.target_document
+    if target_document is None:
+        return None
+    route_id = target_document.official_ref.split("/", 1)[-1]
+    if "/" in route_id:
+        path = "/documents/transcript"
+        params = [f"document={quote(route_id, safe='')}"]
+    else:
+        path = f"/documents/{quote(route_id, safe='')}"
+        params = []
+    if version is not None:
+        params.append(f"version={quote(version.official_version_ref, safe='')}")
+    if citation.target_pdf_page_index is not None:
+        params.append(f"pdfPage={citation.target_pdf_page_index}")
+    if citation.target_para_from is not None:
+        params.append(f"para={citation.target_para_from}")
+    return path + (f"?{'&'.join(params)}" if params else "")
 
 
 def to_case(case: Case) -> CaseRead:
@@ -159,6 +207,11 @@ def to_document_version(version: DocumentVersion) -> DocumentVersionRead:
         mime_type=version.mime_type,
         page_count=version.page_count,
         fetched_at=version.fetched_at,
+        text_extraction_method=version.text_extraction_method.value,
+        parsed_at=version.parsed_at,
+        parser_name=version.parser_name,
+        parser_version=version.parser_version,
+        parse_requires_review=version.parse_requires_review,
         supersedes_version_ref=(
             version.supersedes.official_version_ref if version.supersedes is not None else None
         ),
@@ -198,6 +251,10 @@ def to_document_page(page: DocumentPage) -> DocumentPageRead:
 
 def to_document_chunk(chunk: DocumentChunk) -> DocumentChunkRead:
     return DocumentChunkRead.model_validate(chunk)
+
+
+def to_document_paragraph(paragraph: DocumentParagraph) -> DocumentParagraphRead:
+    return DocumentParagraphRead.model_validate(paragraph)
 
 
 def to_person(person: Person, counts: ReferenceCounts) -> PersonRead:
@@ -371,6 +428,7 @@ def to_finding_detail(
 def to_segment(segment: TranscriptSegment) -> TranscriptSegmentRead:
     return TranscriptSegmentRead(
         sequence=segment.sequence,
+        pdf_page_index=segment.pdf_page_index,
         page_number=segment.page_number,
         line_from=segment.line_from,
         line_to=segment.line_to,

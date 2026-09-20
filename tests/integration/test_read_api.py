@@ -191,3 +191,27 @@ def test_search_groups_public_hits_only(demo_client):
     witness_hits = {h["ref"]: h["protected"] for h in body["hits"] if h["category"] == "witnesses"}
     assert witness_hits == {"W-DEMO-001": True, "W-DEMO-002": False}
     assert demo_client.get(f"{V1}/search?q=").json()["hits"] == []
+
+
+def test_phase8_search_modes_filters_and_source_navigation(demo_client):
+    exact = demo_client.get(f"{V1}/search?q=F-DEMO-001&mode=exact").json()["hits"]
+    assert exact[0]["match_kind"] == "exact_identifier"
+    assert exact[0]["target_path"].startswith("/documents/F-DEMO-001")
+
+    phrase = demo_client.get(f'{V1}/search?q="solemn declaration"&mode=phrase').json()["hits"]
+    assert any(hit["category"] == "transcripts" for hit in phrase)
+    assert all(hit["match_kind"] == "phrase" for hit in phrase)
+
+    filtered = demo_client.get(
+        f"{V1}/search?q=demo&document_type=judgment&source_type=document"
+    ).json()["hits"]
+    assert filtered
+    assert {hit["category"] for hit in filtered} == {"documents"}
+    assert {hit["ref"] for hit in filtered} == {"KSC-DEMO-0000/F-DEMO-001"}
+
+    transcript = demo_client.get(f"{V1}/search?q=testimony&source_type=transcript").json()["hits"]
+    assert transcript
+    assert all(hit["category"] == "transcripts" for hit in transcript)
+    assert all(
+        "page=" in hit["target_path"] and "line=" in hit["target_path"] for hit in transcript
+    )

@@ -145,8 +145,12 @@ def test_page_numbers_are_positive_and_unique_per_version(session):
     version = session.scalar(
         select(DocumentVersion).where(DocumentVersion.official_version_ref == "F-DEMO-001/RED")
     )
-    _rejects(session, DocumentPage(document_version_id=version.id, page_number=0))
-    _rejects(session, DocumentPage(document_version_id=version.id, page_number=1))
+    _rejects(
+        session, DocumentPage(document_version_id=version.id, pdf_page_index=99, page_number=0)
+    )
+    _rejects(
+        session, DocumentPage(document_version_id=version.id, pdf_page_index=99, page_number=1)
+    )
 
 
 def test_transcript_lines_are_validated(session):

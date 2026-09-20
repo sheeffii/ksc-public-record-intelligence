@@ -21,13 +21,19 @@ from ksc_api.models import (
     PUBLIC_VISIBILITIES,
     ArtifactStatus,
     Case,
+    Citation,
     Document,
+    DocumentIngestionState,
+    DocumentPage,
+    DocumentParagraph,
     DocumentVersion,
     Hearing,
     IngestionJob,
     IngestionJobItem,
+    ResolutionState,
     SourceRecord,
     Transcript,
+    TranscriptSegment,
 )
 from ksc_api.repositories.records import CaseNotConfiguredError
 from ksc_api.schemas.ingestion import (
@@ -76,6 +82,66 @@ class IngestionStatusRepository:
             ),
             versions_failed=self._count(
                 versions.where(DocumentVersion.artifact_status == ArtifactStatus.FAILED)
+            ),
+            versions_parsed=self._count(versions.where(DocumentVersion.parsed_at.is_not(None))),
+            documents_indexed=self._count(
+                docs.where(Document.ingestion_state == DocumentIngestionState.INDEXED)
+            ),
+            pages_parsed=self._count(
+                select(func.count())
+                .select_from(DocumentPage)
+                .join(DocumentVersion)
+                .join(Document)
+                .where(Document.case_id == case_id)
+            ),
+            paragraphs_parsed=self._count(
+                select(func.count())
+                .select_from(DocumentParagraph)
+                .join(DocumentVersion)
+                .join(Document)
+                .where(Document.case_id == case_id)
+            ),
+            transcript_segments_parsed=self._count(
+                select(func.count())
+                .select_from(TranscriptSegment)
+                .join(Transcript)
+                .join(Hearing)
+                .where(Hearing.case_id == case_id)
+            ),
+            citations=self._count(
+                select(func.count()).select_from(Citation).where(Citation.case_id == case_id)
+            ),
+            citations_resolved=self._count(
+                select(func.count())
+                .select_from(Citation)
+                .where(
+                    Citation.case_id == case_id,
+                    Citation.resolution_state == ResolutionState.RESOLVED,
+                )
+            ),
+            citations_ambiguous=self._count(
+                select(func.count())
+                .select_from(Citation)
+                .where(
+                    Citation.case_id == case_id,
+                    Citation.resolution_state == ResolutionState.AMBIGUOUS,
+                )
+            ),
+            citations_unresolved=self._count(
+                select(func.count())
+                .select_from(Citation)
+                .where(
+                    Citation.case_id == case_id,
+                    Citation.resolution_state == ResolutionState.UNRESOLVED,
+                )
+            ),
+            citations_invalid=self._count(
+                select(func.count())
+                .select_from(Citation)
+                .where(
+                    Citation.case_id == case_id,
+                    Citation.resolution_state == ResolutionState.INVALID,
+                )
             ),
             hearings=self._count(
                 select(func.count()).select_from(Hearing).where(Hearing.case_id == case_id)

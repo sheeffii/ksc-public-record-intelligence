@@ -31,6 +31,7 @@ from ksc_ingestion.capture import BundleError, load_bundle
 from ksc_ingestion.capture_import import SourceImportError, import_capture
 from ksc_ingestion.corpus_manifest import build_manifest, validate_manifest_file, write_manifest
 from ksc_ingestion.fetch import HttpFetcher
+from ksc_ingestion.parse_pipeline import Phase8Pipeline
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor, RunOutcome
 from ksc_ingestion.probe import probe, record_probe
 from ksc_ingestion.quality_gate import report_to_table, run_gate, write_report
@@ -186,6 +187,11 @@ def cmd_status(args: argparse.Namespace) -> int:
         f"(public={c.documents_public} not_public={c.documents_not_public}) "
         f"versions={c.versions} fetched={c.versions_fetched} "
         f"not_fetched={c.versions_not_fetched} failed={c.versions_failed} "
+        f"parsed={c.versions_parsed} indexed={c.documents_indexed} "
+        f"pages={c.pages_parsed} paragraphs={c.paragraphs_parsed} "
+        f"segments={c.transcript_segments_parsed} citations={c.citations} "
+        f"(resolved={c.citations_resolved} ambiguous={c.citations_ambiguous} "
+        f"unresolved={c.citations_unresolved} invalid={c.citations_invalid}) "
         f"hearings={c.hearings} transcripts={c.transcripts} jobs={c.jobs} "
         f"items_failed={c.items_failed}"
     )
@@ -206,6 +212,30 @@ def cmd_status(args: argparse.Namespace) -> int:
             f"{held.visibility.value:16}{sha}"
         )
     return 0
+
+
+def cmd_parse(args: argparse.Namespace) -> int:
+    """Parse every fetched version in the configured controlled corpus.
+
+    This reads only already-held object bytes. It performs no discovery,
+    download, crawl or external request.
+    """
+    settings = get_settings()
+    store = MinioObjectStore(settings)
+    result = Phase8Pipeline(get_sessionmaker(), store, case_number=settings.case_id).run()
+    for version in result.versions:
+        review = " REVIEW" if version.requires_review else ""
+        print(
+            f"  {version.official_version_ref:48} pages={version.pages:4} "
+            f"paragraphs={version.paragraphs:4} chunks={version.chunks:4} "
+            f"segments={version.transcript_segments:4}{review}"
+        )
+    print(
+        f"versions={len(result.versions)} identifiers={result.identifiers} "
+        f"citations={result.citations} resolved={result.resolved} "
+        f"ambiguous={result.ambiguous} unresolved={result.unresolved} invalid={result.invalid}"
+    )
+    return 0 if not any(version.requires_review for version in result.versions) else 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -250,6 +280,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_status = sub.add_parser("status", help="jobs, items and record counts")
     p_status.add_argument("--limit", type=int, default=10)
     p_status.set_defaults(func=cmd_status)
+
+    p_parse = sub.add_parser(
+        "parse", help="parse held PDFs, persist exact coordinates, citations and search text"
+    )
+    p_parse.set_defaults(func=cmd_parse)
     return parser
 
 
