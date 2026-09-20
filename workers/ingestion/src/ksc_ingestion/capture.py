@@ -71,7 +71,9 @@ class ManifestMetadata(_Model):
     """Operator- or fixture-supplied metadata. Values are copied verbatim into
     `source_records.raw_metadata` so the quality gate can see them."""
 
-    metadata_source: Literal["operator_manifest", "synthetic_fixture"] = "operator_manifest"
+    metadata_source: Literal["operator_manifest", "capture_snapshot", "synthetic_fixture"] = (
+        "operator_manifest"
+    )
     record_type: str
     official_ref: str
     title: str
@@ -98,6 +100,9 @@ class ManifestArtifact(_Model):
     classification: str | None = None
     public_date: str | None = None
     captured_at: datetime | None = None
+    # Recorded at capture time for the official bytes; verified before storing.
+    sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    byte_size: int | None = Field(default=None, ge=0)
 
 
 class ManifestRecord(_Model):
@@ -300,6 +305,8 @@ def discover(
                 local_file=bundle.resolve(a.file) if a.file else None,
                 captured_at=a.captured_at or captured_at,
                 fetch_method=CAPTURE_FETCH_METHOD if a.file else None,
+                declared_sha256=a.sha256,
+                declared_byte_size=a.byte_size,
             )
             for a in record.artifacts
         )

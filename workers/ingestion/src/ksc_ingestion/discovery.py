@@ -22,6 +22,9 @@ class MetadataSource(enum.StrEnum):
     """Where the record's metadata came from. The quality gate reads this."""
 
     OFFICIAL_PAGE = "official_page"  # parsed from a saved / fetched official page
+    # Normalised snapshot of the official detail page, built inside the
+    # browser session from the fields the page publishes (not the raw DOM).
+    CAPTURE_SNAPSHOT = "capture_snapshot"
     OPERATOR_MANIFEST = "operator_manifest"  # typed by the operator into the manifest
     SYNTHETIC_FIXTURE = "synthetic_fixture"  # test data; never a real record
 
@@ -42,6 +45,10 @@ class DiscoveredArtifact:
     local_file: Path | None = None
     captured_at: datetime | None = None
     fetch_method: str | None = None
+    # Hash / size the capture recorded for the official bytes, when known. The
+    # pipeline refuses to store a file that does not match them.
+    declared_sha256: str | None = None
+    declared_byte_size: int | None = None
 
 
 @dataclass(frozen=True)

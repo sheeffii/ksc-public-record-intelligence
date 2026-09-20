@@ -579,6 +579,11 @@ class Ingestor:
             session.add(document)
             session.flush()
             return document
+        if normalized.language and document.language and normalized.language != document.language:
+            # A translation adds a version; it does not rename or re-source the
+            # document, whose identity stays with the original-language record.
+            for key in ("title", "language", "source_url"):
+                values.pop(key)
         changed = [k for k, v in values.items() if v is not None and getattr(document, k) != v]
         for k in changed:
             setattr(document, k, values[k])
@@ -664,7 +669,24 @@ class Ingestor:
             "page_count": info.page_count,
             "has_text_layer": info.has_text_layer,
             "case_numbers_on_first_page": list(info.case_numbers_on_first_page),
+            "declared_sha256": nv.artifact.declared_sha256,
+            "declared_byte_size": nv.artifact.declared_byte_size,
         }
+        declared = nv.artifact.declared_sha256
+        if (declared is not None and declared != info.sha256) or (
+            nv.artifact.declared_byte_size is not None
+            and nv.artifact.declared_byte_size != info.byte_size
+        ):
+            return (
+                VersionOutcome(
+                    ref,
+                    IngestionItemStatus.AMBIGUOUS_MAPPING,
+                    "file does not match the hash / size recorded at capture time; not stored",
+                    sha256=info.sha256,
+                    detail=detail,
+                ),
+                existing,
+            )
         if (
             info.case_numbers_on_first_page
             and case.case_number not in info.case_numbers_on_first_page

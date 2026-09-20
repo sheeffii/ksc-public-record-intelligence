@@ -1,6 +1,9 @@
 """`ksc-ingest` — operator entry point for the Phase 7 pipeline.
 
+    ksc-ingest import-capture <source-dir> <dest-dir> --pdf-dir DIR [--pdf-dir DIR] \
+        --bundle-id ID --captured-by NAME [--browser TEXT]
     ksc-ingest bundle data/captures/<bundle-id> [--dry-run] [--no-resume]
+    ksc-ingest gate data/captures/<bundle-id> [--json PATH]
     ksc-ingest probe <official-url> [--record]
     ksc-ingest status [--limit N]
 
@@ -24,9 +27,11 @@ from ksc_api.logging_config import configure_logging
 from ksc_api.models import Case
 from ksc_api.repositories.ingestion import IngestionStatusRepository
 from ksc_ingestion.capture import BundleError, load_bundle
+from ksc_ingestion.capture_import import SourceImportError, import_capture
 from ksc_ingestion.fetch import HttpFetcher
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor, RunOutcome
 from ksc_ingestion.probe import probe, record_probe
+from ksc_ingestion.quality_gate import report_to_table, run_gate, write_report
 from ksc_ingestion.sources import NotOfficialSourceError
 from ksc_ingestion.storage import InMemoryObjectStore, MinioObjectStore, ObjectStore
 
@@ -73,6 +78,28 @@ _FAILURES = {
 }
 
 
+def cmd_import_capture(args: argparse.Namespace) -> int:
+    try:
+        report = import_capture(
+            Path(args.source),
+            Path(args.dest),
+            pdf_dirs=[Path(d) for d in args.pdf_dir],
+            bundle_id=args.bundle_id,
+            captured_by=args.captured_by,
+            browser=args.browser,
+        )
+    except SourceImportError as exc:
+        print(f"import refused: {exc}", file=sys.stderr)
+        return 2
+    for rec in report["records"]:
+        print(
+            f"  {rec['record_id']} {rec['match_status']:8} {rec['version_ref']!s:48} "
+            f"{rec['ref_source']}"
+        )
+    print(f"matched {report['matched']}/{report['total']} → {report['dest']}")
+    return 0
+
+
 def cmd_bundle(args: argparse.Namespace) -> int:
     try:
         bundle = load_bundle(Path(args.path))
@@ -88,6 +115,22 @@ def cmd_bundle(args: argparse.Namespace) -> int:
         return 2
     _print_outcome(outcome)
     return 0
+
+
+def cmd_gate(args: argparse.Namespace) -> int:
+    try:
+        bundle = load_bundle(Path(args.path))
+    except BundleError as exc:
+        print(f"bundle rejected: {exc}", file=sys.stderr)
+        return 2
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        report = run_gate(session, settings, bundle)
+    print(report_to_table(report))
+    if args.json:
+        write_report(report, Path(args.json))
+        print(f"report written to {args.json}")
+    return 0 if report.passed else 1
 
 
 def cmd_probe(args: argparse.Namespace) -> int:
@@ -146,11 +189,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ksc-ingest", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
+    p_import = sub.add_parser(
+        "import-capture", help="turn the operator's raw capture + downloaded PDFs into a bundle"
+    )
+    p_import.add_argument("source")
+    p_import.add_argument("dest")
+    p_import.add_argument("--pdf-dir", action="append", required=True)
+    p_import.add_argument("--bundle-id", required=True)
+    p_import.add_argument("--captured-by", required=True)
+    p_import.add_argument("--browser")
+    p_import.set_defaults(func=cmd_import_capture)
+
     p_bundle = sub.add_parser("bundle", help="ingest an operator capture bundle")
     p_bundle.add_argument("path")
     p_bundle.add_argument("--dry-run", action="store_true")
     p_bundle.add_argument("--no-resume", action="store_true")
     p_bundle.set_defaults(func=cmd_bundle)
+
+    p_gate = sub.add_parser("gate", help="quality gate: verify an ingested bundle end to end")
+    p_gate.add_argument("path")
+    p_gate.add_argument("--json", help="write the full report to this path")
+    p_gate.set_defaults(func=cmd_gate)
 
     p_probe = sub.add_parser("probe", help="one identified request to an official URL")
     p_probe.add_argument("url")

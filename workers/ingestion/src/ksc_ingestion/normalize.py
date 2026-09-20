@@ -113,7 +113,8 @@ def filing_number(official_ref: str | None) -> str | None:
 
 _PARTY_MARKERS: tuple[tuple[tuple[str, ...], Party], ...] = (
     (("specialist prosecutor", "prosecution", "spo"), Party.SPO),
-    (("defence", "defense"), Party.DEFENCE),
+    # "Specialist Counsel" is the KSC term for defence counsel.
+    (("defence", "defense", "specialist counsel"), Party.DEFENCE),
     (("victims' counsel", "victims counsel", "victims\u2019 counsel"), Party.VICTIMS_COUNSEL),
     (
         (
