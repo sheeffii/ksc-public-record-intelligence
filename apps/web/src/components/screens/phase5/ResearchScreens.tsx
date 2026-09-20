@@ -86,6 +86,7 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
   );
   const minYear = edgeYears.length ? Math.min(...edgeYears) : 1998;
   const newestYear = edgeYears.length ? Math.max(...edgeYears) : 2025;
+  const [fromYear, setFromYear] = useState(minYear);
   const [maxYear, setMaxYear] = useState(newestYear);
   const [fullscreen, setFullscreen] = useState(false);
   const [detent, setDetent] = useState<"peek" | "half" | "full">("peek");
@@ -123,7 +124,9 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
       (!verifiedOnly || e.verification === "verified") &&
       (sourceFilter === "all" || e.sourceType === sourceFilter) &&
       (relationFilter === "all" || e.relation === relationFilter) &&
-      (!e.relationshipDate || Number(e.relationshipDate.slice(0, 4)) <= maxYear),
+      (!e.relationshipDate ||
+        (Number(e.relationshipDate.slice(0, 4)) >= fromYear &&
+          Number(e.relationshipDate.slice(0, 4)) <= maxYear)),
   );
   const listedNodes = nodes.filter((n) =>
     n.label.toLowerCase().includes(query.trim().toLowerCase()),
@@ -147,6 +150,7 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
       setSourceFilter("all");
       setRelationFilter("all");
       setEntityFilter("all");
+      setFromYear(minYear);
       setMaxYear(newestYear);
     }
   }
@@ -314,13 +318,22 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
               type="range"
               min={minYear}
               max={newestYear}
+              value={fromYear}
+              onChange={(event) => setFromYear(Math.min(Number(event.target.value), maxYear))}
+              aria-label={tb("from")}
+              className="w-full"
+            />
+            <input
+              type="range"
+              min={minYear}
+              max={newestYear}
               value={maxYear}
-              onChange={(event) => setMaxYear(Number(event.target.value))}
-              aria-label={tb("dateSlider")}
+              onChange={(event) => setMaxYear(Math.max(Number(event.target.value), fromYear))}
+              aria-label={tb("to")}
               className="w-full"
             />
             <p className="tabular text-fg-muted text-[10px]">
-              {minYear} — {maxYear}
+              {fromYear} — {maxYear}
             </p>
           </FilterSection>
           <FilterSection title={tb("sourceType")}>
