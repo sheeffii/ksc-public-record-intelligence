@@ -18,7 +18,8 @@ Roadmap: `docs/roadmap/`.
 Current milestone: **Phase 7 — COMPLETE (2026-09-20).** 22 real public records
 of `KSC-BC-2020-06` ingested from operator capture bundle `2026-09-20-corpus-01`;
 quality gate 22/22; idempotent re-run verified. Details:
-`docs/ingestion/CONTROLLED_CORPUS.md`.
+`docs/ingestion/CONTROLLED_CORPUS.md`; tracked metadata manifest
+`docs/ingestion/manifests/phase7-controlled-corpus.json` (`ksc-ingest export-corpus`).
 Next milestone: Phase 8 — Parsing, exact citations, resolution index, search
 (`docs/roadmap/PHASE_08_*.md`). **Not started; awaiting explicit authorisation.**
 Current active task: None. Stop at the Phase 7 boundary.
@@ -107,7 +108,7 @@ Last updated: 2026-09-20
 
 ## Tests
 
-- Backend: 220 passed (155 unit incl. 124 `tests/unit/ingestion/` + 65
+- Backend: 225 passed (160 unit incl. 129 `tests/unit/ingestion/` + 65
   integration incl. 14 `test_ingestion_pipeline.py`).
 - Frontend: 188 passed (Vitest). Production `pnpm build` passes. E2E: 96 passed
   at the 5B checkpoint — not re-run for Phase 7 (no UI behaviour change; the

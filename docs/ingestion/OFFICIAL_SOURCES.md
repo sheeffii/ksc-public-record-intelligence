@@ -62,7 +62,9 @@ https://repository.scp-ks.org/LW/Published/Transcript/KSC-BC-2020-06/<title as p
 ```
 
 `doc_id` is a stable 16-hex key per record _and language_ (r04 eng and r05 sqi
-have different `doc_id`s but share the filing id). The PDF path segment
+have different `doc_id`s but share the filing id); the `lang=` query parameter
+was `eng` on every captured detail URL, including the Albanian records, so it
+appears to select the interface language rather than the document language. The PDF path segment
 (`0b1ec6e9…`) differs from the detail `doc_id` (`0910c8e1…`). Filing PDFs of
 the same filing in two languages can share the path folder (r04/r05) or not
 (r01/r02). Titles are percent-encoded verbatim in the PDF URL.

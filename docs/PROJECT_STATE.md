@@ -202,7 +202,11 @@ check` and `head → base → head` are integration-tested.
   (operator observation, not independently verified).
 - `ksc-ingest gate`: 22/22 PASS (32–35 checks per record incl. MinIO object
   re-hash). Idempotent re-run: all record tables and objects byte-identical.
-- New modules: `snapshot.py`, `capture_import.py`, `quality_gate.py`; tests
+- Tracked metadata manifest `docs/ingestion/manifests/phase7-controlled-corpus.json`
+  (`ksc-ingest export-corpus`, schema-validated by a unit test); no PDFs or
+  captured pages in Git.
+- New modules: `snapshot.py`, `capture_import.py`, `quality_gate.py`,
+  `corpus_manifest.py`; tests
   +17 (15 unit, 2 integration). Docs: `CONTROLLED_CORPUS.md`,
   `OFFICIAL_SOURCES.md` (verified vs not yet verified), ADR-012.
 - Not done by design: no parsing / segmentation / citation extraction (Phase 8);
@@ -227,7 +231,7 @@ None — nothing parsed.
 
 | Suite                                    | Count        | Last result                                        |
 | ---------------------------------------- | ------------ | -------------------------------------------------- |
-| Backend unit (pytest)                    | 155          | pass                                               |
+| Backend unit (pytest)                    | 160          | pass                                               |
 | Backend integration (pytest, live infra) | 65           | pass                                               |
 | Frontend (vitest)                        | 188          | pass                                               |
 | E2E (playwright)                         | 48 specs × 2 | 96 pass locally; requires running stack + browsers |

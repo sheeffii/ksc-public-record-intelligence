@@ -13,6 +13,21 @@ Provenance chain for every record: official detail page URL → official PDF URL
 → downloaded bytes matched by that hash → re-hashed after copy → stored in
 MinIO under a hash-addressed key → re-hashed from MinIO at the quality gate.
 
+## Machine-readable record
+
+[`manifests/phase7-controlled-corpus.json`](manifests/phase7-controlled-corpus.json)
+is the tracked, machine-readable reproducibility record of this corpus,
+exported from the verified database state with
+`ksc-ingest export-corpus data/captures/2026-09-20-corpus-01 --out …` and
+validated by `tests/unit/ingestion/test_corpus_manifest.py` (schema
+`ksc_ingestion.corpus_manifest.CorpusManifest`). It holds metadata only —
+identifiers, official URLs, SHA-256, sizes, page counts, hearing identity and
+gate results. The PDFs and the browser-captured pages are intentionally **not**
+committed (`data/captures/` is git-ignored); the artifact bytes live in object
+storage under the listed `object_key`, identified by `sha256`; the official KSC
+URLs remain the canonical provenance. This page is the human-readable
+companion.
+
 ## Records
 
 | #   | official version ref                | type            | language | published status          | party (as published)              | court level             | date (as published) | pages | bytes      | SHA-256 (first 12) | gate       |
