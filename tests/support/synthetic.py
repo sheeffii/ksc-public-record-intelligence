@@ -294,3 +294,250 @@ def standard_bundle(root: Path, bundle_id: str = "synthetic-demo-01") -> Path:
         lang="alb",
     )
     return b.write()
+
+
+# ------------------------------------------------------ source capture v0 --
+def snapshot_html(fields: dict[str, str], detail_url: str, pdf_url: str) -> str:
+    """A page in the normalised-snapshot format the 2026-09-20 capture used."""
+
+    rows = "".join(f"<tr><th>{k}</th><td>{v}</td></tr>" for k, v in fields.items())
+    return (
+        "<!doctype html><html><head><meta charset='utf-8'><title>snap</title></head><body>"
+        f"<h1>{fields.get('Title', '')}</h1><table>{rows}</table>"
+        f'<p class="src"><strong>Official detail page:</strong><br><a href="{detail_url}">{detail_url}</a><br>'
+        f'<strong>Official PDF:</strong><br><a href="{pdf_url}">{pdf_url}</a></p>'
+        '<p class="src">Normalised snapshot of the official KSC public detail page, captured 2026-09-20. '
+        "Public record only.</p></body></html>"
+    )
+
+
+def source_capture(root: Path, downloads: Path) -> Path:
+    """A synthetic capture in the operator's v0 layout (manifest.json + pages/ +
+    files/sha256sums.txt, no PDF bytes) plus the "downloaded" PDFs under
+    `downloads/` with human-readable names. Case KSC-DEMO-0000 throughout."""
+
+    import hashlib
+
+    (root / "pages").mkdir(parents=True, exist_ok=True)
+    (root / "files").mkdir(exist_ok=True)
+    downloads.mkdir(parents=True, exist_ok=True)
+
+    def pdf(lines: list[str]) -> bytes:
+        return make_pdf(lines)
+
+    specs = [
+        # record_id, document_id, record_type, filing_type, party, court, date, lang, status, title, header lines
+        (
+            "r01",
+            "F00004RED",
+            "Filing",
+            "Decision",
+            "Specialist Chambers",
+            "Basic Court Chamber",
+            "27/05/2020",
+            ("eng", "English"),
+            "public_redacted",
+            "Public Redacted Version of Decision on a Request",
+            [f"{DEMO_CASE}/F00004/RED/1 of 4", "Classification: Public"],
+        ),
+        (
+            "r02",
+            "F00004RED",
+            "Filing",
+            "Decision",
+            "Specialist Chambers",
+            "Basic Court Chamber",
+            "27/05/2020",
+            ("sqi", "Albanian"),
+            "public_redacted",
+            "Version i redaktuar publik i Vendimit",
+            [f"{DEMO_CASE}/F00004/RED/sqi/1 of 4", "Klasifikimi: Publik"],
+        ),
+        (
+            "r03",
+            "F00001",
+            "Filing",
+            "Decision",
+            "President",
+            "Basic Court Chamber",
+            "23/04/2020",
+            ("eng", "English"),
+            "public",
+            "Decision Assigning a Judge",
+            [
+                f"{DEMO_CASE}/F00001/1 of 3",
+                "Classification: Confidential",
+                "PUBLIC Reclassified as Public pursuant to instructions contained in CRSPD1 of 24 April 2020",
+            ],
+        ),
+        (
+            "r04",
+            "F00045",
+            "Filing Annex",
+            "Indictment",
+            None,
+            "Basic Court Chamber",
+            None,
+            ("eng", "English"),
+            "public_redacted",
+            "ANNEX 3 to Submission of corrected and public redacted versions",
+            [f"{DEMO_CASE}/F00045/A03/1 of 68"],
+        ),
+        (
+            "r05",
+            "F03668RED",
+            "Filing Annex",
+            "Filing Annex",
+            None,
+            "Basic Court Chamber",
+            None,
+            ("eng", "English"),
+            "public_redacted",
+            "ANNEX 1 to Public Redacted Version of a Brief",
+            [f"{DEMO_CASE}/F03668/RED/A01/RED/1 of 14"],
+        ),
+        (
+            "r06",
+            "F03667CORRED",
+            "Filing",
+            "Brief",
+            "Specialist Prosecutor",
+            "Basic Court Chamber",
+            "19/01/2026",
+            ("eng", "English"),
+            "public_redacted_corrected",
+            "Public Redacted Version of Corrected Version of a Brief",
+            [f"{DEMO_CASE}/F03667/COR/RED/1 of 700"],
+        ),
+        (
+            "r07",
+            "IA042-F00005RED",
+            "Filing",
+            "Decision",
+            "Specialist Chambers",
+            "Court of Appeal Chamber",
+            "28/05/2026",
+            ("eng", "English"),
+            "public_redacted",
+            "Public Redacted Version of Decision on an Appeal",
+            [f"{DEMO_CASE}/IA042/F00005/RED/1 of 41"],
+        ),
+        (
+            "r08",
+            None,
+            "Transcript",
+            "Transcript",
+            None,
+            None,
+            "18/02/2026",
+            ("eng", "English"),
+            "public",
+            "Closing Statements - 18 February 2026",
+            [DEMO_CASE, "18 February 2026", "Page 29148"],
+        ),
+        (
+            "r09",
+            None,
+            "Transcript",
+            "Transcript",
+            None,
+            None,
+            "18/02/2026",
+            ("sqi", "Albanian"),
+            "public",
+            "Deklaratat përmbyllëse - 18 shkurt 2026",
+            [DEMO_CASE, "18 shkurt 2026"],
+        ),
+        (
+            "r10",
+            "F03774",
+            "Filing",
+            "Request",
+            "Specialist Counsel",
+            "Basic Court Chamber",
+            "21/08/2026",
+            ("eng", "English"),
+            "public",
+            "Selimi Defence Request for Reclassification",
+            [
+                f"{DEMO_CASE}/F03769",
+                "Classification: Strictly Confidentia l",
+                "Reclassified as Public pursuant to instructions contained in CRSPD989 of 8 September 2026 PUBLIC",
+            ],
+        ),
+    ]
+    records = []
+    sums = []
+    for rid, doc_id, rtype, ftype, party, court, date, (
+        lcode,
+        lname,
+    ), status, title, header in specs:
+        data = pdf([*header, title])
+        digest = hashlib.sha256(data).hexdigest()
+        (downloads / f"{title}.pdf").write_bytes(data)
+        detail = f"{PCR}/details.php?doc_id=00000000000000{rid[1:]}&doc_type=stl_{'transcript' if rtype == 'Transcript' else 'filing_annex' if rtype == 'Filing Annex' else 'filing'}&lang={lcode}"
+        kind = "Transcript" if rtype == "Transcript" else "Filing"
+        pdf_url = f"{PCR}/LW/Published/{kind}/{DEMO_CASE}/{rid}.pdf"
+        local_file = f"files/{rid}__{doc_id or '-'}__{lcode}.pdf"
+        fields = {
+            "Record ID": rid,
+            "Case Number": DEMO_CASE,
+            "Title": title,
+            "Document / Filing ID": doc_id or "— (not published for this record type)",
+            "Record Type": rtype,
+            "Filing Type": ftype,
+            "Filing Party": party or "— (not published)",
+            "Court Level": court or "— (not published)",
+            "Date": date or "—",
+            "Language": f"{lname} ({lcode})",
+            "Public / Redacted Status": status,
+            "SHA-256": digest,
+            "Bytes": str(len(data)),
+            "Selection Reason": "synthetic",
+        }
+        (root / "pages" / f"{rid}.html").write_text(
+            snapshot_html(fields, detail, pdf_url), encoding="utf-8"
+        )
+        rec = {
+            "record_id": rid,
+            "case_number": DEMO_CASE,
+            "title": title,
+            "document_id": doc_id,
+            "record_type": rtype,
+            "filing_type": ftype,
+            "filing_party": party,
+            "court_level": court,
+            "date": date,
+            "language": {"code": lcode, "name": lname},
+            "public_status": status,
+            "confidential_content_included": False,
+            "detail_page_url": detail,
+            "pdf_url": pdf_url,
+            "artifact_path": f"/LW/Published/{kind}/{DEMO_CASE}/{rid}.pdf",
+            "local_file": local_file,
+            "local_page_snapshot": f"pages/{rid}.html",
+            "sha256": digest,
+            "bytes": len(data),
+            "http_status_verified": 200,
+            "selection_reason": "synthetic",
+        }
+        if rtype == "Transcript":
+            rec["hearing_date"] = date
+        records.append(rec)
+        sums.append(f"{digest}  {local_file}")
+    manifest = {
+        "bundle": {
+            "name": "synthetic-source-capture",
+            "case_number": DEMO_CASE,
+            "capture_date": "2026-09-20",
+            "capture_method": "synthetic fixture (no browser session, no real record)",
+            "record_count": len(records),
+        },
+        "records": records,
+    }
+    (root / "manifest.json").write_text(
+        json.dumps(manifest, indent=1, ensure_ascii=False), encoding="utf-8"
+    )
+    (root / "files" / "sha256sums.txt").write_text("\n".join(sums) + "\n")
+    (root / "CAPTURE_NOTES.md").write_text("# synthetic capture notes\n")
+    return root

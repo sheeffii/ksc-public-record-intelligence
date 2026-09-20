@@ -9,6 +9,7 @@ tests/support/synthetic.py — no real KSC record is involved.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
@@ -603,3 +604,121 @@ def test_status_endpoint_shows_held_refused_and_failed(
     assert f"{DEMO_CASE}/F00001" in listed and f"{DEMO_CASE}/F00005" not in listed
     detail = demo_client.get(f"/api/v1/documents/{DEMO_CASE}/F00003").json()
     assert detail["versions"][0]["artifact_status"] == "not_fetched"
+
+
+# -------------------------------------------------- import → ingest → gate --
+def _import(tmp_path: Path):
+    from ksc_ingestion.capture_import import import_capture
+    from support.synthetic import source_capture
+
+    src = source_capture(tmp_path / "src", tmp_path / "downloads")
+    dest = tmp_path / "bundle"
+    import_capture(
+        src,
+        dest,
+        pdf_dirs=[tmp_path / "downloads"],
+        bundle_id="synthetic-import",
+        captured_by="test",
+        browser=None,
+    )
+    return load_bundle(dest)
+
+
+def test_imported_capture_ingests_and_passes_the_quality_gate(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings
+) -> None:
+    from ksc_ingestion.quality_gate import run_gate
+
+    bundle = _import(tmp_path)
+    outcome = ingestor.run_bundle(bundle)
+    assert {i.status for i in outcome.items} == {IngestionItemStatus.DOWNLOADED}
+    assert outcome.downloaded_artifacts == 10
+
+    # EN/SQ pairs share one document; the document keeps the original-language identity
+    f4 = _doc(session, "F00004")
+    assert f4.language == "en" and f4.title == "Public Redacted Version of Decision on a Request"
+    assert f4.source_url and "doc_id=0000000000000001" in f4.source_url
+    versions = _versions(session, "F00004")
+    assert set(versions) == {f"{DEMO_CASE}/F00004/RED", f"{DEMO_CASE}/F00004/RED/sqi"}
+    assert versions[f"{DEMO_CASE}/F00004/RED/sqi"].version_type is DocumentVersionType.TRANSLATION
+    # the translation's own detail page lives on its source record
+    sq = session.scalar(
+        select(SourceRecord).where(SourceRecord.external_record_id == "0000000000000002")
+    )
+    assert (
+        sq is not None
+        and sq.canonical_source_url
+        and "doc_id=0000000000000002" in sq.canonical_source_url
+    )
+    # reclassified stamp → version type; page-1 classification recorded, not reinterpreted
+    (v3,) = _versions(session, "F00001").values()
+    assert (
+        v3.version_type is DocumentVersionType.RECLASSIFIED and v3.visibility is Visibility.PUBLIC
+    )
+    src3 = session.scalar(
+        select(SourceRecord).where(SourceRecord.external_record_id == "0000000000000003")
+    )
+    assert src3 is not None
+    assert src3.raw_metadata["metadata"]["extra"]["page1_classification_text"] == "Confidential"
+    assert src3.raw_metadata["metadata_source"] == "capture_snapshot"
+    # annex and sub-proceeding references as printed by the court
+    assert f"{DEMO_CASE}/F03668/RED/A01/RED" in _versions(session, "F03668/A01")
+    assert f"{DEMO_CASE}/IA042/F00005/RED" in _versions(session, "IA042/F00005")
+    # transcripts: one hearing, two language versions, two transcript rows
+    hearing = session.scalar(select(Hearing).where(Hearing.hearing_date == date(2026, 2, 18)))
+    assert hearing is not None
+    t_versions = _versions(session, "T/2026-02-18")
+    assert set(t_versions) == {f"{DEMO_CASE}/T/2026-02-18", f"{DEMO_CASE}/T/2026-02-18/sqi"}
+    transcripts = session.scalars(
+        select(Transcript).where(Transcript.hearing_id == hearing.id)
+    ).all()
+    assert len(transcripts) == 2
+
+    report = run_gate(session, demo_settings, bundle, bucket=TEST_BUCKET)
+    assert report.passed, report.summary
+    assert report.summary["records"] == 10 and report.summary["documents"] == 8
+
+    # re-run converges: nothing new, nothing rewritten
+    before = {
+        (v.official_version_ref, v.sha256, v.updated_at)
+        for d in session.scalars(select(Document)).all()
+        for v in d.versions
+    }
+    second = ingestor.run_bundle(bundle)
+    assert {i.status for i in second.items} == {IngestionItemStatus.SKIPPED_DUPLICATE}
+    session.expire_all()
+    after = {
+        (v.official_version_ref, v.sha256, v.updated_at)
+        for d in session.scalars(select(Document)).all()
+        for v in d.versions
+    }
+    assert before == after
+    assert f4.source_url and "doc_id=0000000000000001" in _doc(session, "F00004").source_url
+    assert not session.scalars(
+        select(AuditLog).where(
+            AuditLog.action == "document.metadata_updated",
+            AuditLog.detail["metadata_source"].astext == "capture_snapshot",
+        )
+    ).all()
+
+
+def test_quality_gate_fails_on_declared_hash_mismatch(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings
+) -> None:
+    from ksc_ingestion.quality_gate import run_gate
+
+    bundle = _import(tmp_path)
+    ingestor.run_bundle(bundle)
+    manifest_path = bundle.root / "manifest.json"
+    data = json.loads(manifest_path.read_text())
+    data["records"][0]["artifacts"][0]["sha256"] = "0" * 64
+    manifest_path.write_text(json.dumps(data))
+    tampered = load_bundle(bundle.root)
+    report = run_gate(session, demo_settings, tampered, bucket=TEST_BUCKET)
+    assert not report.passed
+    assert "declared_sha256_equals_stored" in report.summary["failed_checks"]["r01"]
+    assert "minio_object_hash_equals_declared" in report.summary["failed_checks"]["r01"]
+    # and the pipeline refuses to store bytes that disagree with the declaration
+    outcome = ingestor.run_bundle(tampered, resume=False)
+    first = next(i for i in outcome.items if i.item_key.endswith("0000000000000001"))
+    assert first.status is IngestionItemStatus.AMBIGUOUS_MAPPING
