@@ -71,16 +71,25 @@ Do not begin the next phase automatically.
 ```text
 Do not start the next milestone.
 
-Verify:
-- working tree state;
-- lint/typecheck;
-- relevant unit/integration/E2E tests;
-- migrations/build where applicable;
-- MEMORY.md;
-- PROJECT_STATE.md;
-- DECISIONS.md if architecture changed.
+Re-read the complete active phase roadmap and perform a final closeout audit.
+Check every acceptance criterion against the actual implementation, migrations,
+tests, and any required real-data quality gate. Related code existing is not
+enough evidence. Fix missing phase requirements without starting the next phase.
 
-Create a clean milestone commit/tag if authorized by repository workflow.
+Only after every mandatory criterion passes:
+- mark the phase COMPLETE and add its completion date and completion commit;
+- mark acceptance-criteria checkboxes complete where appropriate;
+- append a concise Completion Record with actual data, migration and test counts;
+- update 00_MASTER_ROADMAP.md so the completed phase and next pending phase are clear;
+- update MEMORY.md and PROJECT_STATE.md;
+- update DECISIONS.md only if architecture changed;
+- verify the working tree and required lint, typecheck, tests, migrations,
+  real-data gates, E2E and production build as applicable;
+- create or update the clean milestone tag if repository workflow uses one.
+
+Preserve the original roadmap requirements. Do not rewrite them into a status
+summary and do not remove them. Create a clean milestone commit/tag if
+authorized by repository workflow.
 Then print only the completion-report sections required by the active roadmap file.
 Stop.
 ```

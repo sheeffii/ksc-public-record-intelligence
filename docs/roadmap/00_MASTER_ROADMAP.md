@@ -58,18 +58,18 @@ The original core roadmap contains **13 numbered phases**. Two additional milest
 
 ### Current sequence
 
-| Phase | Name | Intended status |
+| Phase | Name | Current status |
 |---|---|---|
 | 1 | Product Definition & Evidence/Safety Architecture | Completed historically |
 | 2 | UX/UI Design System & Flagship Workflows | Completed historically |
 | 3 | Design Completion, Audit & Engineering Handoff | Completed historically |
 | 4 | Engineering Foundation | Completed |
-| 5 | Functional Approved UI with Mock Data | Completed functionally |
-| 5B | UI/UX Visual Parity Remediation | Pending; do after Phase 6 and before Phase 7 |
-| 6 | Real Database / Evidence Model | Next core engineering phase |
-| 7 | KSC Public Record Discovery + Controlled 10–20 Document Ingestion | Pending |
-| 8 | Parsing, Exact Citations, Resolution & Search | Pending |
-| 9 | Real Evidence Network & Timeline | Pending |
+| 5 | Functional Approved UI with Mock Data | Completed functionally; visual remediation completed in Phase 5B |
+| 5B | UI/UX Visual Parity Remediation | Completed (2026-09-20) |
+| 6 | Real Database / Evidence Model | Completed (2026-09-20) |
+| 7 | KSC Public Record Discovery + Controlled 10–20 Document Ingestion | Completed (2026-09-20) |
+| 8 | Parsing, Exact Citations, Resolution & Search | **COMPLETE (2026-09-20)** |
+| 9 | Real Evidence Network & Timeline | **NEXT / PENDING** |
 | 10 | Judgment, Findings & Evidence Matrix | Pending |
 | 11 | Citation-First AI / RAG | Pending |
 | 12 | Appeal Research, Red Team & Statement Comparison | Pending |
@@ -101,6 +101,9 @@ Phase 14
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
+
+Current checkpoint: Phase 8 is complete and tagged `phase-8-complete`. Phase 9
+is next/pending and must not begin without explicit authorization.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

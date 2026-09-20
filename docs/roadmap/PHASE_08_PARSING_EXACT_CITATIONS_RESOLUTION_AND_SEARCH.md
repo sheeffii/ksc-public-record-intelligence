@@ -1,6 +1,13 @@
 # Phase 8 — Parsing, Exact Citations, Resolution & Search
 
-**Status:** Pending.
+**Status:** Complete.
+
+**Completed:** 2026-09-20.
+
+**Completion commit:** `02ab3c8` (final verified code/test baseline; Phase 8
+implementation ended at `9fc67c5`).
+
+**Completion tag:** `phase-8-complete`.
 
 ## Goal
 
@@ -197,15 +204,15 @@ Add:
 
 ## Acceptance criteria
 
-- controlled real documents are parsed;
-- transcript page/line model works on real samples;
-- citation extraction/resolution is persisted;
-- unresolved/ambiguous states are reliable;
-- fake citations fail;
-- exact source navigation works;
-- search works on real corpus;
-- selected UI screens can consume real structured data;
-- all prior tests continue to pass.
+- [x] controlled real documents are parsed;
+- [x] transcript page/line model works on real samples;
+- [x] citation extraction/resolution is persisted;
+- [x] unresolved/ambiguous states are reliable;
+- [x] fake citations fail;
+- [x] exact source navigation works;
+- [x] search works on real corpus;
+- [x] selected UI screens can consume real structured data;
+- [x] all prior tests continue to pass.
 
 ## Stop condition
 
@@ -228,3 +235,30 @@ COMMITS
 NEXT
 MEMORY
 ```
+
+## Completion Record
+
+- Closeout audit: **PASS**, 2026-09-20. Every acceptance criterion above was
+  checked against migration `0004`, repository code, automated tests, the live
+  database, and the controlled-corpus quality gate.
+- Controlled corpus: 22 records / 19 documents / 22 versions; all 22 parsed
+  with `ksc-native-pdf/2` using native text. The persisted result contains
+  1,979 pages, 1,233 numbered paragraphs, 1,592 structural chunks, and 607
+  transcript segments; zero versions require review and no OCR was used.
+- Citations: 14,205 persisted; 23 resolved, 14,105 unresolved, 77 invalid, and
+  zero naturally ambiguous. Every non-resolved real-corpus citation is
+  targetless and displays `UNRESOLVED`; deterministic ambiguity is verified by
+  an integration fixture.
+- Search/navigation: exact identifier, phrase, keyword, filtered document,
+  transcript, source-type, and exact-coordinate navigation checks pass on the
+  real corpus. The known phrase probe opens transcript page 29,009, line 8.
+- Real UI: the selected Search and Document Reader/Transcript routes consume
+  the API repository in real-data mode and display a real/mixed-data notice.
+- Tests/gates: `make lint`, `make typecheck`, `make test`, and `make build`
+  passed; 236 backend tests and 188 frontend tests passed; Playwright reported
+  96 passed and 2 skipped. Migration downgrade/re-upgrade and model/schema
+  drift checks passed. The five-service local stack and readiness checks passed.
+- Scope: no additional court material was fetched, no bulk corpus was ingested,
+  no embeddings or broad AI analysis were added, and Phase 9 was not started.
+- Evidence: `docs/ingestion/PHASE8_QUALITY_GATE.md` and
+  `docs/ingestion/manifests/phase8-controlled-corpus-quality.json`.

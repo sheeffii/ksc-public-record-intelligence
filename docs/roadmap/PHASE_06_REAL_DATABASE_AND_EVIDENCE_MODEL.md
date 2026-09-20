@@ -1,6 +1,12 @@
 # Phase 6 — Real Database / Evidence Model
 
-**Status:** Next core architecture phase.
+**Status:** Complete.
+
+**Completed:** 2026-09-20.
+
+**Completion commit:** `bdc3ceb`.
+
+**Completion tag:** `phase-6-complete`.
 
 ## Goal
 

@@ -7,6 +7,10 @@ Live checkpoint. Repository state wins over this note.
 - Current branch: `feat/phase-8-parsing-search`.
 - Current milestone: **Phase 8 complete (2026-09-20)**. Stop before Phase 9.
 - Completion tag: `phase-8-complete` at the final Phase 8 checkpoint commit.
+- Final Phase 8 implementation commit: `9fc67c5`; the subsequent roadmap
+  closeout commit records the criterion-by-criterion audit and completion metadata.
+- Final verified code/test baseline: `02ab3c8` (raises only the timeout of one
+  pre-existing interaction-heavy Phase 5B test; no application behavior changed).
 - Migration head: `0004`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
@@ -42,6 +46,10 @@ Live checkpoint. Repository state wins over this note.
 - Final `make lint`, `make typecheck`, `make test`, production build, migration
   drift/round-trip, live stack health, real API/UI smoke checks, and Playwright
   (96 passed, 2 skipped) all passed before the checkpoint tag was created.
+- The final roadmap closeout audit re-read the complete Phase 8 specification
+  and verified every acceptance criterion against code, migration `0004`, tests,
+  the live API/database, and the pinned real-corpus quality gate. The Phase 8
+  roadmap and master roadmap now carry current completion metadata.
 
 ## Architecture / decisions
 

@@ -27,10 +27,11 @@ Last updated: 2026-09-20 (Phase 8 complete)
 
 The persistent execution plan is `docs/roadmap/` (installed 2026-09-19):
 `00_MASTER_ROADMAP.md` is the high-level plan and each `PHASE_*.md` is the
-execution specification for one milestone. Planned order from here:
-6 → 5B → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. The table above is the status
-record; the roadmap files hold scope and acceptance criteria. Repository code,
-migrations, tests and Git state win over stale roadmap text.
+execution specification for one milestone. Phases 6, 5B, 7, and 8 are complete;
+Phase 9 is next/pending. Remaining planned order: 9 → 10 → 11 → 12 → 13 → 14.
+The table above is the status record; the roadmap files hold scope and acceptance
+criteria. Repository code, migrations, tests and Git state win over stale roadmap
+text.
 
 ## Completed features (Phase 4)
 
@@ -213,6 +214,12 @@ check` and `head → base → head` are integration-tested.
   unfilled because no raw official PCR page is held.
 
 ## Completed features (Phase 8)
+
+- Final closeout audit completed 2026-09-20: all nine Phase 8 acceptance
+  criteria verified against implementation commit `9fc67c5`, final verified
+  code/test baseline `02ab3c8`, migration `0004`, automated tests, live
+  service/database probes, and the pinned controlled-corpus quality gate. The
+  Phase 8 roadmap is COMPLETE; Phase 9 remains unstarted.
 
 - Migration `0004` adds parser provenance, exact PDF/source coordinate layers,
   numbered paragraphs, citation audit fields, and generated PostgreSQL FTS

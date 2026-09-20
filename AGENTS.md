@@ -21,7 +21,13 @@ Instructions for any AI coding agent working in this repository.
 7. Never add a score, rank, weight or probability field about a person, anywhere.
 8. Interface strings go in the string tables; colours come from tokens.
 9. Run `make lint`, `make typecheck` and `make test` before declaring work done.
-10. Update `MEMORY.md` at the end of the session; `docs/PROJECT_STATE.md` and
+10. Before completing any roadmap phase, re-read its full phase file, verify
+    every acceptance criterion against repository reality, run every required
+    quality gate, then update that phase's status/date/commit/tag and Completion
+    Record, `docs/roadmap/00_MASTER_ROADMAP.md`, `MEMORY.md`, and
+    `docs/PROJECT_STATE.md`. Preserve the original requirements and stop before
+    the next phase.
+11. Update `MEMORY.md` at the end of the session; `docs/PROJECT_STATE.md` and
     `docs/DECISIONS.md` when they change.
-11. Commits: Conventional Commits, short, no AI attribution trailers. Never push
+12. Commits: Conventional Commits, short, no AI attribution trailers. Never push
     unless explicitly told to.
