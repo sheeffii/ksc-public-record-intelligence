@@ -85,8 +85,11 @@ point the API at it set `CASE_ID=KSC-DEMO-0000`; the tests do this themselves.
 
 ```bash
 .venv/bin/pip install -e workers/ingestion                          # once (make setup does it)
+.venv/bin/ksc-ingest import-capture <src> data/captures/<bundle-id> --pdf-dir ~/Downloads \
+    --bundle-id <bundle-id> --captured-by "<operator>"              # v0 capture + PDFs → bundle
 .venv/bin/ksc-ingest bundle data/captures/<bundle-id> --dry-run     # validate + report
 .venv/bin/ksc-ingest bundle data/captures/<bundle-id>               # ingest (resumable, idempotent)
+.venv/bin/ksc-ingest gate data/captures/<bundle-id> --json out.json  # per-record quality gate
 .venv/bin/ksc-ingest status                                          # jobs, items, held versions
 .venv/bin/ksc-ingest probe "https://repository.scp-ks.org/…" --record
 curl -s localhost:8000/api/v1/ingestion/status | jq .counts

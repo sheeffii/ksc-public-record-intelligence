@@ -48,49 +48,90 @@ Consequences:
 If the court ever admits identified research clients, `HttpFetcher` is the
 path; nothing else changes.
 
-## URL shapes (from search-engine index of official pages; canonical host confirmed)
+## VERIFIED FROM CAPTURE (bundle `2026-09-20-corpus-01`, 22 records)
 
-These forms were observed in indexed official URLs and are what
-`ksc_ingestion.sources.classify` recognises. They are **not** constructed by the
-pipeline; a URL enters only when observed on an official page or copied by the
-operator from the browser.
+Everything in this section was demonstrated by the captured detail-page fields,
+the official URLs the operator copied, and the 22 official PDFs themselves.
+
+**Hosts and URL forms**
 
 ```text
-https://repository.scp-ks.org/?icc_filters[case_number]=KSC-BC-2020-06
-      &icc_filters[language_short]=_all&icc_filters[record_type_short]=_all
-      &icc_filters[sort_order]=_sort_date_newest/1000&page=N              listing
-https://repository.scp-ks.org/details.php?doc_id=<16 hex>&doc_type=stl_filing&lang=eng   detail
-https://repository.scp-ks.org/LW/Published/Filing/<16 hex>/<title>.pdf                  filing PDF
-https://repository.scp-ks.org/LW/Published/Transcript/KSC-BC-2020-06/<hearing>.pdf      transcript PDF
-https://www.scp-ks.org/en/cases/...                                                     case page
+https://repository.scp-ks.org/details.php?doc_id=<16 hex>&doc_type=<stl_filing|stl_filing_annex|stl_transcript>&lang=<eng|sqi>
+https://repository.scp-ks.org/LW/Published/Filing/<16 hex>/<title as published>.pdf
+https://repository.scp-ks.org/LW/Published/Transcript/KSC-BC-2020-06/<title as published>.pdf
 ```
 
-Observed facts: the listing is filterable by case number, language
-(`language_short`, `_all`) and record type (`record_type_short`, `_all`), is
-sortable (`_sort_date_newest`) and paginated (`page=…`; a page 211 exists for
-this case, so the public docket is in the thousands of records). Detail pages
-key records by `doc_id` (16 hex characters) with `doc_type=stl_filing` and a
-`lang` parameter (`eng` observed; `alb`/`srb` expected but **unverified**).
-Indexed titles show the KSC conventions: "Public Redacted Version of …",
-filing numbers `KSC-BC-2020-06-F00005`, sub-proceedings such as `IA002-F00001`,
-and version suffixes `-RED`. Transcript PDFs are titled by hearing date and
-session ("Trial Hearing - 25 November 2024 - Public Redacted").
+`doc_id` is a stable 16-hex key per record _and language_ (r04 eng and r05 sqi
+have different `doc_id`s but share the filing id). The PDF path segment
+(`0b1ec6e9…`) differs from the detail `doc_id` (`0910c8e1…`). Filing PDFs of
+the same filing in two languages can share the path folder (r04/r05) or not
+(r01/r02). Titles are percent-encoded verbatim in the PDF URL.
 
-## Not yet inspected (needs saved official pages)
+**Record categories seen**: `Filing`, `Filing Annex`, `Transcript`
+(`doc_type` mirrors these). Filing types seen: Indictment, Decision, Submission,
+Brief, Notice/Notification, Request, Transcript, Filing Annex.
 
-- the exact metadata fields and labels on a detail page (document number,
-  filing date, filing party, classification, related versions, translations);
-- whether the listing is server-rendered or backed by a JSON endpoint the public
-  UI calls (only endpoints the public UI itself uses may ever be considered);
-- how versions (original / public redacted / corrected) and translations are
-  linked between records;
-- how the case page lists hearings and links transcripts / video;
-- rate-limit expectations and the text of `robots.txt`.
+**Metadata fields published on a detail page** (as captured): Case Number,
+Title, Document / Filing ID, Record Type, Filing Type, Filing Party, Court
+Level, Date, Language, public / redacted status. **Nullable as published**:
+Document / Filing ID and Court Level (transcripts), Filing Party (annexes and
+transcripts), Date (annexes). Nothing else fills them.
 
-These are answered by the first operator capture bundle. The PCR detail-page
-parser (`DetailPageParser` in `ksc_ingestion.capture`) is implemented against
-those saved pages, not against guesses; until then a saved page without
-manifest metadata is a visible `invalid_metadata` item.
+**Filing-party labels seen**: Specialist Prosecutor · Specialist Counsel
+(defence) · Specialist Chambers · President · Registrar · Victims Counsel.
+**Court levels seen**: Basic Court Chamber · Court of Appeal Chamber.
+**Languages seen**: `eng`, `sqi`.
+
+**Version naming (published id → reference printed in the PDF header)**
+
+| published id                       | header reference                                                                         | meaning                                          |
+| ---------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `F00004RED`                        | `KSC-BC-2020-06/F00004/RED`                                                              | public redacted                                  |
+| `F00004RED` (lang `sqi`)           | `KSC-BC-2020-06/F00004/RED/sqi`                                                          | Albanian version — the court's own `/sqi` suffix |
+| `F03664RED2`                       | `KSC-BC-2020-06/F03664/RED2`                                                             | further public redacted generation               |
+| `F03667CORRED`                     | `KSC-BC-2020-06/F03667/COR/RED`                                                          | corrected, then public redacted                  |
+| `IA042-F00005RED`                  | `KSC-BC-2020-06/IA042/F00005/RED`                                                        | interlocutory-appeal sub-proceeding              |
+| `F00045` (annex, lang `eng`/`sqi`) | `…/F00045/A03`, `…/F00045/A03/sqi`                                                       | annex number from the title                      |
+| `F03668RED` (annex)                | `…/F03668/RED/A01/RED`                                                                   | annex to the RED brief, itself redacted          |
+| — (transcript)                     | none printed; page header shows case, date and a running page number (e.g. `Page 29148`) | no filing number exists                          |
+
+**Page-1 markers**: filings print `Classification: <text>` and, when
+reclassified, the court's stamp `PUBLIC … Reclassified as Public pursuant to
+instructions contained in CRSPDnnn …` (r03, r09, r14; r01/r02 carry the same
+stamp on the annex cover). Redacted versions print "Date original" and "Date
+public redacted version" (r16). Transcript text layers carry line numbers 1–25
+and the running transcript page.
+
+**Capture format**: the operator's session saved _normalised snapshots_ (one
+small HTML table per record, `pages/rNN.html`) plus `manifest.json` and
+`files/sha256sums.txt`, not the raw PCR DOM; the PDFs were downloaded
+separately and matched by SHA-256 (`ksc_ingestion.capture_import`). All 22
+artifact URLs returned HTTP 200 in the browser at capture time; all 22
+downloaded files matched their capture-time hashes and sizes exactly.
+
+**Access behaviour**: the same Cloudflare challenge described above blocked
+every automated request on 2026-09-20, while the operator's interactive browser
+session was served normally. The browser-assisted path is therefore the working
+fallback (ADR-011) and the only path used.
+
+## NOT YET VERIFIED
+
+- the raw DOM of a PCR detail or listing page (no raw page was saved; the
+  `DetailPageParser` interface for raw pages stays unimplemented);
+- whether the public UI is backed by a JSON endpoint;
+- the search-form filters the operator reports (`record_type_short`,
+  `filing_court_level`, `filing_type`, `filing_submitter`, `language_short`,
+  `filing_number`, dates, sort, page) — plausible, recorded from
+  `CAPTURE_NOTES.md`, not exercised by this pipeline;
+- Serbian (`srb`) variants; `lang=alb` vs `sqi` spelling in URLs (only `sqi`
+  seen);
+- how the repository links versions / translations to each other on its own
+  pages (references here were confirmed from the PDFs, not from page links);
+- the case page on `www.scp-ks.org` (not captured);
+- rate-limit expectations and the text of `robots.txt` (unreadable to clients);
+- absence of a trial judgment and of public unredacted originals — operator
+  observations only ("not found in this controlled capture or observed
+  query").
 
 ## Rules restated
 

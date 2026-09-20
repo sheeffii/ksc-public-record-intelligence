@@ -174,3 +174,33 @@ For each record, compare `GET /api/v1/ingestion/status` → `held` (or
 reference, version, filing date / party / type, public visibility, source URL;
 open the stored PDF from MinIO and confirm it is the same document; confirm the
 SHA-256 is stored and a second `ksc-ingest bundle` run changes nothing.
+
+## Capture format v0 and `import-capture` (what actually happened on 2026-09-20)
+
+The first real capture did not follow the layout above exactly: the browser
+session produced `manifest.json` + `pages/rNN.html` (normalised snapshots of
+each detail page's published fields, not raw DOM) + `files/sha256sums.txt`, and
+the PDFs were downloaded separately with their repository file names. The
+importer bridges that:
+
+```bash
+.venv/bin/ksc-ingest import-capture ~/Downloads/<capture>/ksc_capture data/captures/<bundle-id> \
+    --pdf-dir ~/Downloads --bundle-id <bundle-id> --captured-by "<operator>" [--browser "<text>"]
+```
+
+It validates the source manifest against every snapshot, matches each PDF by
+**exact SHA-256 only** (names are never used), derives the document / version
+references from the published filing id and confirms them against the reference
+the PDF prints in its own header, copies the PDFs as `files/rNN.pdf`
+(re-hashed), keeps the snapshots, notes and source manifest, and writes the
+project `manifest.json` with `metadata_source = capture_snapshot`. It refuses
+to write anything if a PDF is missing, mismatched or shared between records.
+Then:
+
+```bash
+.venv/bin/ksc-ingest bundle data/captures/<bundle-id> --dry-run
+.venv/bin/ksc-ingest bundle data/captures/<bundle-id>
+.venv/bin/ksc-ingest gate   data/captures/<bundle-id> --json data/captures/<bundle-id>/quality_gate_report.json
+```
+
+Results for the first bundle: `docs/ingestion/CONTROLLED_CORPUS.md`.

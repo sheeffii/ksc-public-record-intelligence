@@ -469,6 +469,10 @@ Consequences:
 - Phase 7 cannot ingest a single real record without a human capture session;
   the 10–20-record corpus is assembled by the operator, and the quality gate
   is a human check of the pipeline's output against the saved official pages.
+  Outcome (2026-09-20): a 22-record browser capture plus separately downloaded
+  PDFs, matched by SHA-256, ingested and gated — `docs/ingestion/CONTROLLED_CORPUS.md`.
+  The challenge was still in place for automated clients on that date; the
+  browser-assisted path worked without touching it.
 - The live fetcher exists for probing and for a future in which the court
   admits identified clients; enabling it for ingestion needs a new ADR.
 - Provenance now distinguishes discovery (source record), capture (who / how /
@@ -479,3 +483,87 @@ Relevant files:
 `apps/api/alembic/versions/0003_ingestion_provenance.py`,
 `docs/ingestion/{OFFICIAL_SOURCES,OPERATOR_CAPTURE}.md`,
 `tests/unit/ingestion/`, `tests/integration/test_ingestion_pipeline.py`
+
+---
+
+## ADR-012 — Official reference scheme and metadata provenance for ingested records
+
+Date: 2026-09-20
+
+Status: Accepted
+
+Context:
+The first real capture (22 records, `docs/ingestion/CONTROLLED_CORPUS.md`)
+showed how the Public Court Records repository actually identifies things: a
+published "Document / Filing ID" such as `F00004RED`, `F03667CORRED`,
+`IA042-F00005RED`, or none at all for transcripts; two languages of one filing
+under one filing id with different `doc_id`s; annexes carrying the parent's
+filing id; and every filing PDF printing its own reference in the running header
+(`KSC-BC-2020-06/F00004/RED/sqi`, `KSC-BC-2020-06/F03668/RED/A01/RED`). The
+capture pages were normalised snapshots of the detail pages, not the raw DOM.
+
+Decision:
+
+1. **The version reference is the court's own string.** `official_version_ref`
+   is the reference the PDF prints in its header, in the court's spelling
+   (`/RED`, `/RED2`, `/COR/RED`, `/A01`, `/sqi`, `IA042/`). It is derived
+   deterministically from the published id and title (annex number) and then
+   confirmed against the header; a header that _extends_ the derivation
+   (r16's `…/RED/A01/RED`) wins, a header that _contradicts_ it makes the record
+   `ambiguous_mapping`. How each reference was established is persisted
+   (`raw_metadata.metadata.extra.reference.source`: `published_id_confirmed_by_pdf_header`
+   · `pdf_header` · `derived_from_published_id` · `derived_transcript_key`).
+2. **One document per filing (or annex), one version per public artifact.**
+   `documents.official_ref` = case / [sub-proceeding] / filing [/ Ann]:
+   `KSC-BC-2020-06/F00004`, `…/IA042/F00005`, `…/F00045/A03`, `…/F03668/A01`.
+   Language variants are `translation` versions of the same document; the
+   document's title, language and detail URL stay with the original-language
+   record and each translation's own detail page lives on its source record.
+   Successive redaction generations of the same document are separate versions;
+   `supersedes` is set only when both generations of the _same_ document are
+   held (none yet — r16 is an annex of `F03668/RED`, not the brief).
+3. **Transcripts use a derived key**, `KSC-BC-2020-06/T/<hearing date>[/<lang>]`,
+   because the repository publishes no filing number for them; it is labelled
+   as derived, never presented as a court identifier.
+4. **Version type reflects the artifact.** A redacted published status is
+   `public_redacted` whatever the suffix; `COR` without redaction is
+   `corrected`; a non-English language is `translation`; a filing whose page 1
+   carries the court's "reclassified as Public" stamp is `reclassified`; else
+   `original`. The filing-time classification line printed on page 1
+   ("Confidential", "Strictly Confidential") is recorded verbatim as metadata
+   and does not change the visibility the repository publishes.
+5. **Metadata provenance is explicit.** `metadata_source = capture_snapshot`
+   for records described by the browser-built snapshots; the raw-page parser
+   interface (`DetailPageParser`, `official_page`) stays separate and
+   unimplemented until a raw PCR page exists. Fields the source leaves blank
+   stay NULL; the repository's single "Date" is stored as `document_date` only.
+6. **Bytes are matched by hash only.** Downloaded PDFs are mapped to records by
+   exact SHA-256 against the capture-time hash (`capture_import.match_pdfs`);
+   file names, titles and sizes are diagnostics. The pipeline refuses bytes that
+   disagree with the declared hash or size (`ambiguous_mapping`).
+
+Alternatives:
+
+- Use the published id verbatim (`F00004RED`) as the version reference —
+  rejected: not how the court cites and not unique across languages.
+- Split language variants into separate documents — rejected: one filing id,
+  one document; `document_versions.language` is not a column, the version
+  reference carries `/sqi` as the court does.
+- Infer `reclassified` from "Confidential" on page 1 alone — rejected: only the
+  court's explicit stamp is evidence.
+
+Consequences:
+
+- `citations` resolution (Phase 8) can target `…/F00004/RED/sqi` exactly as
+  cited in filings; transcripts resolve via hearing date until the repository
+  offers an identifier.
+- Adding the earlier generation of a held document later creates a second
+  version and can set `supersedes` without touching the existing one.
+- The quality gate re-hashes the stored object and compares it with the
+  capture-time hash for every record; a bundle passes only when all do.
+
+Relevant files:
+`workers/ingestion/src/ksc_ingestion/{capture_import,snapshot,quality_gate,pipeline}.py`,
+`docs/ingestion/{CONTROLLED_CORPUS,OFFICIAL_SOURCES,OPERATOR_CAPTURE}.md`,
+`tests/unit/ingestion/test_snapshot_and_import.py`,
+`tests/integration/test_ingestion_pipeline.py`

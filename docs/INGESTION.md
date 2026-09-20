@@ -1,11 +1,15 @@
 # Ingestion
 
-**Status (Phase 7, 2026-09-20): pipeline implemented and tested against a
-synthetic corpus; real-record counts are 0 pending operator capture.** No
-crawler runs: the official sites answer automated clients with a Cloudflare
-challenge, which is an access control (ADR-011,
-`docs/ingestion/OFFICIAL_SOURCES.md`). Records enter through operator capture
-bundles (`docs/ingestion/OPERATOR_CAPTURE.md`).
+**Status (Phase 7 complete, 2026-09-20): 22 real public records of
+`KSC-BC-2020-06` ingested from operator capture bundle `2026-09-20-corpus-01`
+— 22 source records, 19 documents, 22 versions (all bytes held), 2 hearings,
+3 transcripts; quality gate 22/22; idempotent re-run verified
+(`docs/ingestion/CONTROLLED_CORPUS.md`).** No crawler runs: the official sites
+answer automated clients with a Cloudflare challenge, which is an access
+control (ADR-011, `docs/ingestion/OFFICIAL_SOURCES.md`). Records enter through
+operator capture bundles (`docs/ingestion/OPERATOR_CAPTURE.md`), imported with
+`ksc-ingest import-capture` and verified with `ksc-ingest gate`. Parsing beyond
+validation is Phase 8.
 
 ## Rules that precede any code
 
@@ -22,6 +26,10 @@ bundles (`docs/ingestion/OPERATOR_CAPTURE.md`).
 ## Pipeline (`workers/ingestion`, `ksc_ingestion`)
 
 ```text
+import       operator capture (snapshots + manifest + separately downloaded PDFs)
+             → PDFs matched by exact SHA-256 → references derived from the
+             published id and confirmed against the PDF header (ADR-012)
+             → project bundle data/captures/<id>/ (capture_import)
 discover     capture bundle → DiscoveredRecord (official detail URL, listing URL,
              external record id, metadata snapshot, artifacts with official URLs)
 source       upsert source_records (case, source_system, external_record_id):
@@ -36,6 +44,8 @@ persist      documents (case, official_ref) · document_versions (document,
              official_version_ref) · hearings / transcripts for transcript records
 job          ingestion_jobs (cursor, checkpoint, counts) · ingestion_job_items
              (one terminal status per record) · audit_log
+gate         re-read every record from the database and the object store and
+             compare with the bundle (quality_gate)
 ```
 
 Item statuses: `downloaded` · `metadata_only` (URLs recorded, bytes not
@@ -71,7 +81,9 @@ does not state it: public redacted > corrected > reclassified > translation
 ## Metadata provenance
 
 `source_records.raw_metadata.metadata_source` says where the record's metadata
-came from: `official_page` (parsed from the saved official page — preferred),
+came from: `official_page` (parsed from a saved raw official page — interface
+only, no such page captured yet), `capture_snapshot` (normalised snapshot of the
+official detail page built in the browser session — the 2026-09-20 corpus),
 `operator_manifest` (typed into the manifest), `synthetic_fixture` (tests
 only). The quality gate compares `official_page` values against the page; it
 treats `operator_manifest` values as needing a second look.

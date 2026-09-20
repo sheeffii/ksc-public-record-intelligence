@@ -3,25 +3,25 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-20 (Phase 7 in progress)
+Last updated: 2026-09-20 (Phase 7 complete)
 
 ## Milestones
 
-| Phase  | Scope                                                                                                     | Status                                                                                                                  |
-| ------ | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| 1–3    | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                                              |
-| **4**  | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                                                            |
-| **5**  | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B)                               |
-| **6**  | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                                                            |
-| **5B** | **UI/UX visual parity remediation against `docs/design/Design.html`**                                     | ✅ **Complete (2026-09-20)**                                                                                            |
-| 7      | KSC public record discovery + controlled 10–20 document ingestion (first real KSC data)                   | **In progress (2026-09-20)** — pipeline, schema, docs, tests done; real ingestion blocked on operator capture (ADR-011) |
-| 8      | Parsing, exact citations, resolution index, search                                                        | Planned                                                                                                                 |
-| 9      | Real evidence network and timeline                                                                        | Planned                                                                                                                 |
-| 10     | Judgment, findings and evidence matrix                                                                    | Planned                                                                                                                 |
-| 11     | Citation-first AI / RAG                                                                                   | Planned                                                                                                                 |
-| 12     | Appeal research, red team and statement comparison                                                        | Planned                                                                                                                 |
-| 13     | Gradual full public corpus ingestion and production hardening                                             | Planned                                                                                                                 |
-| 14     | External media and public statements intelligence                                                         | Post-core / later                                                                                                       |
+| Phase  | Scope                                                                                                     | Status                                                                                                   |
+| ------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 1–3    | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                               |
+| **4**  | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                                             |
+| **5**  | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B)                |
+| **6**  | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                                             |
+| **5B** | **UI/UX visual parity remediation against `docs/design/Design.html`**                                     | ✅ **Complete (2026-09-20)**                                                                             |
+| **7**  | **KSC public record discovery + controlled document ingestion (first real KSC data)**                     | ✅ **Complete (2026-09-20)** — 22 real public records, quality gate 22/22, idempotent (ADR-011, ADR-012) |
+| 8      | Parsing, exact citations, resolution index, search                                                        | **Next** (not started; requires explicit authorisation)                                                  |
+| 9      | Real evidence network and timeline                                                                        | Planned                                                                                                  |
+| 10     | Judgment, findings and evidence matrix                                                                    | Planned                                                                                                  |
+| 11     | Citation-first AI / RAG                                                                                   | Planned                                                                                                  |
+| 12     | Appeal research, red team and statement comparison                                                        | Planned                                                                                                  |
+| 13     | Gradual full public corpus ingestion and production hardening                                             | Planned                                                                                                  |
+| 14     | External media and public statements intelligence                                                         | Post-core / later                                                                                        |
 
 ## Roadmap
 
@@ -158,7 +158,7 @@ check` and `head → base → head` are integration-tested.
   green; design docs untouched.
 - Not done by design: screens still consume the sync mock; no pixel baselines.
 
-## Phase 7 progress (in progress)
+## Completed features (Phase 7)
 
 - Discovery: both official hosts serve a Cloudflare managed challenge to
   automated clients (`HTTP 403`, `cf-mitigated: challenge`), including
@@ -187,10 +187,26 @@ check` and `head → base → head` are integration-tested.
   visibility, wrong case, other-case refusal, dry run, recorded blocked probe,
   status endpoint) over the synthetic `KSC-DEMO-0000` bundle
   (`tests/support/synthetic.py`). No real record is described by any fixture.
-- Real-case state: 0 records; 1 recorded `live_probe` job (blocked).
-- Remaining (needs the capture bundle): official-page parsers written against
-  saved HTML, the 10–20-record selection with reasons, ingestion, manual
-  quality gate, counts, `phase-7-complete`.
+- Real capture (2026-09-20): operator browser session → 22-record capture
+  (normalised detail-page snapshots, manifest, capture-time SHA-256 / sizes)
+  plus 22 separately downloaded PDFs. `ksc-ingest import-capture` matched all
+  22 by exact SHA-256, confirmed references against the PDF headers (ADR-012)
+  and wrote bundle `2026-09-20-corpus-01` (git-ignored).
+- Ingested: 22 source records · 19 documents · 22 versions (all fetched) ·
+  2 hearings · 3 transcripts · 22 MinIO objects (24,429,094 bytes). Coverage:
+  indictment annex EN/SQ, SPO (incl. 716-page final trial brief COR/RED),
+  Defence for all four accused, Pre-Trial Judge / Trial Panel / President
+  decisions, Court of Appeals (IA042), Registrar, Victims' Counsel, transcripts
+  EN/SQ, RED2 generations, three court-stamped reclassifications. No trial
+  judgment and no public unredacted original were found in this capture
+  (operator observation, not independently verified).
+- `ksc-ingest gate`: 22/22 PASS (32–35 checks per record incl. MinIO object
+  re-hash). Idempotent re-run: all record tables and objects byte-identical.
+- New modules: `snapshot.py`, `capture_import.py`, `quality_gate.py`; tests
+  +17 (15 unit, 2 integration). Docs: `CONTROLLED_CORPUS.md`,
+  `OFFICIAL_SOURCES.md` (verified vs not yet verified), ADR-012.
+- Not done by design: no parsing / segmentation / citation extraction (Phase 8);
+  no admin UI (API + CLI status view); raw PCR DOM parser interface unfilled.
 
 ## Technical debt / notes
 
@@ -211,8 +227,8 @@ None — nothing parsed.
 
 | Suite                                    | Count        | Last result                                        |
 | ---------------------------------------- | ------------ | -------------------------------------------------- |
-| Backend unit (pytest)                    | 140          | pass                                               |
-| Backend integration (pytest, live infra) | 63           | pass                                               |
+| Backend unit (pytest)                    | 155          | pass                                               |
+| Backend integration (pytest, live infra) | 65           | pass                                               |
 | Frontend (vitest)                        | 188          | pass                                               |
 | E2E (playwright)                         | 48 specs × 2 | 96 pass locally; requires running stack + browsers |
 | Evaluation                               | 0            | reserved directory                                 |
@@ -226,7 +242,9 @@ rebuilding the API image (migration `0003` applied; ingestion status endpoint
 live). Git:
 Phase 6 is on `main` = `origin/main` = `bdf7293` (tag `phase-6-complete`,
 pushed). Phase 5B is on `feat/phase-5b-visual-parity`, tag
-`phase-5b-complete`, not pushed. No remote deployment
+`phase-5b-complete`, not pushed. Phase 7 is on
+`feat/phase-7-controlled-ingestion` (from `eaeb4ce`), tag `phase-7-complete`,
+not pushed. No remote deployment
 or production workflow.
 
 ## Verification limitations
@@ -238,8 +256,9 @@ original copy exists locally. See MEMORY.md → Current Problems.
 
 ## Ingestion state
 
-Real case `KSC-BC-2020-06`: source records 0 · documents 0 · versions 0
-(fetched 0 · not_fetched 0) · parsed 0 · indexed 0 · transcripts 0 · jobs 1
-(`live_probe`, 1 item `blocked_by_access_control`, 2026-09-20). Nothing has
-been downloaded from the court site by the pipeline; the first real records
-arrive through an operator capture bundle (ADR-011).
+Real case `KSC-BC-2020-06` (bundle `2026-09-20-corpus-01`): source records 22 ·
+documents 19 · versions 22 (fetched 22 · not_fetched 0 · failed 0) · hearings
+2 · transcripts 3 · MinIO objects 22 · parsed 0 · indexed 0 · transcripts
+parsed 0 · failed 0 · jobs 4 (1 `live_probe` blocked, 3 `capture_bundle`).
+Bytes came from the operator's browser downloads matched by SHA-256; the
+pipeline itself fetched nothing from the court site (ADR-011).
