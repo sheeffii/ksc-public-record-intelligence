@@ -12,11 +12,12 @@ snapshot.py   parser for the normalised detail-page snapshots of the v0 capture
 capture_import.py  v0 capture + downloaded PDFs → project bundle (SHA-256 match,
               references confirmed against the PDF header, ADR-012)
 quality_gate.py    per-record verification against DB + MinIO (re-hashes objects)
+corpus_manifest.py tracked metadata manifest of a verified corpus (docs/ingestion/manifests/)
 artifacts.py  SHA-256, MIME sniff, PDF validation (page count, case number)
 storage.py    object store (MinIO / in-memory), hash-addressed keys
 pipeline.py   Ingestor: SourceRecord → Document → DocumentVersion → job items
 probe.py      one live request; a challenge becomes a recorded failure
-cli.py        ksc-ingest import-capture | bundle | gate | probe | status
+cli.py        ksc-ingest import-capture | bundle | gate | export-corpus | probe | status
 ```
 
 Commands (host side, `make infra` running):

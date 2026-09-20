@@ -4,6 +4,7 @@
         --bundle-id ID --captured-by NAME [--browser TEXT]
     ksc-ingest bundle data/captures/<bundle-id> [--dry-run] [--no-resume]
     ksc-ingest gate data/captures/<bundle-id> [--json PATH]
+    ksc-ingest export-corpus data/captures/<bundle-id> --out docs/ingestion/manifests/<name>.json
     ksc-ingest probe <official-url> [--record]
     ksc-ingest status [--limit N]
 
@@ -28,6 +29,7 @@ from ksc_api.models import Case
 from ksc_api.repositories.ingestion import IngestionStatusRepository
 from ksc_ingestion.capture import BundleError, load_bundle
 from ksc_ingestion.capture_import import SourceImportError, import_capture
+from ksc_ingestion.corpus_manifest import build_manifest, validate_manifest_file, write_manifest
 from ksc_ingestion.fetch import HttpFetcher
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor, RunOutcome
 from ksc_ingestion.probe import probe, record_probe
@@ -133,6 +135,27 @@ def cmd_gate(args: argparse.Namespace) -> int:
     return 0 if report.passed else 1
 
 
+def cmd_export_corpus(args: argparse.Namespace) -> int:
+    try:
+        bundle = load_bundle(Path(args.path))
+    except BundleError as exc:
+        print(f"bundle rejected: {exc}", file=sys.stderr)
+        return 2
+    gate_report = (
+        Path(args.gate_report) if args.gate_report else Path(args.path) / "quality_gate_report.json"
+    )
+    with get_sessionmaker()() as session:
+        manifest = build_manifest(session, bundle, gate_report=gate_report)
+    out = Path(args.out)
+    write_manifest(manifest, out)
+    validate_manifest_file(out)
+    print(
+        f"wrote {out}: {manifest.record_count} records, {manifest.document_count} documents, "
+        f"{manifest.version_count} versions, {manifest.total_bytes:,} bytes"
+    )
+    return 0
+
+
 def cmd_probe(args: argparse.Namespace) -> int:
     try:
         with HttpFetcher() as fetcher:
@@ -210,6 +233,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_gate.add_argument("path")
     p_gate.add_argument("--json", help="write the full report to this path")
     p_gate.set_defaults(func=cmd_gate)
+
+    p_export = sub.add_parser(
+        "export-corpus", help="write the tracked metadata manifest of a verified bundle"
+    )
+    p_export.add_argument("path")
+    p_export.add_argument("--out", required=True)
+    p_export.add_argument("--gate-report", help="default: <bundle>/quality_gate_report.json")
+    p_export.set_defaults(func=cmd_export_corpus)
 
     p_probe = sub.add_parser("probe", help="one identified request to an official URL")
     p_probe.add_argument("url")
