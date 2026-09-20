@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-20 (Phase 8 complete)
+Last updated: 2026-09-21 (Phase 9 complete)
 
 ## Milestones
 
@@ -16,8 +16,8 @@ Last updated: 2026-09-20 (Phase 8 complete)
 | **5B** | **UI/UX visual parity remediation against `docs/design/Design.html`**                                     | ✅ **Complete (2026-09-20)**                                                                             |
 | **7**  | **KSC public record discovery + controlled document ingestion (first real KSC data)**                     | ✅ **Complete (2026-09-20)** — 22 real public records, quality gate 22/22, idempotent (ADR-011, ADR-012) |
 | **8**  | **Parsing, exact citations, resolution index, search**                                                    | ✅ **Complete (2026-09-20)** — controlled-corpus quality gate PASS (ADR-013)                             |
-| 9      | Real evidence network and timeline                                                                        | Planned                                                                                                  |
-| 10     | Judgment, findings and evidence matrix                                                                    | Planned                                                                                                  |
+| **9**  | **Real evidence network and timeline**                                                                    | ✅ **Complete (2026-09-21)** — controlled-corpus quality gate PASS (ADR-014)                             |
+| 10     | Judgment, findings and evidence matrix                                                                    | **Next / pending**                                                                                       |
 | 11     | Citation-first AI / RAG                                                                                   | Planned                                                                                                  |
 | 12     | Appeal research, red team and statement comparison                                                        | Planned                                                                                                  |
 | 13     | Gradual full public corpus ingestion and production hardening                                             | Planned                                                                                                  |
@@ -27,11 +27,11 @@ Last updated: 2026-09-20 (Phase 8 complete)
 
 The persistent execution plan is `docs/roadmap/` (installed 2026-09-19):
 `00_MASTER_ROADMAP.md` is the high-level plan and each `PHASE_*.md` is the
-execution specification for one milestone. Phases 6, 5B, 7, and 8 are complete;
-Phase 9 is next/pending. Remaining planned order: 9 → 10 → 11 → 12 → 13 → 14.
+execution specification for one milestone. Phases 6, 5B, 7, 8, and 9 are
+complete. Remaining planned order: 10 → 11 → 12 → 13 → 14.
 The table above is the status record; the roadmap files hold scope and acceptance
-criteria. Repository code, migrations, tests and Git state win over stale roadmap
-text.
+criteria. Phase 9 is complete; Phase 10 is next/pending. Repository code,
+migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
 
@@ -91,8 +91,7 @@ Shared / docs
   (Phase 5B / Phase 7).
 - Ingestion, parsing and the citation resolver that fills `citations` and
   `record_identifiers` (Phase 7 / Phase 8).
-- Search over real records, production-scale graph rendering and real AI retrieval
-  remain later phases.
+- Production-scale graph rendering and real AI retrieval remain later phases.
 - Albanian legal terminology needs specialist review against official KSC texts.
 
 ## Completed features (Phase 5)
@@ -219,7 +218,7 @@ check` and `head → base → head` are integration-tested.
   criteria verified against implementation commit `9fc67c5`, final verified
   code/test baseline `02ab3c8`, migration `0004`, automated tests, live
   service/database probes, and the pinned controlled-corpus quality gate. The
-  Phase 8 roadmap is COMPLETE; Phase 9 remains unstarted.
+  Phase 8 roadmap was marked COMPLETE before Phase 9 began.
 
 - Migration `0004` adds parser provenance, exact PDF/source coordinate layers,
   numbered paragraphs, citation audit fields, and generated PostgreSQL FTS
@@ -236,6 +235,36 @@ check` and `head → base → head` are integration-tested.
   repository (`mock` or `api`); real mode does not render demo content panels.
 - Real-corpus evaluation: `docs/ingestion/PHASE8_QUALITY_GATE.md` and the tracked
   `phase8-controlled-corpus-quality.json` report. No new documents were fetched.
+
+## Completed features (Phase 9)
+
+- Final closeout audit completed 2026-09-21 against implementation commits
+  `431f1dd` and `ac59afa`, verified code/test baseline `548a151`, migration
+  `0005`, all automated gates, live real-case API/database probes and the pinned
+  controlled-corpus quality report.
+- `ksc-ingest build-evidence` deterministically projects already-persisted Phase
+  8 data only. The controlled graph has 13 document nodes and 22 exact-citation
+  `CITED_IN` edges; one self-citation is omitted and zero analytical,
+  unsupported, self, or citation-less edges were created.
+- Relationship contracts carry source category, extraction origin, optional
+  typed date, exact resolved target citation and exact citing-source coordinates.
+  Evidence paths use bounded neutral BFS over eligible public source-backed
+  edges; every hop is independently cited.
+- The real timeline contains 19 source-record-backed events: 11 document dates,
+  6 decisions/orders and 2 hearing/testimony dates. Date types and precision
+  remain distinct; absent categories remain absent.
+- Network, Evidence Path and Timeline use the API repository in real mode and
+  suppress demo content. Network supports node search; source, verification,
+  true from/to date, entity and relationship filters; inspectors;
+  expand/collapse; isolate; reset; exact-source links; and a textual alternative.
+- The required neutrality warning is unchanged. No person relationship,
+  co-mention, guilt, responsibility, agreement, importance, or evidential weight
+  is inferred.
+- The measured graph is 13 nodes / 22 edges, so the accessible SVG renderer is
+  retained. `docs/ingestion/PHASE9_QUALITY_GATE.md` records the PASS result.
+- Final gates: 238 backend tests, 191 frontend tests, production build, lint,
+  typecheck, migration round-trip/drift checks, real API smoke and Playwright
+  (96 passed, 2 skipped) all pass.
 
 ## Technical debt / notes
 
@@ -264,8 +293,8 @@ check` and `head → base → head` are integration-tested.
 | Suite                                    | Count        | Last result                                        |
 | ---------------------------------------- | ------------ | -------------------------------------------------- |
 | Backend unit (pytest)                    | 168          | pass                                               |
-| Backend integration (pytest, live infra) | 68           | pass                                               |
-| Frontend (vitest)                        | 188          | pass                                               |
+| Backend integration (pytest, live infra) | 70           | pass                                               |
+| Frontend (vitest)                        | 191          | pass                                               |
 | E2E (playwright)                         | 48 specs × 2 | 96 pass locally; requires running stack + browsers |
 | Evaluation                               | 0            | reserved directory                                 |
 
@@ -274,15 +303,16 @@ Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all 
 ## Deployment state
 
 Local only: stack verified 2026-09-20 with all five services healthy after
-rebuilding the API image (migration `0004` applied; ingestion status endpoint
+rebuilding the API image (migration `0005` applied; ingestion status endpoint
 live). Git:
 Phase 6 tag `phase-6-complete` = `bdf7293`. Phase 5B is on `feat/phase-5b-visual-parity`, tag
 `phase-5b-complete`, not pushed. Phase 5B and Phase 7 were
 fast-forwarded into `main` on 2026-09-20: `main` = `origin/main` = `96e402a`,
 tags `phase-5b-complete` and `phase-7-complete` pushed. No remote deployment
-or production workflow. Phase 8 is complete on `feat/phase-8-parsing-search`;
-local tag `phase-8-complete` marks its final documentation checkpoint. Neither
-the branch nor tag has been pushed or merged.
+or production workflow. Phase 9 is complete on
+`feat/phase-9-real-evidence-network-timeline`; local tag `phase-9-complete`
+marks its final documentation checkpoint. The Phase 9 branch/tag have not been
+pushed or merged.
 
 ## Verification limitations
 
@@ -300,3 +330,7 @@ hearings 2 · transcripts 3 · MinIO objects 22 · indexed documents 19 · pages
 14,205 (23 resolved · 0 ambiguous · 14,105 unresolved · 77 invalid) · failed 0.
 Bytes came from the operator's browser downloads matched by SHA-256; the
 pipeline itself fetched nothing from the court site (ADR-011).
+
+Phase 9 projection: graph nodes 13 · citation-backed edges 22 · source-backed
+timeline events 19 (document 11 · decision 6 · testimony 2). No additional
+record was ingested.

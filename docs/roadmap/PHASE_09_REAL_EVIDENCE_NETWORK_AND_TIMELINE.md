@@ -1,6 +1,13 @@
 # Phase 9 — Real Evidence Network & Timeline
 
-**Status:** Pending.
+**Status:** Complete.
+
+**Completed:** 2026-09-21.
+
+**Completion commit:** `548a151` (final verified code/test baseline; the
+subsequent roadmap closeout commit records completion metadata).
+
+**Completion tag:** `phase-9-complete`.
 
 ## Goal
 
@@ -150,13 +157,13 @@ Test:
 
 ## Acceptance criteria
 
-- real graph data replaces demo graph for the controlled corpus;
-- every edge can answer “why does this connection exist?”;
-- Evidence Path uses only auditable hops;
-- timeline is based on real structured dates;
-- graph performance is acceptable;
-- neutrality/safety wording remains intact;
-- tests pass.
+- [x] real graph data replaces demo graph for the controlled corpus;
+- [x] every edge can answer “why does this connection exist?”;
+- [x] Evidence Path uses only auditable hops;
+- [x] timeline is based on real structured dates;
+- [x] graph performance is acceptable;
+- [x] neutrality/safety wording remains intact;
+- [x] tests pass.
 
 ## Stop condition
 
@@ -178,3 +185,37 @@ COMMITS
 NEXT
 MEMORY
 ```
+
+## Completion Record
+
+- Closeout audit: **PASS**, 2026-09-21. Every requirement and acceptance
+  criterion above was re-read and checked against migration `0005`, committed
+  implementation, automated tests, the live real-case database/API, and the
+  pinned controlled-corpus quality report.
+- Real graph: 23 resolved citations inspected; one self-citation omitted; 13
+  public document nodes and 22 deterministic `CITED_IN` edges created. Every
+  edge has a resolved citation, exact persisted source occurrence, source
+  category, verification state and extraction origin; zero analytical,
+  unsupported, self, or citation-less edges were created.
+- Evidence Path: bounded deterministic breadth-first search uses only public,
+  resolved, non-rejected, non-analytical edges. Every returned hop carries its
+  own target citation and exact citing-source coordinates. The required
+  neutrality warning remains verbatim.
+- Timeline: 19 source-record-backed events from persisted metadata — 11 document
+  dates, 6 decisions/orders, and 2 testimony dates. All controlled-corpus dates
+  are explicitly exact; UI tests verify approximate/range presentation without
+  inventing dates. Categories absent from the corpus remain absent.
+- UI/API: Network Explorer, Evidence Path and Timeline server-load the API in
+  real mode. Search, source, verification, from/to date, entity and relationship
+  controls, inspectors, expand/collapse, isolate, reset, exact-source links and
+  textual alternative are present. Demo content is suppressed in real mode.
+- Scale: measured at 13 nodes / 22 edges. The accessible SVG engine is retained;
+  no synthetic large-graph test or WebGL dependency is warranted at this scale.
+- Tests/gates: `make lint`, `make typecheck`, `make test`, `make build`, and
+  `make e2e` passed: 238 backend, 191 frontend, and 96 Playwright checks passed
+  (2 desktop-only mobile checks skipped by design). Migration round-trip/model
+  drift and a real API smoke test passed at migration head `0005`.
+- Scope: no additional court material was fetched, the corpus was not expanded,
+  and no Phase 10 matrix or AI analysis was implemented.
+- Evidence: `docs/ingestion/PHASE9_QUALITY_GATE.md` and
+  `docs/ingestion/manifests/phase9-controlled-corpus-quality.json`.
