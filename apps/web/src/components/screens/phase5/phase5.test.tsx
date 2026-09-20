@@ -1,8 +1,9 @@
 import "@/test/next-mocks";
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { messagesEn, renderWithProviders } from "@/test/render";
+import { exhibitCitation } from "@/mock";
 import { DirectoryScreen } from "./DirectoryScreen";
 import { WitnessDossierScreen } from "./DossierScreens";
 import {
@@ -25,6 +26,7 @@ describe("Phase 5 safety contracts", () => {
     renderWithProviders(<NetworkScreen />);
     expect(screen.getAllByText(messagesEn.footer.network).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(messagesEn.phase5.whyConnection)).toBeInTheDocument();
+    expect(screen.getByText(messagesEn.phase5.graphTextAlternative)).toBeInTheDocument();
     expect(screen.getByText("Exhibit P00123 · p. 4")).toBeInTheDocument();
   });
 
@@ -55,6 +57,55 @@ describe("Phase 5 safety contracts", () => {
     expect(inspectorToggle.closest("details")).toHaveAttribute("open");
     await user.click(inspectorToggle);
     expect(inspectorToggle.closest("details")).not.toHaveAttribute("open");
+  });
+
+  it("filters real network edges by both date-range bounds", () => {
+    const { container } = renderWithProviders(
+      <NetworkScreen
+        initialNetwork={{
+          nodes: [
+            { id: "a", label: "A", type: "court", x: 10, y: 10, entityKind: "document" },
+            { id: "b", label: "B", type: "court", x: 40, y: 40, entityKind: "document" },
+            { id: "c", label: "C", type: "court", x: 70, y: 70, entityKind: "document" },
+          ],
+          edges: [
+            {
+              id: "old",
+              from: "a",
+              to: "b",
+              relation: "cited_in",
+              sourceType: "court",
+              citation: exhibitCitation,
+              verification: "verified",
+              relationshipDate: "2024-01-01",
+            },
+            {
+              id: "new",
+              from: "b",
+              to: "c",
+              relation: "cited_in",
+              sourceType: "court",
+              citation: exhibitCitation,
+              verification: "verified",
+              relationshipDate: "2025-01-01",
+            },
+          ],
+        }}
+      />,
+    );
+    expect(container.querySelectorAll("main svg line")).toHaveLength(2);
+    fireEvent.change(screen.getByRole("slider", { name: messagesEn.phase5b.from }), {
+      target: { value: "2025" },
+    });
+    expect(container.querySelectorAll("main svg line")).toHaveLength(1);
+    fireEvent.change(screen.getByRole("slider", { name: messagesEn.phase5b.from }), {
+      target: { value: "2024" },
+    });
+    expect(container.querySelectorAll("main svg line")).toHaveLength(2);
+    fireEvent.change(screen.getByRole("slider", { name: messagesEn.phase5b.to }), {
+      target: { value: "2024" },
+    });
+    expect(container.querySelectorAll("main svg line")).toHaveLength(1);
   });
 
   it("renders the evidence path constraint and non-inference card", () => {
