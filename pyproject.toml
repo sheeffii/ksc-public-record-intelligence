@@ -17,6 +17,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106", "S608"]
+"workers/ingestion/src/ksc_ingestion/cli.py" = ["T201"]
 "apps/api/alembic/**" = ["N999"]
 
 [tool.ruff.lint.isort]
@@ -29,17 +30,17 @@ quote-style = "double"
 python_version = "3.12"
 strict = true
 warn_unreachable = true
-mypy_path = "apps/api/src"
-packages = ["ksc_api"]
+mypy_path = "apps/api/src:workers/ingestion/src"
+packages = ["ksc_api", "ksc_ingestion"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["minio", "minio.*"]
+module = ["minio", "minio.*", "pypdf", "pypdf.*", "bs4", "bs4.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests/unit", "tests/integration"]
-pythonpath = ["apps/api/src", "tests"]
+pythonpath = ["apps/api/src", "workers/ingestion/src", "tests"]
 addopts = "-ra --strict-markers"
 markers = [
   "integration: requires live PostgreSQL/Redis/MinIO (see docs/DEVELOPMENT.md)",

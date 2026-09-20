@@ -33,6 +33,7 @@ setup: ## Install Python venv + Node dependencies
 	@test -d .venv || python3 -m venv .venv
 	$(PIP) install --upgrade pip
 	$(PIP) install -e "apps/api[dev]"
+	$(PIP) install -e workers/ingestion
 	pnpm install
 
 # ---------------------------------------------------------------- run ------

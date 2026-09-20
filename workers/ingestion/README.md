@@ -1,14 +1,32 @@
-# workers/ingestion
+# workers/ingestion — `ksc_ingestion`
 
-Placeholder. No ingestion code exists in Phase 4.
+Controlled, public-only ingestion of official KSC records (roadmap Phase 7).
 
-Planned pipeline (docs/INGESTION.md):
-
+```text
+sources.py    official host allowlist; URL classification / canonicalization
+fetch.py      identified HTTP client: robots, pacing, challenge → fail closed
+discovery.py  DiscoveredRecord / DiscoveredArtifact contract; visibility gate
+normalize.py  official refs, version types, dates, parties (never guesses)
+capture.py    operator capture bundle: manifest schema, validation, discovery
+artifacts.py  SHA-256, MIME sniff, PDF validation (page count, case number)
+storage.py    object store (MinIO / in-memory), hash-addressed keys
+pipeline.py   Ingestor: SourceRecord → Document → DocumentVersion → job items
+probe.py      one live request; a challenge becomes a recorded failure
+cli.py        ksc-ingest bundle | probe | status
 ```
-discover → download (official public URLs only) → verify hash → store (MinIO)
-→ parse → segment → extract citations → resolve citations → persist resolution index
+
+Commands (host side, `make infra` running):
+
+```bash
+.venv/bin/ksc-ingest bundle data/captures/<bundle-id> --dry-run   # report only
+.venv/bin/ksc-ingest bundle data/captures/<bundle-id>             # ingest / resume
+.venv/bin/ksc-ingest probe "https://repository.scp-ks.org/..." --record
+.venv/bin/ksc-ingest status
 ```
 
-Nothing in this package may bypass access controls, guess URLs, or reconstruct
-redactions. Controlled, per-document ingestion precedes any corpus-wide run
-(ADR-003).
+Rules: official hosts only; a bot-mitigation challenge is an access control and
+is reported, never bypassed (ADR-011); nothing non-public is fetched or stored;
+UNKNOWN visibility fails closed; identical bytes are a duplicate, not a version;
+a version holding different bytes is never overwritten. See
+`docs/INGESTION.md`, `docs/ingestion/OFFICIAL_SOURCES.md`,
+`docs/ingestion/OPERATOR_CAPTURE.md`.

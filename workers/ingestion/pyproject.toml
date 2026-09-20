@@ -5,9 +5,20 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ksc-ingestion-worker"
 version = "0.1.0"
-description = "KSC Public Record Intelligence — ingestion worker (placeholder; not active in Phase 4)"
+description = "KSC Public Record Intelligence — controlled public-record ingestion (Phase 7)"
 requires-python = ">=3.12"
-dependencies = ["ksc-api"]
+dependencies = [
+  "ksc-api",
+  "httpx>=0.28,<1",
+  "pypdf>=6,<7",
+  "beautifulsoup4>=4.13,<5",
+]
+
+[project.scripts]
+ksc-ingest = "ksc_ingestion.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+ksc_ingestion = ["py.typed"]
