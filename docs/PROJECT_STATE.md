@@ -244,11 +244,10 @@ Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all 
 Local only: stack verified 2026-09-20 with all five services healthy after
 rebuilding the API image (migration `0003` applied; ingestion status endpoint
 live). Git:
-Phase 6 is on `main` = `origin/main` = `bdf7293` (tag `phase-6-complete`,
-pushed). Phase 5B is on `feat/phase-5b-visual-parity`, tag
-`phase-5b-complete`, not pushed. Phase 7 is on
-`feat/phase-7-controlled-ingestion` (from `eaeb4ce`), tag `phase-7-complete`,
-not pushed. No remote deployment
+Phase 6 tag `phase-6-complete` = `bdf7293`. Phase 5B is on `feat/phase-5b-visual-parity`, tag
+`phase-5b-complete`, not pushed. Phase 5B and Phase 7 were
+fast-forwarded into `main` on 2026-09-20: `main` = `origin/main` = `96e402a`,
+tags `phase-5b-complete` and `phase-7-complete` pushed. No remote deployment
 or production workflow.
 
 ## Verification limitations

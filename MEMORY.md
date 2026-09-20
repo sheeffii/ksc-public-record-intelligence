@@ -4,15 +4,15 @@ Live checkpoint. Answers “where exactly did we stop?”. Keep concise; no logs
 
 ## Current Status
 
-Current branch: `feat/phase-7-controlled-ingestion` (cut from `eaeb4ce`, the
-Phase 5B checkpoint on `feat/phase-5b-visual-parity`; 5B itself is not on `main`).
+Current branch: `feat/phase-7-controlled-ingestion` — fully merged (fast-forward)
+into `main`; `main` = `origin/main` = `96e402a` (pushed 2026-09-20 on explicit
+instruction). 5B and 7 are both on `main`.
 Phase 7 commits: `86fbcfa` feat(api) · `fc4304b` feat(ingestion) · `448f5fb` docs ·
 `f6ba449` feat(ingestion) real corpus · `7a867c9` test(ingestion) · `4979fc3` docs;
-tag `phase-7-complete` → HEAD of this branch (`git rev-parse phase-7-complete`).
-Tags: `phase-7-complete` · `phase-5b-complete` → `eaeb4ce` · `phase-6-complete` →
-`bdf7293` (on `main`, pushed) · `phase-5-complete` · `phase-4-complete`.
-Remote: `main` = `origin/main` = `bdf7293`. Nothing since is pushed; never push
-without explicit instruction.
+`3d05c4f` feat(ingestion) export-corpus · `96e402a` docs manifest.
+Tags (all pushed): `phase-7-complete` → `96e402a` · `phase-5b-complete` → `eaeb4ce`
+· `phase-6-complete` → `bdf7293` · `phase-5-complete` · `phase-4-complete`.
+Remote: `main` = `origin/main` = `96e402a`. Never push without explicit instruction.
 Migration head: `0003`.
 Roadmap: `docs/roadmap/`.
 Current milestone: **Phase 7 — COMPLETE (2026-09-20).** 22 real public records
