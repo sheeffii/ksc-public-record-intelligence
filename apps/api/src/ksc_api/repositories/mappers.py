@@ -154,9 +154,11 @@ def to_document_version(version: DocumentVersion) -> DocumentVersionRead:
         visibility=version.visibility,
         public_date=version.public_date,
         source_url=version.source_url,
+        artifact_status=version.artifact_status,
         sha256=version.sha256,
         mime_type=version.mime_type,
         page_count=version.page_count,
+        fetched_at=version.fetched_at,
         supersedes_version_ref=(
             version.supersedes.official_version_ref if version.supersedes is not None else None
         ),

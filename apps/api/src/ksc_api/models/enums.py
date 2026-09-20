@@ -263,3 +263,43 @@ class IngestionJobStatus(enum.StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+
+
+class ArtifactStatus(enum.StrEnum):
+    """Whether the bytes of a document version are held. A version may exist
+    as metadata only — official detail URL + official artifact URL — without
+    the PDF having been fetched (Phase 7): NOT_FETCHED. FETCHED requires a
+    SHA-256 and a storage key (schema CHECK). FAILED records that a fetch was
+    attempted and did not yield a stored artifact; the reason lives on the
+    ingestion job item."""
+
+    NOT_FETCHED = "not_fetched"
+    FETCHED = "fetched"
+    FAILED = "failed"
+
+
+class IngestionItemStatus(enum.StrEnum):
+    """Outcome of one record within an ingestion job. Failures are persisted
+    here, never dropped (roadmap Phase 7 — failure handling)."""
+
+    PENDING = "pending"
+    DOWNLOADED = "downloaded"
+    METADATA_ONLY = "metadata_only"
+    SKIPPED_DUPLICATE = "skipped_duplicate"
+    NOT_PUBLIC = "not_public"
+    FAILED_DOWNLOAD = "failed_download"
+    BLOCKED_BY_ACCESS_CONTROL = "blocked_by_access_control"
+    INVALID_METADATA = "invalid_metadata"
+    UNSUPPORTED_ARTIFACT = "unsupported_artifact"
+    AMBIGUOUS_MAPPING = "ambiguous_mapping"
+
+
+INGESTION_FAILURE_STATUSES: frozenset[IngestionItemStatus] = frozenset(
+    {
+        IngestionItemStatus.FAILED_DOWNLOAD,
+        IngestionItemStatus.BLOCKED_BY_ACCESS_CONTROL,
+        IngestionItemStatus.INVALID_METADATA,
+        IngestionItemStatus.UNSUPPORTED_ARTIFACT,
+        IngestionItemStatus.AMBIGUOUS_MAPPING,
+    }
+)

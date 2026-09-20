@@ -18,13 +18,15 @@ from __future__ import annotations
 
 import enum
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Date,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
@@ -38,6 +40,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ksc_api.db.base import Base
 from ksc_api.models.case import Case
 from ksc_api.models.enums import (
+    ArtifactStatus,
     DocumentVersionType,
     Party,
     TextExtractionMethod,
@@ -126,6 +129,13 @@ class DocumentVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint(
             "supersedes_version_id IS NULL OR supersedes_version_id <> id", name="no_self_supersede"
         ),
+        # Bytes are held exactly when the version is FETCHED; a metadata-only
+        # version (NOT_FETCHED) carries the official URLs and nothing else.
+        CheckConstraint(
+            "(artifact_status = 'fetched') = (sha256 IS NOT NULL AND storage_key IS NOT NULL)",
+            name="fetched_has_hash_and_object",
+        ),
+        CheckConstraint("byte_size IS NULL OR byte_size >= 0", name="byte_size_non_negative"),
     )
 
     document_id: Mapped[uuid.UUID] = mapped_column(
@@ -148,13 +158,25 @@ class DocumentVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     public_date: Mapped[date | None] = mapped_column(Date)
 
-    # Provenance of the bytes held for this version. Populated only by a later,
-    # controlled ingestion phase — and only from official public URLs.
+    # Provenance of the bytes held for this version — only ever from official
+    # public URLs (docs/SECURITY.md). `source_url` is the official artifact URL
+    # and is recorded even when the bytes have not been fetched.
     source_url: Mapped[str | None] = mapped_column(String(1024))
+    artifact_status: Mapped[ArtifactStatus] = mapped_column(
+        db_enum(ArtifactStatus, name="artifact_status"),
+        nullable=False,
+        default=ArtifactStatus.NOT_FETCHED,
+        server_default=ArtifactStatus.NOT_FETCHED.value,
+    )
     storage_key: Mapped[str | None] = mapped_column(String(512))
     sha256: Mapped[str | None] = mapped_column(String(64))
     mime_type: Mapped[str | None] = mapped_column(String(128))
+    byte_size: Mapped[int | None] = mapped_column(BigInteger)
     page_count: Mapped[int | None] = mapped_column(Integer)
+    # When and how the bytes were obtained (e.g. "operator_browser_capture",
+    # "http"). Discovery provenance lives on `source_records`.
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    fetch_method: Mapped[str | None] = mapped_column(String(64))
     text_extraction_method: Mapped[TextExtractionMethod] = mapped_column(
         db_enum(TextExtractionMethod, name="text_extraction_method"),
         nullable=False,

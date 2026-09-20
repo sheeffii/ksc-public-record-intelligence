@@ -24,10 +24,12 @@ from ksc_api.models.document import (
     DocumentVersion,
 )
 from ksc_api.models.enums import (
+    INGESTION_FAILURE_STATUSES,
     PUBLIC_VISIBILITIES,
     AiRunStatus,
     AnswerBlockKind,
     ArgumentResponseKind,
+    ArtifactStatus,
     CitationType,
     ClaimOrigin,
     ClaimStance,
@@ -38,6 +40,7 @@ from ksc_api.models.enums import (
     ExaminationType,
     FindingLinkType,
     IdentifierKind,
+    IngestionItemStatus,
     IngestionJobStatus,
     Party,
     RelationshipType,
@@ -62,11 +65,12 @@ from ksc_api.models.evidence import (
 )
 from ksc_api.models.graph import NODE_FK_COLUMNS, GraphNode, Relationship
 from ksc_api.models.hearing import Hearing, Transcript, TranscriptSegment, WitnessAppearance
-from ksc_api.models.ingestion import IngestionJob
+from ksc_api.models.ingestion import IngestionJob, IngestionJobItem
 from ksc_api.models.research import ResearchNote, ResearchNoteCitation
 from ksc_api.models.source_record import SourceRecord
 
 __all__ = [
+    "INGESTION_FAILURE_STATUSES",
     "NODE_FK_COLUMNS",
     "PUBLIC_VISIBILITIES",
     "UNRESOLVED_DISPLAY",
@@ -78,6 +82,7 @@ __all__ = [
     "Argument",
     "ArgumentResponse",
     "ArgumentResponseKind",
+    "ArtifactStatus",
     "AuditLog",
     "Case",
     "Citation",
@@ -106,7 +111,9 @@ __all__ = [
     "Hearing",
     "IdentifierKind",
     "Incident",
+    "IngestionItemStatus",
     "IngestionJob",
+    "IngestionJobItem",
     "IngestionJobStatus",
     "Location",
     "Organization",

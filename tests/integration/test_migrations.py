@@ -1,4 +1,4 @@
-"""Migration path: 0001 → 0002 preserves Phase 4 data; downgrade and
+"""Migration path: 0001 → 0002 → 0003 preserves Phase 4 data; downgrade and
 re-upgrade are clean; the models match the migrated schema exactly.
 
 Runs last among the data tests (file name) and leaves the database at head.
@@ -106,6 +106,6 @@ def test_downgrade_to_base_and_reupgrade(migrated_database_url):
             inspect(engine).get_table_names()
         )
         with engine.connect() as conn:
-            assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0002"
+            assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0003"
     finally:
         engine.dispose()

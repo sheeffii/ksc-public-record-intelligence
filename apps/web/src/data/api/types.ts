@@ -55,6 +55,8 @@ export interface ApiCitation {
   verification_state: ApiVerificationState;
 }
 
+export type ApiArtifactStatus = "not_fetched" | "fetched" | "failed";
+
 export interface ApiDocumentVersion {
   official_version_ref: string;
   version_type: string;
@@ -62,9 +64,12 @@ export interface ApiDocumentVersion {
   visibility: ApiVisibility;
   public_date: string | null;
   source_url: string | null;
+  /** `not_fetched`: official URLs recorded, bytes not held (metadata-only). */
+  artifact_status: ApiArtifactStatus;
   sha256: string | null;
   mime_type: string | null;
   page_count: number | null;
+  fetched_at: string | null;
   supersedes_version_ref: string | null;
 }
 

@@ -20,6 +20,7 @@ from ksc_api.models import (
 )
 
 PHASE4_TABLES = {"cases", "documents", "audit_log"}
+PHASE7_TABLES = {"ingestion_job_items"}
 PHASE6_TABLES = {
     "source_records",
     "document_versions",
@@ -64,7 +65,7 @@ def _checks(table_name: str) -> set[str]:
 
 
 def test_schema_contains_phase4_foundation_and_phase6_evidence_model():
-    assert set(Base.metadata.tables) == PHASE4_TABLES | PHASE6_TABLES
+    assert set(Base.metadata.tables) == PHASE4_TABLES | PHASE6_TABLES | PHASE7_TABLES
 
 
 def test_document_keeps_the_three_date_types_separate():

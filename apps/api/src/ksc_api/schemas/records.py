@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Literal
 
 from pydantic import Field, SerializerFunctionWrapHandler, model_serializer
 
 from ksc_api.models.enums import (
+    ArtifactStatus,
     ClaimOrigin,
     ClaimStance,
     DatePrecision,
@@ -60,9 +61,12 @@ class DocumentVersionRead(ReadModel):
     visibility: Visibility
     public_date: date | None
     source_url: str | None
+    # NOT_FETCHED: the official URLs are known but the bytes are not held.
+    artifact_status: ArtifactStatus
     sha256: str | None
     mime_type: str | None
     page_count: int | None
+    fetched_at: datetime | None
     supersedes_version_ref: str | None
 
 

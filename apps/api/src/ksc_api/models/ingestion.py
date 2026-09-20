@@ -1,4 +1,10 @@
-"""IngestionJob — schema foundation only. No job runs in Phase 6."""
+"""IngestionJob and IngestionJobItem.
+
+A job is one run over one source (a captured bundle, a live probe, …). Every
+record the run touches becomes an item with a terminal status, so failures are
+visible rows rather than log lines, and a re-run can resume by skipping items
+that already reached a terminal state.
+"""
 
 from __future__ import annotations
 
@@ -6,12 +12,20 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ksc_api.db.base import Base
-from ksc_api.models.enums import IngestionJobStatus, SourceSystem, db_enum
+from ksc_api.models.enums import IngestionItemStatus, IngestionJobStatus, SourceSystem, db_enum
 from ksc_api.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 
@@ -56,3 +70,48 @@ class IngestionJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error_summary: Mapped[str | None] = mapped_column(Text)
+
+    items: Mapped[list[IngestionJobItem]] = relationship(
+        back_populates="job", cascade="all, delete-orphan", order_by="IngestionJobItem.sequence"
+    )
+
+
+class IngestionJobItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ingestion_job_items"
+    __table_args__ = (
+        UniqueConstraint("job_id", "item_key", name="uq_ingestion_job_items_job_key"),
+        CheckConstraint("sequence >= 0", name="sequence_non_negative"),
+    )
+
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ingestion_jobs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # Stable key of the record within the source (external record id / URL).
+    item_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[IngestionItemStatus] = mapped_column(
+        db_enum(IngestionItemStatus, name="ingestion_item_status"),
+        nullable=False,
+        default=IngestionItemStatus.PENDING,
+        server_default=IngestionItemStatus.PENDING.value,
+    )
+    reason: Mapped[str | None] = mapped_column(Text)
+    # Identifiers, URLs, hashes and per-artifact outcomes — never document text
+    # (docs/SECURITY.md logging rule).
+    detail: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    source_record_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("source_records.id", ondelete="SET NULL")
+    )
+    document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("documents.id", ondelete="SET NULL")
+    )
+    document_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="SET NULL")
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    job: Mapped[IngestionJob] = relationship(back_populates="items")
