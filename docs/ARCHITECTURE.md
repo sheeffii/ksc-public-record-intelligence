@@ -30,7 +30,7 @@ around "AI memory"; AI memory is not evidence.
 ```
 apps/web            Next.js 16 · React 19 · TypeScript strict · Tailwind 4 · next-intl · next-themes
 apps/api            FastAPI · Pydantic v2 · SQLAlchemy 2 · Alembic · psycopg 3
-workers/ingestion   placeholder — controlled ingestion pipeline (Phase 6+)
+workers/ingestion   ksc_ingestion — controlled public-only ingestion (Phase 7)
 workers/analysis    placeholder — embeddings / retrieval / AI analysis (later)
 packages/shared     TypeScript contract types (Citation, VerificationState, Witness, …)
 packages/prompts    reserved for versioned prompt templates (empty)
@@ -125,20 +125,23 @@ rate limiting. Only connectivity is verified in Phase 4.
 
 ## Workers
 
-Two placeholder packages. Neither contains executable pipeline code:
-
-- **ingestion** — discover → download (official public URLs only) → hash → store →
-  parse → segment → extract citations → resolve → persist the resolution index.
-- **analysis** — embeddings, retrieval, AI analysis, relationship extraction,
+- **ingestion** (`workers/ingestion`, package `ksc_ingestion`, CLI
+  `ksc-ingest`) — Phase 7: operator capture bundle → discovery provenance
+  (`source_records`) → normalization → public-only gate → SHA-256 → MinIO →
+  `documents` / `document_versions` (+ hearings / transcripts) → job items and
+  audit log. Official hosts only; a bot-mitigation challenge is a recorded
+  failure, never bypassed (ADR-011). Parsing, citation extraction and
+  resolution are Phase 8. See docs/INGESTION.md.
+- **analysis** (placeholder) — embeddings, retrieval, AI analysis, relationship extraction,
   potential-issue surfacing. All output is `AI ANALYSIS`, cited, and withheld when
   any citation is `UNRESOLVED`.
 
 ## Future layers
 
-### Ingestion (docs/INGESTION.md)
+### Ingestion beyond Phase 7 (docs/INGESTION.md)
 
-Controlled, per-document, auditable. A single document end to end before any
-corpus-wide run (ADR-003).
+Parsing, segmentation, citation extraction and the wider corpus remain later
+phases. Controlled, per-document, auditable (ADR-003).
 
 ### Citation resolution index (ADR-005)
 

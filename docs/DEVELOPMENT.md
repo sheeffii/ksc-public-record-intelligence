@@ -77,9 +77,26 @@ make demo-fixture   # synthetic KSC-DEMO-0000 evidence graph (idempotent)
 ```
 
 The demo fixture (`apps/api/src/ksc_api/fixtures/demo.py`) is the only data the
-read API has until Phase 7. Everything in it is visibly synthetic
-(`F-DEMO-001`, `W-DEMO-001`, `P-DEMO-001`, `example.invalid` URLs). To point the
-API at it set `CASE_ID=KSC-DEMO-0000`; the tests do this themselves.
+read API has until real records are ingested. Everything in it is visibly
+synthetic (`F-DEMO-001`, `W-DEMO-001`, `P-DEMO-001`, `example.invalid` URLs). To
+point the API at it set `CASE_ID=KSC-DEMO-0000`; the tests do this themselves.
+
+### Ingestion (Phase 7)
+
+```bash
+.venv/bin/pip install -e workers/ingestion                          # once (make setup does it)
+.venv/bin/ksc-ingest bundle data/captures/<bundle-id> --dry-run     # validate + report
+.venv/bin/ksc-ingest bundle data/captures/<bundle-id>               # ingest (resumable, idempotent)
+.venv/bin/ksc-ingest status                                          # jobs, items, held versions
+.venv/bin/ksc-ingest probe "https://repository.scp-ks.org/…" --record
+curl -s localhost:8000/api/v1/ingestion/status | jq .counts
+```
+
+Host-side runs need `DATABASE_URL` / `MINIO_ENDPOINT` pointing at localhost
+(as `make` targets do). Capture bundles are built by a human in a browser —
+`docs/ingestion/OPERATOR_CAPTURE.md`; nothing under `data/` is committed. The
+integration tests ingest a synthetic bundle (`tests/support/synthetic.py`) into
+`KSC-DEMO-0000` and the `ksc-documents-test` bucket.
 
 The web app reads bundled mock data by default. To read the API instead:
 

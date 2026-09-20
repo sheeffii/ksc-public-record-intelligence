@@ -401,3 +401,81 @@ Relevant files:
 `apps/api/src/ksc_api/models/{graph,citation,enums,mixins,document}.py`,
 `apps/api/alembic/versions/0002_evidence_model.py`,
 `tests/integration/{test_constraints,test_migrations}.py`
+
+---
+
+## ADR-011 — Official sites are behind a bot-mitigation challenge; ingestion is operator-assisted capture
+
+Date: 2026-09-20
+
+Status: Accepted
+
+Context:
+Phase 7 is the first contact with real KSC material. On 2026-09-20 every
+official public surface — `www.scp-ks.org`, `repository.scp-ks.org` detail
+pages and direct PDF paths, and both hosts' `robots.txt` — answered an
+identified, rate-limited HTTP client (and the agent's fetch tool) with
+`HTTP 403`, `cf-mitigated: challenge` and a Cloudflare JavaScript challenge
+page (docs/ingestion/OFFICIAL_SOURCES.md). The project rules (docs/SECURITY.md,
+master roadmap "Public-only rule", PHASE_07 "never defeat robots/access
+controls") make the challenge an access control.
+
+Decision:
+
+1. **No challenge is ever solved or evaded.** No headless-browser automation to
+   pass challenges, no browser User-Agent or cookie spoofing, no proxy or
+   "unblocker" services, no third-party mirrors as substitutes. `HttpFetcher`
+   detects a challenge (`cf-mitigated` header or a 403/503 challenge page),
+   raises `AccessControlBlockedError` and does not retry. An unreadable
+   `robots.txt` closes the whole host (fail closed).
+2. **Records enter through operator capture bundles.** A human opens the
+   official site in an ordinary browser — the way the public is meant to —
+   saves the listing / detail pages and downloads the public PDFs, and writes a
+   manifest with the official URL of every file
+   (docs/ingestion/OPERATOR_CAPTURE.md). The pipeline validates the bundle
+   (official hosts only, no path escapes), hashes, stores and persists
+   provenance. `document_versions.fetch_method = operator_browser_capture`
+   records how the bytes were obtained; `source_records.raw_metadata.capture`
+   records who, when and with what.
+3. **Metadata comes from the official page first.** A parser for saved PCR
+   detail pages (`DetailPageParser`) is preferred; manifest-typed metadata is
+   accepted but flagged (`metadata_source = operator_manifest`); synthetic
+   fixtures are flagged `synthetic_fixture` and can never describe a real
+   record. Until the parser exists (it is written against real saved pages,
+   not guesses) a saved page without manifest metadata is a visible
+   `invalid_metadata` failure.
+4. **Metadata-only records are first-class.** `document_versions.artifact_status`
+   (`not_fetched | fetched | failed`) lets a version exist with its official
+   detail URL and official artifact URL while its bytes are not held; the
+   schema ties `fetched` to a SHA-256 and a storage key.
+5. **Failures are rows.** `ingestion_job_items` records every record a job
+   touched with a terminal status (`downloaded`, `metadata_only`,
+   `skipped_duplicate`, `not_public`, `failed_download`,
+   `blocked_by_access_control`, `invalid_metadata`, `unsupported_artifact`,
+   `ambiguous_mapping`); `ksc-ingest probe --record` persists a live block the
+   same way. Each item commits alone, so a crash leaves a resumable job.
+
+Alternatives:
+
+- Solving the challenge with a real browser engine under automation —
+  rejected: defeats an access control, regardless of the material being public.
+- Wayback Machine / third-party copies — rejected as provenance: the official
+  source exists and is reachable by humans; copies are not authoritative.
+- Waiting for the court to expose an API — not available; nothing indicates
+  one exists for the public UI (unverified until pages are inspected).
+
+Consequences:
+
+- Phase 7 cannot ingest a single real record without a human capture session;
+  the 10–20-record corpus is assembled by the operator, and the quality gate
+  is a human check of the pipeline's output against the saved official pages.
+- The live fetcher exists for probing and for a future in which the court
+  admits identified clients; enabling it for ingestion needs a new ADR.
+- Provenance now distinguishes discovery (source record), capture (who / how /
+  when) and bytes (hash / object) — three layers, none overwriting another.
+
+Relevant files:
+`workers/ingestion/src/ksc_ingestion/{fetch,capture,pipeline,probe,sources}.py`,
+`apps/api/alembic/versions/0003_ingestion_provenance.py`,
+`docs/ingestion/{OFFICIAL_SOURCES,OPERATOR_CAPTURE}.md`,
+`tests/unit/ingestion/`, `tests/integration/test_ingestion_pipeline.py`

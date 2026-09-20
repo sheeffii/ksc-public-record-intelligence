@@ -1,71 +1,104 @@
 # Ingestion
 
-**Status: not implemented.** No crawler, downloader, parser, OCR or indexer exists.
-Ingestion counts are 0. This document is the plan and the rules.
+**Status (Phase 7, 2026-09-20): pipeline implemented and tested against a
+synthetic corpus; real-record counts are 0 pending operator capture.** No
+crawler runs: the official sites answer automated clients with a Cloudflare
+challenge, which is an access control (ADR-011,
+`docs/ingestion/OFFICIAL_SOURCES.md`). Records enter through operator capture
+bundles (`docs/ingestion/OPERATOR_CAPTURE.md`).
 
 ## Rules that precede any code
 
-- Official public sources only (docs/SECURITY.md). Never bypass access controls,
-  never guess URLs, never reconstruct redactions.
-- Controlled before bulk (ADR-003): one document end to end, human-checked, before
-  any corpus-wide run.
-- Every stored object carries `source_url`, `sha256`, fetch time and an audit-log
-  entry.
-- Respect the court website: rate limits, robots rules, identifying user agent,
-  no parallel hammering.
+- Official public sources only (docs/SECURITY.md): `www.scp-ks.org`,
+  `repository.scp-ks.org`. Never bypass access controls or challenges, never
+  guess URLs, never reconstruct redactions, never infer a protected identity.
+- Controlled before bulk (ADR-003): 10–20 human-selected records, each
+  human-checked, before any wider run (Phase 13).
+- Every stored object carries the official artifact URL, SHA-256, byte size,
+  fetch time, fetch method and an audit-log entry.
+- Respect the court website: identified user agent, one request at a time,
+  robots first. If robots cannot be read, the host is closed.
 
-## Planned pipeline
+## Pipeline (`workers/ingestion`, `ksc_ingestion`)
 
+```text
+discover     capture bundle → DiscoveredRecord (official detail URL, listing URL,
+             external record id, metadata snapshot, artifacts with official URLs)
+source       upsert source_records (case, source_system, external_record_id):
+             discovery provenance, kept separate from the entity and the file
+normalize    official_ref / filing_number / version refs / version type /
+             party / dates; visibility from the classification text, fail closed
+gate         PUBLIC or PUBLIC_REDACTED only; NOT_PUBLIC / UNKNOWN → the document
+             is *stated* (identifier known, nothing held), never fetched
+bytes        captured file → PDF check → SHA-256 → object storage
+             documents/<case>/<version ref>/<sha256>.pdf (hash-addressed, never overwritten)
+persist      documents (case, official_ref) · document_versions (document,
+             official_version_ref) · hearings / transcripts for transcript records
+job          ingestion_jobs (cursor, checkpoint, counts) · ingestion_job_items
+             (one terminal status per record) · audit_log
 ```
-discover      list public filings/decisions/transcripts/exhibits for the case
-download      fetch one official public URL; verify content type; hash
-store         MinIO object under documents/<official_ref>/<sha256>.pdf
-parse         text + layout per page; running heads; page numbers; footnotes
-segment       paragraphs (¶), transcript Q/A blocks with T. page + line ranges
-redactions    detect and record extents; never fill
-extract       raw citations: F#####, F#####/RED, P#####, D#####, W#####,
-              ¶ ranges, T. page/lines, decision references
-resolve       deterministic lookup against held records → citations table
-              (resolved | unresolved | ambiguous, with confidence + method)
-index         full-text + (later) embeddings; protected witnesses in an index
-              with no name field
-verify        human review queue for parse quality and ambiguous citations
-```
 
-Each stage updates `documents.ingestion_state` and writes to `audit_log`.
+Item statuses: `downloaded` · `metadata_only` (URLs recorded, bytes not
+fetched) · `skipped_duplicate` · `not_public` · `failed_download` ·
+`blocked_by_access_control` · `invalid_metadata` · `unsupported_artifact` ·
+`ambiguous_mapping`. The last five are failures and count in
+`ingestion_jobs.failed_count`; nothing is discarded silently.
 
-Since Phase 6 the schema the pipeline writes into exists (`docs/DATA_MODEL.md`):
-`source_records` for discovery provenance (source system, external id, discovery
-URL, canonical URL, raw metadata) kept separate from the normalized
-`documents` / `document_versions` and from the stored object; `ingestion_jobs`
-for cursor / checkpoint / counts; `record_identifiers` for the identifier index
-the resolver reads; `citations` for the persisted resolution. No code that
-fetches, parses or resolves exists yet.
+## Identity and idempotency
 
-## Citation resolution at ingest (ADR-005)
+| thing                | identity                                                           |
+| -------------------- | ------------------------------------------------------------------ |
+| discovery provenance | (`case`, `source_system`, `external_record_id`) — the PCR `doc_id` |
+| document             | (`case`, `official_ref`) — e.g. `KSC-BC-2020-06/F00005`            |
+| version              | (`document`, `official_version_ref`) — e.g. `…/F00005/RED`         |
+| bytes                | `sha256` (unique across all versions)                              |
 
-Resolution is part of ingestion, not of request handling. Re-ingesting a document
-re-runs resolution for citations that target it, so earlier `UNRESOLVED` rows can
-resolve without editing the citing text. Nothing fabricates a target.
+Re-running a bundle re-uses an unfinished job (resume: items already terminal
+are skipped) or, once a job completed, opens a new job whose items all resolve
+to `skipped_duplicate` / `metadata_only`. A version that already holds
+different bytes is `ambiguous_mapping` — never overwritten. Identical bytes
+under a second reference are `skipped_duplicate` with a pointer to the held
+version. A `not_fetched` version is filled in place when its bytes arrive later.
 
-## Date types
+## Versions
 
-A document's own date and its filing date are separate fields from the first byte.
-Transcript dates are testimony dates. Decision dates are decision dates. The
-pipeline never infers one from another.
+Original, public redacted (`/RED`), corrected (`/COR`), reclassified and
+translated variants are separate `document_versions` rows of one document, each
+with its own official URL, hash and visibility. Type precedence when the source
+does not state it: public redacted > corrected > reclassified > translation
+(artifact language ≠ record language) > original.
 
-## Language
+## Metadata provenance
 
-Documents are stored in the language filed. Official translations filed by the
-court are stored as separate documents linked by `translationOf`. The pipeline
-never machine-translates a court document.
+`source_records.raw_metadata.metadata_source` says where the record's metadata
+came from: `official_page` (parsed from the saved official page — preferred),
+`operator_manifest` (typed into the manifest), `synthetic_fixture` (tests
+only). The quality gate compares `official_page` values against the page; it
+treats `operator_manifest` values as needing a second look.
 
-## Failure handling
+## Live requests
 
-Failures are recorded (`ingestion_state = failed`, reason in `audit_log.detail`)
-and surfaced in the ingestion panel on the homepage. Nothing is silently skipped.
+`ksc-ingest probe <official url> [--record]` makes one identified request. A
+challenge is reported as `blocked_by_access_control`; `--record` persists it as
+a one-item job. This is the only network path and it stores no record.
+
+## Later stages (Phase 8+)
+
+parse · segment · redaction extents · citation extraction · resolution
+(ADR-005) · index · human verification queue. `document_versions.
+text_extraction_method` stays `none` in Phase 7; `artifacts.inspect_pdf` reads
+only the page count and looks for the case number on page 1 as a validation
+step.
+
+## Date and language rules
+
+A document's own date, its filing date and its public date are separate columns
+and are never inferred from one another. Documents are stored in the language
+filed; official translations are separate versions (`translation`). Nothing is
+machine-translated.
 
 ## Status tracking
 
-`MEMORY.md → Ingestion State` and `docs/PROJECT_STATE.md` carry the live counts:
-discovered / downloaded / parsed / indexed / transcripts parsed / failed.
+`GET /api/v1/ingestion/status` (internal) and `ksc-ingest status` show counts,
+jobs, items and held versions with provenance. `MEMORY.md → Ingestion State`
+and `docs/PROJECT_STATE.md` carry the live counts.

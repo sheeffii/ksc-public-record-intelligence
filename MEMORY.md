@@ -4,22 +4,49 @@ Live checkpoint. Answers “where exactly did we stop?”. Keep concise; no logs
 
 ## Current Status
 
-Current branch: `feat/phase-5b-visual-parity` (cut from `main` at `bdf7293`)
-Phase 5B tag: `phase-5b-complete` → see `git tag --list`
-Phase 6 tag: `phase-6-complete` → `bdf7293` (on `main`, pushed)
-Phase 5 tag: `phase-5-complete` → `ee8a0e7` · Phase 4 tag: `phase-4-complete` → `b99f514`
-Remote: `main` = `origin/main` = `bdf7293`. Phase 5B is local only; never push
+Current branch: `feat/phase-7-controlled-ingestion` (cut from `eaeb4ce`, the
+Phase 5B checkpoint on `feat/phase-5b-visual-parity`).
+Phase 7 commits so far: `86fbcfa` feat(api) · `fc4304b` feat(ingestion) ·
+docs commit (this checkpoint) — see `git log --oneline -3`.
+Tags: `phase-5b-complete` → `eaeb4ce` · `phase-6-complete` → `bdf7293` (on `main`,
+pushed) · `phase-5-complete` → `ee8a0e7` · `phase-4-complete` → `b99f514`.
+No `phase-7-complete` tag: Phase 7 is not complete.
+Remote: `main` = `origin/main` = `bdf7293`. Nothing since is pushed; never push
 without explicit instruction.
 Roadmap: `docs/roadmap/`.
-Current milestone: Phase 5B — UI/UX Visual Parity Remediation **COMPLETE**
-(2026-09-20).
-Next milestone: Phase 7 — KSC Public Record Discovery + Controlled 10–20
-Document Ingestion (`docs/roadmap/PHASE_07_KSC_DISCOVERY_AND_CONTROLLED_INGESTION.md`).
-**Not started; awaiting explicit authorisation.** This is the first phase that
-touches real KSC material.
-Current active task: None. Stop at the Phase 5B boundary.
-Working tree at checkpoint: clean
+Current milestone: **Phase 7 — KSC Public Record Discovery + Controlled 10–20
+Document Ingestion — IN PROGRESS** (started 2026-09-20, authorised by the user).
+Capture-independent work is complete; real-record ingestion is **blocked on an
+operator browser capture bundle** (ADR-011).
+Current active task: waiting for `data/captures/<bundle-id>/` from the operator;
+then write the PCR detail-page parser against the saved pages, ingest, run the
+quality gate, commit, tag `phase-7-complete`.
+Working tree at checkpoint: clean (Phase 7 capture-independent work committed)
 Last updated: 2026-09-20
+
+## Phase 7 — where exactly we stopped
+
+- **Discovery finding (2026-09-20):** `www.scp-ks.org` and `repository.scp-ks.org`
+  (detail pages, PDF paths, and both `robots.txt`) answer identified automated
+  clients with `HTTP 403` + `cf-mitigated: challenge` (Cloudflare managed
+  challenge). This is an access control → never bypassed (ADR-011). Records
+  therefore enter via **operator capture bundles** saved by a human in a normal
+  browser (`docs/ingestion/OPERATOR_CAPTURE.md`); URL shapes and what is still
+  unverified are in `docs/ingestion/OFFICIAL_SOURCES.md`.
+- **Built and tested:** `workers/ingestion` (`ksc_ingestion`: sources, fetch,
+  discovery, normalize, capture, artifacts, storage, pipeline, probe, cli);
+  migration `0003` (`document_versions.artifact_status|byte_size|fetched_at|
+fetch_method`, `ingestion_job_items`); read API exposes `artifact_status` /
+  `fetched_at` on versions and `GET /api/v1/ingestion/status`; web API types
+  mirrored; CLI `ksc-ingest bundle|probe|status`.
+- **Real-case state:** `KSC-BC-2020-06`: 0 source records, 0 documents,
+  0 versions; 1 `live_probe` job with 1 `blocked_by_access_control` item
+  (recorded 2026-09-20 09:26 UTC, one request to `robots.txt`).
+- **Blocked only by captures:** PCR detail-page / listing / case-page parsers
+  (`DetailPageParser` interface exists; implement against real saved HTML, not
+  guesses), the 10–20-record selection list with reasons, real ingestion, the
+  manual quality gate, `docs/ingestion/OFFICIAL_SOURCES.md` "not yet inspected"
+  section, real Albanian-variant handling, `phase-7-complete` tag.
 
 ## What Works
 
@@ -66,12 +93,13 @@ Last updated: 2026-09-20
 
 ## Tests
 
-- Backend: 82 passed (31 unit + 51 integration).
-- Frontend: 188 passed (Vitest; 176 prior + 12 Phase 5B composition / interaction).
-- E2E: 96 passed (62 prior + 32 visual screenshots × desktop / Pixel 7 + 2
-  mobile layout checks); screenshots land in `test-results/visual/`.
-- Lint: ruff, ruff format, ESLint, Prettier clean. Typecheck: mypy strict, tsc clean.
-- Production Next.js build passes.
+- Backend: 203 passed (140 unit incl. 109 `tests/unit/ingestion/` + 63
+  integration incl. 12 `test_ingestion_pipeline.py`).
+- Frontend: 188 passed (Vitest). E2E: 96 passed at the 5B checkpoint (not re-run
+  for Phase 7 — no UI change).
+- Lint: ruff, ruff format, ESLint, Prettier clean. Typecheck: mypy strict
+  (`ksc_api` + `ksc_ingestion`), tsc clean.
+- Stack: api image rebuilt with `0003`; `/ready` green; status endpoint live.
 
 Last full verification: 2026-09-20.
 
@@ -79,7 +107,9 @@ Last full verification: 2026-09-20.
 
 - Screens still read the synchronous `@/mock` repository; `getRepository()`
   (ADR-009) is proven by contract tests but not yet wired into screens. Wire
-  it when Phase 7 puts real records behind the API.
+  it once real records sit behind the API (after the Phase 7 quality gate).
+- No admin/data-status UI yet: the internal view is the API endpoint
+  `/api/v1/ingestion/status` and `ksc-ingest status` (roadmap: "if useful").
 - Visual checks are screenshot artefacts plus region assertions, not pixel
   baselines; compare against `docs/design/Design.html` by eye.
 - Network graph remains the accessible SVG implementation (engine choice
@@ -103,7 +133,13 @@ Last full verification: 2026-09-20.
 - `apps/web/src/mock/` remains the boundary screens import; `mock/volume.ts`
   generates demo table volume. `screens/phase5/Workspace.tsx` holds the shared
   5B building blocks (toolbar, stat strip, rail index, stepper, pager…).
-- Documents discovered/downloaded/parsed/indexed and transcripts parsed: all 0.
+- `workers/ingestion/src/ksc_ingestion/` — Phase 7 pipeline (see
+  `workers/ingestion/README.md`); `tests/support/synthetic.py` builds the
+  synthetic `KSC-DEMO-0000` capture bundle the tests ingest.
+- `apps/api/src/ksc_api/{schemas,repositories,routers}/ingestion.py` — internal
+  data-status read (not public-filtered; identifiers and URLs only).
+- Documents discovered/downloaded/parsed/indexed and transcripts parsed for the
+  real case: all 0 (1 blocked live probe recorded).
 
 ## Important Decisions
 
@@ -112,20 +148,29 @@ Last full verification: 2026-09-20.
 - ADR-010: node registry for polymorphic graph references; visibility
   vocabulary incl. `not_public`; human verification requires a reviewer; enum
   values persisted; in-place migration `0002`.
+- ADR-011: official sites sit behind a Cloudflare challenge → never bypassed;
+  ingestion is operator-assisted capture; metadata-only versions
+  (`artifact_status = not_fetched`); failures are `ingestion_job_items` rows.
 
 ## Exact Next Task
 
-Only after explicit authorisation, begin Phase 7 by reading
-`docs/roadmap/00_MASTER_ROADMAP.md` and the complete
-`docs/roadmap/PHASE_07_KSC_DISCOVERY_AND_CONTROLLED_INGESTION.md`. Phase 7 is
-the first controlled contact with real KSC public material: public-only,
-official sources, 10–20 documents, every rule in `docs/SECURITY.md` and the
-roadmap's public-only requirement applies. Nothing before that authorisation
-may fetch anything.
+1. Operator produces `data/captures/<bundle-id>/` per
+   `docs/ingestion/OPERATOR_CAPTURE.md` (listing pages, case page, user guide,
+   10–20 detail pages + PDFs, manifest).
+2. Read the saved pages; document real metadata fields / version linking in
+   `OFFICIAL_SOURCES.md`; implement `PcrDetailPageParser` (+ listing / case
+   page parsers) with fixtures cut from the saved HTML; register them in the CLI.
+3. `ksc-ingest bundle … --dry-run`, then ingest; run the quality gate per record;
+   record the corpus list with reasons in `docs/ingestion/CONTROLLED_CORPUS.md`.
+4. Update MEMORY / PROJECT_STATE / INGESTION counts; tag `phase-7-complete`;
+   write the completion report. Do **not** start Phase 8.
 
 ## Do Not Forget
 
-- Do not scrape, download, parse or ingest court material before Phase 7.
+- Never solve, spoof or proxy around the Cloudflare challenge; a blocked fetch
+  is recorded, not retried (ADR-011). Bytes come only from operator captures.
+- Only the controlled 10–20 records in Phase 7; no bulk download; no parsing
+  beyond validation until Phase 8 is authorised.
 - Database and primary sources are authoritative; AI is analysis only.
 - Protected witnesses remain W-code only and fail closed.
 - Never fabricate identifiers, citations, quotes or figures; unresolved remains
@@ -135,13 +180,16 @@ may fetch anything.
 
 ## Blockers
 
-None.
+- Real-record ingestion needs an operator capture bundle (human browser
+  session on the official site). Everything else in Phase 7 is done.
 
 ## Useful Commands
 
 ```text
 make up / down
 make migrate · make seed · make demo-fixture
+.venv/bin/ksc-ingest bundle data/captures/<id> [--dry-run] · ksc-ingest status
+.venv/bin/ksc-ingest probe <official url> --record
 make lint
 make typecheck
 make test
