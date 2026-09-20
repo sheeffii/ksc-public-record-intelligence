@@ -774,8 +774,9 @@ class RecordRepository:
         if mode == "exact":
             return SearchRead(query=q, hits=hits)
 
-        phrase = mode == "phrase" or (len(query) >= 2 and query[0] == query[-1] == '"')
-        lexical_query = query[1:-1] if phrase else query
+        quoted_phrase = len(query) >= 2 and query[0] == query[-1] == '"'
+        phrase = mode == "phrase" or quoted_phrase
+        lexical_query = query[1:-1] if quoted_phrase else query
         tsquery = (
             func.phraseto_tsquery("simple", lexical_query)
             if phrase

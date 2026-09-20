@@ -6,7 +6,7 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-8-parsing-search`.
 - Current milestone: **Phase 8 complete (2026-09-20)**. Stop before Phase 9.
-- Completion tag: `phase-8-complete` at the final Phase 8 documentation commit.
+- Completion tag: `phase-8-complete` at the final Phase 8 checkpoint commit.
 - Migration head: `0004`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and

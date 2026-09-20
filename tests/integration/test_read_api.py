@@ -198,7 +198,7 @@ def test_phase8_search_modes_filters_and_source_navigation(demo_client):
     assert exact[0]["match_kind"] == "exact_identifier"
     assert exact[0]["target_path"].startswith("/documents/F-DEMO-001")
 
-    phrase = demo_client.get(f'{V1}/search?q="solemn declaration"&mode=phrase').json()["hits"]
+    phrase = demo_client.get(f"{V1}/search?q=solemn declaration&mode=phrase").json()["hits"]
     assert any(hit["category"] == "transcripts" for hit in phrase)
     assert all(hit["match_kind"] == "phrase" for hit in phrase)
 
