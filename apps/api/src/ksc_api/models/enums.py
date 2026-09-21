@@ -257,6 +257,8 @@ class AnswerBlockKind(enum.StrEnum):
     TESTIMONY = "testimony"
     SPO = "spo"
     DEFENCE = "defence"
+    COURT_RESPONSE = "court_response"
+    HUMAN_NOTE = "human_note"
     AI = "ai"
 
 

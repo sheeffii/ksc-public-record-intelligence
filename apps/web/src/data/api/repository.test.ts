@@ -83,10 +83,22 @@ describe("ApiRepository", () => {
     ]);
   });
 
-  it("serves nothing for surfaces without a backend yet", async () => {
+  it("serves nothing for the legacy answer placeholder", async () => {
     const { repo } = repository();
     expect(await repo.getPath()).toEqual([]);
     expect(await repo.getAnswer()).toEqual([]);
+  });
+
+  it("creates, reads and saves audited citation-first AI runs", async () => {
+    const { repo } = repository();
+    const created = await repo.createAiRun("What did the Panel find?");
+    expect(created.sources[0]?.display).toBe("F-DEMO-001/RED · ¶12–14");
+    expect(created.blocks.map((block) => block.kind)).toEqual(["court", "ai"]);
+    expect((await repo.getAiRun(created.id))?.answerWithheld).toBe(false);
+    expect((await repo.listAiRuns()).map((run) => run.id)).toEqual([created.id]);
+    expect(await repo.saveAiRunAsNote(created.id, "Review note")).toMatchObject({
+      provenance: "ai_assisted",
+    });
   });
 
   it("loads independently cited evidence-path hops", async () => {

@@ -26,6 +26,9 @@ import type {
   FindingArgumentView,
   FindingCitationView,
   FindingView,
+  AiResearchRun,
+  AiResearchSource,
+  AiRunSummaryView,
   NetworkEdge,
   NetworkNode,
   PersonDossier,
@@ -33,6 +36,9 @@ import type {
   TimelineItem,
 } from "../contract";
 import type {
+  ApiAiRun,
+  ApiAiRunSummary,
+  ApiAiSource,
   ApiCitation,
   ApiClaim,
   ApiDocumentChunk,
@@ -513,5 +519,70 @@ export function toEvidenceRows(claim: ApiClaim): EvidenceRow[] {
   return rows;
 }
 
-/** No AI run exists in Phase 6; the answer surface stays empty, never invented. */
+/** Legacy placeholder; real Phase 11 answers are mapped from persisted AI runs. */
 export const NO_ANSWER: readonly AnswerBlock[] = [];
+
+export function toAiSource(source: ApiAiSource): AiResearchSource {
+  return {
+    id: source.id,
+    rank: source.rank,
+    category: source.category,
+    ref: source.ref,
+    versionRef: source.version_ref ?? undefined,
+    display: source.display,
+    targetPath: source.target_path,
+    excerpt: source.excerpt,
+    verification: toVerification(source.verification_state) ?? "unresolved",
+    sourceScope: source.metadata?.source_scope ?? undefined,
+    underlyingSourceRef: source.metadata?.underlying_source_ref ?? undefined,
+  };
+}
+
+export function toAiRun(run: ApiAiRun): AiResearchRun {
+  const sources = run.sources.map(toAiSource);
+  const byId = new Map(sources.map((source) => [source.id, source]));
+  return {
+    id: run.id,
+    question: run.question,
+    provider: run.provider,
+    model: run.model,
+    promptVersion: run.prompt_version,
+    status: run.status,
+    createdAt: run.created_at,
+    answerWithheld: run.answer_withheld,
+    insufficientEvidence: run.insufficient_evidence,
+    sources,
+    blocks: run.blocks.map((block) => ({
+      id: block.id,
+      sequence: block.sequence,
+      kind: block.kind,
+      contentType: block.content_type,
+      text: block.text,
+      verification: toVerification(block.verification_state) ?? "ai-flagged",
+      sources: block.sources.flatMap((source) => {
+        const mapped = byId.get(source.id);
+        return mapped ? [mapped] : [];
+      }),
+    })),
+    citationStatus: {
+      produced: run.citation_status.produced,
+      resolved: run.citation_status.resolved,
+      quotationsMatched: run.citation_status.quotations_matched,
+      unresolved: run.citation_status.unresolved,
+      humanVerifiedSources: run.citation_status.human_verified_sources,
+      unreviewedSources: run.citation_status.unreviewed_sources,
+    },
+    errors: run.validation_errors.map(({ code, detail }) => ({ code, detail })),
+    gaps: run.gaps,
+  };
+}
+
+export function toAiRunSummary(run: ApiAiRunSummary): AiRunSummaryView {
+  return {
+    id: run.id,
+    question: run.question,
+    status: run.status,
+    answerWithheld: run.answer_withheld,
+    createdAt: run.created_at,
+  };
+}

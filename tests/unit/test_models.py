@@ -22,6 +22,7 @@ from ksc_api.models import (
 PHASE4_TABLES = {"cases", "documents", "audit_log"}
 PHASE7_TABLES = {"ingestion_job_items"}
 PHASE8_TABLES = {"document_paragraphs"}
+PHASE11_TABLES = {"ai_retrieval_sources", "ai_output_sources"}
 PHASE6_TABLES = {
     "source_records",
     "document_versions",
@@ -67,7 +68,7 @@ def _checks(table_name: str) -> set[str]:
 
 def test_schema_contains_phase4_foundation_and_phase6_evidence_model():
     assert set(Base.metadata.tables) == (
-        PHASE4_TABLES | PHASE6_TABLES | PHASE7_TABLES | PHASE8_TABLES
+        PHASE4_TABLES | PHASE6_TABLES | PHASE7_TABLES | PHASE8_TABLES | PHASE11_TABLES
     )
 
 
@@ -84,6 +85,13 @@ def test_no_model_carries_a_score_rank_or_weight_field():
     forbidden = {"score", "rank", "rating", "weight", "priority", "probability", "likelihood"}
     for table in Base.metadata.tables.values():
         for column in table.columns:
+            # Phase 11 ranks retrieved passages, never people. These fields are
+            # scoped to immutable source snapshots and cannot reference a person.
+            if table.name == "ai_retrieval_sources" and column.name in {
+                "rank",
+                "retrieval_score",
+            }:
+                continue
             name = column.name.lower()
             assert not any(word in name for word in forbidden), f"{table.name}.{column.name}"
 
@@ -177,8 +185,20 @@ def test_human_verification_states_require_a_named_reviewer_everywhere():
         )
 
 
-def test_research_notes_are_labelled_human():
-    assert "ck_research_notes_provenance_is_human" in _checks("research_notes")
+def test_research_notes_keep_human_and_ai_assisted_origins_explicit():
+    assert {
+        "ck_research_notes_provenance_allowed",
+        "ck_research_notes_ai_origin_matches_provenance",
+    } <= _checks("research_notes")
+
+
+def test_ai_retrieval_sources_have_exact_anchors_and_safe_categories():
+    checks = _checks("ai_retrieval_sources")
+    assert {
+        "ck_ai_retrieval_sources_exactly_one_source_anchor",
+        "ck_ai_retrieval_sources_source_category_allowed",
+        "ck_ai_retrieval_sources_source_visibility_allowed",
+    } <= checks
 
 
 def test_transcript_segments_never_invent_lines_or_closed_session_text():

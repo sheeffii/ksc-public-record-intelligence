@@ -23,6 +23,8 @@ import { ApiClient, type ApiClientOptions } from "./client";
 import * as map from "./mappers";
 import type {
   ApiClaim,
+  ApiAiRun,
+  ApiAiRunSummary,
   ApiDocumentChunk,
   ApiDocumentDetail,
   ApiDocumentSummary,
@@ -147,9 +149,30 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       return (await page<ApiClaim>("/claims")).flatMap(map.toEvidenceRows);
     },
 
-    // No AI run exists before Phase 11; nothing is composed client-side.
+    // Legacy Phase 5 placeholder. Phase 11 uses audited run methods below.
     async getAnswer(): Promise<readonly AnswerBlock[]> {
       return map.NO_ANSWER;
+    },
+
+    async createAiRun(question: string) {
+      return map.toAiRun(await client.post<ApiAiRun>("/ai/runs", { question }));
+    },
+
+    async getAiRun(id: string) {
+      const run = await client.get<ApiAiRun>(`/ai/runs/${encodeURIComponent(id)}`);
+      return run ? map.toAiRun(run) : null;
+    },
+
+    async listAiRuns() {
+      const runs = await client.get<ApiAiRunSummary[]>("/ai/runs");
+      return (runs ?? []).map(map.toAiRunSummary);
+    },
+
+    async saveAiRunAsNote(id: string, title: string) {
+      return client.post<{ id: string; provenance: string }>(
+        `/ai/runs/${encodeURIComponent(id)}/notes`,
+        { title },
+      );
     },
   };
 }

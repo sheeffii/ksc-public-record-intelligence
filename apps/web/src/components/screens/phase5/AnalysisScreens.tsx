@@ -31,7 +31,15 @@ import {
 const sourceForAnswer: Record<
   Exclude<AnswerBlockKind, "ai">,
   Exclude<SourceType, "ai" | "incident" | "location" | "organisation">
-> = { court: "court", evidence: "exhibit", testimony: "witness", spo: "spo", defence: "defence" };
+> = {
+  court: "court",
+  evidence: "exhibit",
+  testimony: "witness",
+  spo: "spo",
+  defence: "defence",
+  court_response: "court",
+  human_note: "exhibit",
+};
 
 // -------------------------------------------------------------- appeal ----
 

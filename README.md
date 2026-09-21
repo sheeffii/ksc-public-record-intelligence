@@ -6,7 +6,9 @@ so that every statement resolves to a page, paragraph or line of the record — 
 withheld.
 
 > Status: **Phase 4 — engineering foundation.** No court documents have been
-> ingested. No AI is wired. Every approved route renders the application shell.
+> ingested. Citation-first AI research is wired over that controlled corpus;
+> source retrieval and validation remain authoritative. Every approved route
+> renders the application shell.
 
 ## Principles
 

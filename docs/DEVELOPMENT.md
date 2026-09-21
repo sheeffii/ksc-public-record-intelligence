@@ -43,6 +43,17 @@ make format      # ruff format, ruff --fix, prettier
 make ci          # lint + typecheck + test
 ```
 
+Phase 11's deterministic real-corpus evaluation (no external provider or
+network call) runs from the repository root:
+
+```bash
+.venv/bin/ksc-ingest gate-ai \
+  --json docs/ingestion/manifests/phase11-controlled-corpus-quality.json
+```
+
+`AI_PROVIDER=deterministic` is the safe default. External compatible providers
+are opt-in through `.env`; never commit credentials.
+
 Integration tests create and migrate a throwaway `ksc_test` database on the
 configured PostgreSQL. `make reset-db` destroys the Docker volumes.
 

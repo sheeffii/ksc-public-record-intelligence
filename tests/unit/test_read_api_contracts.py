@@ -51,6 +51,9 @@ def test_read_routes_are_registered_under_v1(client):
         "/api/v1/network",
         "/api/v1/relationships",
         "/api/v1/search",
+        "/api/v1/ai/runs",
+        "/api/v1/ai/runs/{run_id}",
+        "/api/v1/ai/runs/{run_id}/notes",
     }
     assert expected <= paths
 

@@ -130,6 +130,71 @@ export interface FindingView {
   corroborationNote: string;
 }
 
+export type AiSourceCategory =
+  | "court_finding"
+  | "witness_testimony"
+  | "spo_argument"
+  | "defence_argument"
+  | "document_exhibit"
+  | "court_response"
+  | "human_note";
+
+export interface AiResearchSource {
+  id: string;
+  rank: number;
+  category: AiSourceCategory;
+  ref: string;
+  versionRef?: string;
+  display: string;
+  targetPath: string;
+  excerpt: string;
+  verification: VerificationState;
+  sourceScope?: string;
+  underlyingSourceRef?: string;
+}
+
+export interface AiResearchBlock {
+  id: string;
+  sequence: number;
+  kind: AnswerBlock["kind"];
+  contentType: "verbatim_quote" | "source_paraphrase" | "ai_analysis" | "abstention";
+  text: string;
+  verification: VerificationState;
+  sources: readonly AiResearchSource[];
+}
+
+export interface AiResearchRun {
+  id: string;
+  question: string;
+  provider: string;
+  model: string;
+  promptVersion: number;
+  status: "pending" | "completed" | "failed";
+  createdAt: string;
+  answerWithheld: boolean;
+  insufficientEvidence: boolean;
+  sources: readonly AiResearchSource[];
+  blocks: readonly AiResearchBlock[];
+  citationStatus: {
+    produced: number;
+    resolved: number;
+    quotationsMatched: number;
+    unresolved: number;
+    humanVerifiedSources: number;
+    unreviewedSources: number;
+  };
+  errors: readonly { code: string; detail: string }[];
+  gaps: readonly string[];
+}
+
+export interface AiRunSummaryView {
+  id: string;
+  question: string;
+  status: "pending" | "completed" | "failed";
+  answerWithheld: boolean;
+  createdAt: string;
+}
+
 export interface ResearchRepository {
   getDirectory(kind: DirectoryKind): Promise<readonly DirectoryRow[]>;
   getPerson(slug: string): Promise<PersonDossier | null>;
@@ -142,6 +207,10 @@ export interface ResearchRepository {
   getTimeline(): Promise<readonly TimelineItem[]>;
   getEvidence(): Promise<readonly EvidenceRow[]>;
   getAnswer(): Promise<readonly AnswerBlock[]>;
+  createAiRun(question: string): Promise<AiResearchRun>;
+  getAiRun(id: string): Promise<AiResearchRun | null>;
+  listAiRuns(): Promise<readonly AiRunSummaryView[]>;
+  saveAiRunAsNote(id: string, title: string): Promise<{ id: string; provenance: string }>;
 }
 
 export const REPOSITORY_METHODS = [
@@ -156,4 +225,8 @@ export const REPOSITORY_METHODS = [
   "getTimeline",
   "getEvidence",
   "getAnswer",
+  "createAiRun",
+  "getAiRun",
+  "listAiRuns",
+  "saveAiRunAsNote",
 ] as const satisfies readonly (keyof ResearchRepository)[];

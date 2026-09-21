@@ -1,8 +1,4 @@
-"""Application settings.
-
-All configuration comes from the environment (see `.env.example`). No AI provider
-key is required — Phase 4 makes no AI calls.
-"""
+"""Application settings. All configuration comes from the environment."""
 
 from __future__ import annotations
 
@@ -36,6 +32,17 @@ class Settings(BaseSettings):
     minio_secret_key: str = "ksc_minio_dev_password"  # noqa: S105 - dev default only
     minio_secure: bool = False
     minio_bucket_documents: str = "ksc-documents"
+
+    # The offline extractive provider is the safe default and needs no secret.
+    # External compatible endpoints are opt-in; credentials are never persisted.
+    ai_provider: str = "deterministic"
+    ai_model: str = "citation-first-extractive-v1"
+    ai_temperature: float = Field(default=0.0, ge=0, le=1)
+    ai_prompt_dir: str = "packages/prompts"
+    openai_api_key: str = ""
+    openai_compatible_url: str = "https://api.openai.com/v1/chat/completions"
+    anthropic_api_key: str = ""
+    anthropic_compatible_url: str = "https://api.anthropic.com/v1/messages"
 
     # Populated by the container build / CI. Never required.
     git_sha: str = Field(default="unknown", alias="GIT_SHA")

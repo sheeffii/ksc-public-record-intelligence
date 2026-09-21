@@ -749,3 +749,56 @@ Relevant files:
 `workers/ingestion/src/ksc_ingestion/{findings_pipeline,findings_quality_gate}.py`,
 `apps/api/src/ksc_api/repositories/records.py`,
 `docs/ingestion/PHASE10_QUALITY_GATE.md`.
+
+---
+
+## ADR-016 — Persisted retrieval snapshots and fail-closed AI answers
+
+Date: 2026-09-21
+
+Status: Accepted
+
+Context:
+Phase 11 must add useful AI research without treating a model response, model
+memory, or document prompt injection as record evidence. Provider output alone
+cannot prove that a generated factual sentence is supported. The controlled
+corpus is small, has reliable structured records and PostgreSQL FTS, and lacks
+the Trial Judgment and two referenced party filings.
+
+Decision:
+
+1. Domain logic depends on an `AiProvider` protocol. The default completion and
+   quality-gate provider is deterministic and extractive; OpenAI-compatible and
+   Anthropic-compatible HTTP adapters are opt-in configuration.
+2. Every run persists an immutable ranked source snapshot before generation,
+   including exact anchor/coordinates, version/hash provenance, visibility,
+   category, verification/reviewer state, and the exact excerpt supplied.
+   Retrieval ranking applies only to passages, never people.
+3. The provider may use only persisted whitelist IDs. Deterministic validation
+   independently verifies category, source linkage, and exact quotes. Source
+   paraphrases are withheld. Free-form factual AI analysis is not accepted;
+   Phase 11 permits only a fixed, versioned non-factual boundary statement.
+4. Any invalid source, quote, category, unsupported analysis, or provider
+   abstention withholds the complete answer. Missing requested records abstain
+   before generation. Partial answers are not rendered.
+5. Prompt files are immutable and versioned. Run audit stores prompt/hash,
+   provider/model/parameters, input hash, structured output, errors, tokens and
+   claim-to-source links. Saving output creates an `ai_assisted` research note
+   tied to the run, never an evidence record.
+6. Structured records plus PostgreSQL FTS are the Phase 11 hybrid baseline. No
+   embedding is created until a later measured evaluation justifies it.
+
+Consequences:
+
+- Migration `0007` normalizes retrieval and output-source audit data and
+  preserves AI-note origin.
+- External providers can improve extraction selection but cannot bypass the
+  deterministic evidence boundary; nonconforming output fails closed.
+- The real evaluation honestly tests one supported F03752 question and three
+  known missing-material abstentions rather than inventing broader coverage.
+
+Relevant files:
+`apps/api/alembic/versions/0007_citation_first_ai_rag.py`,
+`apps/api/src/ksc_api/services/{ai_providers,ai_research,ai_validation}.py`,
+`packages/prompts/`, `tests/evaluation/phase11_questions.json`, and
+`docs/ingestion/PHASE11_QUALITY_GATE.md`.

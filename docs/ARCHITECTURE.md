@@ -30,9 +30,9 @@ around "AI memory"; AI memory is not evidence.
 apps/web            Next.js 16 · React 19 · TypeScript strict · Tailwind 4 · next-intl · next-themes
 apps/api            FastAPI · Pydantic v2 · SQLAlchemy 2 · Alembic · psycopg 3
 workers/ingestion   ksc_ingestion — controlled public-only ingestion (Phase 7)
-workers/analysis    placeholder — embeddings / retrieval / AI analysis (later)
+workers/analysis    placeholder — later embedding or extended analysis jobs
 packages/shared     TypeScript contract types (Citation, VerificationState, Witness, …)
-packages/prompts    reserved for versioned prompt templates (empty)
+packages/prompts    immutable, versioned AI prompt templates
 infrastructure/     Docker assets beyond compose (empty in Phase 4)
 scripts/            operational scripts
 tests/              backend unit + integration, Playwright e2e, fixtures, evaluation
@@ -66,8 +66,9 @@ docs/               this documentation; docs/design is the approved UX (read-onl
   is the only place that knows the wire shapes: it turns unresolved citations
   into `resolved: false`, drops human-rejected facts, keeps protected witnesses
   code-only, and never builds a citation display string. Screens still import
-  the synchronous mock directly except the Phase 8 Search and Document Reader
-  routes, which server-load through `getRepository()` and can consume real API data.
+  the synchronous mock directly except real-data Search, Document Reader,
+  Network, Timeline, Finding Matrix, and AI Research routes, which server-load
+  through `getRepository()` and consume API data.
 
 ## API (`apps/api`)
 
@@ -79,7 +80,10 @@ docs/               this documentation; docs/design is the approved UX (read-onl
   `exhibits`, `incidents`, `findings`, `claims`, `arguments`, `events`,
   `transcripts/{ref}`, `citations/{id}`, `citations/resolve?ref=`, `network`,
   `relationships`, `search`. Lists paginate with `limit` (≤ 200) / `offset` and
-  return `{items, total, limit, offset}`. There is no write endpoint.
+  return `{items, total, limit, offset}`.
+- **AI research API** (`ksc_api/routers/ai.py`): create/list/read audited runs and
+  save a valid output as an explicitly AI-assisted research note. It cannot
+  mutate sources, findings, citation resolution, relationships, or verification.
 - **Layering**: router → `RecordRepository` (`ksc_api/repositories/records.py`,
   one instance per request, scoped to the configured case) → `mappers.py` →
   Pydantic read models in `ksc_api/schemas/`. Raw ORM objects never leave the
@@ -90,12 +94,13 @@ docs/               this documentation; docs/design is the approved UX (read-onl
   (`visibility: not_public`, no versions) instead of a 404. The `WitnessRead`
   serializer omits `public` structurally for anything not explicitly public.
 - Settings via `pydantic-settings` (`ksc_api/config.py`); `CASE_ID` selects the
-  case the API serves (the case is never a route segment). No AI key is required.
+  case the API serves (the case is never a route segment). The deterministic AI
+  provider requires no key; compatible external providers are opt-in.
 - Sync SQLAlchemy 2.0 with psycopg 3; sessions are FastAPI dependencies. Enum
   columns persist member _values_ (`db_enum`), matching the PostgreSQL types.
-- Alembic migrations in `apps/api/alembic/`: `0001` (foundation), `0002` (the
-  evidence model), `0003` (ingestion provenance), and `0004` (Phase 8 parsing,
-  citation coordinates and FTS). Enum types are created and dropped
+- Alembic migrations in `apps/api/alembic/`: `0001`–`0007`, through Phase 11's
+  persisted retrieval snapshots, claim-source audit, and AI-assisted note origin.
+  Enum types are created and dropped
   explicitly; `alembic check` is part of the integration suite.
 - `ksc-seed` inserts public metadata for KSC-BC-2020-06 (idempotent);
   `ksc-demo-fixture` loads the synthetic `KSC-DEMO-0000` evidence graph used by
@@ -132,9 +137,10 @@ rate limiting. Only connectivity is verified in Phase 4.
   audit log; then held-object native parsing, structural chunks, transcript lines,
   deterministic citation resolution and lexical indexing. Official hosts only;
   a bot-mitigation challenge is a recorded failure, never bypassed (ADR-011).
-- **analysis** (placeholder) — embeddings, retrieval, AI analysis, relationship extraction,
-  potential-issue surfacing. All output is `AI ANALYSIS`, cited, and withheld when
-  any citation is `UNRESOLVED`.
+- **analysis** remains a worker placeholder. Phase 11 retrieval, provider
+  orchestration and deterministic validation run in the API service layer;
+  future embeddings or long-running analysis may move behind this worker without
+  changing the audit contract.
 
 ## Derived layers
 
@@ -154,11 +160,11 @@ a deterministic-match confidence, and a verification state. Unresolvable citatio
 
 ### Search
 
-Phase 8 uses PostgreSQL generated `tsvector` columns and GIN indexes over public
+Phase 8/11 use PostgreSQL generated `tsvector` columns and GIN indexes over public
 metadata, structural chunks and transcript segments, plus exact normalized
 identifier lookup. Results retain version and PDF/printed page/paragraph/line
-coordinates. pgvector remains installed but no embeddings or semantic retrieval
-are authorized yet.
+coordinates. Phase 11 combines that lexical retrieval with verified structured
+findings/arguments. pgvector remains installed but no embedding is created.
 
 ### Evidence graph
 
@@ -178,9 +184,12 @@ retains its textual alternative; WebGL is deferred until real scale requires it.
 
 ### AI layer (docs/AI_METHODS.md)
 
-Retrieval before composition; block order returned by the API; the record/AI
-boundary is structural in the payload (`AnswerBlock.kind`). No guilt, suspicion,
-credibility or success scores exist anywhere in the pipeline or the schema.
+Phase 11 persists exact ranked source snapshots before provider generation and
+then validates source IDs, category, exact quotations, answer order and the
+non-factual AI boundary independently of the provider. A validation error or
+insufficient source withholds the whole answer. The record/AI boundary is
+structural in the payload (`AnswerBlock.kind`) and visual in the UI. No guilt,
+suspicion, credibility or success scores exist anywhere in the pipeline or schema.
 
 ## Cross-cutting rules enforced in code
 

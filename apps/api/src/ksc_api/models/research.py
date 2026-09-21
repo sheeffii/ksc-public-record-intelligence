@@ -1,6 +1,8 @@
-"""ResearchNote — human notes, stored apart from court evidence and labelled
-as human provenance. A note stores its source set (citations), not rendered
-text from those sources."""
+"""Research notes stored apart from court evidence with explicit provenance.
+
+A note stores its source set (citations), not rendered text from those sources.
+AI-assisted notes retain the audited originating run and never become evidence.
+"""
 
 from __future__ import annotations
 
@@ -15,12 +17,17 @@ from ksc_api.models.citation import Citation
 from ksc_api.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 HUMAN_PROVENANCE = "human"
+AI_ASSISTED_PROVENANCE = "ai_assisted"
 
 
 class ResearchNote(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "research_notes"
     __table_args__ = (
-        CheckConstraint(f"provenance = '{HUMAN_PROVENANCE}'", name="provenance_is_human"),
+        CheckConstraint("provenance IN ('human', 'ai_assisted')", name="provenance_allowed"),
+        CheckConstraint(
+            "(provenance = 'ai_assisted') = (origin_ai_run_id IS NOT NULL)",
+            name="ai_origin_matches_provenance",
+        ),
     )
 
     case_id: Mapped[uuid.UUID] = mapped_column(
@@ -28,6 +35,9 @@ class ResearchNote(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     finding_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("findings.id", ondelete="SET NULL"), index=True
+    )
+    origin_ai_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_runs.id", ondelete="RESTRICT"), index=True
     )
     author: Mapped[str] = mapped_column(String(128), nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)

@@ -6,7 +6,14 @@ on `Base.metadata` by importing this package (Alembic relies on that).
 """
 
 from ksc_api.models.actor import Location, Organization, Person, PersonAlias, Witness
-from ksc_api.models.ai import AiOutput, AiOutputCitation, AiRun, PromptVersion
+from ksc_api.models.ai import (
+    AiOutput,
+    AiOutputCitation,
+    AiOutputSource,
+    AiRetrievalSource,
+    AiRun,
+    PromptVersion,
+)
 from ksc_api.models.audit_log import AuditLog
 from ksc_api.models.case import Case
 from ksc_api.models.citation import (
@@ -78,6 +85,8 @@ __all__ = [
     "UNRESOLVED_DISPLAY",
     "AiOutput",
     "AiOutputCitation",
+    "AiOutputSource",
+    "AiRetrievalSource",
     "AiRun",
     "AiRunStatus",
     "AnswerBlockKind",

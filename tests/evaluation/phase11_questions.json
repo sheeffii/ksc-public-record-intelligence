@@ -1,0 +1,40 @@
+{
+  "phase": 11,
+  "case_number": "KSC-BC-2020-06",
+  "controlled_records": 22,
+  "cases": [
+    {
+      "id": "court-decision-amendments",
+      "question": "What did the Panel say about amendments to the Corrected Version of the SPO Final Trial Brief?",
+      "should_answer": true,
+      "expected_categories": [
+        "court_finding",
+        "spo_argument",
+        "defence_argument",
+        "court_response"
+      ],
+      "expected_error": null
+    },
+    {
+      "id": "missing-trial-judgment",
+      "question": "What does the Trial Judgment find on the merits?",
+      "should_answer": false,
+      "expected_categories": [],
+      "expected_error": "DOCUMENT_NOT_FOUND"
+    },
+    {
+      "id": "missing-defence-filing",
+      "question": "What does filing F03743 establish?",
+      "should_answer": false,
+      "expected_categories": [],
+      "expected_error": "DOCUMENT_NOT_FOUND"
+    },
+    {
+      "id": "missing-spo-filing",
+      "question": "What does filing F03746 establish?",
+      "should_answer": false,
+      "expected_categories": [],
+      "expected_error": "DOCUMENT_NOT_FOUND"
+    }
+  ]
+}

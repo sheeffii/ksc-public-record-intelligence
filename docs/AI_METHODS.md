@@ -1,74 +1,99 @@
 # AI methods
 
-**Status: no AI exists in this codebase.** Phase 4 makes no provider call, computes
-no embedding, and requires no API key. This document fixes the rules any future AI
-layer must satisfy so they are designed in, not retrofitted.
+**Status: Phase 11 citation-first retrieval and answer validation is implemented.**
+
+The safe default is the offline deterministic extractive provider. Configurable
+OpenAI-compatible and Anthropic-compatible adapters implement the same
+structured provider contract, but no external provider is required for the
+controlled-corpus benchmark and no secret is stored in a run.
 
 ## Position in the architecture
 
-AI is the top of the hierarchy and reads only:
-
+```text
+primary sources → database → structured evidence → provenance/citations
+                → structured + PostgreSQL FTS retrieval → provider
+                → deterministic claim/citation validation → UI
 ```
-primary sources → database → structured evidence → provenance/citations → search/network → AI
-```
 
-AI output is `AI ANALYSIS`. It is never a court finding, never testimony, never a
-document. It is never a source of truth and is never written back into an evidence
-table. "AI memory" is not evidence.
+Primary sources, the database, provenance, and citations remain authoritative.
+Model memory is not evidence. AI never writes a source record, finding,
+relationship, citation resolution, or human verification state.
 
 ## Retrieval before composition
 
-1. The question is scoped (case, entity, date range).
-2. Sources are retrieved from the record (lexical + pgvector) and **listed to the
-   user before any answer text exists**.
-3. Composition may only cite items in the retrieved set.
-4. Every citation is checked against the persisted resolution index (ADR-005).
-5. If any citation in any block is not `resolved`, **the whole answer is
-   withheld** and the gap reported. Partial answers are more dangerous than none.
+1. Resolve explicitly requested filing references against the held case. A
+   missing filing or Trial Judgment causes an immediate audited abstention.
+2. Retrieve non-rejected structured findings and party/Court arguments plus
+   chunks and open-session transcript segments from public or public-redacted,
+   fully parsed held versions.
+3. Persist the ranked retrieval set before generation. Each snapshot stores the
+   exact anchor, coordinates, source/version identifiers, visibility, excerpt
+   and SHA-256, retrieval method/value, category, and copied verification state
+   and reviewer metadata.
+4. Supply only those snapshots to the provider, with source text serialized as
+   untrusted data.
+5. Validate the provider response against the persisted source whitelist. The
+   UI lists sources before answer blocks and can open the exact record target.
 
-## Answer structure
+The Phase 11 baseline uses structured retrieval plus PostgreSQL full-text
+search. No embedding is created. An embedding provider may be added later only
+after a measured retrieval evaluation shows a need; it must not weaken the
+same visibility, provenance, citation, or validation boundary.
 
-The API returns ordered `AnswerBlock`s (`packages/shared`): `court`, `evidence`,
-`testimony`, `spo`, `defence`, then a boundary, then `ai`. The client never
-reorders. `kind: ai` renders in the dashed AI container after the labelled
-boundary — four simultaneous signals, never fewer.
+## Answer and citation validation
 
-## Neutrality
+Record categories remain separate and ordered:
 
-The AI layer must always distinguish:
+`COURT FINDING` · `DOCUMENT / EXHIBIT` · `WITNESS TESTIMONY` · `SPO ARGUMENT` ·
+`DEFENCE ARGUMENT` · `COURT RESPONSE` · `HUMAN NOTE` · `AI ANALYSIS`
 
-`COURT FINDING` · `WITNESS TESTIMONY` · `SPO ARGUMENT` · `DEFENCE ARGUMENT` ·
-`DOCUMENT / EXHIBIT` · `AI ANALYSIS`
+The validator independently enforces:
 
-It must never produce guilt scores, suspicion scores, credibility scores, importance
-rankings, or appeal success probabilities — and the schema has no field to hold
-them. Appeal-adjacent output is titled _Potential Issues for Review_. In its own
-voice it never uses _lying, dishonest, false, unreliable, guilty, culpable,
-suspicious, likely, probable, strong, weak_; such words appear only inside a quoted
-court finding with its citation and badge.
+- source IDs belong to the exact retrieval whitelist;
+- every material block links to a source;
+- record block kind matches the persisted source category;
+- verbatim text exactly matches a retrieved excerpt after whitespace
+  normalization;
+- unreviewed paraphrases are rejected;
+- record categories cannot contain AI analysis;
+- AI analysis is limited to the versioned non-factual boundary sentence;
+- prohibited guilt, credibility, judicial-quality, or outcome conclusions are
+  rejected;
+- provider abstentions and all validation failures withhold the entire answer.
 
-## Protected witnesses
+Validation flags include `UNSUPPORTED_CLAIM`, `CITATION_NOT_FOUND`,
+`CITATION_DOES_NOT_SUPPORT_CLAIM`, `QUOTE_NOT_VERIFIED`,
+`DOCUMENT_NOT_FOUND`, `TRANSCRIPT_LOCATION_NOT_FOUND`, and
+`EXHIBIT_NOT_FOUND`. No partial answer is rendered after a failure.
 
-Prompts and retrieval sets contain only W-codes for protected witnesses. The model
-is never asked to, and retrieval never enables it to, resolve a code to a name.
-Closed-session and redacted ranges are excluded from retrieval and listed to the
-user as gaps.
+## Prompt and run governance
 
-## Gaps
+Prompts are immutable repository files in `packages/prompts/`. A changed prompt
+gets a new integer version and file. Every run persists provider, model,
+temperature/parameters, prompt row and system-prompt SHA-256, question, input
+hash, ranked source snapshots, structured provider output, validation errors,
+token counts when reported, timestamps, and claim-to-source links. Provider
+credentials and raw secret-bearing requests are not persisted.
 
-Closed sessions, redactions, untranslated documents and unresolved citations are
-returned alongside the answer as `Gap` objects and always rendered. The model is
-never asked to fill them.
+## Save behavior
 
-## Evaluation (planned, `tests/evaluation/`)
+Saving a valid answer creates a `research_notes` row with provenance
+`ai_assisted` and a required `origin_ai_run_id`. It remains a research note and
+never becomes evidence. A withheld or empty answer cannot be saved.
 
-- Citation accuracy: every cited page/¶/line contains the quoted text.
-- Withhold rate: answers containing an unresolved citation are withheld 100 %.
-- Neutrality lint: banned-vocabulary scan over generated text outside quotations.
-- Boundary integrity: every `ai` block follows the boundary in the payload.
+## Protected material and gaps
 
-## Provider configuration
+Only public/public-redacted held versions enter retrieval. Closed-session
+segments are excluded. Protected witnesses remain code-only; internal witness
+UUIDs are not supplied to providers. Redactions, unresolved citations, absent
+records, and the known missing Trial Judgment, F03743, and F03746 are reported
+as gaps rather than reconstructed.
 
-`AI_PROVIDER`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `EMBEDDING_MODEL` exist in
-`.env.example` as placeholders. Nothing reads them. Every AI run will be recorded
-in `ai_runs` with model, prompt version, retrieval set and unresolved count.
+## Evaluation
+
+`tests/evaluation/phase11_questions.json` is the real-corpus evaluation set.
+`ksc-ingest gate-ai` checks citation correctness, source-category correctness,
+quote accuracy, exact-source navigation, unsupported-claim rendering, and
+abstention quality. It also fingerprints source rows and human verification
+before and after every run. The pinned result is documented in
+`docs/ingestion/PHASE11_QUALITY_GATE.md`.

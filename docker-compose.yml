@@ -79,7 +79,8 @@ services:
 
   api:
     build:
-      context: ./apps/api
+      context: .
+      dockerfile: apps/api/Dockerfile
       args:
         GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped

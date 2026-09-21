@@ -134,6 +134,8 @@ export const ANSWER_BLOCK_KINDS = [
   "testimony",
   "spo",
   "defence",
+  "court_response",
+  "human_note",
   "ai",
 ] as const;
 export type AnswerBlockKind = (typeof ANSWER_BLOCK_KINDS)[number];

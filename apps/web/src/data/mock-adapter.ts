@@ -18,5 +18,13 @@ export function createMockRepositoryAdapter(
     getTimeline: async () => source.getTimeline(),
     getEvidence: async () => source.getEvidence(),
     getAnswer: async () => source.getAnswer(),
+    createAiRun: async () => {
+      throw new Error("AI runs are unavailable in demo mode");
+    },
+    getAiRun: async () => null,
+    listAiRuns: async () => [],
+    saveAiRunAsNote: async () => {
+      throw new Error("AI research notes are unavailable in demo mode");
+    },
   };
 }

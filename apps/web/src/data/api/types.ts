@@ -19,6 +19,87 @@ export type ApiParty = "spo" | "defence" | "victims_counsel" | "court" | "other"
 export type ApiDateType = "event" | "document" | "filing" | "testimony" | "decision";
 export type ApiStance = "supports" | "contradicts" | "qualifies" | "neutral" | "unclear";
 
+export interface ApiAiSource {
+  id: string;
+  rank: number;
+  retrieval_method: string;
+  retrieval_score: string | number;
+  category:
+    | "court_finding"
+    | "witness_testimony"
+    | "spo_argument"
+    | "defence_argument"
+    | "document_exhibit"
+    | "court_response"
+    | "human_note";
+  visibility: string;
+  ref: string;
+  version_ref: string | null;
+  display: string;
+  target_path: string;
+  source_url: string | null;
+  excerpt: string;
+  excerpt_sha256: string;
+  page_from: number | null;
+  page_to: number | null;
+  pdf_page_index: number | null;
+  para_from: number | null;
+  para_to: number | null;
+  line_from: number | null;
+  line_to: number | null;
+  verification_state: ApiVerificationState;
+  verification_reviewed_by: string | null;
+  verification_reviewed_at: string | null;
+  metadata: Record<string, string | null> | null;
+}
+
+export interface ApiAiBlock {
+  id: string;
+  sequence: number;
+  kind:
+    "court" | "evidence" | "testimony" | "spo" | "defence" | "court_response" | "human_note" | "ai";
+  content_type: "verbatim_quote" | "source_paraphrase" | "ai_analysis" | "abstention";
+  text: string;
+  verification_state: ApiVerificationState;
+  sources: ApiAiSource[];
+}
+
+export interface ApiAiRun {
+  id: string;
+  question: string;
+  provider: string;
+  model: string;
+  prompt_name: string;
+  prompt_version: number;
+  system_prompt_sha256: string;
+  parameters: Record<string, unknown>;
+  status: "pending" | "completed" | "failed";
+  created_at: string;
+  finished_at: string | null;
+  answer_withheld: boolean;
+  insufficient_evidence: boolean;
+  sources: ApiAiSource[];
+  blocks: ApiAiBlock[];
+  citation_status: {
+    produced: number;
+    resolved: number;
+    quotations_matched: number;
+    unresolved: number;
+    human_verified_sources: number;
+    unreviewed_sources: number;
+  };
+  validation_errors: { code: string; detail: string; claim_index: number | null }[];
+  gaps: string[];
+}
+
+export interface ApiAiRunSummary {
+  id: string;
+  question: string;
+  status: "pending" | "completed" | "failed";
+  answer_withheld: boolean;
+  created_at: string;
+}
+
 export interface ApiPage<T> {
   items: T[];
   total: number;

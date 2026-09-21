@@ -5,6 +5,8 @@
 
 import type {
   ApiCitation,
+  ApiAiRun,
+  ApiAiRunSummary,
   ApiClaim,
   ApiDocumentChunk,
   ApiDocumentDetail,
@@ -22,6 +24,116 @@ import type {
   ApiSearch,
   ApiWitness,
 } from "./types";
+
+export const aiRun: ApiAiRun = {
+  id: "00000000-0000-4000-8000-000000000011",
+  question: "What did the Panel find?",
+  provider: "deterministic",
+  model: "extractive-v1",
+  prompt_name: "citation-first-answer",
+  prompt_version: 1,
+  system_prompt_sha256: "a".repeat(64),
+  parameters: { temperature: 0 },
+  status: "completed",
+  created_at: "2026-09-21T10:00:00Z",
+  finished_at: "2026-09-21T10:00:01Z",
+  answer_withheld: false,
+  insufficient_evidence: false,
+  sources: [
+    {
+      id: "00000000-0000-4000-8000-000000000012",
+      rank: 1,
+      retrieval_method: "structured_verified",
+      retrieval_score: 100,
+      category: "court_finding",
+      visibility: "public_redacted",
+      ref: "KSC-DEMO-0000/F-DEMO-001",
+      version_ref: "F-DEMO-001/RED",
+      display: "F-DEMO-001/RED · ¶12–14",
+      target_path: "/documents/F-DEMO-001?version=F-DEMO-001%2FRED&para=12",
+      source_url: "https://example.invalid/demo/F-DEMO-001/RED.pdf",
+      excerpt: "The Panel finds that the synthetic demo event occurred (demo text).",
+      excerpt_sha256: "b".repeat(64),
+      page_from: 2,
+      page_to: null,
+      pdf_page_index: 1,
+      para_from: 12,
+      para_to: 14,
+      line_from: null,
+      line_to: null,
+      verification_state: "human_verified",
+      verification_reviewed_by: "demo-reviewer",
+      verification_reviewed_at: "2026-09-20T12:00:00Z",
+      metadata: { finding_key: "FD-DEMO-001" },
+    },
+  ],
+  blocks: [
+    {
+      id: "00000000-0000-4000-8000-000000000013",
+      sequence: 0,
+      kind: "court",
+      content_type: "verbatim_quote",
+      text: "The Panel finds that the synthetic demo event occurred (demo text).",
+      verification_state: "ai_flagged",
+      sources: [],
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000014",
+      sequence: 1,
+      kind: "ai",
+      content_type: "ai_analysis",
+      text: "The available record indicates a finding at the cited paragraphs.",
+      verification_state: "ai_flagged",
+      sources: [],
+    },
+  ],
+  citation_status: {
+    produced: 2,
+    resolved: 2,
+    quotations_matched: 1,
+    unresolved: 0,
+    human_verified_sources: 1,
+    unreviewed_sources: 0,
+  },
+  validation_errors: [],
+  gaps: [],
+};
+aiRun.blocks[0]!.sources = aiRun.sources;
+aiRun.blocks[1]!.sources = aiRun.sources;
+
+export const aiRunSummary: ApiAiRunSummary = {
+  id: aiRun.id,
+  question: aiRun.question,
+  status: aiRun.status,
+  answer_withheld: false,
+  created_at: aiRun.created_at,
+};
+
+export const withheldAiRun: ApiAiRun = {
+  ...aiRun,
+  id: "00000000-0000-4000-8000-000000000015",
+  question: "What does the Trial Judgment establish?",
+  answer_withheld: true,
+  insufficient_evidence: true,
+  sources: [],
+  blocks: [],
+  citation_status: {
+    produced: 0,
+    resolved: 0,
+    quotations_matched: 0,
+    unresolved: 1,
+    human_verified_sources: 0,
+    unreviewed_sources: 0,
+  },
+  validation_errors: [
+    {
+      code: "DOCUMENT_NOT_FOUND",
+      detail: "The controlled corpus does not contain the public Trial Judgment.",
+      claim_index: null,
+    },
+  ],
+  gaps: ["The controlled corpus does not contain the public Trial Judgment."],
+};
 
 export const counts: ApiReferenceCounts = {
   relationships: 2,
@@ -470,15 +582,24 @@ export const routes: Record<string, unknown> = {
   "/network": network,
   "/network/path": evidencePath,
   "/search": search,
+  "/ai/runs": [aiRunSummary],
+  "POST /ai/runs": aiRun,
+  [`/ai/runs/${aiRun.id}`]: aiRun,
+  [`/ai/runs/${withheldAiRun.id}`]: withheldAiRun,
+  [`POST /ai/runs/${aiRun.id}/notes`]: {
+    id: "00000000-0000-4000-8000-000000000016",
+    provenance: "ai_assisted",
+  },
 };
 
 export function stubFetch(table: Record<string, unknown> = routes) {
   const calls: string[] = [];
-  const fetchImpl = async (input: string): Promise<Response> => {
+  const fetchImpl = async (input: string, init?: RequestInit): Promise<Response> => {
     const url = new URL(input);
     const path = url.pathname.replace(/^\/api\/v1/, "");
     calls.push(path + url.search);
-    const body = table[path];
+    const key = init?.method === "POST" ? `POST ${path}` : path;
+    const body = table[key];
     if (body === undefined) {
       return new Response(JSON.stringify({ detail: "not found" }), { status: 404 });
     }

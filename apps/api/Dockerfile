@@ -13,13 +13,14 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY pyproject.toml README.md ./
-COPY src ./src
+COPY apps/api/pyproject.toml apps/api/README.md ./
+COPY apps/api/src ./src
 RUN pip install --upgrade pip && pip install .
 
-COPY alembic.ini ./
-COPY alembic ./alembic
-COPY entrypoint.sh ./
+COPY apps/api/alembic.ini ./
+COPY apps/api/alembic ./alembic
+COPY apps/api/entrypoint.sh ./
+COPY packages/prompts ./packages/prompts
 RUN chmod +x entrypoint.sh && chown -R app:app /app
 
 USER app

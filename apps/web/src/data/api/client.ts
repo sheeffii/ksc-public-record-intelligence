@@ -43,4 +43,14 @@ export class ApiClient {
     if (!response.ok) throw new ApiError(response.status, path);
     return (await response.json()) as T;
   }
+
+  async post<T>(path: string, body: unknown): Promise<T> {
+    const response = await this.fetchImpl(`${this.baseUrl}/api/v1${path}`, {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new ApiError(response.status, path);
+    return (await response.json()) as T;
+  }
 }

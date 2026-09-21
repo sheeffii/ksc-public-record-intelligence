@@ -27,6 +27,7 @@ from ksc_api.db.session import get_sessionmaker
 from ksc_api.logging_config import configure_logging
 from ksc_api.models import Case
 from ksc_api.repositories.ingestion import IngestionStatusRepository
+from ksc_ingestion.ai_quality_gate import run_phase11_gate, write_phase11_report
 from ksc_ingestion.capture import BundleError, load_bundle
 from ksc_ingestion.capture_import import SourceImportError, import_capture
 from ksc_ingestion.corpus_manifest import build_manifest, validate_manifest_file, write_manifest
@@ -290,6 +291,30 @@ def cmd_gate_findings(args: argparse.Namespace) -> int:
     return 0 if report.passed else 1
 
 
+def cmd_gate_ai(args: argparse.Namespace) -> int:
+    """Evaluate citation-first AI against the held controlled corpus."""
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        report = run_phase11_gate(
+            session,
+            settings,
+            manifest_path=Path(args.manifest),
+            evaluation_path=Path(args.evaluation),
+            generated_at=args.generated_at,
+        )
+    print(
+        f"cases={report.evaluation_cases} sources={report.retrieved_sources} "
+        f"claim_source_links={report.validated_claim_source_links} "
+        f"abstentions={report.correctly_abstained_cases} "
+        f"source_records_unchanged={str(report.source_records_unchanged).lower()} "
+        f"passed={str(report.passed).lower()}"
+    )
+    if args.json:
+        write_phase11_report(report, Path(args.json))
+        print(f"report written to {args.json}")
+    return 0 if report.passed else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ksc-ingest", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -355,6 +380,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_findings_gate.add_argument("--generated-at", default="2026-09-21")
     p_findings_gate.add_argument("--json")
     p_findings_gate.set_defaults(func=cmd_gate_findings)
+    p_ai_gate = sub.add_parser(
+        "gate-ai", help="evaluate Phase 11 citation-first AI on the controlled corpus"
+    )
+    p_ai_gate.add_argument(
+        "--manifest", default="docs/ingestion/manifests/phase7-controlled-corpus.json"
+    )
+    p_ai_gate.add_argument("--evaluation", default="tests/evaluation/phase11_questions.json")
+    p_ai_gate.add_argument("--generated-at", default="2026-09-21")
+    p_ai_gate.add_argument("--json")
+    p_ai_gate.set_defaults(func=cmd_gate_ai)
     return parser
 
 

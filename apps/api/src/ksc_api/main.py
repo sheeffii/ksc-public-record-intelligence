@@ -15,7 +15,7 @@ from ksc_api import __version__
 from ksc_api.config import get_settings
 from ksc_api.logging_config import configure_logging
 from ksc_api.repositories.records import CaseNotConfiguredError
-from ksc_api.routers import ingestion, records, system
+from ksc_api.routers import ai, ingestion, records, system
 
 
 def create_app() -> FastAPI:
@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
     app.include_router(system.router)
     app.include_router(records.router)
     app.include_router(ingestion.router)
+    app.include_router(ai.router)
 
     @app.exception_handler(CaseNotConfiguredError)
     def _case_not_configured(_: Request, exc: CaseNotConfiguredError) -> JSONResponse:
