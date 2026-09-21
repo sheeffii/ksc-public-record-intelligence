@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-21 (Phase 11 complete)
+Last updated: 2026-09-21 (Phase 12 complete)
 
 ## Milestones
 
@@ -19,18 +19,18 @@ Last updated: 2026-09-21 (Phase 11 complete)
 | **9**  | **Real evidence network and timeline**                                                                    | ✅ **Complete (2026-09-21)** — controlled-corpus quality gate PASS (ADR-014)                             |
 | **10** | **Judgment, findings and evidence matrix**                                                                | ✅ **Complete (2026-09-21)** — real Court-decision quality gate PASS (ADR-015)                           |
 | **11** | **Citation-first AI / RAG**                                                                               | ✅ **Complete (2026-09-21)** — real-corpus AI quality gate PASS (ADR-016)                                |
-| 12     | Appeal research, red team and statement comparison                                                        | **Next / pending**                                                                                       |
-| 13     | Gradual full public corpus ingestion and production hardening                                             | Planned                                                                                                  |
+| **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                            |
+| 13     | Gradual full public corpus ingestion and production hardening                                             | **Next / pending**                                                                                       |
 | 14     | External media and public statements intelligence                                                         | Post-core / later                                                                                        |
 
 ## Roadmap
 
 The persistent execution plan is `docs/roadmap/` (installed 2026-09-19):
 `00_MASTER_ROADMAP.md` is the high-level plan and each `PHASE_*.md` is the
-execution specification for one milestone. Phases 6, 5B, 7, 8, 9, 10, and 11
-are complete. Remaining planned order: 12 → 13 → 14.
+execution specification for one milestone. Phases 6, 5B, 7, 8, 9, 10, 11, and
+12 are complete. Remaining planned order: 13 → 14.
 The table above is the status record; the roadmap files hold scope and acceptance
-criteria. Phase 11 is complete; Phase 12 is next/pending. Repository code,
+criteria. Phase 12 is complete; Phase 13 is next/pending. Repository code,
 migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -313,6 +313,33 @@ check` and `head → base → head` are integration-tested.
   Playwright (96 passed / 8 skipped), real-data Phase 11 Playwright (4 passed)
   and Phase 10 Playwright (2 passed).
 
+## Completed features (Phase 12)
+
+- Final closeout audit completed 2026-09-21 against implementation commit
+  `7a9779b`, migration `0008`, automated gates, the rebuilt live stack, real
+  API/UI probes and the pinned controlled-corpus appeal quality report
+  (ADR-017).
+- First-class neutral issue, exact issue-source, missing-material, statement
+  comparison, red-team review/finding and issue-linked research-note models;
+  Court treatment and human verification are explicit and no prohibited
+  scoring/prediction field exists.
+- One real `NEEDS_MORE_EVIDENCE` issue over F03752 paragraphs 12–16 has 5 exact
+  human-verified source roles, 4 explicit missing sources, 3 red-team
+  perspectives and an `insufficient_record` result. It asserts no legal error.
+- One exact comparison links F03752 paragraph 12 and F03667/COR/RED page 160.
+  It is `not_comparable` because the pre-correction brief is absent and makes no
+  credibility inference.
+- Real `/appeal`, `/appeal/argument/{id}` and statement-comparison routes show
+  source-backed data, exact navigation, Court treatment, missing material,
+  citation audit and all three red-team perspectives with no demo flag.
+- Phase 11 remains the only AI retrieval/provider/validation path. AI-assisted
+  reviews require an audited run; the real Phase 12 benchmark is human-reviewed
+  and does not fill corpus gaps.
+- Final gates: 255 backend tests, 199 frontend tests, production build, lint,
+  typecheck, migration round-trip/drift checks, real-corpus appeal gate,
+  standard Playwright (96 passed / 14 skipped) and real-data Phase 10–12
+  Playwright (12 passed across desktop/mobile).
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -337,13 +364,13 @@ check` and `head → base → head` are integration-tested.
 
 ## Test / evaluation status
 
-| Suite                                    | Count        | Last result                                   |
-| ---------------------------------------- | ------------ | --------------------------------------------- |
-| Backend unit (pytest)                    | 176          | pass                                          |
-| Backend integration (pytest, live infra) | 74           | pass                                          |
-| Frontend (vitest)                        | 197          | pass                                          |
-| E2E (playwright)                         | 52 specs × 2 | 96 pass / 8 skip; real-data 6/6 pass (P10+11) |
-| Evaluation                               | 4 questions  | Phase 11 real-corpus AI gate PASS             |
+| Suite                                    | Count        | Last result                                         |
+| ---------------------------------------- | ------------ | --------------------------------------------------- |
+| Backend unit (pytest)                    | 178          | pass                                                |
+| Backend integration (pytest, live infra) | 77           | pass                                                |
+| Frontend (vitest)                        | 199          | pass                                                |
+| E2E (playwright)                         | 55 specs × 2 | 96 pass / 14 skip; real-data 12/12 pass (P10–12)    |
+| Evaluation                               | 1 real issue | Phase 12 controlled-corpus appeal quality gate PASS |
 
 Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all pass.
 
@@ -359,11 +386,11 @@ tags `phase-5b-complete` and `phase-7-complete` pushed. No remote deployment
 or production workflow. Phase 10 is complete on
 `feat/phase-10-judgment-findings-matrix`, local tag `phase-10-complete`. Phase
 11 is complete on `feat/phase-11-citation-first-ai-rag`; local tag
-`phase-11-complete` marks its final documentation checkpoint (migration `0007`
-applied to the rebuilt stack). On 2026-09-21 `main` was fast-forwarded to
+`phase-11-complete` marks its final documentation checkpoint. On 2026-09-21 `main` was fast-forwarded to
 `277686b` (Phase 11 closeout) and pushed with tag `phase-11-complete`;
-`feat/phase-12-appeal-research-red-team` was created from it for the next
-milestone.
+Phase 12 was completed locally on `feat/phase-12-appeal-research-red-team` with
+migration `0008` applied to the rebuilt stack and local tag
+`phase-12-complete`. Phase 12 is not pushed or merged.
 
 ## Verification limitations
 
@@ -397,3 +424,9 @@ invocation; closeout smoke checks added further audited runs and one
 `ai_assisted` research note. Findings, evidence links, arguments, documents,
 versions, citations and verification states are unchanged. No additional
 record was ingested and no embedding exists.
+
+Phase 12 projection: appeal issues 1 · issue-source links 5 · missing-material
+rows 4 · statement comparisons 1 · red-team reviews 1 · red-team findings 4 ·
+distinct exact citations 7/7 resolved and navigable · human-verified Phase 12
+relationships 10 · incomplete-record abstentions 1. The canonical finding and
+finding-evidence fingerprint is unchanged. No additional record was ingested.

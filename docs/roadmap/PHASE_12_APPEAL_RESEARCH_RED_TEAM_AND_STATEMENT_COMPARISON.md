@@ -1,6 +1,13 @@
 # Phase 12 — Appeal Research, Red Team & Statement Comparison
 
-**Status:** Pending.
+**Status:** Complete.
+
+**Completed:** 2026-09-21.
+
+**Completion commit:** `7a9779b` (final verified implementation/data baseline;
+the subsequent roadmap closeout commit records completion metadata).
+
+**Completion tag:** `phase-12-complete`.
 
 ## Goal
 
@@ -224,15 +231,34 @@ Evaluate citation coverage and source fidelity, not desired outcomes.
 
 ## Acceptance criteria
 
-- Appeal Research uses real record data;
-- issue categories work;
-- Argument Lab is source-backed;
-- Red Team provides multiple perspectives without winner/prediction;
-- Statement Comparison uses exact citations;
-- sentencing/finding research is traceable;
-- citation audit blocks unsupported outputs;
-- human review state is first-class;
-- no prohibited scores/predictions exist.
+- Appeal Research uses real record data; ✅ the API/UI serve one narrow,
+  human-reviewed issue over the real F03752 finding and exact held sources.
+- issue categories work; ✅ all roadmap categories and legal/factual/sentencing/
+  procedural/other contexts are constrained in schema and typed in API/UI;
+  category filtering is supported.
+- Argument Lab is source-backed; ✅ its outline and red-team stages reuse the
+  issue's canonical citation whitelist, expose audit state, and save only human
+  notes with resolved issue-source citations.
+- Red Team provides multiple perspectives without winner/prediction; ✅ Defence
+  analyst, SPO red team, and neutral reviewer remain separate; the real result
+  is `insufficient_record` and the UI states that it declares no winner.
+- Statement Comparison uses exact citations; ✅ the real comparison preserves
+  separate exact citations/excerpts for F03752 paragraph 12 and
+  F03667/COR/RED page 160 and is human verified.
+- sentencing/finding research is traceable; ✅ every issue requires a canonical
+  finding and exact sources; sentencing category/context and the same source
+  roles are supported, while no sentencing issue is fabricated without the
+  absent Trial Judgment.
+- citation audit blocks unsupported outputs; ✅ unresolved or unverified links
+  and missing material prevent ready-for-review state; note citations are
+  whitelist-enforced and affirmative uncited red-team findings are rejected by
+  the database.
+- human review state is first-class; ✅ issues, source links, comparisons,
+  reviews and findings preserve verification state/reviewer metadata; AI output
+  cannot auto-promote itself.
+- no prohibited scores/predictions exist. ✅ model scans, provider-validation
+  adversarial tests, API/UI tests and the real gate confirm no credibility,
+  person, judicial-quality, appeal-success or outcome score/prediction.
 
 ## Stop condition
 
@@ -255,3 +281,46 @@ COMMITS
 NEXT
 MEMORY
 ```
+
+## Completion Record
+
+- Closeout audit: **PASS**, 2026-09-21. The complete phase specification and
+  every acceptance criterion above were checked against migration `0008`,
+  implementation commit `7a9779b`, the migrated real database, API/UI,
+  automated tests, exact-source navigation, the rebuilt healthy stack and the
+  pinned controlled-corpus quality report.
+- Corpus scope: the existing 22-record public corpus was used unchanged. No
+  discovery, download, scraping, full-corpus ingestion or Phase 13 work was
+  performed. The public Trial Judgment, F03743, F03746 and the pre-correction
+  SPO Final Trial Brief remain explicit missing material.
+- Appeal research: one real potential procedural-fairness issue links the
+  canonical F03752 paragraphs 12–16 finding to 5 exact, human-verified source
+  roles. It is `NEEDS_MORE_EVIDENCE`, records Court treatment as `addressed`,
+  and asserts no error or valid ground.
+- Argument Lab / Red Team: source-backed outline, citation audit, resolved-only
+  note whitelist, three visible perspectives, 4 human-verified findings and an
+  `insufficient_record` result. Supporting/contrary/qualifying roles are
+  available but no such real relationship was created without independent
+  support.
+- Statement comparison: one human-verified comparison with two distinct exact
+  citations. It is `not_comparable` because the earlier brief is absent, and it
+  makes no witness/person credibility inference.
+- AI boundary: Phase 11 provider/retrieval/validation and persisted run audit
+  remain the only AI path. `ai_assisted` reviews require an `ai_run_id`; the
+  real benchmark is human-reviewed and no model fills corpus gaps or mutates
+  findings/evidence.
+- Quality gate: 1 issue, 5 source-backed links, 1 comparison, 1 red-team review,
+  4 red-team findings, 7/7 resolved navigable citations, 10 human-verified
+  relationships, 1 incomplete-record abstention, 0 unsupported relationships,
+  and unchanged authoritative finding/evidence fingerprint.
+- Tests/gates: `make lint`, `make typecheck`, `make test`, `make build`,
+  migration `0007 → 0008 → 0007 → 0008`, `alembic check`, live API/UI smoke,
+  standard Playwright and real-data desktop/mobile Playwright passed. Counts:
+  255 backend and 199 frontend tests; standard Playwright 96 passed / 14
+  real-data-gated skipped; Phase 12 real-data Playwright 6 passed, with Phase
+  10/11 regression flows also passing in the combined real-data run.
+- Evidence: `docs/ingestion/PHASE12_QUALITY_GATE.md` and
+  `docs/ingestion/manifests/phase12-controlled-corpus-quality.json`.
+- Scope stop: Phase 13 is not started. No full merits appeal analysis,
+  sentencing conclusion, credibility assessment, outcome predictor, score or
+  ranking was introduced.

@@ -5,15 +5,16 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `feat/phase-12-appeal-research-red-team` (created from `main`
-  = `277686b`; Phase 12 not started).
-- Current milestone: **Phase 11 complete (2026-09-21)**. Stop before Phase 12.
+  = `277686b`; legitimate branch-start commit `2fcc12a` preserved).
+- Current milestone: **Phase 12 complete (2026-09-21)**. Stop before Phase 13.
 - Push state (2026-09-21): `main` fast-forwarded to `277686b` and pushed;
   `phase-11-complete` and `feat/phase-11-citation-first-ai-rag` pushed.
-- Completion tag: `phase-11-complete` at the final Phase 11 closeout commit.
-- Final Phase 11 implementation commit: `58ed7a8`; the subsequent roadmap
+- Completion tag: `phase-12-complete` at the final Phase 12 closeout commit.
+- Final Phase 12 implementation commit: `7a9779b`; the subsequent roadmap
   closeout commit records the final audit and completion metadata.
+- Phase 12 remains local: not pushed or merged.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
-- Migration head: `0007`.
+- Migration head: `0008`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -24,6 +25,8 @@ Live checkpoint. Repository state wins over this note.
   `docs/ingestion/manifests/phase10-controlled-corpus-quality.json`.
 - Phase 11 quality result: `docs/ingestion/PHASE11_QUALITY_GATE.md` and
   `docs/ingestion/manifests/phase11-controlled-corpus-quality.json`.
+- Phase 12 quality result: `docs/ingestion/PHASE12_QUALITY_GATE.md` and
+  `docs/ingestion/manifests/phase12-controlled-corpus-quality.json`.
 - Never push unless explicitly instructed.
 
 ## Phase 8 result
@@ -113,32 +116,64 @@ Live checkpoint. Repository state wins over this note.
   abstentions · 100% citation/category/quote/navigation · zero source or
   verification mutation.
 
+## Phase 12 result
+
+- Migration `0008` adds source-backed appeal issues, exact issue-source roles,
+  explicit missing material, two-source statement comparisons, red-team
+  reviews/findings and optional appeal-issue linkage on research notes.
+- One real `NEEDS_MORE_EVIDENCE` potential issue over the F03752 paragraphs
+  12–16 finding has 5 exact human-verified source links: Court reasoning,
+  Defence/SPO positions (kept as Court summaries), the expressly cited
+  F03667/COR/RED source, and Court response. Court treatment is `addressed`,
+  not an assessment that the reasoning was correct.
+- The issue records 4 missing sources: F03743, F03746, the pre-correction SPO
+  Final Trial Brief, and the public Trial Judgment. Its review result is
+  `insufficient_record`; no legal error, valid ground or outcome is asserted.
+- The Red Team has Defence analyst, SPO red-team and neutral-reviewer stages,
+  with 4 human-verified findings. Supporting/contrary/qualifying source roles
+  exist, but the real benchmark creates none because the held record does not
+  independently establish them.
+- One human-verified comparison uses exact F03752 paragraph 12 and
+  F03667/COR/RED page 160 citations. It is `not_comparable` because the earlier
+  brief is absent and makes no credibility inference.
+- Real Appeal Research, Argument Lab and Statement Comparison routes expose
+  exact navigation, missing material, Court treatment, human review and source
+  audit with no demo flag. Phase 11 remains the only AI architecture;
+  AI-assisted reviews require an audited run and cannot auto-verify evidence.
+- Real gate: 1 issue · 5 source links · 1 comparison · 1 review · 4 red-team
+  findings · 7/7 citations resolved/navigable · 10 human-verified relationships
+  · 1 abstention · authoritative finding/evidence state unchanged.
+
 ## Verification
 
-- Backend unit: 176 passed.
-- Backend integration: 74 passed (250 backend total).
-- Frontend: 197 passed; ESLint, TypeScript and Prettier pass.
+- Backend unit: 178 passed.
+- Backend integration: 77 passed (255 backend total).
+- Frontend: 199 passed; ESLint, TypeScript and Prettier pass.
 - Final `make lint`, `make typecheck`, `make test`, production build, migration
-  `0006 → 0007 → 0006 → 0007` round-trip, live-DB model drift check, rebuilt
-  stack health, real API/UI smoke checks, the re-run real-corpus AI gate,
-  standard Playwright (96 passed, 8 skipped) and the real-data Phase 11
-  (4 passed) and Phase 10 (2 passed) runs all passed before the tag.
+  `0007 → 0008 → 0007 → 0008` round-trip, live-DB model drift check, rebuilt
+  stack health, real API/UI smoke checks, the re-run Phase 12 real-corpus gate,
+  standard Playwright (96 passed, 14 skipped) and real-data Phase 10–12
+  Playwright (12 passed across desktop/mobile) all passed before the tag.
 - Real-data Playwright needs a host web on port 3000 in API mode
   (`NEXT_PUBLIC_DATA_SOURCE=api … next dev -p 3000`, Docker web stopped)
   because `CORS_ORIGINS` allows only `http://localhost:3000`.
-- The final roadmap closeout audit re-read the complete Phase 11 specification
-  and verified every acceptance criterion against code, migration `0007`, tests,
+- The final roadmap closeout audit re-read the complete Phase 12 specification
+  and verified every acceptance criterion against code, migration `0008`, tests,
   the live API/database/UI and the pinned real-corpus quality gate.
 
 ## Architecture / decisions
 
-- ADR-001–015 remain in force; ADR-016 records persisted retrieval snapshots,
-  the deterministic evidence boundary and fail-closed AI answers.
-- Migration `0007_citation_first_ai_rag.py` adds the Phase 11 audit tables on
-  top of `0006_judgment_findings_matrix.py`.
+- ADR-001–016 remain in force; ADR-017 records human-verified potential issues,
+  exact source roles, neutral Court treatment/comparison semantics and the
+  shared Phase 11 AI boundary.
+- Migration `0008_appeal_research_red_team.py` adds the Phase 12 tables on top
+  of `0007_citation_first_ai_rag.py`.
 - AI layer: `apps/api/src/ksc_api/services/{ai_providers,ai_research,ai_validation}.py`,
   router `routers/ai.py`, gate `workers/ingestion/src/ksc_ingestion/ai_quality_gate.py`,
   UI `apps/web/src/components/screens/phase5/AiResearchReal.tsx`.
+- Appeal layer: `apps/api/src/ksc_api/{models/appeal.py,services/appeal_research.py}`,
+  gate `workers/ingestion/src/ksc_ingestion/appeal_quality_gate.py`, UI
+  `apps/web/src/components/screens/phase5/AppealResearchReal.tsx`.
 - Parser/resolver/pipeline:
   `workers/ingestion/src/ksc_ingestion/{pdf_parser,citation_resolution,parse_pipeline,evidence_pipeline}.py`.
 - Real-corpus bytes stay git-ignored and hash-addressed in MinIO. The Phase 7
@@ -163,11 +198,15 @@ Live checkpoint. Repository state wins over this note.
   completion path. External adapters are configuration with test doubles; no
   paid provider or model-quality claim is made. AI analysis is limited to a
   fixed non-factual boundary statement.
+- Phase 12 proves a narrow procedural review workflow, not a full merits or
+  sentencing analysis. The public Trial Judgment, F03743, F03746 and the
+  pre-correction brief are absent; the comparison therefore remains
+  `not_comparable` and the issue remains `NEEDS_MORE_EVIDENCE`.
 
 ## Next
 
-Phase 12 is **NEXT / PENDING**. Await explicit authorization, inspect repository
-state, and read the complete Phase 12 roadmap. Do not begin Phase 12 from this
+Phase 13 is **NEXT / PENDING**. Await explicit authorization, inspect repository
+state, and read the complete Phase 13 roadmap. Do not begin Phase 13 from this
 checkpoint.
 
 ## Non-negotiable rules
