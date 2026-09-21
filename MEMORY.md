@@ -6,6 +6,8 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-13-full-public-corpus-ingestion-hardening`; its
   preserved branch-start checkpoint is `2adb1f1` from `main` = `bac0b0f`.
+  Phase 13 checkpoint commit (architecture, migration `0009`, tests, operations
+  docs, gate result 22/50): `679f74c`. Local only; not pushed, merged or tagged.
 - Current milestone: **Phase 13 IN PROGRESS (2026-09-21)**. Architecture,
   operations and the real gate are implemented; completion is blocked at 22/50
   lawfully available real records.

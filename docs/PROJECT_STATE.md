@@ -424,8 +424,9 @@ or production workflow. Phase 10 is complete on
 `277686b` (Phase 11 closeout) and pushed with tag `phase-11-complete`;
 Phase 12 was completed, fast-forwarded to `main`, pushed, and tagged
 `phase-12-complete`. Phase 13 is local on
-`feat/phase-13-full-public-corpus-ingestion-hardening`; migration `0009` is
-applied locally. It is not pushed, merged or tagged.
+`feat/phase-13-full-public-corpus-ingestion-hardening` at checkpoint commit
+`679f74c`; migration `0009` is applied locally. It is not pushed, merged or
+tagged.
 
 ## Verification limitations
 
