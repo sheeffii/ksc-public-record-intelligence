@@ -56,5 +56,19 @@ that no answer block is rendered or saveable.
 - No embedding is used because structured retrieval plus PostgreSQL FTS meets
   the controlled evaluation. Semantic recall outside this corpus is not claimed.
 
+## Closeout verification (2026-09-21)
+
+The gate was re-run against the rebuilt container stack at migration head
+`0007` with a substantively identical result (only run identifiers differ).
+Live checks on the same stack confirmed: identical ranked snapshots, excerpt
+hashes and blocks for repeated questions; `POST` responses equal to the
+persisted `GET` audit record; whole-answer abstention for the Trial Judgment,
+`F03743`, `F03746`, an unknown filing and an unmatched query; five adversarial
+provider outputs (fabricated ID, invented finding, category conflation,
+injected exhibit, broken output) withheld with zero outputs; and byte-identical
+findings, evidence links, arguments, documents, versions, citations and
+verification states before and after every run. Real-data Playwright flows
+passed on desktop and mobile.
+
 The machine-readable report is
 `docs/ingestion/manifests/phase11-controlled-corpus-quality.json`.

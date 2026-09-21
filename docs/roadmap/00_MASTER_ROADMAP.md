@@ -71,8 +71,8 @@ The original core roadmap contains **13 numbered phases**. Two additional milest
 | 8 | Parsing, Exact Citations, Resolution & Search | **COMPLETE (2026-09-20)** |
 | 9 | Real Evidence Network & Timeline | **COMPLETE (2026-09-21)** |
 | 10 | Judgment, Findings & Evidence Matrix | **COMPLETE (2026-09-21)** |
-| 11 | Citation-First AI / RAG | **NEXT / PENDING** |
-| 12 | Appeal Research, Red Team & Statement Comparison | Pending |
+| 11 | Citation-First AI / RAG | **COMPLETE (2026-09-21)** |
+| 12 | Appeal Research, Red Team & Statement Comparison | **NEXT / PENDING** |
 | 13 | Gradual Full Public Corpus Ingestion & Production Hardening | Pending |
 | 14 | External Media & Public Statements Intelligence | Post-core / optional future expansion |
 
@@ -102,8 +102,8 @@ Phase 14
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
 
-Current checkpoint: Phase 10 is complete and tagged `phase-10-complete`. Phase
-11 is next/pending and must not begin without explicit authorization.
+Current checkpoint: Phase 11 is complete and tagged `phase-11-complete`. Phase
+12 is next/pending and must not begin without explicit authorization.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

@@ -66,9 +66,7 @@
       "quotes_accurate": true,
       "exact_source_navigation": true,
       "abstention_correct": true,
-      "validation_flags": [
-        "DOCUMENT_NOT_FOUND"
-      ],
+      "validation_flags": ["DOCUMENT_NOT_FOUND"],
       "passed": true
     },
     {
@@ -83,9 +81,7 @@
       "quotes_accurate": true,
       "exact_source_navigation": true,
       "abstention_correct": true,
-      "validation_flags": [
-        "DOCUMENT_NOT_FOUND"
-      ],
+      "validation_flags": ["DOCUMENT_NOT_FOUND"],
       "passed": true
     },
     {
@@ -100,9 +96,7 @@
       "quotes_accurate": true,
       "exact_source_navigation": true,
       "abstention_correct": true,
-      "validation_flags": [
-        "DOCUMENT_NOT_FOUND"
-      ],
+      "validation_flags": ["DOCUMENT_NOT_FOUND"],
       "passed": true
     }
   ],

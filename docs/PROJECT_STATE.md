@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-21 (Phase 10 complete)
+Last updated: 2026-09-21 (Phase 11 complete)
 
 ## Milestones
 
@@ -18,8 +18,8 @@ Last updated: 2026-09-21 (Phase 10 complete)
 | **8**  | **Parsing, exact citations, resolution index, search**                                                    | ✅ **Complete (2026-09-20)** — controlled-corpus quality gate PASS (ADR-013)                             |
 | **9**  | **Real evidence network and timeline**                                                                    | ✅ **Complete (2026-09-21)** — controlled-corpus quality gate PASS (ADR-014)                             |
 | **10** | **Judgment, findings and evidence matrix**                                                                | ✅ **Complete (2026-09-21)** — real Court-decision quality gate PASS (ADR-015)                           |
-| 11     | Citation-first AI / RAG                                                                                   | **Next / pending**                                                                                       |
-| 12     | Appeal research, red team and statement comparison                                                        | Planned                                                                                                  |
+| **11** | **Citation-first AI / RAG**                                                                               | ✅ **Complete (2026-09-21)** — real-corpus AI quality gate PASS (ADR-016)                                |
+| 12     | Appeal research, red team and statement comparison                                                        | **Next / pending**                                                                                       |
 | 13     | Gradual full public corpus ingestion and production hardening                                             | Planned                                                                                                  |
 | 14     | External media and public statements intelligence                                                         | Post-core / later                                                                                        |
 
@@ -27,10 +27,10 @@ Last updated: 2026-09-21 (Phase 10 complete)
 
 The persistent execution plan is `docs/roadmap/` (installed 2026-09-19):
 `00_MASTER_ROADMAP.md` is the high-level plan and each `PHASE_*.md` is the
-execution specification for one milestone. Phases 6, 5B, 7, 8, 9, and 10 are
-complete. Remaining planned order: 11 → 12 → 13 → 14.
+execution specification for one milestone. Phases 6, 5B, 7, 8, 9, 10, and 11
+are complete. Remaining planned order: 12 → 13 → 14.
 The table above is the status record; the roadmap files hold scope and acceptance
-criteria. Phase 10 is complete; Phase 11 is next/pending. Repository code,
+criteria. Phase 11 is complete; Phase 12 is next/pending. Repository code,
 migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -287,6 +287,32 @@ check` and `head → base → head` are integration-tested.
   typecheck, migration round-trip/drift checks, real-corpus gate, standard
   Playwright (96 passed / 4 skipped), and real-data Phase 10 Playwright (2 passed).
 
+## Completed features (Phase 11)
+
+- Final closeout audit completed 2026-09-21 against implementation commit
+  `58ed7a8`, migration `0007`, automated gates, the rebuilt live stack, real
+  API/UI probes and the pinned real-corpus AI quality report (ADR-016).
+- Provider-neutral `AiProvider` protocol: deterministic extractive provider is
+  the verified default; OpenAI-/Anthropic-compatible HTTP adapters are opt-in
+  configuration. Prompts are immutable versioned files under
+  `packages/prompts/`; the hash is persisted with every run.
+- Every run persists a ranked, public-only retrieval snapshot with exact
+  anchors, version hashes and verification state before generation; claims are
+  linked to persisted sources; structured output, validation errors and tokens
+  are audited. Repeated questions yield identical ranked snapshots and blocks.
+- Deterministic validation rejects sources outside the whitelist, unmatched
+  quotes, paraphrases, category conflation, evaluative language and free-form
+  AI analysis; any failure withholds the whole answer. Missing Trial Judgment /
+  filings abstain before generation.
+- Real `/ai` and `/ai/{id}` show retrieved sources first, distinct record
+  blocks, a provenance boundary, the AI block, citation status, run audit and
+  exact-source links with no demo flag; saved output is an `ai_assisted`
+  research note with run origin, never evidence.
+- Final gates: 250 backend tests, 197 frontend tests, production build, lint,
+  typecheck, migration round-trip/drift checks, real-corpus AI gate, standard
+  Playwright (96 passed / 8 skipped), real-data Phase 11 Playwright (4 passed)
+  and Phase 10 Playwright (2 passed).
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -313,11 +339,11 @@ check` and `head → base → head` are integration-tested.
 
 | Suite                                    | Count        | Last result                                   |
 | ---------------------------------------- | ------------ | --------------------------------------------- |
-| Backend unit (pytest)                    | 168          | pass                                          |
-| Backend integration (pytest, live infra) | 70           | pass                                          |
-| Frontend (vitest)                        | 194          | pass                                          |
-| E2E (playwright)                         | 50 specs × 2 | 96 pass / 4 skip; Phase 10 real-data 2/2 pass |
-| Evaluation                               | 0            | reserved directory                            |
+| Backend unit (pytest)                    | 176          | pass                                          |
+| Backend integration (pytest, live infra) | 74           | pass                                          |
+| Frontend (vitest)                        | 197          | pass                                          |
+| E2E (playwright)                         | 52 specs × 2 | 96 pass / 8 skip; real-data 6/6 pass (P10+11) |
+| Evaluation                               | 4 questions  | Phase 11 real-corpus AI gate PASS             |
 
 Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all pass.
 
@@ -331,8 +357,10 @@ Phase 6 tag `phase-6-complete` = `bdf7293`. Phase 5B is on `feat/phase-5b-visual
 fast-forwarded into `main` on 2026-09-20: `main` = `origin/main` = `96e402a`,
 tags `phase-5b-complete` and `phase-7-complete` pushed. No remote deployment
 or production workflow. Phase 10 is complete on
-`feat/phase-10-judgment-findings-matrix`; local tag `phase-10-complete` marks
-its final documentation checkpoint. The Phase 10 branch/tag have not been
+`feat/phase-10-judgment-findings-matrix`, local tag `phase-10-complete`. Phase
+11 is complete on `feat/phase-11-citation-first-ai-rag`; local tag
+`phase-11-complete` marks its final documentation checkpoint (migration `0007`
+applied to the rebuilt stack). The Phase 10/11 branches and tags have not been
 pushed or merged.
 
 ## Verification limitations
@@ -361,3 +389,9 @@ Court-cited evidence links 1 · party positions 2 (Defence 1 · SPO 1) · Court
 response links 2 · human-verified relationships 6. All five distinct linked
 citations resolve; missing underlying filings F03743/F03746 and the absent Trial
 Judgment remain explicit. No additional record was ingested.
+
+Phase 11 audit: the deterministic gate creates four audited `ai_runs` per
+invocation; closeout smoke checks added further audited runs and one
+`ai_assisted` research note. Findings, evidence links, arguments, documents,
+versions, citations and verification states are unchanged. No additional
+record was ingested and no embedding exists.
