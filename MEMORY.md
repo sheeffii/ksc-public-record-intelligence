@@ -4,8 +4,11 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-11-citation-first-ai-rag`.
+- Current branch: `feat/phase-12-appeal-research-red-team` (created from `main`
+  = `277686b`; Phase 12 not started).
 - Current milestone: **Phase 11 complete (2026-09-21)**. Stop before Phase 12.
+- Push state (2026-09-21): `main` fast-forwarded to `277686b` and pushed;
+  `phase-11-complete` and `feat/phase-11-citation-first-ai-rag` pushed.
 - Completion tag: `phase-11-complete` at the final Phase 11 closeout commit.
 - Final Phase 11 implementation commit: `58ed7a8`; the subsequent roadmap
   closeout commit records the final audit and completion metadata.

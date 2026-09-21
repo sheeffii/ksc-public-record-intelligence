@@ -360,8 +360,10 @@ or production workflow. Phase 10 is complete on
 `feat/phase-10-judgment-findings-matrix`, local tag `phase-10-complete`. Phase
 11 is complete on `feat/phase-11-citation-first-ai-rag`; local tag
 `phase-11-complete` marks its final documentation checkpoint (migration `0007`
-applied to the rebuilt stack). The Phase 10/11 branches and tags have not been
-pushed or merged.
+applied to the rebuilt stack). On 2026-09-21 `main` was fast-forwarded to
+`277686b` (Phase 11 closeout) and pushed with tag `phase-11-complete`;
+`feat/phase-12-appeal-research-red-team` was created from it for the next
+milestone.
 
 ## Verification limitations
 
