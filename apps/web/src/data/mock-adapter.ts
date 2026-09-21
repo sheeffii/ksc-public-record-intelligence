@@ -26,5 +26,22 @@ export function createMockRepositoryAdapter(
     saveAiRunAsNote: async () => {
       throw new Error("AI research notes are unavailable in demo mode");
     },
+    listAppealIssues: async () => ({
+      issues: [],
+      coverage: {
+        issues: 0,
+        sourceBackedLinks: 0,
+        comparisons: 0,
+        redTeamReviews: 0,
+        citationsResolved: 0,
+        citationsUnresolved: 0,
+        humanVerifiedRelationships: 0,
+        needsMoreEvidence: 0,
+      },
+      limitations: [],
+    }),
+    getAppealIssue: async () => null,
+    getArgumentLab: async () => null,
+    listStatementComparisons: async () => [],
   };
 }

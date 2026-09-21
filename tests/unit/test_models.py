@@ -23,6 +23,14 @@ PHASE4_TABLES = {"cases", "documents", "audit_log"}
 PHASE7_TABLES = {"ingestion_job_items"}
 PHASE8_TABLES = {"document_paragraphs"}
 PHASE11_TABLES = {"ai_retrieval_sources", "ai_output_sources"}
+PHASE12_TABLES = {
+    "appeal_issues",
+    "appeal_issue_sources",
+    "appeal_missing_material",
+    "statement_comparisons",
+    "red_team_reviews",
+    "red_team_findings",
+}
 PHASE6_TABLES = {
     "source_records",
     "document_versions",
@@ -68,7 +76,12 @@ def _checks(table_name: str) -> set[str]:
 
 def test_schema_contains_phase4_foundation_and_phase6_evidence_model():
     assert set(Base.metadata.tables) == (
-        PHASE4_TABLES | PHASE6_TABLES | PHASE7_TABLES | PHASE8_TABLES | PHASE11_TABLES
+        PHASE4_TABLES
+        | PHASE6_TABLES
+        | PHASE7_TABLES
+        | PHASE8_TABLES
+        | PHASE11_TABLES
+        | PHASE12_TABLES
     )
 
 

@@ -802,3 +802,63 @@ Relevant files:
 `apps/api/src/ksc_api/services/{ai_providers,ai_research,ai_validation}.py`,
 `packages/prompts/`, `tests/evaluation/phase11_questions.json`, and
 `docs/ingestion/PHASE11_QUALITY_GATE.md`.
+
+---
+
+## ADR-017 — Human-verified appeal issues and neutral red-team research
+
+Date: 2026-09-21
+
+Status: Accepted
+
+Context:
+Phase 12 must support appellate/review research over exact public sources
+without converting a pattern, model suggestion, search result, or network path
+into a legal conclusion. The controlled corpus has a narrow Court-decision
+benchmark but no public Trial Judgment, no underlying F03743/F03746 filings,
+and no pre-correction trial brief.
+
+Decision:
+
+1. An `AppealIssue` is a neutral potential issue for human review and must link
+   to a canonical finding. Category, context, Court treatment, review result,
+   provenance and verification are first-class; no strength, rank,
+   probability, credibility or outcome field exists.
+2. Every affirmative research relationship is an ordered
+   `AppealIssueSource` with an exact citation, excerpt, source category and
+   verification state. Supporting, contrary and qualifying roles are stored
+   only when independently established. Search similarity and graph proximity
+   cannot create these rows.
+3. Missing sources are separate `AppealMissingMaterial` rows. Court treatment
+   uses a bounded neutral vocabulary; `not_located` records a search result and
+   never means the Court ignored material.
+4. A `StatementComparison` requires two distinct exact citations and uses only
+   `possible_contradiction`, `qualification`, `timeline_difference`,
+   `consistent`, or `not_comparable`. It compares passages, never a person's
+   credibility.
+5. Red-team findings retain Defence analyst, SPO red-team and neutral-reviewer
+   perspectives without declaring a winner. Affirmative observations require a
+   citation; only explicit source gaps or legal/human questions may be uncited.
+   The result vocabulary is `supported_for_review`, `qualified`, `countered`,
+   or `insufficient_record`.
+6. Phase 11 remains the only AI provider/retrieval/validation architecture. An
+   AI-assisted review must reference its audited `ai_run` and cannot mutate or
+   auto-verify canonical evidence. The real Phase 12 benchmark is
+   human-reviewed and abstains as `insufficient_record`.
+
+Consequences:
+
+- Migration `0008` adds six appeal/review tables and an optional issue link on
+  research notes while preserving the Phase 10/11 canonical records.
+- The F03752 benchmark proves issue → finding/argument/evidence → exact citation
+  → original source navigation, but does not claim a full merits or sentencing
+  review.
+- The earlier brief's absence makes the real comparison `not_comparable`; no
+  missing source is filled and no appellate error or outcome is asserted.
+
+Relevant files:
+`apps/api/alembic/versions/0008_appeal_research_red_team.py`,
+`apps/api/src/ksc_api/models/appeal.py`,
+`apps/api/src/ksc_api/services/appeal_research.py`,
+`workers/ingestion/src/ksc_ingestion/{appeal_pipeline,appeal_quality_gate}.py`,
+and `docs/ingestion/PHASE12_QUALITY_GATE.md`.

@@ -36,6 +36,9 @@ class ResearchNote(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     finding_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("findings.id", ondelete="SET NULL"), index=True
     )
+    appeal_issue_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("appeal_issues.id", ondelete="SET NULL"), index=True
+    )
     origin_ai_run_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("ai_runs.id", ondelete="RESTRICT"), index=True
     )

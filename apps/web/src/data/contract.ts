@@ -195,6 +195,108 @@ export interface AiRunSummaryView {
   createdAt: string;
 }
 
+export interface AppealIssueSummaryView {
+  id: string;
+  key: string;
+  category: string;
+  context: string;
+  title: string;
+  description: string;
+  findingKey: string;
+  paraFrom: number;
+  paraTo?: number;
+  courtTreatment: string;
+  courtTreatmentNote: string;
+  redTeamResult: string;
+  verification: VerificationState;
+}
+
+export interface StatementComparisonView {
+  id: string;
+  key: string;
+  issueKey?: string;
+  title: string;
+  type: string;
+  classification: string;
+  statementA: { excerpt: string; speaker?: string; source: FindingCitationView };
+  statementB: { excerpt: string; speaker?: string; source: FindingCitationView };
+  explanation: string;
+  verification: VerificationState;
+}
+
+export interface AppealIssueView extends AppealIssueSummaryView {
+  notes?: string;
+  sources: readonly {
+    id: string;
+    sequence: number;
+    role: string;
+    category: string;
+    excerpt: string;
+    note?: string;
+    verification: VerificationState;
+    source: FindingCitationView;
+  }[];
+  missingMaterial: readonly { reference: string; kind: string; reason: string; state: string }[];
+  comparisons: readonly StatementComparisonView[];
+  redTeam: readonly {
+    result: string;
+    summary: string;
+    origin: string;
+    verification: VerificationState;
+    findings: readonly {
+      sequence: number;
+      perspective: string;
+      category: string;
+      text: string;
+      verification: VerificationState;
+      source?: FindingCitationView;
+    }[];
+  }[];
+  audit: {
+    citationsTotal: number;
+    citationsResolved: number;
+    quotesVerified: number;
+    sourcesHumanVerified: number;
+    unresolved: number;
+    unsupportedRelationships: number;
+    readyForHumanReview: boolean;
+    issues: readonly string[];
+  };
+}
+
+export interface AppealWorkspaceView {
+  issues: readonly AppealIssueSummaryView[];
+  coverage: {
+    issues: number;
+    sourceBackedLinks: number;
+    comparisons: number;
+    redTeamReviews: number;
+    citationsResolved: number;
+    citationsUnresolved: number;
+    humanVerifiedRelationships: number;
+    needsMoreEvidence: number;
+  };
+  limitations: readonly string[];
+}
+
+export interface ArgumentLabView {
+  issue: AppealIssueSummaryView;
+  title: string;
+  draft: string;
+  citations: readonly FindingCitationView[];
+  unsupportedSentences: readonly string[];
+  stages: readonly {
+    sequence: number;
+    perspective: string;
+    category: string;
+    text: string;
+    verification: VerificationState;
+    source?: FindingCitationView;
+  }[];
+  result: string;
+  notice: string;
+}
+
 export interface ResearchRepository {
   getDirectory(kind: DirectoryKind): Promise<readonly DirectoryRow[]>;
   getPerson(slug: string): Promise<PersonDossier | null>;
@@ -211,6 +313,10 @@ export interface ResearchRepository {
   getAiRun(id: string): Promise<AiResearchRun | null>;
   listAiRuns(): Promise<readonly AiRunSummaryView[]>;
   saveAiRunAsNote(id: string, title: string): Promise<{ id: string; provenance: string }>;
+  listAppealIssues(): Promise<AppealWorkspaceView>;
+  getAppealIssue(key: string): Promise<AppealIssueView | null>;
+  getArgumentLab(key: string): Promise<ArgumentLabView | null>;
+  listStatementComparisons(issueKey?: string): Promise<readonly StatementComparisonView[]>;
 }
 
 export const REPOSITORY_METHODS = [
@@ -229,4 +335,8 @@ export const REPOSITORY_METHODS = [
   "getAiRun",
   "listAiRuns",
   "saveAiRunAsNote",
+  "listAppealIssues",
+  "getAppealIssue",
+  "getArgumentLab",
+  "listStatementComparisons",
 ] as const satisfies readonly (keyof ResearchRepository)[];

@@ -1,0 +1,27 @@
+{
+  "abstentions": 1,
+  "authoritative_fingerprint_after": "c6236ef1a4da5d73655c9017edcf27911fcdd4f144a8e4b661936d8c91d2100c",
+  "authoritative_fingerprint_before": "c6236ef1a4da5d73655c9017edcf27911fcdd4f144a8e4b661936d8c91d2100c",
+  "authoritative_records_unchanged": true,
+  "case_number": "KSC-BC-2020-06",
+  "comparisons": 1,
+  "generated_at": "2026-09-21",
+  "human_verified_relationships": 10,
+  "issues": 1,
+  "missing_sources": [
+    "F03743",
+    "F03746",
+    "pre-correction SPO Final Trial Brief",
+    "public Trial Judgment"
+  ],
+  "needs_more_evidence": 1,
+  "passed": true,
+  "red_team_findings": 4,
+  "red_team_reviews": 1,
+  "resolved_citations": 7,
+  "source_backed_links": 5,
+  "source_navigation": 7,
+  "trial_judgment_present": false,
+  "unresolved_citations": 0,
+  "unsupported_relationships_rejected": 0
+}

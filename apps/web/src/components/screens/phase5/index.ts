@@ -4,4 +4,5 @@ export * from "./FindingDetailReal";
 export * from "./ReaderSearchScreens";
 export * from "./ResearchScreens";
 export * from "./AiResearchReal";
+export * from "./AppealResearchReal";
 export * from "./ScreenChrome";

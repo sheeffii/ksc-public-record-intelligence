@@ -28,6 +28,8 @@ from ksc_api.logging_config import configure_logging
 from ksc_api.models import Case
 from ksc_api.repositories.ingestion import IngestionStatusRepository
 from ksc_ingestion.ai_quality_gate import run_phase11_gate, write_phase11_report
+from ksc_ingestion.appeal_pipeline import Phase12Pipeline
+from ksc_ingestion.appeal_quality_gate import run_phase12_gate, write_phase12_report
 from ksc_ingestion.capture import BundleError, load_bundle
 from ksc_ingestion.capture_import import SourceImportError, import_capture
 from ksc_ingestion.corpus_manifest import build_manifest, validate_manifest_file, write_manifest
@@ -265,6 +267,40 @@ def cmd_build_findings(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_build_appeal(args: argparse.Namespace) -> int:
+    """Build the reviewed Phase 12 benchmark; performs no network access."""
+    settings = get_settings()
+    result = Phase12Pipeline(get_sessionmaker(), case_number=settings.case_id).run()
+    print(
+        f"issues={result.issues} source_backed_links={result.source_backed_links} "
+        f"comparisons={result.comparisons} red_team_reviews={result.red_team_reviews} "
+        f"red_team_findings={result.red_team_findings} missing_sources={result.missing_sources}"
+    )
+    return 0
+
+
+def cmd_gate_appeal(args: argparse.Namespace) -> int:
+    """Audit the Phase 12 benchmark and fail-closed corpus limitations."""
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        report = run_phase12_gate(
+            session, case_number=settings.case_id, generated_at=args.generated_at
+        )
+    print(
+        f"issues={report.issues} source_backed_links={report.source_backed_links} "
+        f"comparisons={report.comparisons} red_team_findings={report.red_team_findings} "
+        f"resolved_citations={report.resolved_citations} abstentions={report.abstentions} "
+        f"authoritative_records_unchanged={str(report.authoritative_records_unchanged).lower()} "
+        f"passed={str(report.passed).lower()}"
+    )
+    for item in report.missing_sources:
+        print(f"  missing: {item}")
+    if args.json:
+        write_phase12_report(report, Path(args.json))
+        print(f"report written to {args.json}")
+    return 0 if report.passed else 1
+
+
 def cmd_gate_findings(args: argparse.Namespace) -> int:
     """Audit the Phase 10 real-data benchmark and its known source gaps."""
     settings = get_settings()
@@ -371,6 +407,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="build the hand-reviewed finding/evidence benchmark from held public records",
     )
     p_findings.set_defaults(func=cmd_build_findings)
+    p_appeal = sub.add_parser(
+        "build-appeal", help="build the hand-reviewed Phase 12 appeal-research benchmark"
+    )
+    p_appeal.set_defaults(func=cmd_build_appeal)
+    p_appeal_gate = sub.add_parser(
+        "gate-appeal", help="audit the Phase 12 controlled-corpus benchmark"
+    )
+    p_appeal_gate.add_argument("--generated-at", default="2026-09-21")
+    p_appeal_gate.add_argument("--json")
+    p_appeal_gate.set_defaults(func=cmd_gate_appeal)
     p_findings_gate = sub.add_parser(
         "gate-findings", help="audit the Phase 10 finding matrix against the controlled corpus"
     )

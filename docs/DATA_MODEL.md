@@ -1,9 +1,10 @@
 # Data model
 
-Implemented by Alembic revisions `0001` (Phase 4 foundation) and `0002` (Phase 6
-evidence model). 37 tables; the `vector` extension is enabled, no vector column
-exists yet. Models live in `apps/api/src/ksc_api/models/`; every enum below is a
-named PostgreSQL type whose values are the lower-case strings shown.
+Implemented by Alembic revisions `0001`–`0008`. The schema has 47 application
+tables; the `vector` extension is enabled, but no vector column exists yet.
+Models live in `apps/api/src/ksc_api/models/`; database enums use the lower-case
+values shown below. Phase 12's bounded research vocabularies are CHECK-constrained
+strings so their neutral states can be audited without adding global enum types.
 
 ```
 PRIMARY COURT SOURCE → source_records → documents / document_versions
@@ -153,7 +154,7 @@ excludes analytical edges; every returned hop therefore has its own citation.
 
 | table                  | purpose                                             | key columns / rules                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ---------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `research_notes`       | notes, apart from evidence                          | optional `finding_id`, `author`, `title`, `body`, `provenance` (`human` or `ai_assisted`); AI-assisted rows require `origin_ai_run_id`; `research_note_citations` stores the source set                                                                                                                                                                                                                                                                             |
+| `research_notes`       | notes, apart from evidence                          | optional `finding_id` and `appeal_issue_id`, `author`, `title`, `body`, `provenance` (`human` or `ai_assisted`); AI-assisted rows require `origin_ai_run_id`; `research_note_citations` stores the source set                                                                                                                                                                                                                                                       |
 | `prompt_versions`      | every prompt text ever used                         | `name` + `version` unique, `template`, `template_sha256`                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `ai_runs`              | every AI invocation                                 | provider/model/parameters, prompt and system-prompt hash, question/input hash, structured output, validation errors, whole-answer withholding, token/cost fields, timestamps and status                                                                                                                                                                                                                                                                             |
 | `ai_retrieval_sources` | immutable run source snapshots                      | passage-only rank/value, retrieval method, category/visibility, identifiers/URL, exact excerpt + SHA-256, page/paragraph/line coordinates, copied verification reviewer metadata, and exactly one source anchor; ranking never applies to a person                                                                                                                                                                                                                  |
@@ -162,15 +163,33 @@ excludes analytical edges; every returned hop therefore has its own citation.
 | `ingestion_job_items`  | one record touched by a job, with a terminal status | `item_key` (unique per job; `<source_system>:<external id>`), `sequence`, `status` (`pending` · `downloaded` · `metadata_only` · `skipped_duplicate` · `not_public` · `failed_download` · `blocked_by_access_control` · `invalid_metadata` · `unsupported_artifact` · `ambiguous_mapping`), `reason`, `detail` jsonb (identifiers, URLs, hashes, per-version outcomes — never text), optional FKs to `source_records`, `documents`, `document_versions`, timestamps |
 | `audit_log`            | append-only system / reviewer actions               | `occurred_at`, `actor`, `action`, `entity_type`, `entity_id`, `detail` jsonb — never document text or protected identity                                                                                                                                                                                                                                                                                                                                            |
 
+## Appeal research and red team
+
+| table                     | purpose                                                  | key columns / rules                                                                                                                                                                                                                                                                           |
+| ------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `appeal_issues`           | neutral potential issues for human review                | unique case + `issue_key`; category and legal/factual/sentencing/procedural context; required canonical `finding_id`; Court treatment; neutral red-team result; notes, extraction origin and verification. No score, rank, probability, credibility or outcome field.                         |
+| `appeal_issue_sources`    | exact source-backed roles in an issue research structure | required `citation_id`, ordered role (`court_reasoning`, legal standard, evidence relied, party positions, Court response, supporting, contrary or qualifying), source category, exact excerpt, optional canonical argument/evidence-link anchor, and verification.                           |
+| `appeal_missing_material` | explicit absent or unresolved research dependencies      | unique issue + reference; kind, reason and state (`source_unavailable`, `court_treatment_not_located`, `unresolved`). Missing material is not an affirmative relationship and `not located` is not “ignored.”                                                                                 |
+| `statement_comparisons`   | comparison of two exact public passages                  | unique case + key; two distinct citation FKs, separate excerpts/speakers, comparison type, neutral classification (`possible_contradiction`, `qualification`, `timeline_difference`, `consistent`, `not_comparable`), explanation and verification. It cannot store a credibility conclusion. |
+| `red_team_reviews`        | one neutral result over an issue                         | result (`supported_for_review`, `qualified`, `countered`, `insufficient_record`); human or AI-assisted origin. An AI-assisted row requires an audited `ai_run_id`; verification remains separate and cannot auto-promote.                                                                     |
+| `red_team_findings`       | ordered multi-perspective review observations            | perspective (`defence_analyst`, `spo_red_team`, `neutral_reviewer`), neutral category, text, optional citation and verification. An affirmative observation requires a citation; only an explicit missing citation, legal/human question, or source limitation may be uncited.                |
+
+The real Phase 12 projection keeps the canonical Phase 10 finding and evidence
+links unchanged. It adds one `NEEDS_MORE_EVIDENCE` issue, five human-verified
+source links, one human-verified two-citation comparison, one human red-team
+review, four red-team findings, and four explicit missing-material rows.
+
 ## Invariants tested
 
-- The table set is exactly the 3 Phase 4 + 34 Phase 6 tables; `alembic check`
-  reports no drift between models and the migrated schema.
+- The table set is exactly the 3 Phase 4 + 34 Phase 6 + 1 Phase 7 + 1 Phase 8 +
+  2 Phase 11 + 6 Phase 12 tables; `alembic check` reports no drift between
+  models and the migrated schema.
 - No person field contains score / rank / rating / weight / priority /
   probability / likelihood. The only rank/value fields added in Phase 11 order
   retrieved passages and cannot reference a person.
-- `0001 → 0002` preserves `cases`, `documents` (`public_state` → `visibility`)
-  and `audit_log`; `head → base → head` is clean, including enum types.
+- The migration chain preserves existing records; the Phase 12
+  `0007 → 0008 → 0007 → 0008` round trip is clean and `alembic check` reports
+  no model/schema drift.
 - Protected witness without identity; page and line validation; SHA-256
   duplicates; resolved/unresolved target consistency; mandatory relationship
   provenance; node registry exactly-one-target; reviewer-required verification.
@@ -179,6 +198,11 @@ excludes analytical edges; every returned hop therefore has its own citation.
   Citation, Claim → Mention → Citation → Source, Finding → Evidence Link →
   Citation → Source and Relationship → Citation → Source. Nothing in it is a real
   record.
+- Phase 12 tests cover exact two-source comparisons, issue-source whitelisting,
+  human-review requirements, missing material, `not_located` versus “ignored,”
+  and fail-closed AI success/credibility claims. The real quality gate confirms
+  all seven distinct citations navigate and authoritative finding/evidence state
+  is unchanged.
 
 ## Not yet
 

@@ -1,7 +1,7 @@
 # Architecture
 
 KSC Public Record Intelligence is a citation-first research platform over the public
-record of **KSC-BC-2020-06**. This document describes the system through Phase 8.
+record of **KSC-BC-2020-06**. This document describes the system through Phase 12.
 
 ## The authoritative hierarchy
 
@@ -67,8 +67,9 @@ docs/               this documentation; docs/design is the approved UX (read-onl
   into `resolved: false`, drops human-rejected facts, keeps protected witnesses
   code-only, and never builds a citation display string. Screens still import
   the synchronous mock directly except real-data Search, Document Reader,
-  Network, Timeline, Finding Matrix, and AI Research routes, which server-load
-  through `getRepository()` and consume API data.
+  Network, Timeline, Finding Matrix, AI Research, Appeal Research, Argument Lab,
+  and Statement Comparison routes, which server-load through `getRepository()`
+  and consume API data.
 
 ## API (`apps/api`)
 
@@ -84,6 +85,11 @@ docs/               this documentation; docs/design is the approved UX (read-onl
 - **AI research API** (`ksc_api/routers/ai.py`): create/list/read audited runs and
   save a valid output as an explicitly AI-assisted research note. It cannot
   mutate sources, findings, citation resolution, relationships, or verification.
+- **Appeal research API** (`ksc_api/routers/appeal.py`): list/read potential
+  issues, read a source-backed Argument Lab, review an issue, save a
+  source-whitelisted human note, and list exact statement comparisons. Issues,
+  source roles, Court treatment, red-team perspectives, missing material and
+  human verification are first-class; no endpoint scores or predicts an appeal.
 - **Layering**: router → `RecordRepository` (`ksc_api/repositories/records.py`,
   one instance per request, scoped to the configured case) → `mappers.py` →
   Pydantic read models in `ksc_api/schemas/`. Raw ORM objects never leave the
@@ -98,8 +104,9 @@ docs/               this documentation; docs/design is the approved UX (read-onl
   provider requires no key; compatible external providers are opt-in.
 - Sync SQLAlchemy 2.0 with psycopg 3; sessions are FastAPI dependencies. Enum
   columns persist member _values_ (`db_enum`), matching the PostgreSQL types.
-- Alembic migrations in `apps/api/alembic/`: `0001`–`0007`, through Phase 11's
-  persisted retrieval snapshots, claim-source audit, and AI-assisted note origin.
+- Alembic migrations in `apps/api/alembic/`: `0001`–`0008`, through Phase 12's
+  appeal issues, exact issue-source links, missing material, statement
+  comparisons, red-team reviews/findings, and issue-linked research notes.
   Enum types are created and dropped
   explicitly; `alembic check` is part of the integration suite.
 - `ksc-seed` inserts public metadata for KSC-BC-2020-06 (idempotent);
@@ -110,7 +117,7 @@ docs/               this documentation; docs/design is the approved UX (read-onl
 
 PostgreSQL 16 with the **pgvector** extension enabled from the first migration so
 later phases can add embedding columns without a privileged step. Phase 6 holds
-the normalized evidence model — 37 tables described in `docs/DATA_MODEL.md` —
+the normalized evidence model — 47 tables described in `docs/DATA_MODEL.md` —
 with provenance, visibility, verification and versioning as first-class columns,
 the `citations` resolution index, the `record_identifiers` lookup, and a
 `graph_nodes` registry that gives polymorphic graph references real foreign keys
@@ -137,6 +144,9 @@ rate limiting. Only connectivity is verified in Phase 4.
   audit log; then held-object native parsing, structural chunks, transcript lines,
   deterministic citation resolution and lexical indexing. Official hosts only;
   a bot-mitigation challenge is a recorded failure, never bypassed (ADR-011).
+  Deterministic, network-free projections build the real finding matrix, evidence
+  graph/timeline, and hand-reviewed Phase 12 appeal benchmark; separate quality
+  gates audit each projection.
 - **analysis** remains a worker placeholder. Phase 11 retrieval, provider
   orchestration and deterministic validation run in the API service layer;
   future embeddings or long-running analysis may move behind this worker without
@@ -190,6 +200,22 @@ non-factual AI boundary independently of the provider. A validation error or
 insufficient source withholds the whole answer. The record/AI boundary is
 structural in the payload (`AnswerBlock.kind`) and visual in the UI. No guilt,
 suspicion, credibility or success scores exist anywhere in the pipeline or schema.
+
+### Appeal research layer (ADR-017)
+
+Phase 12 keeps a potential issue distinct from the underlying canonical finding.
+Every affirmative issue-source relationship has an exact citation and a human
+verification state; absent sources are separate missing-material rows. Court
+treatment records only what can be located (`addressed`, `accepted`, `rejected`,
+`distinguished`, `qualified`, `not_located`, or `unresolved`) and `not_located`
+never means ignored.
+
+Statement comparisons require two distinct exact citations and use only the
+roadmap's neutral classifications. Red-team reviews retain Defence analyst, SPO
+red-team and neutral-reviewer findings without choosing a winner. AI-assisted
+reviews, if later created through the Phase 11 boundary, must reference an
+audited `ai_run`; the real controlled-corpus benchmark is human-reviewed and
+returns `insufficient_record` rather than filling missing material.
 
 ## Cross-cutting rules enforced in code
 

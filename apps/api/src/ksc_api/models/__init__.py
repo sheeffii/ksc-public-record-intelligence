@@ -14,6 +14,14 @@ from ksc_api.models.ai import (
     AiRun,
     PromptVersion,
 )
+from ksc_api.models.appeal import (
+    AppealIssue,
+    AppealIssueSource,
+    AppealMissingMaterial,
+    RedTeamFinding,
+    RedTeamReview,
+    StatementComparison,
+)
 from ksc_api.models.audit_log import AuditLog
 from ksc_api.models.case import Case
 from ksc_api.models.citation import (
@@ -90,6 +98,9 @@ __all__ = [
     "AiRun",
     "AiRunStatus",
     "AnswerBlockKind",
+    "AppealIssue",
+    "AppealIssueSource",
+    "AppealMissingMaterial",
     "Argument",
     "ArgumentResponse",
     "ArgumentResponseKind",
@@ -134,6 +145,8 @@ __all__ = [
     "PersonAlias",
     "PromptVersion",
     "RecordIdentifier",
+    "RedTeamFinding",
+    "RedTeamReview",
     "Relationship",
     "RelationshipOrigin",
     "RelationshipType",
@@ -143,6 +156,7 @@ __all__ = [
     "ResolutionState",
     "SourceRecord",
     "SourceSystem",
+    "StatementComparison",
     "TextExtractionMethod",
     "Transcript",
     "TranscriptSegment",

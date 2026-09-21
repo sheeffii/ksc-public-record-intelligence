@@ -35,7 +35,7 @@ def test_migration_created_minimal_tables(engine):
 def test_migration_is_at_head(engine):
     with engine.connect() as conn:
         version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-    assert version == "0007"
+    assert version == "0008"
 
 
 def test_seed_case_is_idempotent(integration_settings):

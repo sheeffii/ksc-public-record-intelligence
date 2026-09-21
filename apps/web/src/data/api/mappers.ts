@@ -29,16 +29,25 @@ import type {
   AiResearchRun,
   AiResearchSource,
   AiRunSummaryView,
+  AppealIssueSummaryView,
+  AppealIssueView,
+  AppealWorkspaceView,
+  ArgumentLabView,
   NetworkEdge,
   NetworkNode,
   PersonDossier,
   SearchResult,
   TimelineItem,
+  StatementComparisonView,
 } from "../contract";
 import type {
   ApiAiRun,
   ApiAiRunSummary,
   ApiAiSource,
+  ApiAppealIssue,
+  ApiAppealIssueSummary,
+  ApiAppealWorkspace,
+  ApiArgumentLab,
   ApiCitation,
   ApiClaim,
   ApiDocumentChunk,
@@ -57,6 +66,7 @@ import type {
   ApiRelationship,
   ApiSearchHit,
   ApiStance,
+  ApiStatementComparison,
   ApiVerificationState,
   ApiWitness,
 } from "./types";
@@ -97,6 +107,124 @@ const NODE_TYPE: Record<string, SourceType | "person"> = {
 
 export function toVerification(state: ApiVerificationState): VerificationState | null {
   return VERIFICATION[state] ?? null;
+}
+
+export function toAppealIssueSummary(issue: ApiAppealIssueSummary): AppealIssueSummaryView {
+  return {
+    id: issue.id,
+    key: issue.issue_key,
+    category: issue.category,
+    context: issue.context,
+    title: issue.title,
+    description: issue.description,
+    findingKey: issue.finding_key,
+    paraFrom: issue.para_from,
+    paraTo: issue.para_to ?? undefined,
+    courtTreatment: issue.court_treatment,
+    courtTreatmentNote: issue.court_treatment_note,
+    redTeamResult: issue.red_team_result,
+    verification: toVerification(issue.verification_state) ?? "unreviewed",
+  };
+}
+
+export function toStatementComparison(comparison: ApiStatementComparison): StatementComparisonView {
+  return {
+    id: comparison.id,
+    key: comparison.comparison_key,
+    issueKey: comparison.issue_key ?? undefined,
+    title: comparison.title,
+    type: comparison.comparison_type,
+    classification: comparison.classification,
+    statementA: {
+      excerpt: comparison.statement_a_excerpt,
+      speaker: comparison.statement_a_speaker ?? undefined,
+      source: findingCitation(comparison.statement_a_citation),
+    },
+    statementB: {
+      excerpt: comparison.statement_b_excerpt,
+      speaker: comparison.statement_b_speaker ?? undefined,
+      source: findingCitation(comparison.statement_b_citation),
+    },
+    explanation: comparison.explanation,
+    verification: toVerification(comparison.verification_state) ?? "unreviewed",
+  };
+}
+
+function redTeamFinding(row: ApiArgumentLab["stages"][number]) {
+  return {
+    sequence: row.sequence,
+    perspective: row.perspective,
+    category: row.category,
+    text: row.text,
+    verification: toVerification(row.verification_state) ?? "unreviewed",
+    source: row.citation ? findingCitation(row.citation) : undefined,
+  };
+}
+
+export function toAppealIssue(issue: ApiAppealIssue): AppealIssueView {
+  return {
+    ...toAppealIssueSummary(issue),
+    notes: issue.notes ?? undefined,
+    sources: issue.sources.map((source) => ({
+      id: source.id,
+      sequence: source.sequence,
+      role: source.role,
+      category: source.source_category,
+      excerpt: source.excerpt,
+      note: source.note ?? undefined,
+      verification: toVerification(source.verification_state) ?? "unreviewed",
+      source: findingCitation(source.citation),
+    })),
+    missingMaterial: issue.missing_material,
+    comparisons: issue.statement_comparisons.map(toStatementComparison),
+    redTeam: issue.red_team_reviews.map((review) => ({
+      result: review.result,
+      summary: review.summary,
+      origin: review.origin,
+      verification: toVerification(review.verification_state) ?? "unreviewed",
+      findings: review.findings.map(redTeamFinding),
+    })),
+    audit: {
+      citationsTotal: issue.citation_audit.citations_total,
+      citationsResolved: issue.citation_audit.citations_resolved,
+      quotesVerified: issue.citation_audit.quotes_verified,
+      sourcesHumanVerified: issue.citation_audit.sources_human_verified,
+      unresolved: issue.citation_audit.unresolved,
+      unsupportedRelationships: issue.citation_audit.unsupported_relationships,
+      readyForHumanReview: issue.citation_audit.ready_for_human_review,
+      issues: issue.citation_audit.issues,
+    },
+  };
+}
+
+export function toAppealWorkspace(workspace: ApiAppealWorkspace): AppealWorkspaceView {
+  return {
+    issues: workspace.issues.map(toAppealIssueSummary),
+    coverage: {
+      issues: workspace.coverage.issues,
+      sourceBackedLinks: workspace.coverage.source_backed_links,
+      comparisons: workspace.coverage.statement_comparisons,
+      redTeamReviews: workspace.coverage.red_team_reviews,
+      citationsResolved: workspace.coverage.citations_resolved,
+      citationsUnresolved: workspace.coverage.citations_unresolved,
+      humanVerifiedRelationships: workspace.coverage.human_verified_relationships,
+      needsMoreEvidence: workspace.coverage.needs_more_evidence,
+    },
+    limitations: workspace.corpus_limitations,
+  };
+}
+
+export function toArgumentLab(lab: ApiArgumentLab): ArgumentLabView {
+  return {
+    issue: toAppealIssueSummary(lab.issue),
+    title: lab.draft_title,
+    draft: lab.draft_text,
+    citations: lab.draft_citations.map(findingCitation),
+    unsupportedSentences: lab.unsupported_sentences,
+    stages: lab.stages.map(redTeamFinding),
+    result: lab.result,
+    notice: lab.notice,
+  };
 }
 
 /** Route id of a document: the official reference without the case prefix. */

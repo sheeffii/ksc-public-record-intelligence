@@ -1,6 +1,7 @@
 # AI methods
 
-**Status: Phase 11 citation-first retrieval and answer validation is implemented.**
+**Status: Phase 11 citation-first retrieval and answer validation is implemented;
+Phase 12 reuses the same boundary for appeal research and red-team audit.**
 
 The safe default is the offline deterministic extractive provider. Configurable
 OpenAI-compatible and Anthropic-compatible adapters implement the same
@@ -18,6 +19,13 @@ primary sources → database → structured evidence → provenance/citations
 Primary sources, the database, provenance, and citations remain authoritative.
 Model memory is not evidence. AI never writes a source record, finding,
 relationship, citation resolution, or human verification state.
+
+Phase 12 does not introduce a parallel model path. A red-team review with
+`origin = ai_assisted` must reference an existing audited `ai_run`, remains
+separate from canonical findings/evidence, and cannot auto-promote its own
+verification state. The controlled-corpus Phase 12 benchmark is human-reviewed;
+the missing Trial Judgment, F03743, F03746 and earlier trial brief produce an
+`insufficient_record` result rather than model-completed content.
 
 ## Retrieval before composition
 

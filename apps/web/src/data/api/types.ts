@@ -441,3 +441,104 @@ export interface ApiSearch {
   query: string;
   hits: ApiSearchHit[];
 }
+
+export interface ApiAppealIssueSummary {
+  id: string;
+  issue_key: string;
+  category: string;
+  context: string;
+  title: string;
+  description: string;
+  finding_key: string;
+  para_from: number;
+  para_to: number | null;
+  court_treatment: string;
+  court_treatment_note: string;
+  red_team_result: string;
+  verification_state: ApiVerificationState;
+}
+
+export interface ApiStatementComparison {
+  id: string;
+  comparison_key: string;
+  issue_key: string | null;
+  title: string;
+  comparison_type: string;
+  classification: string;
+  statement_a_excerpt: string;
+  statement_b_excerpt: string;
+  statement_a_speaker: string | null;
+  statement_b_speaker: string | null;
+  statement_a_citation: ApiCitation;
+  statement_b_citation: ApiCitation;
+  explanation: string;
+  verification_state: ApiVerificationState;
+}
+
+export interface ApiRedTeamFinding {
+  sequence: number;
+  perspective: string;
+  category: string;
+  text: string;
+  verification_state: ApiVerificationState;
+  citation: ApiCitation | null;
+}
+
+export interface ApiAppealIssue extends ApiAppealIssueSummary {
+  notes: string | null;
+  sources: {
+    id: string;
+    sequence: number;
+    role: string;
+    source_category: string;
+    excerpt: string;
+    note: string | null;
+    verification_state: ApiVerificationState;
+    citation: ApiCitation;
+  }[];
+  missing_material: { reference: string; kind: string; reason: string; state: string }[];
+  statement_comparisons: ApiStatementComparison[];
+  red_team_reviews: {
+    result: string;
+    summary: string;
+    origin: string;
+    verification_state: ApiVerificationState;
+    findings: ApiRedTeamFinding[];
+  }[];
+  citation_audit: {
+    citations_total: number;
+    citations_resolved: number;
+    quotes_verified: number;
+    sources_human_verified: number;
+    unresolved: number;
+    unsupported_relationships: number;
+    ready_for_human_review: boolean;
+    issues: string[];
+  };
+}
+
+export interface ApiAppealWorkspace {
+  issues: ApiAppealIssueSummary[];
+  coverage: {
+    issues: number;
+    source_backed_links: number;
+    statement_comparisons: number;
+    red_team_reviews: number;
+    citations_resolved: number;
+    citations_unresolved: number;
+    human_verified_relationships: number;
+    needs_more_evidence: number;
+  };
+  corpus_limitations: string[];
+}
+
+export interface ApiArgumentLab {
+  issue: ApiAppealIssueSummary;
+  draft_title: string;
+  draft_text: string;
+  draft_citations: ApiCitation[];
+  unsupported_sentences: string[];
+  stages: ApiRedTeamFinding[];
+  result: string;
+  notice: string;
+}

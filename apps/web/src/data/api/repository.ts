@@ -23,6 +23,9 @@ import { ApiClient, type ApiClientOptions } from "./client";
 import * as map from "./mappers";
 import type {
   ApiClaim,
+  ApiAppealIssue,
+  ApiAppealWorkspace,
+  ApiArgumentLab,
   ApiAiRun,
   ApiAiRunSummary,
   ApiDocumentChunk,
@@ -38,6 +41,7 @@ import type {
   ApiPage,
   ApiPerson,
   ApiSearch,
+  ApiStatementComparison,
   ApiWitness,
 } from "./types";
 
@@ -173,6 +177,31 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
         `/ai/runs/${encodeURIComponent(id)}/notes`,
         { title },
       );
+    },
+
+    async listAppealIssues() {
+      const workspace = await client.get<ApiAppealWorkspace>("/appeal/issues");
+      if (!workspace) throw new Error("Appeal workspace is unavailable");
+      return map.toAppealWorkspace(workspace);
+    },
+
+    async getAppealIssue(key: string) {
+      const issue = await client.get<ApiAppealIssue>(`/appeal/issues/${encodeURIComponent(key)}`);
+      return issue ? map.toAppealIssue(issue) : null;
+    },
+
+    async getArgumentLab(key: string) {
+      const lab = await client.get<ApiArgumentLab>(
+        `/appeal/issues/${encodeURIComponent(key)}/argument-lab`,
+      );
+      return lab ? map.toArgumentLab(lab) : null;
+    },
+
+    async listStatementComparisons(issueKey?: string) {
+      const comparisons = await client.get<ApiStatementComparison[]>("/statement-comparisons", {
+        issue_key: issueKey,
+      });
+      return (comparisons ?? []).map(map.toStatementComparison);
     },
   };
 }
