@@ -4,19 +4,20 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-9-real-evidence-network-timeline`.
-- Current milestone: **Phase 9 complete (2026-09-21)**. Stop before Phase 10.
-- Completion tag: `phase-9-complete` at the final Phase 9 closeout commit.
-- Final Phase 9 implementation commits: `431f1dd` and `ac59afa`; verified
-  code/test baseline `548a151`; the subsequent roadmap closeout commit records
-  the final audit and completion metadata.
-- Migration head: `0005`.
+- Current branch: `feat/phase-10-judgment-findings-matrix`.
+- Current milestone: **Phase 10 complete (2026-09-21)**. Stop before Phase 11.
+- Completion tag: `phase-10-complete` at the final Phase 10 closeout commit.
+- Final Phase 10 implementation commit: `c8eaa1e`; the subsequent roadmap
+  closeout commit records the final audit and completion metadata.
+- Migration head: `0006`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
   `docs/ingestion/manifests/phase7-controlled-corpus.json`.
 - Phase 9 quality result: `docs/ingestion/PHASE9_QUALITY_GATE.md` and
   `docs/ingestion/manifests/phase9-controlled-corpus-quality.json`.
+- Phase 10 quality result: `docs/ingestion/PHASE10_QUALITY_GATE.md` and
+  `docs/ingestion/manifests/phase10-controlled-corpus-quality.json`.
 - Never push unless explicitly instructed.
 
 ## Phase 8 result
@@ -58,25 +59,44 @@ Live checkpoint. Repository state wins over this note.
 - Measured graph scale is 13 nodes / 22 edges, so SVG remains appropriate.
   ADR-014 records this decision and the provenance/path rules.
 
+## Phase 10 result
+
+- Migration `0006` adds first-class findings, finding-evidence links, party and
+  Court argument records, Court-response links, and exact provenance constraints.
+- The held 22-record corpus has no Trial Judgment. The real quality benchmark is
+  explicitly Court decision `KSC-BC-2020-06/F03752`; no party brief was
+  substituted for a judgment and no additional record was fetched.
+- One human-verified finding preserves the exact F03752 paragraphs 12–16. One
+  exact, resolved, human-verified Court-cited link targets the held
+  `F03667/COR/RED` version with exact source coordinates.
+- One Defence and one SPO position are stored separately as exact Court
+  summaries. Their unavailable underlying filings F03743 and F03746 remain
+  explicitly missing. One Court-response passage has two separately verified
+  response links.
+- The real Finding Detail, matrix API, exact-source navigation and source audit
+  expose the benchmark without unsupported evidence links, category conflation,
+  AI-generated canonical findings, legal conclusions or scores.
+
 ## Verification
 
 - Backend unit: 168 passed.
 - Backend integration: 70 passed (238 backend total).
-- Frontend: 191 passed; ESLint, TypeScript and Prettier pass.
+- Frontend: 194 passed; ESLint, TypeScript and Prettier pass.
 - Final `make lint`, `make typecheck`, `make test`, production build, migration
   drift/round-trip, live stack health, real API/UI smoke checks, and Playwright
-  (96 passed, 2 skipped) all passed before the checkpoint tag was created.
-- The final roadmap closeout audit re-read the complete Phase 9 specification
-  and verified every acceptance criterion against code, migration `0005`, tests,
-  the live API/database, and the pinned real-corpus quality gate. The Phase 9
-  roadmap and master roadmap carry current completion metadata.
+  (96 passed, 4 skipped) and the two-test real-data Phase 10 run all passed
+  before the checkpoint tag was created.
+- The final roadmap closeout audit re-read the complete Phase 10 specification
+  and verified every acceptance criterion against code, migration `0006`, tests,
+  the live API/database/UI, source audit, and pinned real-corpus quality gate.
+  The Phase 10 roadmap and master roadmap carry current completion metadata.
 
 ## Architecture / decisions
 
-- ADR-001–013 remain in force; ADR-014 records deterministic citation-backed
-  edges, source-metadata timeline events, path eligibility and measured SVG scale.
-- Migration `0005_real_evidence_network_timeline.py` adds relationship
-  source/origin/date provenance and timeline source-record provenance.
+- ADR-001–014 remain in force; ADR-015 records the human-reviewed finding matrix,
+  explicit-citation basis, party separation and fail-closed corpus limitation.
+- Migration `0006_judgment_findings_matrix.py` adds the Phase 10 entities and
+  provenance constraints on top of Phase 9's network/timeline schema.
 - Parser/resolver/pipeline:
   `workers/ingestion/src/ksc_ingestion/{pdf_parser,citation_resolution,parse_pipeline,evidence_pipeline}.py`.
 - Real-corpus bytes stay git-ignored and hash-addressed in MinIO. The Phase 7
@@ -93,11 +113,14 @@ Live checkpoint. Repository state wins over this note.
 - The controlled corpus has no approximate/range/month/year timeline date and no
   supported historical, filing-date, trial-judgment or later-appeal milestone;
   none was fabricated. Uncertainty rendering is component-tested.
+- The controlled corpus has no public Trial Judgment and does not hold underlying
+  public filings F03743 or F03746. Phase 10 therefore proves the matrix capability
+  only against the narrow F03752 Court-decision benchmark, not a full merits matrix.
 
 ## Next
 
-Phase 10 is **NEXT / PENDING**. Await explicit authorization, inspect repository
-state, and read the complete Phase 10 roadmap. Do not begin Phase 10 from this
+Phase 11 is **NEXT / PENDING**. Await explicit authorization, inspect repository
+state, and read the complete Phase 11 roadmap. Do not begin Phase 11 from this
 checkpoint.
 
 ## Non-negotiable rules

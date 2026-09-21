@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-21 (Phase 9 complete)
+Last updated: 2026-09-21 (Phase 10 complete)
 
 ## Milestones
 
@@ -17,8 +17,8 @@ Last updated: 2026-09-21 (Phase 9 complete)
 | **7**  | **KSC public record discovery + controlled document ingestion (first real KSC data)**                     | ✅ **Complete (2026-09-20)** — 22 real public records, quality gate 22/22, idempotent (ADR-011, ADR-012) |
 | **8**  | **Parsing, exact citations, resolution index, search**                                                    | ✅ **Complete (2026-09-20)** — controlled-corpus quality gate PASS (ADR-013)                             |
 | **9**  | **Real evidence network and timeline**                                                                    | ✅ **Complete (2026-09-21)** — controlled-corpus quality gate PASS (ADR-014)                             |
-| 10     | Judgment, findings and evidence matrix                                                                    | **Next / pending**                                                                                       |
-| 11     | Citation-first AI / RAG                                                                                   | Planned                                                                                                  |
+| **10** | **Judgment, findings and evidence matrix**                                                                | ✅ **Complete (2026-09-21)** — real Court-decision quality gate PASS (ADR-015)                           |
+| 11     | Citation-first AI / RAG                                                                                   | **Next / pending**                                                                                       |
 | 12     | Appeal research, red team and statement comparison                                                        | Planned                                                                                                  |
 | 13     | Gradual full public corpus ingestion and production hardening                                             | Planned                                                                                                  |
 | 14     | External media and public statements intelligence                                                         | Post-core / later                                                                                        |
@@ -27,10 +27,10 @@ Last updated: 2026-09-21 (Phase 9 complete)
 
 The persistent execution plan is `docs/roadmap/` (installed 2026-09-19):
 `00_MASTER_ROADMAP.md` is the high-level plan and each `PHASE_*.md` is the
-execution specification for one milestone. Phases 6, 5B, 7, 8, and 9 are
-complete. Remaining planned order: 10 → 11 → 12 → 13 → 14.
+execution specification for one milestone. Phases 6, 5B, 7, 8, 9, and 10 are
+complete. Remaining planned order: 11 → 12 → 13 → 14.
 The table above is the status record; the roadmap files hold scope and acceptance
-criteria. Phase 9 is complete; Phase 10 is next/pending. Repository code,
+criteria. Phase 10 is complete; Phase 11 is next/pending. Repository code,
 migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -266,6 +266,27 @@ check` and `head → base → head` are integration-tested.
   typecheck, migration round-trip/drift checks, real API smoke and Playwright
   (96 passed, 2 skipped) all pass.
 
+## Completed features (Phase 10)
+
+- Final closeout audit completed 2026-09-21 against implementation commit
+  `c8eaa1e`, migration `0006`, automated gates, live real-case database/API/UI
+  probes and the pinned controlled-corpus quality report.
+- The 22-record corpus has no Trial Judgment. The real benchmark is explicitly
+  Court decision `KSC-BC-2020-06/F03752`; no brief was substituted and no new
+  material was ingested.
+- One human-verified finding preserves exact paragraphs 12–16. One exact
+  resolved Court-cited evidence link targets held version `F03667/COR/RED` with
+  source coordinates and verification provenance.
+- One Defence and one SPO position are stored separately as exact Court
+  summaries; missing underlying filings F03743/F03746 remain explicit. One exact
+  Court response is linked independently to both positions.
+- The queryable matrix API and real Finding Detail provide structural navigation,
+  exact-source opening, evidence categories and a source audit. No unsupported
+  evidence link, AI-generated canonical finding, legal conclusion or score exists.
+- Final gates: 238 backend tests, 194 frontend tests, production build, lint,
+  typecheck, migration round-trip/drift checks, real-corpus gate, standard
+  Playwright (96 passed / 4 skipped), and real-data Phase 10 Playwright (2 passed).
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -290,28 +311,28 @@ check` and `head → base → head` are integration-tested.
 
 ## Test / evaluation status
 
-| Suite                                    | Count        | Last result                                        |
-| ---------------------------------------- | ------------ | -------------------------------------------------- |
-| Backend unit (pytest)                    | 168          | pass                                               |
-| Backend integration (pytest, live infra) | 70           | pass                                               |
-| Frontend (vitest)                        | 191          | pass                                               |
-| E2E (playwright)                         | 48 specs × 2 | 96 pass locally; requires running stack + browsers |
-| Evaluation                               | 0            | reserved directory                                 |
+| Suite                                    | Count        | Last result                                   |
+| ---------------------------------------- | ------------ | --------------------------------------------- |
+| Backend unit (pytest)                    | 168          | pass                                          |
+| Backend integration (pytest, live infra) | 70           | pass                                          |
+| Frontend (vitest)                        | 194          | pass                                          |
+| E2E (playwright)                         | 50 specs × 2 | 96 pass / 4 skip; Phase 10 real-data 2/2 pass |
+| Evaluation                               | 0            | reserved directory                            |
 
 Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all pass.
 
 ## Deployment state
 
-Local only: stack verified 2026-09-20 with all five services healthy after
-rebuilding the API image (migration `0005` applied; ingestion status endpoint
+Local only: stack verified 2026-09-21 with all five services healthy after
+rebuilding the API image (migration `0006` applied; ingestion status endpoint
 live). Git:
 Phase 6 tag `phase-6-complete` = `bdf7293`. Phase 5B is on `feat/phase-5b-visual-parity`, tag
 `phase-5b-complete`, not pushed. Phase 5B and Phase 7 were
 fast-forwarded into `main` on 2026-09-20: `main` = `origin/main` = `96e402a`,
 tags `phase-5b-complete` and `phase-7-complete` pushed. No remote deployment
-or production workflow. Phase 9 is complete on
-`feat/phase-9-real-evidence-network-timeline`; local tag `phase-9-complete`
-marks its final documentation checkpoint. The Phase 9 branch/tag have not been
+or production workflow. Phase 10 is complete on
+`feat/phase-10-judgment-findings-matrix`; local tag `phase-10-complete` marks
+its final documentation checkpoint. The Phase 10 branch/tag have not been
 pushed or merged.
 
 ## Verification limitations
@@ -334,3 +355,9 @@ pipeline itself fetched nothing from the court site (ADR-011).
 Phase 9 projection: graph nodes 13 · citation-backed edges 22 · source-backed
 timeline events 19 (document 11 · decision 6 · testimony 2). No additional
 record was ingested.
+
+Phase 10 projection: findings 1 · exact paragraph mappings 1 · explicit
+Court-cited evidence links 1 · party positions 2 (Defence 1 · SPO 1) · Court
+response links 2 · human-verified relationships 6. All five distinct linked
+citations resolve; missing underlying filings F03743/F03746 and the absent Trial
+Judgment remain explicit. No additional record was ingested.
