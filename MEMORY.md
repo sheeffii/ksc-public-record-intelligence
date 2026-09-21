@@ -4,18 +4,20 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-13-full-public-corpus-ingestion-hardening`, created
-  from `main` = `bac0b0f`; Phase 13 implementation has not started.
-- Current milestone: **Phase 12 complete (2026-09-21)**. Phase 13 is next/pending.
+- Current branch: `feat/phase-13-full-public-corpus-ingestion-hardening`; its
+  preserved branch-start checkpoint is `2adb1f1` from `main` = `bac0b0f`.
+- Current milestone: **Phase 13 IN PROGRESS (2026-09-21)**. Architecture,
+  operations and the real gate are implemented; completion is blocked at 22/50
+  lawfully available real records.
 - Push state (2026-09-21): `main` fast-forwarded to `bac0b0f` and pushed;
   annotated tag `phase-12-complete` pushed. The Phase 13 branch is local.
-- Completion tag: `phase-12-complete` at `bac0b0f`, the final Phase 12 closeout
-  commit.
+- Latest completion tag: `phase-12-complete` at `bac0b0f`. There is deliberately
+  no `phase-13-complete` tag.
 - Final Phase 12 implementation commit: `7a9779b`; the subsequent roadmap
   closeout commit records the final audit and completion metadata.
 - Phase 12 is on `main`; its feature branch was not pushed separately.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
-- Migration head: `0008`.
+- Migration head: `0009`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -28,6 +30,8 @@ Live checkpoint. Repository state wins over this note.
   `docs/ingestion/manifests/phase11-controlled-corpus-quality.json`.
 - Phase 12 quality result: `docs/ingestion/PHASE12_QUALITY_GATE.md` and
   `docs/ingestion/manifests/phase12-controlled-corpus-quality.json`.
+- Phase 13 in-progress result: `docs/ingestion/phase13-quality-gate.json` and
+  `docs/ingestion/PHASE13_OPERATIONS.md`.
 - Never push unless explicitly instructed.
 
 ## Phase 8 result
@@ -145,16 +149,59 @@ Live checkpoint. Repository state wins over this note.
   findings · 7/7 citations resolved/navigable · 10 human-verified relationships
   · 1 abstention · authoritative finding/evidence state unchanged.
 
+## Phase 13 in-progress result
+
+- Migration `0009` adds immutable source snapshots, lease-based artifact
+  acquisition, quarantine, and processing-run history without changing
+  authoritative artifact/version identity.
+- `ksc-ingest inventory`, `queue-artifacts`, and `browser-plan` separate official
+  inventory from local bytes. Only explicitly public versions queue. Leases use
+  bounded `SKIP LOCKED` claims, expiry and capped retry; access control is
+  terminal and routed to the existing lawful operator-capture path.
+- `parse --force` and `reresolve` rebuild derived parser/citation state from
+  immutable held bytes and record runs. Open-quarantine versions are excluded
+  from both selections (`select_processable_versions`); a version quarantined
+  after parsing is flagged by the gate as `quarantined_parsed_versions`.
+- Status/API metrics now include verified bytes, metadata snapshots, duplicates,
+  parser review, queue states, quarantine and processing runs. API responses add
+  secure headers and a 10 MiB declared-body limit; Dependabot covers
+  `apps/api`, `workers/ingestion`, pnpm and Actions.
+- PostgreSQL/MinIO backup writes per-file SHA-256 evidence and no secret values;
+  guarded restore was tested in an isolated database/bucket. It restored
+  migration `0009`, 22 objects and 24,429,094 object bytes, then the isolated
+  targets were removed.
+- Real gate: 22 source records · 19 documents · 22 fetched/parsed versions ·
+  1,979 pages · 1,233 paragraphs · 607 transcript segments · 14,212 citations
+  (30 resolved · 0 ambiguous · 14,105 unresolved · 77 invalid) · 22 verified
+  objects · 24,429,094 bytes · 0 missing/hash-mismatched objects · 0 fetched
+  non-public versions · 0 open quarantine. Search, exact lookup and network
+  queries were all under 3 ms locally.
+- A fresh identified probe of `repository.scp-ks.org/robots.txt` returned HTTP
+  403 with `cf-mitigated: challenge`; failure job
+  `4134154a-5026-4ebc-ba04-75a20bcc42ca` records it. No bypass was attempted.
+- Architecture/integrity/performance gates pass, but the genuine real-scale gate
+  is 22/50 and fails. Phase 13 remains in progress; no completion tag.
+- Resumed closeout audit (2026-09-21): forced reparse + reresolve left every
+  downstream Phase 8–12 row byte-identical (fingerprint diff; only
+  `processing_runs` 3 → 5); gate re-run identical; second isolated
+  backup/restore verified 22/22 objects by hash; fresh identified probe still
+  `cf-mitigated: challenge`. Per-criterion audit is in the Phase 13 roadmap
+  file. No larger lawful batch exists locally (`data/captures/` holds only the
+  22-PDF bundle; no inventory manifest).
+
 ## Verification
 
-- Backend unit: 178 passed.
-- Backend integration: 77 passed (255 backend total).
+- Backend unit: 180 passed.
+- Backend integration: 81 passed (261 backend total).
 - Frontend: 199 passed; ESLint, TypeScript and Prettier pass.
-- Final `make lint`, `make typecheck`, `make test`, production build, migration
-  `0007 → 0008 → 0007 → 0008` round-trip, live-DB model drift check, rebuilt
-  stack health, real API/UI smoke checks, the re-run Phase 12 real-corpus gate,
-  standard Playwright (96 passed, 14 skipped) and real-data Phase 10–12
-  Playwright (12 passed across desktop/mobile) all passed before the tag.
+- Phase 13 checkpoint reran `make lint`, `make typecheck`, `make test` (261
+  backend + 199 frontend), production build, migration round-trip/model drift,
+  checksum backup/isolated restore, real-corpus force reparse/re-resolution and
+  gate, rebuilt stack health, API security-header/status/413 smoke and web
+  health.
+- The Phase 12 closeout additionally passed standard Playwright (96 passed, 14
+  skipped) and real-data Phase 10–12 Playwright (12 passed across
+  desktop/mobile) before its tag.
 - Real-data Playwright needs a host web on port 3000 in API mode
   (`NEXT_PUBLIC_DATA_SOURCE=api … next dev -p 3000`, Docker web stopped)
   because `CORS_ORIGINS` allows only `http://localhost:3000`.
@@ -203,12 +250,19 @@ Live checkpoint. Repository state wins over this note.
   sentencing analysis. The public Trial Judgment, F03743, F03746 and the
   pre-correction brief are absent; the comparison therefore remains
   `not_comparable` and the issue remains `NEEDS_MORE_EVIDENCE`.
+- Phase 13 reprocessing reconciles derived rows by stable ID and never deletes:
+  a parser-origin citation that a newer parser no longer extracts stays in
+  place (still resolved deterministically) until explicit review. Observability
+  is partial: plain-text logs, no metrics endpoint, no alerting integration.
+  Scale claims (performance, lineage) are proven at 22 records only.
 
 ## Next
 
-Phase 13 is **NEXT / PENDING**. Await explicit authorization, inspect repository
-state, and read the complete Phase 13 roadmap. Do not begin Phase 13 from this
-checkpoint.
+Phase 13 is **IN PROGRESS / BLOCKED ON LAWFUL REAL SCALE**. Resume only when an
+authorized official inventory/capture can raise the real public corpus from 22
+to at least 50 records. Run the inventory/capture pipeline in bounded batches,
+repeat the real gate and full quality gates, then complete/tag only if every
+criterion passes. Do not bypass Cloudflare and do not begin Phase 14.
 
 ## Non-negotiable rules
 

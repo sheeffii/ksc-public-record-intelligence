@@ -862,3 +862,59 @@ Relevant files:
 `apps/api/src/ksc_api/services/appeal_research.py`,
 `workers/ingestion/src/ksc_ingestion/{appeal_pipeline,appeal_quality_gate}.py`,
 and `docs/ingestion/PHASE12_QUALITY_GATE.md`.
+
+---
+
+## ADR-018 — Separate corpus inventory, acquisition, quarantine, and processing history
+
+Date: 2026-09-21
+
+Status: Accepted
+
+Context:
+Phase 13 must scale the public corpus without treating discovery as proof that
+bytes are locally held, silently replacing evidence, retrying access controls,
+or allowing malformed material into trusted search and AI. The official host
+continues to return a Cloudflare challenge to the identified HTTP client, and
+the lawful captured corpus remains 22 records.
+
+Decision:
+
+1. Official metadata inventory is a distinct, metadata-only input. It records
+   source observations and missing public artifact versions without implying
+   download success. Every changed metadata representation is an immutable,
+   hashed source snapshot.
+2. Acquisition is one queue row per public version, claimed in bounded batches
+   with PostgreSQL `SKIP LOCKED`, expiring leases, attempt limits and capped
+   backoff. Access-control failures are terminal `blocked`, never retried with
+   evasive headers, cookies, browsers or proxies.
+3. Operator capture remains the lawful fallback. A generated plan contains only
+   already-observed official public URLs and feeds the existing hash/PDF/case/
+   visibility-validated capture pipeline.
+4. Serious artifact or provenance conflicts enter an explicit quarantine row.
+   Open quarantine versions are excluded from parsing and citation resolution,
+   so they never gain the parsed output that indexing, projection and AI
+   retrieval read. A version quarantined after parsing is reported by the gate
+   as a parsed quarantined version and fails integrity until reviewed.
+5. Original SHA-addressed objects and document versions are immutable. Forced
+   parser reprocessing and citation re-resolution rebuild derived rows
+   deterministically and create processing-run history.
+6. Architecture, integrity and performance readiness are distinct from corpus
+   scale. Synthetic fixtures prove mechanics only. Phase 13 cannot complete or
+   receive a tag until a lawful real batch reaches the first 50-record scale
+   step and the real gate passes.
+
+Consequences:
+
+- Migration `0009` adds source snapshots, artifact acquisitions, quarantine and
+  processing runs without changing authoritative Phase 7–12 evidence identity.
+- The platform can resume safely after crashes and expose queue, quarantine,
+  bytes, parser and citation health while the official source remains blocked.
+- Phase 13 remains in progress at 22/50 records; Phase 14 remains prohibited.
+
+Relevant files:
+`apps/api/alembic/versions/0009_corpus_ingestion_operations.py`,
+`apps/api/src/ksc_api/models/operations.py`,
+`workers/ingestion/src/ksc_ingestion/{acquisition,phase13_quality_gate}.py`,
+`docs/ingestion/PHASE13_OPERATIONS.md`, and
+`docs/ingestion/phase13-quality-gate.json`.

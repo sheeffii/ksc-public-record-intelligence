@@ -5,11 +5,13 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from ksc_api.models import (
+    ArtifactQuarantine,
     ArtifactStatus,
     AuditLog,
     Case,
@@ -21,6 +23,7 @@ from ksc_api.models import (
     DocumentParagraph,
     DocumentSection,
     DocumentVersion,
+    ProcessingRun,
     TextExtractionMethod,
     Transcript,
     TranscriptSegment,
@@ -35,6 +38,32 @@ from ksc_ingestion.pdf_parser import PARSER_NAME, PARSER_VERSION, ParsedPdf, par
 from ksc_ingestion.storage import ObjectStore
 
 _PHASE8_NAMESPACE = uuid.UUID("d14af643-3782-4fba-a1a2-546c3d1ee9d5")
+
+
+def not_open_quarantined() -> Any:
+    """Open quarantine material never enters parsing or citation resolution.
+
+    Quarantine is explicit review state; a version stays excluded until a
+    reviewer releases or rejects the row. The Phase 13 gate separately fails
+    if any open-quarantine version already holds parsed output.
+    """
+    return ~exists().where(
+        ArtifactQuarantine.document_version_id == DocumentVersion.id,
+        ArtifactQuarantine.state == "open",
+    )
+
+
+def select_processable_versions(case_id: uuid.UUID, *, parsed_only: bool = False) -> Any:
+    """Versions the parser (held bytes) or resolver (parsed output) may touch."""
+    statement = (
+        select(DocumentVersion)
+        .join(Document)
+        .where(Document.case_id == case_id, not_open_quarantined())
+        .order_by(DocumentVersion.official_version_ref)
+    )
+    if parsed_only:
+        return statement.where(DocumentVersion.parsed_at.is_not(None))
+    return statement.where(DocumentVersion.artifact_status == ArtifactStatus.FETCHED)
 
 
 def _stable_id(*parts: object) -> uuid.UUID:
@@ -74,46 +103,114 @@ class Phase8Pipeline:
         self.store = store
         self.case_number = case_number
 
-    def run(self) -> Phase8RunResult:
+    def run(self, *, force: bool = False) -> Phase8RunResult:
         with self.sessions() as session:
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
                 raise LookupError(f"case {self.case_number} is not seeded")
-            version_ids = list(
-                session.scalars(
-                    select(DocumentVersion.id)
-                    .join(Document)
-                    .where(
-                        Document.case_id == case.id,
-                        DocumentVersion.artifact_status == ArtifactStatus.FETCHED,
-                    )
-                    .order_by(DocumentVersion.official_version_ref)
-                ).all()
+            version_ids = [
+                version.id
+                for version in session.scalars(select_processable_versions(case.id)).all()
+            ]
+            run = ProcessingRun(
+                case_id=case.id,
+                processor="pdf_parse_and_citation_resolution",
+                processor_version=PARSER_VERSION,
+                status="running",
+                forced=force,
+                selected_count=len(version_ids),
+                started_at=datetime.now(UTC),
             )
+            session.add(run)
+            session.commit()
+            run_id = run.id
 
-        results: list[ParsedVersionResult] = []
-        for version_id in version_ids:
-            results.append(self._parse_version(version_id))
+        try:
+            results: list[ParsedVersionResult] = []
+            for version_id in version_ids:
+                results.append(self._parse_version(version_id, force=force))
+
+            with self.sessions() as session:
+                case = session.scalar(select(Case).where(Case.case_number == self.case_number))
+                if case is None:  # pragma: no cover - protected by first lookup
+                    raise LookupError(f"case {self.case_number} is not seeded")
+                identifiers = rebuild_identifier_index(session, case)
+                session.commit()
+
+            citation_counts = self._extract_and_resolve()
+            result = Phase8RunResult(
+                versions=results,
+                identifiers=identifiers,
+                citations=sum(citation_counts.values()),
+                resolved=citation_counts["resolved"],
+                ambiguous=citation_counts["ambiguous"],
+                unresolved=citation_counts["unresolved"],
+                invalid=citation_counts["invalid"],
+            )
+        except Exception as exc:
+            self._finish_processing_run(run_id, status="failed", error=type(exc).__name__)
+            raise
+        self._finish_processing_run(
+            run_id,
+            status="completed",
+            processed=len(results),
+            detail={"identifiers": identifiers, **citation_counts},
+        )
+        return result
+
+    def reresolve(self) -> dict[str, int]:
+        """Rebuild identifier mappings and deterministically resolve all citations."""
 
         with self.sessions() as session:
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
-            if case is None:  # pragma: no cover - protected by first lookup
+            if case is None:
                 raise LookupError(f"case {self.case_number} is not seeded")
+            run = ProcessingRun(
+                case_id=case.id,
+                processor="citation_resolution",
+                processor_version="exact-v1",
+                status="running",
+                forced=True,
+                started_at=datetime.now(UTC),
+            )
+            session.add(run)
+            session.commit()
+            run_id = run.id
             identifiers = rebuild_identifier_index(session, case)
             session.commit()
-
-        citation_counts = self._extract_and_resolve()
-        return Phase8RunResult(
-            versions=results,
-            identifiers=identifiers,
-            citations=sum(citation_counts.values()),
-            resolved=citation_counts["resolved"],
-            ambiguous=citation_counts["ambiguous"],
-            unresolved=citation_counts["unresolved"],
-            invalid=citation_counts["invalid"],
+        try:
+            counts = self._extract_and_resolve()
+        except Exception as exc:
+            self._finish_processing_run(run_id, status="failed", error=type(exc).__name__)
+            raise
+        self._finish_processing_run(
+            run_id,
+            status="completed",
+            processed=sum(counts.values()),
+            detail={"identifiers": identifiers, **counts},
         )
+        return {"identifiers": identifiers, **counts}
 
-    def _parse_version(self, version_id: uuid.UUID) -> ParsedVersionResult:
+    def _finish_processing_run(
+        self,
+        run_id: uuid.UUID,
+        *,
+        status: str,
+        processed: int = 0,
+        error: str | None = None,
+        detail: dict[str, Any] | None = None,
+    ) -> None:
+        with self.sessions() as session:
+            run = session.get(ProcessingRun, run_id)
+            assert run is not None
+            run.status = status
+            run.processed_count = processed
+            run.failed_count = 1 if status == "failed" else 0
+            run.finished_at = datetime.now(UTC)
+            run.detail = {**(detail or {}), **({"error": error} if error else {})}
+            session.commit()
+
+    def _parse_version(self, version_id: uuid.UUID, *, force: bool) -> ParsedVersionResult:
         with self.sessions() as session:
             version = session.get(DocumentVersion, version_id)
             if version is None or version.storage_key is None:
@@ -121,7 +218,7 @@ class Phase8Pipeline:
             transcript = session.scalar(
                 select(Transcript).where(Transcript.document_version_id == version.id)
             )
-            if (
+            if not force and (
                 version.parser_name == PARSER_NAME
                 and version.parser_version == PARSER_VERSION
                 and version.parsed_at is not None
@@ -142,7 +239,7 @@ class Phase8Pipeline:
             session.add(
                 AuditLog(
                     actor="ksc-ingest-phase8",
-                    action="document_version.parsed",
+                    action=("document_version.reprocessed" if force else "document_version.parsed"),
                     entity_type="document_version",
                     entity_id=str(version.id),
                     detail={
@@ -168,21 +265,18 @@ class Phase8Pipeline:
 
     @staticmethod
     def _replace_parse(session: Session, version: DocumentVersion, parsed: ParsedPdf) -> None:
-        # Extracted citations are regenerated after every parse. Citations in
-        # other sources that target this version remain untouched.
-        session.execute(delete(Citation).where(Citation.source_document_version_id == version.id))
-        version.chunks.clear()
-        version.sections.clear()
-        version.paragraphs.clear()
-        version.pages.clear()
+        """Reconcile stable parser rows without breaking downstream lineage.
+
+        Once citations/findings/graph rows reference parser output, delete and
+        reinsert is unsafe even when UUIDs are deterministic. Text and coordinate
+        improvements update rows in place. A structural ID-set change fails
+        closed and requires an explicit projection migration/review.
+        """
+
         transcript = session.scalar(
             select(Transcript).where(Transcript.document_version_id == version.id)
         )
-        if transcript is not None:
-            transcript.segments.clear()
-        session.flush()
-
-        version.pages.extend(
+        new_pages = [
             DocumentPage(
                 id=_stable_id(version.id, "page", page.pdf_page_index),
                 pdf_page_index=page.pdf_page_index,
@@ -194,8 +288,8 @@ class Phase8Pipeline:
                 redaction_extents=page.redaction_extents,
             )
             for page in parsed.pages
-        )
-        version.paragraphs.extend(
+        ]
+        new_paragraphs = [
             DocumentParagraph(
                 id=_stable_id(version.id, "paragraph", paragraph.paragraph_number),
                 sequence=paragraph.sequence,
@@ -207,8 +301,8 @@ class Phase8Pipeline:
                 text=paragraph.text,
             )
             for paragraph in parsed.paragraphs
-        )
-        version.sections.extend(
+        ]
+        new_sections = [
             DocumentSection(
                 id=_stable_id(version.id, "section", section.sequence),
                 sequence=section.sequence,
@@ -220,8 +314,8 @@ class Phase8Pipeline:
                 para_to=section.para_to,
             )
             for section in parsed.sections
-        )
-        version.chunks.extend(
+        ]
+        new_chunks = [
             DocumentChunk(
                 id=_stable_id(version.id, "chunk", chunk.sequence),
                 sequence=chunk.sequence,
@@ -236,12 +330,71 @@ class Phase8Pipeline:
                 char_count=len(chunk.text),
             )
             for chunk in parsed.chunks
+        ]
+        Phase8Pipeline._reconcile_rows(
+            version.pages,
+            new_pages,
+            fields=(
+                "pdf_page_index",
+                "page_number",
+                "printed_page_label",
+                "text",
+                "running_head",
+                "has_redactions",
+                "redaction_extents",
+            ),
+            label="pages",
+        )
+        Phase8Pipeline._reconcile_rows(
+            version.paragraphs,
+            new_paragraphs,
+            fields=(
+                "sequence",
+                "paragraph_number",
+                "pdf_page_index_from",
+                "pdf_page_index_to",
+                "page_from",
+                "page_to",
+                "text",
+            ),
+            label="paragraphs",
+        )
+        Phase8Pipeline._reconcile_rows(
+            version.sections,
+            new_sections,
+            fields=(
+                "sequence",
+                "level",
+                "heading",
+                "page_from",
+                "page_to",
+                "para_from",
+                "para_to",
+            ),
+            label="sections",
+        )
+        Phase8Pipeline._reconcile_rows(
+            version.chunks,
+            new_chunks,
+            fields=(
+                "sequence",
+                "chunk_kind",
+                "pdf_page_index_from",
+                "pdf_page_index_to",
+                "page_from",
+                "page_to",
+                "para_from",
+                "para_to",
+                "text",
+                "char_count",
+            ),
+            label="chunks",
         )
         if transcript is not None:
             transcript.page_from = parsed.page_from
             transcript.page_to = parsed.page_to
             transcript.text_extraction_method = TextExtractionMethod.NATIVE_TEXT
-            transcript.segments.extend(
+            new_segments = [
                 TranscriptSegment(
                     id=_stable_id(version.id, "segment", segment.sequence),
                     sequence=segment.sequence,
@@ -256,6 +409,23 @@ class Phase8Pipeline:
                     closed_session=segment.closed_session,
                 )
                 for segment in parsed.transcript_segments
+            ]
+            Phase8Pipeline._reconcile_rows(
+                transcript.segments,
+                new_segments,
+                fields=(
+                    "sequence",
+                    "pdf_page_index",
+                    "page_number",
+                    "line_from",
+                    "line_to",
+                    "speaker",
+                    "speaker_role",
+                    "examination_type",
+                    "text",
+                    "closed_session",
+                ),
+                label="transcript segments",
             )
         version.text_extraction_method = TextExtractionMethod.NATIVE_TEXT
         version.parsed_at = datetime.now(UTC)
@@ -266,6 +436,24 @@ class Phase8Pipeline:
             {"review_reasons": parsed.review_reasons} if parsed.review_reasons else None
         )
         version.document.ingestion_state = DocumentIngestionState.PARSED
+
+    @staticmethod
+    def _reconcile_rows(
+        existing: list[Any], incoming: list[Any], *, fields: tuple[str, ...], label: str
+    ) -> None:
+        if not existing:
+            existing.extend(incoming)
+            return
+        current = {row.id: row for row in existing}
+        proposed = {row.id: row for row in incoming}
+        if current.keys() != proposed.keys():
+            raise RuntimeError(
+                f"reprocessing changes stable {label} identity; review/projection migration required"
+            )
+        for row_id, candidate in proposed.items():
+            row = current[row_id]
+            for field in fields:
+                setattr(row, field, getattr(candidate, field))
 
     @staticmethod
     def _citation_text(text: str, version_ref: str) -> str:
@@ -285,16 +473,14 @@ class Phase8Pipeline:
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
                 raise LookupError(f"case {self.case_number} is not seeded")
-            versions = session.scalars(
-                select(DocumentVersion)
-                .join(Document)
-                .where(Document.case_id == case.id, DocumentVersion.parsed_at.is_not(None))
-                .order_by(DocumentVersion.official_version_ref)
-            ).all()
+            versions = session.scalars(select_processable_versions(case.id, parsed_only=True)).all()
             for version in versions:
-                session.execute(
-                    delete(Citation).where(Citation.source_document_version_id == version.id)
-                )
+                existing_citations = {
+                    citation.id: citation
+                    for citation in session.scalars(
+                        select(Citation).where(Citation.source_document_version_id == version.id)
+                    ).all()
+                }
                 transcript = session.scalar(
                     select(Transcript).where(Transcript.document_version_id == version.id)
                 )
@@ -327,35 +513,38 @@ class Phase8Pipeline:
                             extracted,
                             source_version_ref=version.official_version_ref,
                         )
-                        citation = Citation(
-                            id=_stable_id(
-                                version.id,
-                                "citation",
-                                pdf_page_index,
-                                source_segment_id,
-                                extracted.source_start,
-                                extracted.source_end,
-                                extracted.raw_text,
-                            ),
-                            case_id=case.id,
-                            raw_text=extracted.raw_text,
-                            normalized_text=normalize_for_storage(extracted.normalized_identifier),
-                            citation_type=extracted.citation_type,
-                            source_document_version_id=version.id,
-                            source_page=source_page,
-                            source_pdf_page_index=pdf_page_index,
-                            source_transcript_segment_id=source_segment_id,
-                            source_char_start=extracted.source_start,
-                            source_char_end=extracted.source_end,
-                            source_url=version.source_url,
-                            target_page=extracted.target_page,
-                            target_para_from=extracted.target_para_from,
-                            target_para_to=extracted.target_para_to,
-                            target_line_from=extracted.target_line_from,
-                            target_line_to=extracted.target_line_to,
+                        citation_id = _stable_id(
+                            version.id,
+                            "citation",
+                            pdf_page_index,
+                            source_segment_id,
+                            extracted.source_start,
+                            extracted.source_end,
+                            extracted.raw_text,
                         )
+                        citation = existing_citations.get(citation_id)
+                        if citation is None:
+                            citation = Citation(id=citation_id, case_id=case.id)
+                            session.add(citation)
+                            existing_citations[citation_id] = citation
+                        citation.raw_text = extracted.raw_text
+                        citation.normalized_text = normalize_for_storage(
+                            extracted.normalized_identifier
+                        )
+                        citation.citation_type = extracted.citation_type
+                        citation.source_document_version_id = version.id
+                        citation.source_page = source_page
+                        citation.source_pdf_page_index = pdf_page_index
+                        citation.source_transcript_segment_id = source_segment_id
+                        citation.source_char_start = extracted.source_start
+                        citation.source_char_end = extracted.source_end
+                        citation.source_url = version.source_url
+                        citation.target_page = extracted.target_page
+                        citation.target_para_from = extracted.target_para_from
+                        citation.target_para_to = extracted.target_para_to
+                        citation.target_line_from = extracted.target_line_from
+                        citation.target_line_to = extracted.target_line_to
                         apply_resolution(citation, resolution)
-                        session.add(citation)
                         counts[resolution.state.value] += 1
                 version.document.ingestion_state = DocumentIngestionState.INDEXED
             session.add(

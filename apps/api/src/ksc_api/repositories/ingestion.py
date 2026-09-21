@@ -19,6 +19,8 @@ from ksc_api.db.session import get_session
 from ksc_api.models import (
     INGESTION_FAILURE_STATUSES,
     PUBLIC_VISIBILITIES,
+    ArtifactAcquisition,
+    ArtifactQuarantine,
     ArtifactStatus,
     Case,
     Citation,
@@ -28,10 +30,13 @@ from ksc_api.models import (
     DocumentParagraph,
     DocumentVersion,
     Hearing,
+    IngestionItemStatus,
     IngestionJob,
     IngestionJobItem,
+    ProcessingRun,
     ResolutionState,
     SourceRecord,
+    SourceRecordSnapshot,
     Transcript,
     TranscriptSegment,
 )
@@ -165,6 +170,81 @@ class IngestionStatusRepository:
                     IngestionJob.case_id == case_id,
                     IngestionJobItem.status.in_(INGESTION_FAILURE_STATUSES),
                 )
+            ),
+            items_duplicate=self._count(
+                select(func.count())
+                .select_from(IngestionJobItem)
+                .join(IngestionJob, IngestionJob.id == IngestionJobItem.job_id)
+                .where(
+                    IngestionJob.case_id == case_id,
+                    IngestionJobItem.status == IngestionItemStatus.SKIPPED_DUPLICATE,
+                )
+            ),
+            verified_artifact_bytes=int(
+                self.session.scalar(
+                    select(func.coalesce(func.sum(DocumentVersion.byte_size), 0))
+                    .select_from(DocumentVersion)
+                    .join(Document)
+                    .where(
+                        Document.case_id == case_id,
+                        DocumentVersion.artifact_status == ArtifactStatus.FETCHED,
+                    )
+                )
+                or 0
+            ),
+            parse_review_required=self._count(
+                versions.where(DocumentVersion.parse_requires_review.is_(True))
+            ),
+            source_metadata_snapshots=self._count(
+                select(func.count())
+                .select_from(SourceRecordSnapshot)
+                .join(SourceRecord)
+                .where(SourceRecord.case_id == case_id)
+            ),
+            acquisition_pending=self._count(
+                select(func.count())
+                .select_from(ArtifactAcquisition)
+                .where(
+                    ArtifactAcquisition.case_id == case_id,
+                    ArtifactAcquisition.status == "pending",
+                )
+            ),
+            acquisition_leased=self._count(
+                select(func.count())
+                .select_from(ArtifactAcquisition)
+                .where(
+                    ArtifactAcquisition.case_id == case_id,
+                    ArtifactAcquisition.status == "leased",
+                )
+            ),
+            acquisition_blocked=self._count(
+                select(func.count())
+                .select_from(ArtifactAcquisition)
+                .where(
+                    ArtifactAcquisition.case_id == case_id,
+                    ArtifactAcquisition.status == "blocked",
+                )
+            ),
+            acquisition_failed=self._count(
+                select(func.count())
+                .select_from(ArtifactAcquisition)
+                .where(
+                    ArtifactAcquisition.case_id == case_id,
+                    ArtifactAcquisition.status == "failed",
+                )
+            ),
+            quarantine_open=self._count(
+                select(func.count())
+                .select_from(ArtifactQuarantine)
+                .where(
+                    ArtifactQuarantine.case_id == case_id,
+                    ArtifactQuarantine.state == "open",
+                )
+            ),
+            processing_runs=self._count(
+                select(func.count())
+                .select_from(ProcessingRun)
+                .where(ProcessingRun.case_id == case_id)
             ),
         )
 

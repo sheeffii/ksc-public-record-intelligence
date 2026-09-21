@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -20,6 +20,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ksc_api.models import (
+    ArtifactAcquisition,
+    ArtifactQuarantine,
     ArtifactStatus,
     AuditLog,
     Case,
@@ -33,13 +35,17 @@ from ksc_api.models import (
     IngestionJobItem,
     IngestionJobStatus,
     Party,
+    ProcessingRun,
     SourceRecord,
+    SourceRecordSnapshot,
     SourceSystem,
     Transcript,
     Visibility,
 )
+from ksc_ingestion.acquisition import AcquiredArtifact, AcquisitionQueue, AutomatedAcquirer
 from ksc_ingestion.capture import load_bundle
 from ksc_ingestion.fetch import HttpFetcher
+from ksc_ingestion.parse_pipeline import select_processable_versions
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor
 from ksc_ingestion.probe import JOB_TYPE_LIVE_PROBE, probe, record_probe
 from ksc_ingestion.storage import InMemoryObjectStore, MinioObjectStore, ObjectStore
@@ -61,6 +67,9 @@ def _clean(session: Session) -> None:
     case = session.scalar(select(Case).where(Case.case_number == DEMO_CASE))
     if case is None:
         return
+    session.execute(delete(ArtifactQuarantine).where(ArtifactQuarantine.case_id == case.id))
+    session.execute(delete(ArtifactAcquisition).where(ArtifactAcquisition.case_id == case.id))
+    session.execute(delete(ProcessingRun).where(ProcessingRun.case_id == case.id))
     session.execute(delete(IngestionJob).where(IngestionJob.case_id == case.id))
     session.execute(
         delete(SourceRecord).where(
@@ -255,6 +264,159 @@ def test_standard_bundle_persists_records_provenance_hashes_and_failures(
     assert actions.count("ingestion.item.downloaded") == 4
     assert "ingestion.item.unsupported_artifact" in actions
     assert "ingestion.item.not_public" in actions
+
+    snapshots = session.scalars(
+        select(SourceRecordSnapshot).join(SourceRecord).where(SourceRecord.case_id == doc.case_id)
+    ).all()
+    assert len(snapshots) == 7
+    quarantined = session.scalars(
+        select(ArtifactQuarantine).where(ArtifactQuarantine.case_id == doc.case_id)
+    ).all()
+    assert len(quarantined) == 1
+    assert quarantined[0].reason_code == "unsupported_artifact"
+    assert quarantined[0].state == "open"
+
+
+def test_open_quarantine_excludes_held_versions_from_parse_and_resolution(
+    tmp_path: Path, ingestor: Ingestor, session: Session
+) -> None:
+    ingestor.run_bundle(load_bundle(standard_bundle(tmp_path)))
+    held = _versions(session, "F00001")[f"{DEMO_CASE}/F00001"]
+    assert held.artifact_status is ArtifactStatus.FETCHED
+
+    def processable() -> set[str]:
+        return {
+            v.official_version_ref
+            for v in session.scalars(select_processable_versions(held.document.case_id)).all()
+        }
+
+    assert held.official_version_ref in processable()
+
+    # Post-ingestion review quarantines the held version (e.g. wrong case):
+    # the bytes stay immutable, but parse/resolution no longer select it.
+    row = ArtifactQuarantine(
+        case_id=held.document.case_id,
+        document_version_id=held.id,
+        reason_code="wrong_case",
+        reason="reviewer flagged the first page as another case",
+        state="open",
+    )
+    session.add(row)
+    session.flush()
+    assert held.official_version_ref not in processable()
+    assert held.artifact_status is ArtifactStatus.FETCHED and held.sha256 is not None
+    assert all(
+        v.parsed_at is not None
+        for v in session.scalars(
+            select_processable_versions(held.document.case_id, parsed_only=True)
+        ).all()
+    )
+
+    # A reviewer decision (released or rejected) closes the quarantine row.
+    row.state = "released"
+    session.flush()
+    assert held.official_version_ref in processable()
+    session.rollback()
+
+
+def test_acquisition_queue_leases_retries_and_never_retries_access_control(
+    tmp_path: Path, ingestor: Ingestor, session: Session
+) -> None:
+    ingestor.run_bundle(load_bundle(standard_bundle(tmp_path)))
+    case = session.scalar(select(Case).where(Case.case_number == DEMO_CASE))
+    assert case is not None
+    queue = AcquisitionQueue(session, case)
+    assert queue.enqueue_missing(now=datetime(2026, 9, 21, tzinfo=UTC)) == 1
+    session.commit()
+
+    now = datetime(2026, 9, 21, tzinfo=UTC)
+    (leased,) = queue.claim("worker-1", now=now)
+    assert leased.status == "leased" and leased.attempt_count == 1
+    queue.fail(
+        leased,
+        "worker-1",
+        failure_class="network",
+        error="temporary timeout",
+        retryable=True,
+        now=now,
+    )
+    assert leased.status == "pending" and leased.available_at == now + timedelta(seconds=30)
+
+    (leased_again,) = queue.claim("worker-2", now=now + timedelta(seconds=31))
+    queue.fail(
+        leased_again,
+        "worker-2",
+        failure_class="access_control",
+        error="Cloudflare challenge",
+        retryable=True,
+        now=now + timedelta(seconds=31),
+    )
+    assert leased_again.status == "blocked"
+    assert queue.claim("worker-3", now=now + timedelta(days=1)) == []
+    plan = queue.browser_plan()
+    assert len(plan) == 1
+    assert plan[0].official_url.startswith("https://repository.scp-ks.org/")
+
+
+def test_automated_adapter_acquires_a_bounded_public_batch(
+    tmp_path: Path, ingestor: Ingestor, sessions, store: ObjectStore
+) -> None:
+    ingestor.run_bundle(load_bundle(standard_bundle(tmp_path)))
+
+    class FakeOfficialAdapter:
+        def fetch(self, url: str) -> AcquiredArtifact:
+            assert url == artifact_url("Filing", "F00003.pdf")
+            return AcquiredArtifact(
+                make_pdf([f"{DEMO_CASE}/F00003", "Synthetic queued acquisition"]),
+                datetime(2026, 9, 21, tzinfo=UTC),
+                "test_official_adapter",
+            )
+
+    result = AutomatedAcquirer(sessions, store, case_number=DEMO_CASE).run_batch(
+        FakeOfficialAdapter(), owner="test-worker", batch_size=1
+    )
+    assert result == result.__class__(claimed=1, fetched=1, blocked=0, failed=0, quarantined=0)
+
+    with sessions() as session:
+        version = session.scalar(
+            select(DocumentVersion).where(
+                DocumentVersion.official_version_ref == f"{DEMO_CASE}/F00003"
+            )
+        )
+        assert version is not None
+        assert version.artifact_status is ArtifactStatus.FETCHED
+        assert version.fetch_method == "test_official_adapter"
+        assert version.storage_key and store.exists(version.storage_key)
+        queued = session.scalar(
+            select(ArtifactAcquisition).where(ArtifactAcquisition.document_version_id == version.id)
+        )
+        assert queued is not None and queued.status == "captured"
+
+
+def test_parallel_workers_cannot_claim_the_same_artifact(
+    tmp_path: Path, ingestor: Ingestor, sessions
+) -> None:
+    ingestor.run_bundle(load_bundle(standard_bundle(tmp_path)))
+    with sessions() as setup:
+        case = setup.scalar(select(Case).where(Case.case_number == DEMO_CASE))
+        assert case is not None
+        AcquisitionQueue(setup, case).enqueue_missing()
+        setup.commit()
+
+    first = sessions()
+    second = sessions()
+    try:
+        case_one = first.scalar(select(Case).where(Case.case_number == DEMO_CASE))
+        case_two = second.scalar(select(Case).where(Case.case_number == DEMO_CASE))
+        assert case_one is not None and case_two is not None
+        claimed = AcquisitionQueue(first, case_one).claim("worker-one", limit=1)
+        assert len(claimed) == 1
+        assert AcquisitionQueue(second, case_two).claim("worker-two", limit=1) == []
+    finally:
+        first.rollback()
+        second.rollback()
+        first.close()
+        second.close()
 
 
 def test_rerun_is_idempotent(tmp_path: Path, ingestor: Ingestor, session: Session) -> None:

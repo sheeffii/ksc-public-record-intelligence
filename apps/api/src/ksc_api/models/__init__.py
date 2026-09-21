@@ -83,6 +83,12 @@ from ksc_api.models.evidence import (
 from ksc_api.models.graph import NODE_FK_COLUMNS, GraphNode, Relationship
 from ksc_api.models.hearing import Hearing, Transcript, TranscriptSegment, WitnessAppearance
 from ksc_api.models.ingestion import IngestionJob, IngestionJobItem
+from ksc_api.models.operations import (
+    ArtifactAcquisition,
+    ArtifactQuarantine,
+    ProcessingRun,
+    SourceRecordSnapshot,
+)
 from ksc_api.models.research import ResearchNote, ResearchNoteCitation
 from ksc_api.models.source_record import SourceRecord
 
@@ -104,6 +110,8 @@ __all__ = [
     "Argument",
     "ArgumentResponse",
     "ArgumentResponseKind",
+    "ArtifactAcquisition",
+    "ArtifactQuarantine",
     "ArtifactStatus",
     "AuditLog",
     "Case",
@@ -143,6 +151,7 @@ __all__ = [
     "Party",
     "Person",
     "PersonAlias",
+    "ProcessingRun",
     "PromptVersion",
     "RecordIdentifier",
     "RedTeamFinding",
@@ -155,6 +164,7 @@ __all__ = [
     "ResolutionMethod",
     "ResolutionState",
     "SourceRecord",
+    "SourceRecordSnapshot",
     "SourceSystem",
     "StatementComparison",
     "TextExtractionMethod",

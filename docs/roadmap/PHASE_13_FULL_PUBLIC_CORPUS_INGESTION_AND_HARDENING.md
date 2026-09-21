@@ -1,6 +1,6 @@
 # Phase 13 — Gradual Full Public Corpus Ingestion & Production Hardening
 
-**Status:** Pending.
+**Status:** IN PROGRESS — architecture/operations implemented; real-corpus scale gate blocked at 22/50 lawfully available records (2026-09-21).
 
 ## Goal
 
@@ -245,3 +245,83 @@ COMMITS
 NEXT
 MEMORY
 ```
+
+## Execution checkpoint — 2026-09-21
+
+Implemented migration `0009`, separate metadata inventory and artifact state,
+immutable source snapshots, a bounded lease/retry queue, access-control-terminal
+behavior, browser-capture plans, quarantine, deterministic force reprocessing,
+citation re-resolution, processing history, operational metrics, secure API
+headers/request limits, dependency monitoring, and checksum-verified database
+plus object-store backup/restore tooling.
+
+The real gate verified all 22 held public artifacts (24,429,094 bytes), public-only
+and quarantine isolation, and measured document search, exact lookup and network
+queries below the 500 ms local threshold. An isolated restore recovered migration
+`0009`, the database corpus and all 22 objects with matching total bytes.
+
+The official repository's `robots.txt` still returns a Cloudflare 403 challenge
+(`cf-mitigated: challenge`). No bypass was attempted. The largest lawful real
+sample remains 22 records, below the first 50-record gradual-scale gate. Therefore
+this phase is not complete, no `phase-13-complete` tag exists, and Phase 14 must
+not start. Machine evidence: `docs/ingestion/phase13-quality-gate.json`.
+
+## Verification checkpoint — 2026-09-21 (resumed closeout audit)
+
+Repository reality was re-inspected independently of the earlier run: branch
+`feat/phase-13-full-public-corpus-ingestion-hardening`, branch-start commit
+`2adb1f1` preserved, migration head and live database both at `0009`,
+`alembic check` reports no model drift, and the `base → 0009` round-trip is
+integration-tested. `make lint`, `make typecheck`, `make test` (260 backend
++ 199 frontend) and `make build` pass.
+
+Runtime re-verification on the real corpus: `ksc-ingest parse --force` (22/22
+versions) followed by `ksc-ingest reresolve` left every downstream row
+byte-identical — citations (IDs, resolution state, targets), relationships,
+events, findings, evidence links, arguments, AI runs/sources/output citations,
+appeal issue sources, statement comparison, red-team findings, research-note
+citations, page/paragraph/chunk/segment IDs and text, and version hashes —
+with only `processing_runs` growing (3 → 5). The Phase 13 gate re-run produced
+the same report as `docs/ingestion/phase13-quality-gate.json` apart from
+sub-3 ms latency figures. A fresh checksum backup restored into an isolated
+database and bucket at `0009` with an identical lineage fingerprint and 22/22
+objects (24,429,094 bytes) verified by SHA-256; the isolated targets were
+removed. A single identified, non-recorded probe of the official host again
+returned HTTP 403 `cf-mitigated: challenge` on `robots.txt`; the client stopped.
+
+Two hardening gaps were found and closed: open-quarantine versions are now
+excluded from parse and citation-resolution selection (integration-tested), and
+Dependabot now also scans `workers/ingestion` (httpx, pypdf, beautifulsoup4).
+Documentation was corrected to state that quarantine exclusion is enforced at
+parse/resolution and detected by the gate, not enforced inside search/AI query
+paths.
+
+Acceptance criteria against repository/runtime reality:
+
+- corpus ingestion scales gradually and safely — **NOT MET**: mechanism
+  implemented (bounded leases, retry, checkpoints), but no batch beyond the 22
+  lawful records has been possible; 22/50 for the first scale step.
+- public-only rule holds — MET (0 fetched non-public; inventory/queue accept
+  explicit public versions only; challenge is terminal).
+- version history is preserved — MET (immutable SHA versions, 22 source
+  snapshots, duplicate detection, no silent mutation on reparse).
+- data-quality metrics exist — MET for discovery, download, duplicate, parse
+  review, unresolved/ambiguous citations, queue depth, quarantine, bytes,
+  processing runs; OCR fallback rate is not applicable (no OCR exists).
+- quarantine/reprocessing exists — MET and verified live.
+- search/network remain performant — MET at 22 records only (< 3 ms locally);
+  untested at 50+.
+- backups restore successfully — MET (isolated restore verified twice).
+- observability is production-ready — **PARTIAL**: health/ready/version,
+  status metrics, audit log and processing-run history exist; logs are plain
+  text, and there is no metrics endpoint or alerting integration.
+- source/audit lineage remains intact at scale — MET at 22 records; not
+  demonstrated at scale.
+- AI never bypasses verification/citation layers — MET (Phase 11/12 gates and
+  tests unchanged; quarantine cannot feed parsed output).
+
+Decision: Phase 13 remains **IN PROGRESS — BLOCKED ON LAWFUL REAL SCALE**. No
+`phase-13-complete` tag exists. Next required action: an authorized official
+inventory/capture that lawfully raises the corpus to at least 50 records, then
+a bounded batch, the real gate and the full quality gates. Phase 14 does not
+begin.

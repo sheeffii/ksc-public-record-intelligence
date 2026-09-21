@@ -31,6 +31,12 @@ PHASE12_TABLES = {
     "red_team_reviews",
     "red_team_findings",
 }
+PHASE13_TABLES = {
+    "source_record_snapshots",
+    "artifact_acquisitions",
+    "artifact_quarantine",
+    "processing_runs",
+}
 PHASE6_TABLES = {
     "source_records",
     "document_versions",
@@ -82,6 +88,7 @@ def test_schema_contains_phase4_foundation_and_phase6_evidence_model():
         | PHASE8_TABLES
         | PHASE11_TABLES
         | PHASE12_TABLES
+        | PHASE13_TABLES
     )
 
 

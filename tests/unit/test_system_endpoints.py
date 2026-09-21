@@ -18,6 +18,17 @@ def test_health_is_ok(client):
     assert response.json() == {"status": "ok"}
 
 
+def test_api_responses_have_security_headers_and_request_limit(client):
+    response = client.get("/health")
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
+
+    refused = client.get("/health", headers={"content-length": str(10 * 1024 * 1024 + 1)})
+    assert refused.status_code == 413
+
+
 def test_version_reports_package_and_case(client):
     response = client.get("/version")
     assert response.status_code == 200

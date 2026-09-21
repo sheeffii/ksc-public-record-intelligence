@@ -184,6 +184,41 @@ def load_bundle(root: Path) -> CaptureBundle:
     return bundle
 
 
+def load_inventory(path: Path) -> CaptureBundle:
+    """Load a metadata-only official inventory manifest.
+
+    The schema intentionally matches capture manifests so a later lawful
+    browser capture can fill the same records without a translation layer.
+    Inventory files may never name local HTML/PDF files.
+    """
+
+    path = Path(path)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        manifest = CaptureManifest.model_validate(data)
+    except (OSError, ValueError) as exc:
+        raise BundleError(f"inventory unreadable or invalid: {exc}") from exc
+    if manifest.capture_method != "official_metadata_inventory":
+        raise BundleError("inventory capture_method must be official_metadata_inventory")
+    if any(page.file for page in manifest.listing_pages):
+        raise BundleError("inventory listing pages must not reference local files")
+    if any(
+        record.detail_page_file or any(artifact.file for artifact in record.artifacts)
+        for record in manifest.records
+    ):
+        raise BundleError("inventory must be metadata-only; local files are not accepted")
+    if any(
+        record.metadata is not None and record.metadata.metadata_source == "synthetic_fixture"
+        for record in manifest.records
+    ):
+        raise BundleError("synthetic_fixture metadata is forbidden in an official inventory")
+    bundle = CaptureBundle(root=path.parent, manifest=manifest)
+    # Validate every source/artifact URL and duplicate identity, without any
+    # network request or artifact access.
+    _validate_bundle(bundle)
+    return bundle
+
+
 def _validate_bundle(bundle: CaptureBundle) -> None:
     """Bundle-level gates: every URL official, every referenced file present
     and inside the bundle, no duplicate detail pages."""

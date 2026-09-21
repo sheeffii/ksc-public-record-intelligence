@@ -58,6 +58,16 @@ notes, or non-public disclosure a lawful user is entitled to hold) is ever added
 - Uploaded or fetched files (later phases) are written to MinIO with a content
   hash, scanned for type, and parsed in a worker with no network access.
 - CORS is restricted to `CORS_ORIGINS`.
+- API requests declaring a body larger than 10 MiB are refused before routing;
+  ingestion artifacts enter through the offline worker and its PDF/hash checks.
+- API responses set nosniff, frame-denial, restrictive referrer, permissions and
+  CSP headers. Containers run as an unprivileged user.
+
+## Dependency monitoring
+
+Dependabot scans Python, pnpm and GitHub Actions dependencies weekly. CI remains
+the merge gate for lint, type checks, tests and the production build; dependency
+updates must pass the same gate.
 
 ## Logging restrictions
 

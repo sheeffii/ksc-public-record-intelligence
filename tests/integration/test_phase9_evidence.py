@@ -33,7 +33,6 @@ def test_phase9_projection_is_idempotent_and_every_edge_is_auditable(demo_settin
             assert all(edge.citation.resolution_state == ResolutionState.RESOLVED for edge in edges)
             assert all(edge.citation_id and edge.source_category and edge.note for edge in edges)
             assert all(edge.from_node_id != edge.to_node_id for edge in edges)
-
             events = session.scalars(
                 select(Event).where(Event.extraction_origin == "source_metadata")
             ).all()

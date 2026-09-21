@@ -16,6 +16,7 @@ from ksc_ingestion.capture import (
     ManifestMetadata,
     discover,
     load_bundle,
+    load_inventory,
 )
 from ksc_ingestion.discovery import DiscoveredRecord, MetadataSource
 from ksc_ingestion.sources import ClassifiedUrl, UrlKind
@@ -223,3 +224,26 @@ def test_operator_manifest_metadata_is_flagged_as_such(tmp_path: Path) -> None:
 
 def test_pdf_fixture_is_deterministic(tmp_path: Path) -> None:
     assert make_pdf(["x"]) == make_pdf(["x"])
+
+
+def test_metadata_inventory_is_official_only_and_contains_no_local_files(tmp_path: Path) -> None:
+    builder = BundleBuilder(tmp_path)
+    md = metadata(record_type="filing", official_ref=f"{DEMO_CASE}/F1", title="Inventory")
+    md["metadata_source"] = "operator_manifest"
+    builder.add_record(
+        "00000000000000a1",
+        md,
+        [{"url": "https://repository.scp-ks.org/LW/Published/Filing/x/a.pdf"}],
+    )
+    manifest = builder.write(capture_method="official_metadata_inventory") / "manifest.json"
+
+    inventory = load_inventory(manifest)
+    (record,) = discover(inventory)
+    assert isinstance(record, DiscoveredRecord)
+    assert record.artifacts[0].local_file is None
+
+    data = json.loads(manifest.read_text())
+    data["records"][0]["artifacts"][0]["file"] = "files/a.pdf"
+    manifest.write_text(json.dumps(data))
+    with pytest.raises(BundleError, match="metadata-only"):
+        load_inventory(manifest)

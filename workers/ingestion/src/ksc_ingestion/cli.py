@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from datetime import date
 from pathlib import Path
 
 from sqlalchemy import select
@@ -27,10 +28,16 @@ from ksc_api.db.session import get_sessionmaker
 from ksc_api.logging_config import configure_logging
 from ksc_api.models import Case
 from ksc_api.repositories.ingestion import IngestionStatusRepository
+from ksc_ingestion.acquisition import (
+    AcquisitionQueue,
+    AutomatedAcquirer,
+    OfficialHttpAdapter,
+    write_browser_plan,
+)
 from ksc_ingestion.ai_quality_gate import run_phase11_gate, write_phase11_report
 from ksc_ingestion.appeal_pipeline import Phase12Pipeline
 from ksc_ingestion.appeal_quality_gate import run_phase12_gate, write_phase12_report
-from ksc_ingestion.capture import BundleError, load_bundle
+from ksc_ingestion.capture import BundleError, load_bundle, load_inventory
 from ksc_ingestion.capture_import import SourceImportError, import_capture
 from ksc_ingestion.corpus_manifest import build_manifest, validate_manifest_file, write_manifest
 from ksc_ingestion.evidence_pipeline import Phase9Pipeline
@@ -38,6 +45,7 @@ from ksc_ingestion.fetch import HttpFetcher
 from ksc_ingestion.findings_pipeline import Phase10Pipeline
 from ksc_ingestion.findings_quality_gate import run_phase10_gate, write_phase10_report
 from ksc_ingestion.parse_pipeline import Phase8Pipeline
+from ksc_ingestion.phase13_quality_gate import run_phase13_gate, write_phase13_report
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor, RunOutcome
 from ksc_ingestion.probe import probe, record_probe
 from ksc_ingestion.quality_gate import report_to_table, run_gate, write_report
@@ -126,6 +134,80 @@ def cmd_bundle(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_inventory(args: argparse.Namespace) -> int:
+    """Synchronize an operator-exported, metadata-only official inventory."""
+
+    try:
+        inventory = load_inventory(Path(args.path))
+        outcome = _ingestor(dry_run=args.dry_run).run_inventory(
+            inventory, resume=not args.no_resume, dry_run=args.dry_run
+        )
+    except (BundleError, CaseNotSeededError) as exc:
+        print(f"inventory rejected: {exc}", file=sys.stderr)
+        return 2
+    _print_outcome(outcome)
+    if not args.dry_run:
+        settings = get_settings()
+        with get_sessionmaker()() as session:
+            case = session.scalar(select(Case).where(Case.case_number == settings.case_id))
+            assert case is not None
+            queued = AcquisitionQueue(session, case).enqueue_missing()
+            session.commit()
+        print(f"queued_missing_artifacts={queued}")
+    return 0
+
+
+def cmd_queue_artifacts(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        case = session.scalar(select(Case).where(Case.case_number == settings.case_id))
+        if case is None:
+            print(f"case {settings.case_id} is not seeded", file=sys.stderr)
+            return 2
+        queued = AcquisitionQueue(session, case).enqueue_missing()
+        session.commit()
+    print(f"queued_missing_artifacts={queued}")
+    return 0
+
+
+def cmd_browser_plan(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        case = session.scalar(select(Case).where(Case.case_number == settings.case_id))
+        if case is None:
+            print(f"case {settings.case_id} is not seeded", file=sys.stderr)
+            return 2
+        queue = AcquisitionQueue(session, case)
+        queue.enqueue_missing()
+        items = queue.browser_plan(limit=args.limit)
+        write_browser_plan(items, Path(args.out), case_number=case.case_number)
+        session.commit()
+    print(f"wrote {args.out}: {len(items)} public artifact requests")
+    return 0
+
+
+def cmd_acquire_http(args: argparse.Namespace) -> int:
+    """Consume one bounded queue batch through ordinary identified HTTP."""
+
+    settings = get_settings()
+    store = MinioObjectStore(settings)
+    store.ensure_bucket()
+    with HttpFetcher(min_interval=args.min_interval) as fetcher:
+        result = AutomatedAcquirer(
+            get_sessionmaker(), store, case_number=settings.case_id
+        ).run_batch(
+            OfficialHttpAdapter(fetcher),
+            owner=args.owner,
+            batch_size=args.batch_size,
+            lease_seconds=args.lease_seconds,
+        )
+    print(
+        f"claimed={result.claimed} fetched={result.fetched} blocked={result.blocked} "
+        f"failed={result.failed} quarantined={result.quarantined}"
+    )
+    return 0 if result.blocked == result.failed == result.quarantined == 0 else 1
+
+
 def cmd_gate(args: argparse.Namespace) -> int:
     try:
         bundle = load_bundle(Path(args.path))
@@ -199,7 +281,12 @@ def cmd_status(args: argparse.Namespace) -> int:
         f"(resolved={c.citations_resolved} ambiguous={c.citations_ambiguous} "
         f"unresolved={c.citations_unresolved} invalid={c.citations_invalid}) "
         f"hearings={c.hearings} transcripts={c.transcripts} jobs={c.jobs} "
-        f"items_failed={c.items_failed}"
+        f"items_failed={c.items_failed} duplicates={c.items_duplicate} "
+        f"verified_bytes={c.verified_artifact_bytes} parse_review={c.parse_review_required} "
+        f"metadata_snapshots={c.source_metadata_snapshots} "
+        f"queue=(pending={c.acquisition_pending} leased={c.acquisition_leased} "
+        f"blocked={c.acquisition_blocked} failed={c.acquisition_failed}) "
+        f"quarantine_open={c.quarantine_open} processing_runs={c.processing_runs}"
     )
     for job in status.jobs:
         print(
@@ -228,7 +315,9 @@ def cmd_parse(args: argparse.Namespace) -> int:
     """
     settings = get_settings()
     store = MinioObjectStore(settings)
-    result = Phase8Pipeline(get_sessionmaker(), store, case_number=settings.case_id).run()
+    result = Phase8Pipeline(get_sessionmaker(), store, case_number=settings.case_id).run(
+        force=args.force
+    )
     for version in result.versions:
         review = " REVIEW" if version.requires_review else ""
         print(
@@ -242,6 +331,20 @@ def cmd_parse(args: argparse.Namespace) -> int:
         f"ambiguous={result.ambiguous} unresolved={result.unresolved} invalid={result.invalid}"
     )
     return 0 if not any(version.requires_review for version in result.versions) else 1
+
+
+def cmd_reresolve(args: argparse.Namespace) -> int:
+    """Rebuild identifier mappings and re-resolve held citations without network access."""
+
+    settings = get_settings()
+    store = MinioObjectStore(settings)
+    result = Phase8Pipeline(get_sessionmaker(), store, case_number=settings.case_id).reresolve()
+    print(
+        f"identifiers={result['identifiers']} resolved={result['resolved']} "
+        f"ambiguous={result['ambiguous']} unresolved={result['unresolved']} "
+        f"invalid={result['invalid']}"
+    )
+    return 0
 
 
 def cmd_build_evidence(args: argparse.Namespace) -> int:
@@ -351,6 +454,36 @@ def cmd_gate_ai(args: argparse.Namespace) -> int:
     return 0 if report.passed else 1
 
 
+def cmd_gate_phase13(args: argparse.Namespace) -> int:
+    """Measure the real held corpus; synthetic fixtures never satisfy scale."""
+
+    settings = get_settings()
+    store = MinioObjectStore(settings)
+    with get_sessionmaker()() as session:
+        report = run_phase13_gate(
+            session,
+            store,
+            case_number=settings.case_id,
+            generated_at=args.generated_at,
+            required_real_records=args.minimum_records,
+        )
+    print(
+        f"records={report.source_records}/{report.required_real_records} "
+        f"versions={report.versions} fetched={report.fetched_versions} "
+        f"bytes={report.verified_artifact_bytes} citations={report.citations} "
+        f"integrity_ready={str(report.integrity_ready).lower()} "
+        f"performance_ready={str(report.performance_ready).lower()} "
+        f"real_scale_ready={str(report.real_scale_ready).lower()} "
+        f"completion_ready={str(report.completion_ready).lower()}"
+    )
+    if report.limitation:
+        print(f"  limitation: {report.limitation}")
+    if args.json:
+        write_phase13_report(report, Path(args.json))
+        print(f"report written to {args.json}")
+    return 0 if report.completion_ready else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ksc-ingest", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -371,6 +504,35 @@ def build_parser() -> argparse.ArgumentParser:
     p_bundle.add_argument("--dry-run", action="store_true")
     p_bundle.add_argument("--no-resume", action="store_true")
     p_bundle.set_defaults(func=cmd_bundle)
+
+    p_inventory = sub.add_parser(
+        "inventory", help="sync a metadata-only inventory exported from an official surface"
+    )
+    p_inventory.add_argument("path")
+    p_inventory.add_argument("--dry-run", action="store_true")
+    p_inventory.add_argument("--no-resume", action="store_true")
+    p_inventory.set_defaults(func=cmd_inventory)
+
+    p_queue = sub.add_parser(
+        "queue-artifacts", help="enqueue missing bytes for already-known public versions"
+    )
+    p_queue.set_defaults(func=cmd_queue_artifacts)
+
+    p_plan = sub.add_parser(
+        "browser-plan", help="write a lawful operator-capture plan for missing public artifacts"
+    )
+    p_plan.add_argument("--out", required=True)
+    p_plan.add_argument("--limit", type=int, default=100)
+    p_plan.set_defaults(func=cmd_browser_plan)
+
+    p_acquire = sub.add_parser(
+        "acquire-http", help="consume one bounded artifact batch via identified official HTTP"
+    )
+    p_acquire.add_argument("--owner", required=True)
+    p_acquire.add_argument("--batch-size", type=int, default=10)
+    p_acquire.add_argument("--lease-seconds", type=int, default=300)
+    p_acquire.add_argument("--min-interval", type=float, default=5.0)
+    p_acquire.set_defaults(func=cmd_acquire_http)
 
     p_gate = sub.add_parser("gate", help="quality gate: verify an ingested bundle end to end")
     p_gate.add_argument("path")
@@ -397,7 +559,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_parse = sub.add_parser(
         "parse", help="parse held PDFs, persist exact coordinates, citations and search text"
     )
+    p_parse.add_argument(
+        "--force", action="store_true", help="deterministically rebuild all held parser output"
+    )
     p_parse.set_defaults(func=cmd_parse)
+    p_reresolve = sub.add_parser(
+        "reresolve", help="rebuild the identifier index and re-resolve all held citations"
+    )
+    p_reresolve.set_defaults(func=cmd_reresolve)
     p_evidence = sub.add_parser(
         "build-evidence", help="build citation-backed graph edges and source-backed timeline events"
     )
@@ -436,6 +605,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_ai_gate.add_argument("--generated-at", default="2026-09-21")
     p_ai_gate.add_argument("--json")
     p_ai_gate.set_defaults(func=cmd_gate_ai)
+    p_phase13_gate = sub.add_parser(
+        "gate-phase13", help="real-corpus scale, integrity and performance gate"
+    )
+    p_phase13_gate.add_argument("--generated-at", type=date.fromisoformat, default=date.today())
+    p_phase13_gate.add_argument("--minimum-records", type=int, default=50)
+    p_phase13_gate.add_argument("--json")
+    p_phase13_gate.set_defaults(func=cmd_gate_phase13)
     return parser
 
 

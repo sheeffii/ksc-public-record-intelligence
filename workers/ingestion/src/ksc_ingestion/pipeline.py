@@ -20,7 +20,10 @@ Guarantees:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
+import uuid
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -32,6 +35,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from ksc_api.models import (
     INGESTION_FAILURE_STATUSES,
     PUBLIC_VISIBILITIES,
+    ArtifactAcquisition,
+    ArtifactQuarantine,
     ArtifactStatus,
     AuditLog,
     Case,
@@ -43,6 +48,7 @@ from ksc_api.models import (
     IngestionJob,
     IngestionJobStatus,
     SourceRecord,
+    SourceRecordSnapshot,
     SourceSystem,
     Transcript,
     Visibility,
@@ -62,6 +68,7 @@ log = logging.getLogger(__name__)
 
 ACTOR = "worker:ingestion"
 JOB_TYPE_CAPTURE_BUNDLE = "capture_bundle"
+JOB_TYPE_INVENTORY_SYNC = "official_inventory_sync"
 
 _OPEN_JOB_STATUSES = (
     IngestionJobStatus.PENDING,
@@ -170,6 +177,36 @@ class Ingestor:
             source_system=SourceSystem.KSC_PUBLIC_COURT_RECORDS,
             cursor=cursor,
             resume_key=("bundle_id", bundle.manifest.bundle_id),
+            resume=resume,
+            dry_run=dry_run,
+        )
+
+    def run_inventory(
+        self,
+        inventory: CaptureBundle,
+        *,
+        resume: bool = True,
+        dry_run: bool = False,
+    ) -> RunOutcome:
+        """Persist a public metadata inventory without acquiring bytes."""
+
+        if inventory.manifest.case_number != self.case_number:
+            raise CaseNotSeededError(
+                f"inventory is for {inventory.manifest.case_number}; ingestor is scoped to "
+                f"{self.case_number}"
+            )
+        records = discover(inventory)
+        cursor = {
+            "inventory_id": inventory.manifest.bundle_id,
+            "inventory_path": str(inventory.root),
+            "observed_at": inventory.manifest.captured_at.isoformat(),
+        }
+        return self.run_records(
+            records,
+            job_type=JOB_TYPE_INVENTORY_SYNC,
+            source_system=SourceSystem.KSC_PUBLIC_COURT_RECORDS,
+            cursor=cursor,
+            resume_key=("inventory_id", inventory.manifest.bundle_id),
             resume=resume,
             dry_run=dry_run,
         )
@@ -400,6 +437,7 @@ class Ingestor:
             ],
         }
         item.finished_at = self._clock()
+        self._quarantine_failures(session, job, item, outcome)
         job.checkpoint = {
             **(job.checkpoint or {}),
             "last_item_key": item.item_key,
@@ -435,6 +473,48 @@ class Ingestor:
         )
         session.flush()
         return outcome
+
+    def _quarantine_failures(
+        self, session: Session, job: IngestionJob, item: Any, outcome: ItemOutcome
+    ) -> None:
+        """Keep provenance/artifact conflicts out of trusted processing.
+
+        Access-control blocks and ordinary download failures are operational
+        states, not evidence-quality conflicts, so they remain visible on the
+        ingestion item without entering the human review queue.
+        """
+
+        serious = {
+            IngestionItemStatus.AMBIGUOUS_MAPPING,
+            IngestionItemStatus.INVALID_METADATA,
+            IngestionItemStatus.UNSUPPORTED_ARTIFACT,
+        }
+        failures: list[VersionOutcome | None] = [
+            version for version in outcome.versions if version.status in serious
+        ]
+        if not failures and outcome.status in serious:
+            failures = [None]
+        for version in failures:
+            status = version.status if version is not None else outcome.status
+            reason = (version.reason if version is not None else outcome.reason) or status.value
+            version_id = (
+                uuid.UUID(version.version_id)
+                if version is not None and version.version_id is not None
+                else None
+            )
+            sha256 = version.sha256 if version is not None else None
+            session.add(
+                ArtifactQuarantine(
+                    case_id=job.case_id,
+                    document_version_id=version_id,
+                    ingestion_job_item_id=item.id,
+                    reason_code=status.value,
+                    reason=reason,
+                    artifact_sha256=sha256,
+                    detail=version.detail if version is not None else item.detail,
+                    state="open",
+                )
+            )
 
     def _process(
         self,
@@ -537,13 +617,50 @@ class Ingestor:
             )
             session.add(source)
             session.flush()
+            self._snapshot_source_record(session, source, record, seen_at)
             return source
         source.last_seen_at = max(source.last_seen_at, seen_at)
         source.title = record.title
         source.language = record.language or source.language
         source.canonical_source_url = record.detail_page_url
         source.raw_metadata = record.raw_metadata
+        self._snapshot_source_record(session, source, record, seen_at)
         return source
+
+    @staticmethod
+    def _snapshot_source_record(
+        session: Session,
+        source: SourceRecord,
+        record: DiscoveredRecord,
+        observed_at: datetime,
+    ) -> None:
+        metadata = {
+            "record_type": record.record_type,
+            "language": record.language,
+            "discovery_url": record.discovery_url,
+            "canonical_source_url": record.detail_page_url,
+            "title": record.title,
+            "raw_metadata": record.raw_metadata,
+        }
+        encoded = json.dumps(metadata, sort_keys=True, separators=(",", ":"), default=str).encode(
+            "utf-8"
+        )
+        digest = hashlib.sha256(encoded).hexdigest()
+        exists = session.scalar(
+            select(SourceRecordSnapshot.id).where(
+                SourceRecordSnapshot.source_record_id == source.id,
+                SourceRecordSnapshot.metadata_sha256 == digest,
+            )
+        )
+        if exists is None:
+            session.add(
+                SourceRecordSnapshot(
+                    source_record_id=source.id,
+                    observed_at=observed_at,
+                    metadata_sha256=digest,
+                    metadata_payload=metadata,
+                )
+            )
 
     def _upsert_document(
         self,
@@ -706,6 +823,7 @@ class Ingestor:
         if existing is not None and existing.artifact_status is ArtifactStatus.FETCHED:
             if existing.sha256 == info.sha256:
                 self._store.put(existing.storage_key or "", data, info.mime_type)
+                self._mark_acquired(session, existing)
                 return (
                     VersionOutcome(
                         ref,
@@ -762,6 +880,7 @@ class Ingestor:
         self._fill_bytes(version, nv, info, key)
         session.add(version)
         session.flush()
+        self._mark_acquired(session, version)
         return (
             VersionOutcome(
                 ref,
@@ -773,6 +892,18 @@ class Ingestor:
             ),
             version,
         )
+
+    @staticmethod
+    def _mark_acquired(session: Session, version: DocumentVersion) -> None:
+        queued = session.scalar(
+            select(ArtifactAcquisition).where(ArtifactAcquisition.document_version_id == version.id)
+        )
+        if queued is not None:
+            queued.status = "captured"
+            queued.lease_owner = None
+            queued.lease_expires_at = None
+            queued.last_failure_class = None
+            queued.last_error = None
 
     @staticmethod
     def _new_version(

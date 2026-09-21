@@ -96,6 +96,16 @@ class IngestionCounts(ReadModel):
     transcripts: int = Field(ge=0)
     jobs: int = Field(ge=0)
     items_failed: int = Field(ge=0)
+    items_duplicate: int = Field(ge=0)
+    verified_artifact_bytes: int = Field(ge=0)
+    parse_review_required: int = Field(ge=0)
+    source_metadata_snapshots: int = Field(ge=0)
+    acquisition_pending: int = Field(ge=0)
+    acquisition_leased: int = Field(ge=0)
+    acquisition_blocked: int = Field(ge=0)
+    acquisition_failed: int = Field(ge=0)
+    quarantine_open: int = Field(ge=0)
+    processing_runs: int = Field(ge=0)
 
 
 class IngestionStatusRead(ReadModel):
