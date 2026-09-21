@@ -4,15 +4,16 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-12-appeal-research-red-team` (created from `main`
-  = `277686b`; legitimate branch-start commit `2fcc12a` preserved).
-- Current milestone: **Phase 12 complete (2026-09-21)**. Stop before Phase 13.
-- Push state (2026-09-21): `main` fast-forwarded to `277686b` and pushed;
-  `phase-11-complete` and `feat/phase-11-citation-first-ai-rag` pushed.
-- Completion tag: `phase-12-complete` at the final Phase 12 closeout commit.
+- Current branch: `feat/phase-13-full-public-corpus-ingestion-hardening`, created
+  from `main` = `bac0b0f`; Phase 13 implementation has not started.
+- Current milestone: **Phase 12 complete (2026-09-21)**. Phase 13 is next/pending.
+- Push state (2026-09-21): `main` fast-forwarded to `bac0b0f` and pushed;
+  annotated tag `phase-12-complete` pushed. The Phase 13 branch is local.
+- Completion tag: `phase-12-complete` at `bac0b0f`, the final Phase 12 closeout
+  commit.
 - Final Phase 12 implementation commit: `7a9779b`; the subsequent roadmap
   closeout commit records the final audit and completion metadata.
-- Phase 12 remains local: not pushed or merged.
+- Phase 12 is on `main`; its feature branch was not pushed separately.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Migration head: `0008`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
