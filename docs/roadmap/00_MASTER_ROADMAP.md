@@ -51,10 +51,13 @@ When anything conflicts, use this order:
 
 ## Roadmap structure
 
-The original core roadmap contains **13 numbered phases**. Two additional milestones are included without changing the core numbering:
+The original core roadmap contains **13 numbered phases**. Five additional milestones are included without changing the core numbering:
 
 - **Phase 5B** — UI/UX Visual Parity Remediation. This was added after a detailed design audit found that Phase 5 was functionally complete but visually simplified on several screens.
 - **Phase 14** — External Media & Public Statements Intelligence. This is a **post-core feature** and must happen only after the core court-record platform is stable.
+- **Phase 15** — Real Data UI Completion & Demo Removal.
+- **Phase 16** — Production Readiness, Security & Lawyer Beta.
+- **Phase 17** — Historical Corpus Expansion, Coverage & Continuous Sync.
 
 ### Current sequence
 
@@ -75,6 +78,9 @@ The original core roadmap contains **13 numbered phases**. Two additional milest
 | 12 | Appeal Research, Red Team & Statement Comparison | **COMPLETE (2026-09-21)** |
 | 13 | Gradual Full Public Corpus Ingestion & Production Hardening | **COMPLETE (2026-09-22)** |
 | 14 | External Media & Public Statements Intelligence | **COMPLETE (2026-09-22)** — controlled real-public-source gate PASS |
+| 15 | Real Data UI Completion & Demo Removal | **NEXT / PENDING** |
+| 16 | Production Readiness, Security & Lawyer Beta | **PENDING** — depends on Phase 15 |
+| 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **PENDING** — depends on Phase 16 unless explicitly approved otherwise |
 
 ## Recommended execution order from now
 
@@ -98,6 +104,12 @@ Phase 12
 Phase 13
   ↓
 Phase 14
+  ↓
+Phase 15
+  ↓
+Phase 16
+  ↓
+Phase 17
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -107,7 +119,8 @@ isolated external-public-source layer; a controlled set of 3 public pages from
 2 publishers passes the real-data gate with 3 exact statements, 1 neutral
 comparison, 0 invalid court links and 0 access violations. All items remain
 `EXTERNAL_ONLY` because no exact court relationship was established. Coverage
-is explicitly non-comprehensive; no later phase is defined or authorized.
+is explicitly non-comprehensive. Phase 15 is next/pending; no Phase 15
+implementation has begun.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 
