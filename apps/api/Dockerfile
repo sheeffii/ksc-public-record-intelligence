@@ -30,4 +30,5 @@ ARG GIT_SHA=unknown
 ENV GIT_SHA=${GIT_SHA}
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["uvicorn", "ksc_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Access logging is the API's own structured JSON line (ksc_api.access).
+CMD ["uvicorn", "ksc_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

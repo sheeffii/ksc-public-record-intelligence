@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     log_level: str = "INFO"
+    # "json" (structured, one object per line) or "text" for local reading.
+    log_format: str = "json"
     # The case is a deployment constant, not a route segment (ROUTE_MAP.md §1).
     case_id: str = "KSC-BC-2020-06"
 

@@ -1,0 +1,85 @@
+# Prometheus alerting rules for the KSC Public Record Intelligence API.
+# Scrape `GET /metrics` on the API (text exposition 0.0.4). Every rule below
+# uses only metrics the API exposes; thresholds are the Phase 13 operating
+# limits (docs/ingestion/PHASE13_OPERATIONS.md, "Monitoring and alerts").
+groups:
+  - name: ksc-api
+    rules:
+      - alert: KscApiDown
+        expr: up{job="ksc-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: "API scrape target is down" }
+
+      - alert: KscApiHighErrorRate
+        expr: |
+          sum(rate(ksc_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(ksc_http_requests_total[5m])), 1e-9) > 0.02
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "More than 2% of API requests return 5xx" }
+
+      - alert: KscApiSlowRequests
+        expr: |
+          histogram_quantile(0.95, sum by (le, route) (rate(ksc_http_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "p95 latency above 500 ms on {{ $labels.route }}" }
+
+      - alert: KscMetricsDbScrapeFailing
+        expr: ksc_metrics_db_scrape_ok == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "API cannot read operational gauges from PostgreSQL" }
+
+      - alert: KscAcquisitionStuckLeases
+        expr: ksc_acquisition_stuck_leases > 0
+        for: 15m
+        labels: { severity: warning }
+        annotations: { summary: "Expired acquisition leases are not being reclaimed" }
+
+      - alert: KscAcquisitionBlockedOrFailedGrowing
+        expr: increase(ksc_acquisition_queue{state=~"blocked|failed"}[1h]) > 0
+        labels: { severity: warning }
+        annotations:
+          { summary: "Acquisition rows entered blocked/failed state (access control or network)" }
+
+      - alert: KscQuarantineOpen
+        expr: ksc_quarantine{state="open"} > 0
+        for: 24h
+        labels: { severity: warning }
+        annotations: { summary: "Open artifact quarantine rows await human review" }
+
+      - alert: KscParserReviewRequired
+        expr: ksc_versions_parse_review_required > 0
+        for: 24h
+        labels: { severity: warning }
+        annotations: { summary: "Parsed versions flagged for review (e.g. image-only PDFs)" }
+
+      - alert: KscProcessingRunFailed
+        expr: increase(ksc_processing_runs{state="failed"}[1h]) > 0
+        labels: { severity: critical }
+        annotations: { summary: "A parser/resolver processing run failed" }
+
+      - alert: KscIngestionItemsFailedGrowing
+        expr: increase(ksc_ingestion_items_failed[1h]) > 0
+        labels: { severity: warning }
+        annotations: { summary: "New failed ingestion items (download, access control, metadata)" }
+
+      - alert: KscAmbiguousCitationsGrowing
+        expr: increase(ksc_citations{state="ambiguous"}[1d]) > 0
+        labels: { severity: info }
+        annotations:
+          {
+            summary: "Ambiguous citation count increased after reprocessing; review the resolver report",
+          }
+
+      - alert: KscStorageGrowthUnexpected
+        expr: increase(ksc_verified_artifact_bytes[1h]) > 2e9
+        labels: { severity: warning }
+        annotations: { summary: "More than 2 GB of artifacts verified in one hour" }
+
+      - alert: KscAiRunsFailing
+        expr: increase(ksc_ai_runs_failed[1h]) > 0
+        labels: { severity: warning }
+        annotations: { summary: "AI research runs are failing" }

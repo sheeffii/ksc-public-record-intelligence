@@ -88,3 +88,56 @@ def test_cors_allows_configured_frontend_origin(client):
     )
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+
+
+def test_metrics_exposes_request_counters_latency_and_build_info(client):
+    from ksc_api.observability import request_metrics
+
+    request_metrics.reset()
+    client.get("/health")
+    client.get("/version")
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain; version=0.0.4")
+    body = response.text
+    assert 'ksc_http_requests_total{method="GET",route="/health",status="200"} 1' in body
+    assert 'ksc_http_requests_total{method="GET",route="/version",status="200"} 1' in body
+    assert (
+        'ksc_http_request_duration_seconds_bucket{method="GET",route="/health",le="+Inf"} 1' in body
+    )
+    assert 'ksc_http_request_duration_seconds_count{method="GET",route="/health"} 1' in body
+    assert f'ksc_build_info{{version="{__version__}",git_sha=' in body
+    assert "ksc_process_uptime_seconds " in body
+    # The DB-backed gauges either scraped (1) or were skipped without failing (0).
+    assert "ksc_metrics_db_scrape_ok 0" in body or "ksc_metrics_db_scrape_ok 1" in body
+    if "ksc_metrics_db_scrape_ok 1" in body:
+        assert "ksc_source_records " in body and 'ksc_quarantine{state="open"} ' in body
+    assert "X-Request-ID" in response.headers or "x-request-id" in response.headers
+
+
+def test_metrics_labels_use_route_templates_not_raw_paths(client):
+    from ksc_api.observability import request_metrics
+
+    request_metrics.reset()
+    client.get("/api/v1/documents/KSC-BC-2020-06%2FF00001")
+    body = client.get("/metrics").text
+    assert "F00001" not in body
+    assert 'route="unmatched"' in body or 'route="/api/v1/documents/{' in body
+
+
+def test_json_log_formatter_emits_structured_fields_only(caplog):
+    import json
+    import logging
+
+    from ksc_api.logging_config import JsonFormatter
+
+    record = logging.LogRecord("ksc_api.access", logging.INFO, __file__, 1, "request", (), None)
+    record.request_id = "abc"
+    record.route = "/api/v1/search"
+    record.status = 200
+    record.duration_ms = 1.5
+    payload = json.loads(JsonFormatter().format(record))
+    assert payload["msg"] == "request" and payload["level"] == "INFO"
+    assert payload["route"] == "/api/v1/search" and payload["status"] == 200
+    assert payload["request_id"] == "abc" and "ts" in payload
+    assert "args" not in payload and "query" not in payload

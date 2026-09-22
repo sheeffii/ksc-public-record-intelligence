@@ -7,6 +7,9 @@ the database holds, filtered to the public record.
 
 from __future__ import annotations
 
+import logging
+import time
+import uuid
 from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request
@@ -16,6 +19,7 @@ from fastapi.responses import JSONResponse, Response
 from ksc_api import __version__
 from ksc_api.config import get_settings
 from ksc_api.logging_config import configure_logging
+from ksc_api.observability import request_metrics, route_template
 from ksc_api.repositories.records import CaseNotConfiguredError
 from ksc_api.routers import ai, appeal, ingestion, records, system
 
@@ -24,7 +28,8 @@ MAX_REQUEST_BYTES = 10 * 1024 * 1024
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    configure_logging(settings.log_level)
+    configure_logging(settings.log_level, settings.log_format)
+    access_log = logging.getLogger("ksc_api.access")
 
     app = FastAPI(
         title="KSC Public Record Intelligence API",
@@ -60,7 +65,40 @@ def create_app() -> FastAPI:
                 too_large = True
             if too_large:
                 return JSONResponse(status_code=413, content={"detail": "request too large"})
-        response = await call_next(request)
+        request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
+        started = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            # Record the failure, then let the server's error handling answer.
+            elapsed = time.perf_counter() - started
+            request_metrics.record(request.method, route_template(request.scope), 500, elapsed)
+            access_log.exception(
+                "request failed",
+                extra={
+                    "request_id": request_id,
+                    "method": request.method,
+                    "route": route_template(request.scope),
+                    "status": 500,
+                    "duration_ms": round(elapsed * 1000, 3),
+                },
+            )
+            raise
+        elapsed = time.perf_counter() - started
+        route = route_template(request.scope)
+        request_metrics.record(request.method, route, response.status_code, elapsed)
+        # Route template and status only: never the query string or a body.
+        access_log.info(
+            "request",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "route": route,
+                "status": response.status_code,
+                "duration_ms": round(elapsed * 1000, 3),
+            },
+        )
+        response.headers["X-Request-ID"] = request_id
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"

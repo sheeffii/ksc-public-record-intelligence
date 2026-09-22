@@ -1,14 +1,18 @@
-"""System endpoints: /health, /ready, /version."""
+"""System endpoints: /health, /ready, /version, /metrics."""
 
 from __future__ import annotations
 
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response, status
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from ksc_api import __version__
 from ksc_api.config import Settings, get_settings
+from ksc_api.db.session import get_session
+from ksc_api.observability import operational_gauges, render_metrics
 from ksc_api.services import readiness
 
 router = APIRouter(tags=["system"])
@@ -71,3 +75,22 @@ def version(settings: Annotated[Settings, Depends(get_settings)]) -> VersionResp
         case_id=settings.case_id,
         environment=settings.app_env,
     )
+
+
+@router.get("/metrics", response_class=PlainTextResponse)
+def metrics(
+    settings: Annotated[Settings, Depends(get_settings)],
+    session: Annotated[Session, Depends(get_session)],
+) -> PlainTextResponse:
+    """Prometheus text exposition: in-process request counters and latency,
+    plus database-backed operational gauges (corpus, artifacts, parser review,
+    citation resolution, acquisition queue, quarantine, processing runs, AI
+    runs). Labels carry route templates and states only, never identifiers."""
+    gauges = []
+    db_ok = True
+    try:
+        gauges = operational_gauges(session, settings.case_id)
+    except Exception:  # noqa: BLE001 - a scrape must never fail because the DB is down
+        db_ok = False
+    body = render_metrics(gauges, db_scrape_ok=db_ok, git_sha=settings.git_sha)
+    return PlainTextResponse(body, media_type="text/plain; version=0.0.4; charset=utf-8")
