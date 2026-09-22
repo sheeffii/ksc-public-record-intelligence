@@ -18,9 +18,11 @@ from sqlalchemy.orm import Session
 from ksc_api.models import (
     Argument,
     ArgumentResponse,
+    ArtifactStatus,
     Case,
     Document,
     DocumentParagraph,
+    DocumentVersion,
     Finding,
     FindingEvidenceLink,
     ResearchNote,
@@ -38,6 +40,8 @@ class Phase10QualityReport:
     input_manifest: str
     input_manifest_sha256: str
     controlled_records: int
+    pinned_versions: int
+    held_versions: int
     trial_judgment_present: bool
     benchmark_record_ref: str | None
     benchmark_record_type: str | None
@@ -71,6 +75,20 @@ def run_phase10_gate(
     if case is None:
         raise RuntimeError(f"case {case_number} is not seeded")
     manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    pinned_versions = int(manifest["version_count"])
+    held_versions = (
+        session.scalar(
+            select(func.count())
+            .select_from(DocumentVersion)
+            .join(Document, Document.id == DocumentVersion.document_id)
+            .where(
+                Document.case_id == case.id,
+                DocumentVersion.artifact_status == ArtifactStatus.FETCHED,
+            )
+        )
+        or 0
+    )
     controlled_records = (
         session.scalar(
             select(func.count()).select_from(SourceRecord).where(SourceRecord.case_id == case.id)
@@ -191,7 +209,8 @@ def run_phase10_gate(
     )
     passed = all(
         [
-            controlled_records == 22,
+            # The held corpus is exactly the pinned manifest (no drift, no extras).
+            held_versions == pinned_versions,
             len(findings) >= 1,
             exact_mappings == len(findings),
             len(explicit) >= 1,
@@ -211,6 +230,8 @@ def run_phase10_gate(
         input_manifest=str(manifest_path),
         input_manifest_sha256=manifest_hash,
         controlled_records=controlled_records,
+        pinned_versions=pinned_versions,
+        held_versions=held_versions,
         trial_judgment_present=trial_judgment_present,
         benchmark_record_ref=benchmark_doc.official_ref if benchmark_doc else None,
         benchmark_record_type=benchmark_doc.document_type if benchmark_doc else None,

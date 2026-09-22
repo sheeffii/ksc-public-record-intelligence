@@ -37,10 +37,10 @@ from ksc_api.models import (
 )
 
 _CASE_REF_RE = re.compile(
-    r"\bKSC-[A-Z]+-\d{4}-\d{2}(?:/(?:IA\d{3}|F\d{5}|RED2?|COR|sqi|A\d{2}))+\b",
+    r"\bKSC-[A-Z]+-\d{4}-\d{2}(?:/(?:(?:IA|PL)\d{3}|F\d{5}|RED2?|COR|sqi|A\d{2}))+\b",
     re.IGNORECASE,
 )
-_IA_REF_RE = re.compile(r"\bIA\d{3}[-/]F\d{5}(?:CORRED|RED2?|/COR/RED|/RED2?)?\b", re.I)
+_IA_REF_RE = re.compile(r"\b(?:IA|PL)\d{3}[-/]F\d{5}(?:CORRED|RED2?|/COR/RED|/RED2?)?\b", re.I)
 _FILING_REF_RE = re.compile(
     r"\bF\d{5}(?:CORRED|RED2?|(?:/(?:COR|RED2?|sqi|A\d{2}))+)?\b", re.IGNORECASE
 )
@@ -90,7 +90,7 @@ class Resolution:
 def canonical_identifier(raw: str) -> str:
     compact = raw.strip().strip(".,;:()[]{}'").replace("\N{EN DASH}", "-")
     compact = re.sub(r"\s+", "", compact).upper()
-    compact = compact.replace("-F", "/F") if compact.startswith("IA") else compact
+    compact = compact.replace("-F", "/F") if compact.startswith(("IA", "PL")) else compact
     compact = compact.replace("CORRED", "/COR/RED")
     compact = re.sub(r"(?<!/)RED2$", "/RED2", compact)
     compact = re.sub(r"(?<!/)RED$", "/RED", compact)
@@ -198,7 +198,7 @@ def _version_aliases(version: DocumentVersion) -> set[str]:
     if not tail.endswith("/SQI"):
         compact = tail.replace("/COR/RED", "CORRED")
         compact = compact.replace("/RED2", "RED2").replace("/RED", "RED")
-        if compact.startswith("IA"):
+        if compact.startswith(("IA", "PL")):
             compact = compact.replace("/F", "-F", 1)
         aliases.add(compact)
     return aliases

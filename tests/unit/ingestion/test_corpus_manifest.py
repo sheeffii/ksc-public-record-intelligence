@@ -93,3 +93,21 @@ def test_manifest_holds_metadata_only() -> None:
             if isinstance(value, str):
                 assert len(value) < 600, record["record_id"]
     assert MANIFEST.stat().st_size < 200_000
+
+
+def test_phase13_manifests_describe_the_scaled_corpus() -> None:
+    corpus_02 = validate_manifest_file(
+        REPO / "docs" / "ingestion" / "manifests" / "phase13-corpus-02.json"
+    )
+    assert corpus_02.bundle_id == "2026-09-21-corpus-02"
+    assert corpus_02.record_count == 39 and corpus_02.version_count == 39
+    assert corpus_02.document_count == 38 and corpus_02.total_bytes == 12_014_877
+    assert [r.reason_code for r in corpus_02.refused] == ["ambiguous_mapping"]
+    assert corpus_02.refused[0].record_id == "r31"
+    combined = validate_manifest_file(
+        REPO / "docs" / "ingestion" / "manifests" / "phase13-controlled-corpus.json"
+    )
+    assert combined.record_count == 22 + 39 and combined.version_count == 61
+    assert combined.document_count == 56 and combined.total_bytes == 24_429_094 + 12_014_877
+    assert len({r.sha256 for r in combined.records}) == 61
+    assert len(combined.refused) == 1

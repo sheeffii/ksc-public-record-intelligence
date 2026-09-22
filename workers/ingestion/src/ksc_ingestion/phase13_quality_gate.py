@@ -27,13 +27,16 @@ from ksc_ingestion.storage import ObjectStore
 class Phase13GateReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: int = 1
+    schema_version: int = 2
     phase: int = 13
     generated_at: date
     case_number: str
     required_real_records: int = Field(ge=1)
     source_records: int = Field(ge=0)
     documents: int = Field(ge=0)
+    # Public versions whose held bytes re-hash to the immutable version row and
+    # that are not under open quarantine: the only thing the scale gate counts.
+    accepted_real_records: int = Field(ge=0)
     versions: int = Field(ge=0)
     fetched_versions: int = Field(ge=0)
     verified_artifact_bytes: int = Field(ge=0)
@@ -149,6 +152,23 @@ def run_phase13_gate(
         {"case_id": case.id},
     )
 
+    open_quarantined_version_ids = set(
+        session.scalars(
+            select(ArtifactQuarantine.document_version_id).where(
+                ArtifactQuarantine.case_id == case.id,
+                ArtifactQuarantine.state == "open",
+                ArtifactQuarantine.document_version_id.is_not(None),
+            )
+        ).all()
+    )
+    accepted_real_records = sum(
+        1
+        for version in held
+        if version.visibility in PUBLIC_VISIBILITIES
+        and version.official_version_ref not in missing_objects
+        and version.official_version_ref not in hash_mismatches
+        and version.id not in open_quarantined_version_ids
+    )
     integrity_ready = not (
         missing_objects or hash_mismatches or fetched_non_public or quarantined_parsed
     )
@@ -156,12 +176,14 @@ def run_phase13_gate(
     # These tables/metrics being queryable and artifact verification succeeding
     # prove the operational path is installed. Real scale remains separate.
     architecture_ready = integrity_ready and performance_ready
-    real_scale_ready = counts.source_records >= required_real_records
+    # Synthetic fixtures live in another case; unaccepted, quarantined or
+    # duplicate material never reaches `held` with a verified hash.
+    real_scale_ready = accepted_real_records >= required_real_records
     completion_ready = architecture_ready and real_scale_ready
     limitation = None
     if not real_scale_ready:
         limitation = (
-            f"lawful real corpus has {counts.source_records} source records; "
+            f"lawful real corpus has {accepted_real_records} accepted records; "
             f"Phase 13 requires at least {required_real_records} before completion"
         )
 
@@ -171,6 +193,7 @@ def run_phase13_gate(
         required_real_records=required_real_records,
         source_records=counts.source_records,
         documents=counts.documents,
+        accepted_real_records=accepted_real_records,
         versions=counts.versions,
         fetched_versions=counts.versions_fetched,
         verified_artifact_bytes=counts.verified_artifact_bytes,

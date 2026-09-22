@@ -46,6 +46,7 @@ from ksc_ingestion.acquisition import AcquiredArtifact, AcquisitionQueue, Automa
 from ksc_ingestion.capture import load_bundle
 from ksc_ingestion.fetch import HttpFetcher
 from ksc_ingestion.parse_pipeline import select_processable_versions
+from ksc_ingestion.phase13_quality_gate import run_phase13_gate
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor
 from ksc_ingestion.probe import JOB_TYPE_LIVE_PROBE, probe, record_probe
 from ksc_ingestion.storage import InMemoryObjectStore, MinioObjectStore, ObjectStore
@@ -319,6 +320,50 @@ def test_open_quarantine_excludes_held_versions_from_parse_and_resolution(
     session.rollback()
 
 
+def test_phase13_gate_counts_only_accepted_verified_records(
+    tmp_path: Path, ingestor: Ingestor, session: Session, store: ObjectStore
+) -> None:
+    ingestor.run_bundle(load_bundle(standard_bundle(tmp_path)))
+    held = _versions(session, "F00001")[f"{DEMO_CASE}/F00001"]
+    before = run_phase13_gate(
+        session,
+        store,
+        case_number=DEMO_CASE,
+        generated_at=date(2026, 9, 22),
+        required_real_records=4,
+    )
+    # The synthetic fixture's own versions point at objects the test bucket does
+    # not hold; only versions whose bytes re-hash correctly are accepted.
+    assert before.accepted_real_records == before.fetched_versions - len(before.missing_objects)
+    assert before.accepted_real_records >= 4 and before.hash_mismatches == []
+    assert before.real_scale_ready
+    # The metadata-only quarantine (unsupported artifact) does not touch held versions...
+    assert before.open_quarantine == 1
+    # ...but quarantining a held version removes it from the accepted count.
+    session.add(
+        ArtifactQuarantine(
+            case_id=held.document.case_id,
+            document_version_id=held.id,
+            reason_code="wrong_case",
+            reason="review",
+            state="open",
+        )
+    )
+    session.flush()
+    after = run_phase13_gate(
+        session,
+        store,
+        case_number=DEMO_CASE,
+        generated_at=date(2026, 9, 22),
+        required_real_records=before.accepted_real_records,
+    )
+    assert after.accepted_real_records == before.accepted_real_records - 1
+    assert after.source_records == before.source_records
+    assert not after.real_scale_ready and not after.completion_ready
+    assert f"{after.accepted_real_records} accepted records" in (after.limitation or "")
+    session.rollback()
+
+
 def test_acquisition_queue_leases_retries_and_never_retries_access_control(
     tmp_path: Path, ingestor: Ingestor, session: Session
 ) -> None:
@@ -419,6 +464,65 @@ def test_parallel_workers_cannot_claim_the_same_artifact(
         second.close()
 
 
+def test_original_language_record_takes_document_identity_from_a_translation_first_document(
+    tmp_path: Path, ingestor: Ingestor, session: Session
+) -> None:
+    """Translation captured first, original later: the document keeps the
+    original-language title, language and detail URL once the original arrives,
+    and the translation never renames it again."""
+    from support.synthetic import BundleBuilder, artifact_url, make_pdf, metadata
+
+    first = BundleBuilder(tmp_path / "first", "translation-first").add_listing()
+    alb = first.file("F00009-ALB.pdf", make_pdf([f"{DEMO_CASE}/F00009", "Vendim sintetik"]))
+    first.add_record(
+        "00000000000000b7",
+        metadata(
+            record_type="filing",
+            official_ref=f"{DEMO_CASE}/F00009",
+            title="Vendim sintetik (Albanian)",
+            language="sq",
+        ),
+        [
+            {
+                "url": artifact_url("Filing", "F00009-ALB.pdf"),
+                "file": alb,
+                "official_version_ref": f"{DEMO_CASE}/F00009/ALB",
+                "version_type": "translation",
+            }
+        ],
+        lang="alb",
+    )
+    ingestor.run_bundle(load_bundle(first.write()))
+    doc = _doc(session, "F00009")
+    assert doc.language == "sq" and doc.title == "Vendim sintetik (Albanian)"
+
+    second = BundleBuilder(tmp_path / "second", "original-later").add_listing()
+    eng = second.file("F00009.pdf", make_pdf([f"{DEMO_CASE}/F00009", "Synthetic decision"]))
+    second.add_record(
+        "00000000000000b8",
+        metadata(
+            record_type="filing",
+            official_ref=f"{DEMO_CASE}/F00009",
+            title="Synthetic decision",
+            language="en",
+        ),
+        [{"url": artifact_url("Filing", "F00009.pdf"), "file": eng}],
+    )
+    ingestor.run_bundle(load_bundle(second.write()))
+    session.expire_all()
+    doc = _doc(session, "F00009")
+    assert doc.language == "en" and doc.title == "Synthetic decision"
+    assert doc.source_url.endswith("doc_id=00000000000000b8&doc_type=stl_filing&lang=eng")
+    assert {v.official_version_ref for v in doc.versions} == {
+        f"{DEMO_CASE}/F00009",
+        f"{DEMO_CASE}/F00009/ALB",
+    }
+    # Re-running the translation bundle does not rename the document back.
+    ingestor.run_bundle(load_bundle(first.root), resume=False)
+    session.expire_all()
+    assert _doc(session, "F00009").title == "Synthetic decision"
+
+
 def test_rerun_is_idempotent(tmp_path: Path, ingestor: Ingestor, session: Session) -> None:
     bundle = load_bundle(standard_bundle(tmp_path))
     first = ingestor.run_bundle(bundle)
@@ -455,6 +559,11 @@ def test_rerun_is_idempotent(tmp_path: Path, ingestor: Ingestor, session: Sessio
         == 7
     )
     assert session.get(IngestionJob, second.job_id).downloaded_count == 0
+    # The unsupported artifact (a6) fails on both runs but opens one review row.
+    open_rows = session.scalars(
+        select(ArtifactQuarantine).where(ArtifactQuarantine.state == "open")
+    ).all()
+    assert [row.reason_code for row in open_rows] == ["unsupported_artifact"]
 
 
 class ExplodingStore:
@@ -729,6 +838,28 @@ def test_blocked_probe_is_recorded_as_a_visible_failure(
     assert item.detail["url"] == url
 
 
+def test_metrics_gauges_mirror_ingestion_status(
+    tmp_path: Path, ingestor: Ingestor, demo_client
+) -> None:
+    """/metrics exposes the same operational numbers as the internal status
+    endpoint, in Prometheus text format, including quarantine and job failures."""
+    ingestor.run_bundle(load_bundle(standard_bundle(tmp_path)))
+    counts = demo_client.get("/api/v1/ingestion/status").json()["counts"]
+    body = demo_client.get("/metrics").text
+    assert "ksc_metrics_db_scrape_ok 1" in body
+    assert f"ksc_source_records {counts['source_records']}" in body
+    assert f"ksc_versions_fetched {counts['versions_fetched']}" in body
+    assert f"ksc_verified_artifact_bytes {counts['verified_artifact_bytes']}" in body
+    assert f"ksc_ingestion_items_failed {counts['items_failed']}" in body
+    assert f'ksc_quarantine{{state="open"}} {counts["quarantine_open"]}' in body
+    assert counts["quarantine_open"] >= 1
+    assert f'ksc_citations{{state="resolved"}} {counts["citations_resolved"]}' in body
+    assert f'ksc_acquisition_queue{{state="pending"}} {counts["acquisition_pending"]}' in body
+    assert "ksc_acquisition_stuck_leases 0" in body
+    assert 'ksc_processing_runs{state="failed"} ' in body
+    assert "ksc_ai_runs " in body and "ksc_ai_cost_usd_total " in body
+
+
 def test_status_endpoint_shows_held_refused_and_failed(
     tmp_path: Path, ingestor: Ingestor, demo_client
 ) -> None:
@@ -862,6 +993,78 @@ def test_imported_capture_ingests_and_passes_the_quality_gate(
             AuditLog.detail["metadata_source"].astext == "capture_snapshot",
         )
     ).all()
+
+
+def test_ambiguous_imported_reference_is_quarantined_and_gate_reports_it(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings
+) -> None:
+    """A record the importer marked ambiguous (PDF header contradicts the
+    published id) never becomes a DocumentVersion: ingestion quarantines it,
+    a re-run keeps one review row, and the bundle gate reports the refusal."""
+    from ksc_ingestion.quality_gate import run_gate
+
+    bundle = _import(tmp_path)
+    manifest_path = bundle.root / "manifest.json"
+    data = json.loads(manifest_path.read_text())
+    first = data["records"][0]
+    first["artifacts"][0].pop("official_version_ref", None)
+    first["artifacts"][0].pop("version_type", None)
+    first["artifacts"][0].pop("version_label", None)
+    first["metadata"]["extra"]["reference"] = {
+        "status": "ambiguous",
+        "source": "conflict",
+        "candidate": f"{DEMO_CASE}/F00004/RED",
+        "adopted": None,
+        "note": "pdf header contradicts published id",
+    }
+    manifest_path.write_text(json.dumps(data))
+    edited = load_bundle(bundle.root)
+
+    outcome = ingestor.run_bundle(edited)
+    statuses = {i.item_key.split(":")[-1]: i.status for i in outcome.items}
+    assert statuses["0000000000000001"] is IngestionItemStatus.AMBIGUOUS_MAPPING
+    assert outcome.downloaded_artifacts == 9
+    assert (
+        session.scalar(
+            select(DocumentVersion).where(
+                DocumentVersion.official_version_ref == f"{DEMO_CASE}/F00004/RED"
+            )
+        )
+        is None
+    )
+    open_rows = session.scalars(
+        select(ArtifactQuarantine).where(ArtifactQuarantine.state == "open")
+    ).all()
+    assert [r.reason_code for r in open_rows] == ["ambiguous_mapping"]
+    ingestor.run_bundle(edited)  # idempotent: still exactly one review row
+    assert (
+        len(
+            session.scalars(
+                select(ArtifactQuarantine).where(ArtifactQuarantine.state == "open")
+            ).all()
+        )
+        == 1
+    )
+
+    report = run_gate(session, demo_settings, edited, bucket=TEST_BUCKET)
+    assert report.summary["records"] == 10 and report.summary["passed"] == 10
+    row = next(r for r in report.rows if r.record_id == "r01")
+    assert row.checks == {"refusal_quarantined": True, "nothing_stored": True}
+    assert row.notes and "not accepted" in row.notes[0]
+
+    # The tracked corpus manifest stays verified-only and lists the refusal.
+    from ksc_ingestion.corpus_manifest import build_manifest, validate_manifest_file, write_manifest
+    from ksc_ingestion.quality_gate import report_to_json
+
+    gate_path = tmp_path / "gate.json"
+    gate_path.write_text(report_to_json(report))
+    manifest = build_manifest(session, edited, gate_report=gate_path)
+    assert manifest.record_count == 9 and len(manifest.refused) == 1
+    assert manifest.refused[0].record_id == "r01"
+    assert manifest.refused[0].reason_code == "ambiguous_mapping"
+    out = tmp_path / "corpus.json"
+    write_manifest(manifest, out)
+    assert len(validate_manifest_file(out).refused) == 1
 
 
 def test_quality_gate_fails_on_declared_hash_mismatch(

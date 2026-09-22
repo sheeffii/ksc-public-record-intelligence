@@ -10,7 +10,8 @@ def test_phase11_evaluation_set_keeps_grounded_and_abstention_cases():
         Path("tests/evaluation/phase11_questions.json")
     )
     assert case_number == "KSC-BC-2020-06"
-    assert records == 22
+    # Re-pinned to the Phase 13 corpus (22 controlled + 40 corpus-02 source records).
+    assert records == 62
     assert sum(item.should_answer for item in cases) == 1
     assert sum(not item.should_answer for item in cases) == 3
     assert all(

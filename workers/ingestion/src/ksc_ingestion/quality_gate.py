@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 from ksc_api.config import Settings
 from ksc_api.models import (
     PUBLIC_VISIBILITIES,
+    ArtifactQuarantine,
     ArtifactStatus,
     Case,
     Document,
@@ -40,7 +41,7 @@ from ksc_api.models import (
 from ksc_ingestion.artifacts import UnsupportedArtifactError, inspect, sha256_hex
 from ksc_ingestion.capture import CaptureBundle, discover
 from ksc_ingestion.discovery import DiscoveredRecord, visibility_from_classification
-from ksc_ingestion.normalize import normalize
+from ksc_ingestion.normalize import NormalizationError, normalize
 from ksc_ingestion.sources import canonicalize, classify
 
 
@@ -123,7 +124,44 @@ def run_gate(
             continue
         row = GateRow(rid, record.item_key, record.official_ref, None, record.language, None)
         c = row.checks
-        normalized = normalize(record, expected_case_number=case.case_number)
+        try:
+            normalized = normalize(record, expected_case_number=case.case_number)
+        except NormalizationError as exc:
+            # Not accepted by ingestion. The gate passes such a record only when
+            # the pipeline recorded the refusal in an open quarantine row, i.e.
+            # nothing was stored and a human review is pending.
+            item_status = (
+                IngestionItemStatus.AMBIGUOUS_MAPPING
+                if exc.ambiguous
+                else IngestionItemStatus.INVALID_METADATA
+            )
+            c["refusal_quarantined"] = (
+                session.scalar(
+                    select(ArtifactQuarantine.id).where(
+                        ArtifactQuarantine.case_id == case.id,
+                        ArtifactQuarantine.state == "open",
+                        ArtifactQuarantine.reason_code == item_status.value,
+                        ArtifactQuarantine.reason == str(exc),
+                    )
+                )
+                is not None
+            )
+            c["nothing_stored"] = (
+                session.scalar(
+                    select(DocumentVersion.id)
+                    .join(Document)
+                    .where(
+                        Document.case_id == case.id,
+                        DocumentVersion.source_url.in_(
+                            [artifact.url for artifact in record.artifacts]
+                        ),
+                    )
+                )
+                is None
+            )
+            row.notes.append(f"not accepted: {exc}")
+            rows.append(row)
+            continue
         c["case_number_matches"] = record.case_number == case.case_number
         c["detail_url_official"] = (
             classify(record.detail_page_url).source_system.value == record.source_system.value

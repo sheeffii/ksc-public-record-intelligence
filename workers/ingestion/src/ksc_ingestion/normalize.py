@@ -242,6 +242,16 @@ def normalize(record: DiscoveredRecord, *, expected_case_number: str) -> Normali
         raise NormalizationError(f"{record.item_key}: title missing")
     if not record.record_type.strip():
         raise NormalizationError(f"{record.item_key}: record type missing")
+    reference = ((record.raw_metadata.get("metadata") or {}).get("extra") or {}).get("reference")
+    if isinstance(reference, dict) and reference.get("status") == "ambiguous":
+        # The importer could not confirm the version reference against the PDF
+        # header; the "sole unlabelled artifact is the record itself" default
+        # below would be a guess. Review-required, never a DocumentVersion.
+        raise NormalizationError(
+            f"{record.item_key}: official version reference ambiguous "
+            f"({reference.get('note') or 'unconfirmed'})",
+            ambiguous=True,
+        )
 
     record_visibility = visibility_from_classification(record.classification)
 

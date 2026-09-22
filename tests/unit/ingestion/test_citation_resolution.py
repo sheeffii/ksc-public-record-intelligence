@@ -35,9 +35,17 @@ def test_transcript_page_and_line_reference_is_not_invented() -> None:
 
 def test_compact_version_suffixes_normalize_without_fuzzy_matching() -> None:
     assert canonical_identifier("IA042-F00005RED") == "IA042/F00005/RED"
+    assert canonical_identifier("PL003-F00004") == "PL003/F00004"
     assert canonical_identifier("F03667CORRED") == "F03667/COR/RED"
     assert canonical_identifier("F03664RED2") == "F03664/RED2"
 
 
 def test_plausible_but_unrecognized_text_is_not_extracted_as_a_citation() -> None:
     assert extract_citations("F123 is not a valid filing; witness W12 is not a valid code") == []
+
+
+def test_sub_file_series_references_are_extracted_as_versions() -> None:
+    found = {
+        c.normalized_identifier for c in extract_citations("see IA042-F00005RED and PL003/F00004")
+    }
+    assert {"IA042/F00005/RED", "PL003/F00004"} <= found

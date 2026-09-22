@@ -57,7 +57,9 @@ PUBLIC_STATUSES: dict[str, str] = {
     "public_redacted_v2": "Public Redacted",
     "public_redacted_corrected": "Public Redacted",
 }
-_DOC_ID_RE = re.compile(r"^(?:(?P<ia>IA\d{3})-)?(?P<filing>F\d{5})(?P<suffix>[A-Z0-9]*)$")
+# Sub-file series inside a case file: IA (interlocutory appeal) and PL
+# (protection of legality) share the `<series><nnn>-F<nnnnn>` convention.
+_DOC_ID_RE = re.compile(r"^(?:(?P<ia>(?:IA|PL)\d{3})-)?(?P<filing>F\d{5})(?P<suffix>[A-Z0-9]*)$")
 _SUFFIX_TOKENS = ("COR", "RED2", "RED")
 _ANNEX_RE = re.compile(r"^(?:ANNEX|SHTOJC[ËE])\s+(\d+)\b", re.IGNORECASE)
 _HEADER_REF_RE = re.compile(rf"{CASE_NUMBER_PATTERN}(?:/[A-Za-z0-9]+)*")

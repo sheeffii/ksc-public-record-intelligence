@@ -43,6 +43,7 @@ from ksc_api.models import (
     Document,
     DocumentIngestionState,
     DocumentVersion,
+    DocumentVersionType,
     Hearing,
     IngestionItemStatus,
     IngestionJob,
@@ -503,6 +504,21 @@ class Ingestor:
                 else None
             )
             sha256 = version.sha256 if version is not None else None
+            # A re-run of the same capture must not open a second review row
+            # for the same conflict; the existing open row already carries it.
+            already_open = session.scalar(
+                select(ArtifactQuarantine.id).where(
+                    ArtifactQuarantine.case_id == job.case_id,
+                    ArtifactQuarantine.state == "open",
+                    ArtifactQuarantine.reason_code == status.value,
+                    ArtifactQuarantine.reason == reason,
+                    ArtifactQuarantine.document_version_id.is_(version_id)
+                    if version_id is None
+                    else ArtifactQuarantine.document_version_id == version_id,
+                )
+            )
+            if already_open is not None:
+                continue
             session.add(
                 ArtifactQuarantine(
                     case_id=job.case_id,
@@ -696,11 +712,18 @@ class Ingestor:
             session.add(document)
             session.flush()
             return document
+        incoming_is_translation = all(
+            version.version_type is DocumentVersionType.TRANSLATION
+            for version in normalized.versions
+        )
         if normalized.language and document.language and normalized.language != document.language:
             # A translation adds a version; it does not rename or re-source the
             # document, whose identity stays with the original-language record.
-            for key in ("title", "language", "source_url"):
-                values.pop(key)
+            # When the translation happened to arrive first, the original-language
+            # record takes the identity over on arrival (audited below).
+            if incoming_is_translation:
+                for key in ("title", "language", "source_url"):
+                    values.pop(key)
         changed = [k for k, v in values.items() if v is not None and getattr(document, k) != v]
         for k in changed:
             setattr(document, k, values[k])

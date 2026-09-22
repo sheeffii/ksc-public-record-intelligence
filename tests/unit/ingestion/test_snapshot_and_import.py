@@ -155,6 +155,23 @@ def test_suffix_families_and_sub_proceedings() -> None:
         ia.document_ref == f"{DEMO_CASE}/IA042/F00005"
         and ia.version_ref == f"{DEMO_CASE}/IA042/F00005/RED"
     )
+    # Protection-of-legality files (PL) follow the same sub-file convention as IA;
+    # the header prints the full reference including the language suffix.
+    pl = derive_references(
+        _entry(
+            document_id="PL003-F00004",
+            public_status="public",
+            language=SourceLanguage(code="sqi", name="Albanian"),
+        ),
+        _header({f"{DEMO_CASE}/PL003/F00004/sqi": 21, f"{DEMO_CASE}/PL003": 21}),
+    )
+    assert (
+        pl.document_ref == f"{DEMO_CASE}/PL003/F00004"
+        and pl.version_ref == f"{DEMO_CASE}/PL003/F00004/sqi"
+        and pl.version_type == "translation"
+        and pl.ref_source == "published_id_confirmed_by_pdf_header"
+        and pl.status == "ok"
+    )
     plain = derive_references(_entry(document_id="F03752", public_status="public"), _header())
     assert plain.version_type == "original" and plain.version_label is None
     weird = derive_references(_entry(document_id="F03752XYZ"), _header())

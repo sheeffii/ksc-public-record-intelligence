@@ -251,3 +251,25 @@ def test_normalize_refuses_to_guess(
     with pytest.raises(NormalizationError, match=match) as exc:
         normalize(record(**overrides), expected_case_number=CASE)
     assert exc.value.ambiguous is ambiguous
+
+
+def test_importer_ambiguous_reference_is_never_the_record_itself() -> None:
+    """A capture the importer marked ambiguous (PDF header contradicts the
+    published id) must not fall back to the sole-unlabelled-artifact default."""
+    raw = {
+        "metadata": {
+            "extra": {
+                "reference": {
+                    "status": "ambiguous",
+                    "source": "conflict",
+                    "note": "pdf header 'X/F03734' contradicts published id 'F03734RED'",
+                }
+            }
+        }
+    }
+    with pytest.raises(NormalizationError, match="version reference ambiguous") as exc:
+        normalize(record(raw_metadata=raw), expected_case_number=CASE)
+    assert exc.value.ambiguous is True
+    # The same record with a confirmed reference normalises as before.
+    raw["metadata"]["extra"]["reference"]["status"] = "ok"
+    assert normalize(record(raw_metadata=raw), expected_case_number=CASE).versions

@@ -468,7 +468,8 @@ def cmd_gate_phase13(args: argparse.Namespace) -> int:
             required_real_records=args.minimum_records,
         )
     print(
-        f"records={report.source_records}/{report.required_real_records} "
+        f"accepted={report.accepted_real_records}/{report.required_real_records} "
+        f"source_records={report.source_records} documents={report.documents} "
         f"versions={report.versions} fetched={report.fetched_versions} "
         f"bytes={report.verified_artifact_bytes} citations={report.citations} "
         f"integrity_ready={str(report.integrity_ready).lower()} "

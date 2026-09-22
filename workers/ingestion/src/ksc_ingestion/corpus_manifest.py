@@ -25,6 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ksc_api.models import (
+    ArtifactQuarantine,
     Case,
     Document,
     DocumentVersion,
@@ -95,6 +96,18 @@ class CorpusRecord(_Model):
         return require_official(value)
 
 
+class RefusedRecord(_Model):
+    """A bundle record ingestion refused and quarantined: nothing was stored,
+    a human review is pending. Listed so the manifest still describes the
+    whole bundle while `records` stays verified-only."""
+
+    record_id: str | None
+    item_key: str
+    detail_page_url: str
+    reason_code: str
+    reason: str
+
+
 class CorpusManifest(_Model):
     schema_version: int
     case_number: str = Field(pattern=rf"^{CASE_NUMBER_PATTERN}$")
@@ -107,6 +120,7 @@ class CorpusManifest(_Model):
     version_count: int = Field(ge=1)
     total_bytes: int = Field(ge=1)
     records: list[CorpusRecord]
+    refused: list[RefusedRecord] = Field(default_factory=list)
 
     @field_validator("records")
     @classmethod
@@ -139,6 +153,7 @@ def build_manifest(
         gate = {row["record_id"]: row for row in data.get("rows", [])}
 
     records: list[CorpusRecord] = []
+    refused: list[RefusedRecord] = []
     for discovered in discover(bundle):
         if not isinstance(discovered, DiscoveredRecord):
             raise ManifestBuildError(f"{discovered.item_key}: {discovered.reason}")
@@ -152,7 +167,19 @@ def build_manifest(
             )
         )
         if source is None or source.document_id is None or source.document_version_id is None:
-            raise ManifestBuildError(f"{discovered.item_key}: not persisted")
+            refusal = _open_refusal(session, case, discovered, gate.get(record_id or ""))
+            if refusal is None:
+                raise ManifestBuildError(f"{discovered.item_key}: not persisted")
+            refused.append(
+                RefusedRecord(
+                    record_id=record_id,
+                    item_key=discovered.item_key,
+                    detail_page_url=discovered.detail_page_url,
+                    reason_code=refusal.reason_code,
+                    reason=refusal.reason,
+                )
+            )
+            continue
         document = session.get(Document, source.document_id)
         version = session.get(DocumentVersion, source.document_version_id)
         if (
@@ -243,6 +270,26 @@ def build_manifest(
         version_count=len({r.official_version_ref for r in records}),
         total_bytes=sum(r.byte_size for r in records),
         records=records,
+        refused=refused,
+    )
+
+
+def _open_refusal(
+    session: Session, case: Case, discovered: DiscoveredRecord, gate_row: dict[str, Any] | None
+) -> ArtifactQuarantine | None:
+    """The open quarantine row that records why ingestion refused this record,
+    only when the bundle gate also saw the refusal as quarantined."""
+    if not gate_row or not gate_row.get("checks", {}).get("refusal_quarantined"):
+        return None
+    prefix = f"{discovered.item_key}: "
+    return session.scalar(
+        select(ArtifactQuarantine)
+        .where(
+            ArtifactQuarantine.case_id == case.id,
+            ArtifactQuarantine.state == "open",
+            ArtifactQuarantine.reason.like(prefix + "%"),
+        )
+        .order_by(ArtifactQuarantine.created_at)
     )
 
 
