@@ -300,6 +300,25 @@ def test_import_writes_a_valid_project_bundle(tmp_path: Path) -> None:
     )
 
 
+def test_import_accepts_pdfs_kept_inside_the_capture(tmp_path: Path) -> None:
+    """The browser collector writes files/rNN.pdf inside the capture itself."""
+    src = source_capture(tmp_path / "src", tmp_path / "downloads")
+    inside = src / "files"
+    inside.mkdir(exist_ok=True)
+    for pdf in (tmp_path / "downloads").iterdir():
+        pdf.rename(inside / pdf.name)
+    report = import_capture(
+        src,
+        tmp_path / "dest",
+        pdf_dirs=[inside],
+        bundle_id="inside-import",
+        captured_by="test",
+        browser=None,
+    )
+    assert report["matched"] == report["total"] == 10
+    assert (tmp_path / "dest" / "files" / "r01.pdf").is_file()
+
+
 def test_import_refuses_when_a_pdf_is_missing(tmp_path: Path) -> None:
     src = source_capture(tmp_path / "src", tmp_path / "downloads")
     (tmp_path / "downloads" / "Decision Assigning a Judge.pdf").unlink()

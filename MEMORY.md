@@ -262,7 +262,15 @@ Live checkpoint. Repository state wins over this note.
 
 Phase 13 is **IN PROGRESS / BLOCKED ON LAWFUL REAL SCALE**. Resume only when an
 authorized official inventory/capture can raise the real public corpus from 22
-to at least 50 records. Run the inventory/capture pipeline in bounded batches,
+to at least 50 records. The operator plan for the next capture
+(`2026-09-21-corpus-02`, ≈45 new public records, exclusion list of the held 22)
+is `docs/ingestion/CAPTURE_PLAN_2026-09-21-corpus-02.md`; on 2026-09-22 the
+attached-browser collector (ADR-019) produced that bundle at
+`~/Downloads/ksc-bc-2020-06-phase13-corpus-02` with 40 new public records
+(validated, comparator clean, NOT imported or ingested — review first);
+`scripts/compare_capture.py` classifies a capture-v0 manifest against the
+tracked corpus (duplicate / counterpart / new) before import. The agent session
+has no interactive browser, so the capture itself must be done by a human. Run the inventory/capture pipeline in bounded batches,
 repeat the real gate and full quality gates, then complete/tag only if every
 criterion passes. Do not bypass Cloudflare and do not begin Phase 14.
 

@@ -559,7 +559,9 @@ def import_capture(
 
     source_root, dest_root = Path(source_root), Path(dest_root)
     manifest, snapshots = load_source(source_root)
-    rows = match_pdfs(manifest, pdf_dirs, exclude=[source_root, dest_root])
+    # A capture may carry its PDFs inside its own files/ directory (the
+    # browser collector does); only the destination's copies are excluded.
+    rows = match_pdfs(manifest, pdf_dirs, exclude=[dest_root])
     bad = [row for row in rows if row.match_status != "MATCHED"]
     if bad:
         raise SourceImportError(

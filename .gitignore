@@ -41,3 +41,6 @@ data/*
 .idea/
 .vscode/
 *.log
+
+# operator-assisted browser collector profile and scratch
+.tmp/

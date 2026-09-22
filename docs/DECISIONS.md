@@ -918,3 +918,63 @@ Relevant files:
 `workers/ingestion/src/ksc_ingestion/{acquisition,phase13_quality_gate}.py`,
 `docs/ingestion/PHASE13_OPERATIONS.md`, and
 `docs/ingestion/phase13-quality-gate.json`.
+
+---
+
+## ADR-019 — Operator-assisted collector attaches to a normally launched browser
+
+Date: 2026-09-22
+
+Status: Accepted
+
+Context:
+Phase 13 needs lawful public captures larger than an operator can comfortably
+assemble by hand. A browser launched by Playwright carries Chrome's automation
+flag (`navigator.webdriver`), and the official host's Cloudflare Turnstile
+refuses to clear such a browser however many times the operator ticks the box.
+Hiding that flag, injecting cookies or tokens, proxies, user-agent changes,
+stealth tooling or challenge automation are all forms of defeating an access
+control and remain forbidden (ADR-011, `docs/SECURITY.md`).
+
+Decision:
+
+1. `scripts/ksc_operator_browser_capture.mjs` never solves, hides or works
+   around a challenge. The operator starts their installed Chrome normally,
+   with a dedicated profile and Chrome's standard remote-debugging port, and
+   passes any challenge as an ordinary visitor. The collector then attaches to
+   that same visible window over CDP and performs ordinary navigations at a
+   fixed pace. If the site re-challenges while attached, the collector pauses
+   until the operator has dealt with it in the window; it never retries or
+   escalates.
+2. Every official byte comes from that browser: detail pages are saved
+   verbatim, and each PDF is opened in the same context so Chrome receives the
+   response; the bytes Chrome received are hashed and stored unaltered. There
+   is no separate HTTP client.
+3. Selection is scoped to the official public repository listings for the
+   case, English and Albanian only, in declared strata with quotas; records
+   already held are skipped by repository `doc_id` and SHA-256. No metadata is
+   inferred: unpublished fields stay null, and redaction status is read from
+   the published filing-number suffix or published title.
+4. A fail-closed page-1 stamp check (`scripts/check_capture_pdfs.py`) runs
+   before the bundle is compared: a record is kept only when its page-1
+   markings show a Public classification, a court "made public" stamp after a
+   non-public marking, a bare court PUBLIC stamp, or (transcripts) an
+   open-session heading. Anything else is quarantined out of the bundle.
+5. The output is the existing capture-v0 bundle; `import-capture` now accepts
+   PDFs kept inside the capture's own `files/` directory. Ingestion remains a
+   separate, explicitly authorised step.
+
+Consequences:
+
+- The first collector run (2026-09-22) produced `2026-09-21-corpus-02` with
+  40 new public records, 0 challenges while attached, 0 quarantined after the
+  stamp check, 13 held records skipped during discovery.
+- Two records will be flagged ambiguous by the importer's reference derivation
+  (`F03734RED` whose PDF header prints the base number; `PL003-F00004`, an id
+  pattern the importer does not know) and will follow the review path rather
+  than being guessed.
+
+Relevant files:
+`scripts/ksc_operator_browser_capture.mjs`, `scripts/check_capture_pdfs.py`,
+`scripts/compare_capture.py`, `workers/ingestion/src/ksc_ingestion/capture_import.py`,
+and `docs/ingestion/CAPTURE_PLAN_2026-09-21-corpus-02.md`.
