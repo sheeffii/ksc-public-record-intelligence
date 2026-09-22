@@ -1,0 +1,31 @@
+{
+	email {$ACME_EMAIL}
+}
+
+http://{$CANONICAL_HOST} {
+	redir https://{$CANONICAL_HOST}{uri} permanent
+}
+
+https://{$CANONICAL_HOST} {
+	encode zstd gzip
+	request_body {
+		max_size 10MB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	@api path /api/v1/* /health /ready /version
+	reverse_proxy @api api:8000
+	reverse_proxy web:3000
+
+	log {
+		output stdout
+		format json
+	}
+}

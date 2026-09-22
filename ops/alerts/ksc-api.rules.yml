@@ -32,6 +32,30 @@ groups:
         labels: { severity: critical }
         annotations: { summary: "API cannot read operational gauges from PostgreSQL" }
 
+      - alert: KscObjectStorageUnavailable
+        expr: probe_success{job="ksc-object-storage"} == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "Object storage health probe is failing" }
+
+      - alert: KscBackupMissing
+        expr: time() - ksc_backup_last_success_unixtime > 93600
+        for: 15m
+        labels: { severity: critical }
+        annotations: { summary: "No verified backup has completed in 26 hours" }
+
+      - alert: KscRestoreVerificationStale
+        expr: time() - ksc_restore_verification_last_success_unixtime > 2678400
+        for: 1h
+        labels: { severity: critical }
+        annotations: { summary: "No successful isolated restore verification in 31 days" }
+
+      - alert: KscHostDiskCapacityLow
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.15
+        for: 15m
+        labels: { severity: warning }
+        annotations: { summary: "Deployment host has less than 15% disk capacity available" }
+
       - alert: KscAcquisitionStuckLeases
         expr: ksc_acquisition_stuck_leases > 0
         for: 15m

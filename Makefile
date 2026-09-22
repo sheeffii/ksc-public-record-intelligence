@@ -24,7 +24,8 @@ LOCAL_MINIO        := localhost:9000
 HOST_ENV := DATABASE_URL=$(LOCAL_DATABASE_URL) REDIS_URL=$(LOCAL_REDIS_URL) MINIO_ENDPOINT=$(LOCAL_MINIO)
 
 .PHONY: help setup dev up down logs infra migrate migration seed demo-fixture reset-db \
-        test test-backend test-frontend test-integration e2e lint format typecheck build ci
+        test test-backend test-frontend test-integration e2e lint format typecheck build ci \
+        production-config backup restore load-test
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -117,3 +118,19 @@ build: ## Production build of the web app
 	pnpm build
 
 ci: lint typecheck test ## What CI runs
+
+production-config: ## Validate rendered production compose (ENV_FILE required)
+	test -n "$(ENV_FILE)"
+	docker compose --env-file "$(ENV_FILE)" -f compose.production.yml config --quiet
+
+backup: ## Verified DB/object backup (BACKUP_DIR required)
+	test -n "$(BACKUP_DIR)"
+	$(PY) scripts/backup_restore.py backup "$(BACKUP_DIR)"
+
+restore: ## Restore into empty targets (RESTORE_DIR required; explicit operation)
+	test -n "$(RESTORE_DIR)"
+	$(PY) scripts/backup_restore.py restore "$(RESTORE_DIR)" --confirm
+
+load-test: ## Run beta-scale k6 profile (BASE_URL required)
+	test -n "$(BASE_URL)"
+	k6 run -e BASE_URL="$(BASE_URL)" ops/load/phase16.js

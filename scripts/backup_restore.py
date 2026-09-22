@@ -20,10 +20,26 @@ from pathlib import Path
 from minio import Minio
 
 
-def _database_url() -> str:
-    value = os.environ.get("DATABASE_URL")
+def _write_metric(name: str) -> None:
+    path_value = os.environ.get("BACKUP_METRICS_FILE")
+    if not path_value:
+        return
+    path = Path(path_value)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(f"{name} {datetime.now(UTC).timestamp():.0f}\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def _database_url(*, restore: bool = False) -> str:
+    value = (
+        os.environ.get("RESTORE_DATABASE_URL") or os.environ.get("MIGRATION_DATABASE_URL")
+        if restore
+        else os.environ.get("DATABASE_URL")
+    )
     if not value:
-        raise SystemExit("DATABASE_URL is required")
+        name = "RESTORE_DATABASE_URL or MIGRATION_DATABASE_URL" if restore else "DATABASE_URL"
+        raise SystemExit(f"{name} is required")
     return value.replace("postgresql+psycopg://", "postgresql://", 1)
 
 
@@ -50,6 +66,18 @@ def _sha256(path: Path) -> str:
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _object_sha256(client: Minio, bucket: str, object_name: str) -> str:
+    digest = hashlib.sha256()
+    response = client.get_object(bucket, object_name)
+    try:
+        for chunk in response.stream(1024 * 1024):
+            digest.update(chunk)
+    finally:
+        response.close()
+        response.release_conn()
     return digest.hexdigest()
 
 
@@ -106,6 +134,7 @@ def backup(target: Path) -> None:
         "objects": files,
         "required_configuration_references": [
             "DATABASE_URL",
+            "RESTORE_DATABASE_URL/MIGRATION_DATABASE_URL (restore only)",
             "MINIO_ENDPOINT",
             "MINIO_ACCESS_KEY/MINIO_ROOT_USER",
             "MINIO_SECRET_KEY/MINIO_ROOT_PASSWORD",
@@ -116,6 +145,7 @@ def backup(target: Path) -> None:
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print(f"backup verified: {len(files)} objects in {target}")
+    _write_metric("ksc_backup_last_success_unixtime")
 
 
 def restore(source: Path, *, confirmed: bool) -> None:
@@ -145,7 +175,7 @@ def restore(source: Path, *, confirmed: bool) -> None:
             "--no-owner",
             "--no-privileges",
             "--dbname",
-            _database_url(),
+            _database_url(restore=True),
             str(database),
         ],
         check=True,
@@ -153,7 +183,10 @@ def restore(source: Path, *, confirmed: bool) -> None:
     for item in manifest["objects"]:
         path = _object_path(source / "objects", item["object_name"])
         client.fput_object(bucket, item["object_name"], str(path), content_type="application/pdf")
+        if _object_sha256(client, bucket, item["object_name"]) != item["sha256"]:
+            raise SystemExit(f"restored object checksum mismatch: {item['object_name']}")
     print(f"restore verified: {len(manifest['objects'])} objects from {source}")
+    _write_metric("ksc_restore_verification_last_success_unixtime")
 
 
 def main() -> None:

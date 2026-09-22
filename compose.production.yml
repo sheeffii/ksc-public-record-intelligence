@@ -1,0 +1,174 @@
+name: ${COMPOSE_PROJECT_NAME:-ksc-pri-production}
+
+services:
+  migrate:
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/api:${IMAGE_TAG:?set immutable IMAGE_TAG}
+    profiles: [operations]
+    restart: "no"
+    environment:
+      APP_ENV: ${APP_ENV:?set APP_ENV}
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?set MIGRATION_DATABASE_URL}
+      SKIP_MIGRATIONS: "0"
+      CASE_ID: ${CASE_ID:-KSC-BC-2020-06}
+      CANONICAL_URL: ${CANONICAL_URL:?set CANONICAL_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
+      REDIS_URL: ${REDIS_URL:?set REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:?set MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}
+      MINIO_SECURE: "true"
+      MINIO_BUCKET_DOCUMENTS: ${MINIO_BUCKET_DOCUMENTS:?set MINIO_BUCKET_DOCUMENTS}
+      RESEARCHER_API_KEYS: ${RESEARCHER_API_KEYS:?set RESEARCHER_API_KEYS}
+      VERIFIER_API_KEYS: ${VERIFIER_API_KEYS:?set VERIFIER_API_KEYS}
+      ADMINISTRATOR_API_KEYS: ${ADMINISTRATOR_API_KEYS:?set ADMINISTRATOR_API_KEYS}
+    command: ["true"]
+    networks: [backend]
+
+  api:
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/api:${IMAGE_TAG:?set immutable IMAGE_TAG}
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    environment:
+      APP_ENV: ${APP_ENV:?set APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: json
+      CASE_ID: ${CASE_ID:-KSC-BC-2020-06}
+      CANONICAL_URL: ${CANONICAL_URL:?set CANONICAL_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
+      DATABASE_URL: ${DATABASE_URL:?set application DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:?set REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:?set MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}
+      MINIO_SECURE: "true"
+      MINIO_BUCKET_DOCUMENTS: ${MINIO_BUCKET_DOCUMENTS:?set MINIO_BUCKET_DOCUMENTS}
+      RESEARCHER_API_KEYS: ${RESEARCHER_API_KEYS:?set RESEARCHER_API_KEYS}
+      VERIFIER_API_KEYS: ${VERIFIER_API_KEYS:?set VERIFIER_API_KEYS}
+      ADMINISTRATOR_API_KEYS: ${ADMINISTRATOR_API_KEYS:?set ADMINISTRATOR_API_KEYS}
+      PRIVILEGED_RATE_LIMIT_PER_MINUTE: ${PRIVILEGED_RATE_LIMIT_PER_MINUTE:-60}
+      AI_PROVIDER: ${AI_PROVIDER:-deterministic}
+      AI_MODEL: ${AI_MODEL:-citation-first-extractive-v1}
+      AI_EXTERNAL_ENABLED: ${AI_EXTERNAL_ENABLED:-false}
+      AI_ALLOWED_HOSTS: ${AI_ALLOWED_HOSTS:-api.openai.com,api.anthropic.com}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-30}
+      AI_MAX_RETRIES: ${AI_MAX_RETRIES:-1}
+      AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:-1600}
+      AI_MAX_DAILY_RUNS: ${AI_MAX_DAILY_RUNS:-100}
+      AI_MAX_CONCURRENT_RUNS: ${AI_MAX_CONCURRENT_RUNS:-2}
+      OPENAI_COMPATIBLE_URL: ${OPENAI_COMPATIBLE_URL:-https://api.openai.com/v1/chat/completions}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_COMPATIBLE_URL: ${ANTHROPIC_COMPATIBLE_URL:-https://api.anthropic.com/v1/messages}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      SKIP_MIGRATIONS: "1"
+      GIT_SHA: ${IMAGE_TAG}
+    expose: ["8000"]
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/web:${IMAGE_TAG:?set immutable IMAGE_TAG}
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_DATA_SOURCE: api
+      NEXT_PUBLIC_API_URL: ${CANONICAL_URL:?set CANONICAL_URL}
+      API_INTERNAL_URL: http://api:8000
+    expose: ["3000"]
+    networks: [frontend]
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  worker:
+    image: ${IMAGE_PREFIX:?set IMAGE_PREFIX}/worker:${IMAGE_TAG:?set immutable IMAGE_TAG}
+    profiles: [operations]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    environment:
+      APP_ENV: ${APP_ENV:?set APP_ENV}
+      CASE_ID: ${CASE_ID:-KSC-BC-2020-06}
+      CANONICAL_URL: ${CANONICAL_URL:?set CANONICAL_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
+      DATABASE_URL: ${DATABASE_URL:?set application DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:?set REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:?set MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}
+      MINIO_SECURE: "true"
+      MINIO_BUCKET_DOCUMENTS: ${MINIO_BUCKET_DOCUMENTS:?set MINIO_BUCKET_DOCUMENTS}
+      RESEARCHER_API_KEYS: ${RESEARCHER_API_KEYS:?set RESEARCHER_API_KEYS}
+      VERIFIER_API_KEYS: ${VERIFIER_API_KEYS:?set VERIFIER_API_KEYS}
+      ADMINISTRATOR_API_KEYS: ${ADMINISTRATOR_API_KEYS:?set ADMINISTRATOR_API_KEYS}
+    networks: [backend]
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/data]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    command:
+      [
+        "redis-server",
+        "--save",
+        "",
+        "--appendonly",
+        "no",
+        "--requirepass",
+        "${REDIS_PASSWORD:?set REDIS_PASSWORD}",
+      ]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", 'redis-cli -a "$$REDIS_PASSWORD" ping | grep PONG']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  proxy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/config]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    environment:
+      CANONICAL_HOST: ${CANONICAL_HOST:?set CANONICAL_HOST}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    networks: [frontend]
+    depends_on:
+      web: { condition: service_healthy }
+
+networks:
+  frontend:
+  backend:
+    internal: true
+
+volumes:
+  caddy-data:

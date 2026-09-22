@@ -19,7 +19,10 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 # ---- build -----------------------------------------------------------------
 FROM deps AS build
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ARG NEXT_PUBLIC_DATA_SOURCE=api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_DATA_SOURCE=$NEXT_PUBLIC_DATA_SOURCE
+RUN test "$NEXT_PUBLIC_DATA_SOURCE" = "api"
 COPY packages/shared packages/shared
 COPY apps/web apps/web
 RUN pnpm --filter @ksc/web build

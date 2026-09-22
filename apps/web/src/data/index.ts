@@ -19,6 +19,9 @@ export type RepositoryEnv = Partial<
 >;
 
 export function resolveDataSource(env: RepositoryEnv): DataSource {
+  if (process.env.NODE_ENV === "production" && env.NEXT_PUBLIC_DATA_SOURCE === "mock") {
+    throw new Error("mock data source is forbidden in production");
+  }
   return env.NEXT_PUBLIC_DATA_SOURCE === "mock" ? "mock" : "api";
 }
 

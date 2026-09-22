@@ -84,3 +84,5 @@ jobs:
       - run: ruff format --check .
       - run: mypy
       - run: pytest
+      - name: Migration drift check
+        run: alembic -c apps/api/alembic.ini upgrade head && alembic -c apps/api/alembic.ini check

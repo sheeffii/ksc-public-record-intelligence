@@ -3,7 +3,7 @@
  * adapters, and `getRepository()` picks one from configuration only.
  */
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { stubFetch } from "./api/fixtures";
 import { createApiRepository } from "./api/repository";
 import { REPOSITORY_METHODS, type ResearchRepository } from "./contract";
@@ -60,11 +60,20 @@ describe.each(Object.entries(adapters))("%s repository", (_name, repo) => {
 });
 
 describe("repository selection", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it("defaults to the real API and enables fixtures only when explicitly configured", () => {
     expect(resolveDataSource({})).toBe("api");
     expect(resolveDataSource({ NEXT_PUBLIC_DATA_SOURCE: "nonsense" })).toBe("api");
     expect(resolveDataSource({ NEXT_PUBLIC_DATA_SOURCE: "api" })).toBe("api");
     expect(resolveDataSource({ NEXT_PUBLIC_DATA_SOURCE: "mock" })).toBe("mock");
+  });
+
+  it("rejects the mock adapter in a production runtime", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(() => resolveDataSource({ NEXT_PUBLIC_DATA_SOURCE: "mock" })).toThrow(
+      "mock data source is forbidden in production",
+    );
   });
 
   it("prefers the internal API URL on the server", () => {
