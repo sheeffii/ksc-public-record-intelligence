@@ -167,7 +167,8 @@
     "neutrality": "Çdo zë në këtë ekran është një referencë në regjistrin publik të gjykatës. Asgjë këtu nuk është vlerësim i ndonjë personi.",
     "network": "Lidhjet paraqesin marrëdhënie ose referenca të gjetura në regjistrin publik të gjykatës. Një lidhje në vetvete nuk nënkupton veprim të gabuar, marrëveshje, përgjegjësi apo faj.",
     "referenceCounts": "Numëruesit e referencave tregojnë sa herë diçka shfaqet në regjistër. Ata nuk janë masë e rëndësisë, përfshirjes apo përgjegjësisë.",
-    "sourceNote": "Burimet parësore të gjykatës, baza e të dhënave, prejardhja dhe citimet janë autoritative. Rezultati i IA-së është vetëm analizë."
+    "sourceNote": "Burimet parësore të gjykatës, baza e të dhënave, prejardhja dhe citimet janë autoritative. Rezultati i IA-së është vetëm analizë.",
+    "disclosure": "Mjet i pavarur kërkimor — jo produkt zyrtar i DHSK-së dhe jo këshillë juridike. Përdor vetëm burime publike; materiali konfidencial, ex parte dhe privat përjashtohet. Burimet e jashtme publike mbeten të ndara nga provat gjyqësore. Lidhjet në rrjet nuk nënkuptojnë shkelje. Analiza e IA-së nuk është regjistër gjyqësor. Verifikoni citimet e rëndësishme me burimin origjinal. Nuk aktivizohen analiza përdorimi ose telemetri nga palë të treta."
   },
   "placeholder": {
     "phaseLabel": "Themeli",

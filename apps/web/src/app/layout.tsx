@@ -29,6 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s · ${t("shortName")}`,
     },
     description: t("tagline"),
+    applicationName: `${t("name")} — independent, unofficial research tool`,
   };
 }
 

@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-22 (Phase 15 pushed; Phase 16 branch started, implementation pending)
+Last updated: 2026-09-22 (Phase 16A implementation checkpoint; live verification pending)
 
 ## Milestones
 
@@ -22,8 +22,8 @@ Last updated: 2026-09-22 (Phase 15 pushed; Phase 16 branch started, implementati
 | **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                            |
 | **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
 | **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
-| **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                            |
-| **16** | **Production readiness, security and lawyer beta**                                                        | **Next / Pending**                                                                                       |
+| **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
+| **16** | **Production readiness, security and lawyer beta**                                                        | **16A implemented; final/live gates and external beta pending**                                          |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **Pending** — depends on Phase 16 unless explicitly approved otherwise                                   |
 
 ## Roadmap
@@ -38,9 +38,10 @@ gate passes at 61/50. Phase 14 is complete: 3 controlled public pages from 2
 publishers pass the external-source gate while remaining structurally separate
 and `EXTERNAL_ONLY`. Phase 15 is complete: production routes default to real
 APIs or honest empty states, demo fallbacks are removed from normal routes, and
-the desktop/mobile route-level gate passes. Phase 16 is next/pending and has not
-begun. Repository code, migrations, tests and Git state win over stale roadmap
-text.
+the desktop/mobile route-level gate passes. Phase 16A implements the production,
+security and operations surfaces; final live gates and the real external beta
+remain pending. Repository code, migrations, tests and Git state win over stale
+roadmap text.
 
 ## Completed features (Phase 4)
 
@@ -449,8 +450,33 @@ check` and `head → base → head` are integration-tested.
   strict typecheck, production build, 28/28 targeted frontend checks, and 38/38
   Phase 15 desktop/mobile Playwright checks.
 - Implementation commits: `5470511` and `0c2c40d`; checkpoint: `e06455e`;
-  completion date: 2026-09-22; annotated tag: `phase-15-complete`. Phase 16 has
-  not started.
+  completion date: 2026-09-22; annotated tag: `phase-15-complete`.
+
+## Phase 16A implementation checkpoint
+
+- Implementation commits: `fc217fc` (API/config authorization and AI controls)
+  and `e9b7520` (deployment, recovery, CI/CD and review tooling).
+- Added the single-host beta architecture (Caddy TLS edge, isolated web/API/
+  Redis, one-shot migrations and operator worker, managed PostgreSQL/object
+  storage), environment templates, immutable-image deployment workflow and
+  production fail-fast validation. Production cannot select the demo case or
+  mock frontend repository.
+- Privileged AI/note/review/ingestion-status actions use least-privilege
+  researcher/verifier/administrator bearer roles with Redis rate/concurrency
+  controls. External AI requires explicit enablement, HTTPS allowlisting,
+  server-only secrets, timeouts/retries, output and daily-run budgets.
+- Added verified DB/object backup and guarded restore tooling, recovery metrics,
+  Phase 13 alert extensions, k6/axe tooling, dependency/container scans,
+  deployment/rollback/incident runbooks, ADR-022, performance/accessibility
+  targets, a focused security checkpoint and an evidence-only Phase 16 gate.
+- Added global EN/SQ independent-tool, public-source, external-source, network,
+  AI, citation, legal-advice and telemetry disclosures.
+- The lawyer/researcher beta protocol is prepared. No external participation is
+  claimed; recruitment and observed feedback are an external dependency.
+- This is implementation only. No staging/production deploy, restore drill,
+  alert exercise, load run, manual accessibility/security review, production
+  smoke, external beta, final Phase 16 gate, completion tag or Phase 17 work has
+  occurred.
 
 ## Technical debt / notes
 
@@ -508,7 +534,8 @@ pushed. Phase 14 was fast-forwarded to `main` and pushed through roadmap commit
 `5717d24` were pushed. Phase 15 was fast-forwarded to `main` and pushed at
 `01cb693`; its feature branch and annotated `phase-15-complete` tag were also
 pushed. Phase 16 branch `feat/phase-16-production-readiness-security-beta`
-starts from `01cb693`; implementation has not begun.
+starts from `01cb693`; Phase 16A implementation is in progress locally and is
+not deployed.
 
 ## Verification limitations
 

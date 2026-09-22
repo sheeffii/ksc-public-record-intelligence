@@ -17,6 +17,7 @@ describe("AppShell — universal chrome", () => {
     expect(screen.getByText("KSC-BC-2020-06")).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveTextContent("content");
     expect(screen.getByText(messagesEn.footer.neutrality)).toBeInTheDocument();
+    expect(screen.getByText(messagesEn.footer.disclosure)).toBeInTheDocument();
   });
 
   it("hides the demo-data flag by default and shows it only when explicitly requested", () => {
@@ -46,6 +47,7 @@ describe("AppShell — universal chrome", () => {
   it("renders the whole shell in Albanian without any English chrome string", () => {
     renderWithProviders(<AppShell>x</AppShell>, { locale: "sq" });
     expect(screen.getByText(messagesSq.footer.neutrality)).toBeInTheDocument();
+    expect(screen.getByText(messagesSq.footer.disclosure)).toBeInTheDocument();
     expect(screen.queryByText(messagesEn.footer.neutrality)).not.toBeInTheDocument();
     expect(screen.getByText("KSC-BC-2020-06")).toBeInTheDocument();
   });

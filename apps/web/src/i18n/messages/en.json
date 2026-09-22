@@ -167,7 +167,8 @@
     "neutrality": "Every entry on this screen is a reference to the public court record. Nothing here is an assessment of any person.",
     "network": "Connections represent relationships or references found in the public court record. A connection does not by itself imply wrongdoing, agreement, responsibility or guilt.",
     "referenceCounts": "Reference counts state how many times something appears in the record. They are not a measure of significance, involvement or responsibility.",
-    "sourceNote": "Primary court sources, the database, provenance and citations are authoritative. AI output is analysis only."
+    "sourceNote": "Primary court sources, the database, provenance and citations are authoritative. AI output is analysis only.",
+    "disclosure": "Independent research tool — not an official KSC product and not legal advice. It uses public sources only; confidential, ex parte and private material is excluded. External public sources remain distinct from court evidence. Network links do not imply wrongdoing. AI analysis is not court record. Verify important citations against the original source. No analytics or third-party telemetry is enabled."
   },
   "placeholder": {
     "phaseLabel": "Foundation",

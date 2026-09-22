@@ -17,3 +17,15 @@ export function GovernanceFooter({ children }: { children?: ReactNode }) {
     </footer>
   );
 }
+
+export function PublicDisclosure() {
+  const t = useTranslations("footer");
+  return (
+    <aside
+      aria-label={t("disclosure")}
+      className="governance-text border-border-subtle bg-surface text-fg-secondary border-t px-4 py-1.5 text-center"
+    >
+      {t("disclosure")}
+    </aside>
+  );
+}

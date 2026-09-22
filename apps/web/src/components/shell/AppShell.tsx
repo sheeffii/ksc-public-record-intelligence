@@ -4,7 +4,7 @@ import type { SurfaceMode } from "@/lib/routes";
 import { CommandPalette } from "./CommandPalette";
 import { CaseStripe, type Crumb } from "./CaseStripe";
 import { GlobalNav } from "./GlobalNav";
-import { GovernanceFooter } from "./GovernanceFooter";
+import { GovernanceFooter, PublicDisclosure } from "./GovernanceFooter";
 import { MobileTabBar } from "./MobileTabBar";
 import { SurfaceTheme } from "./SurfaceTheme";
 
@@ -46,6 +46,7 @@ export function AppShell({
         <main id="main" className="flex min-w-0 flex-1 flex-col pb-14 md:pb-0">
           {children}
         </main>
+        <PublicDisclosure />
         <GovernanceFooter>{footer}</GovernanceFooter>
       </SurfaceTheme>
       <MobileTabBar />
