@@ -4,21 +4,16 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-13-full-public-corpus-ingestion-hardening`; its
-  preserved branch-start checkpoint is `2adb1f1` from `main` = `bac0b0f`.
-  Phase 13 commits: `679f74c` (architecture/migration `0009`), `3de31ac`,
-  `2397a45` (operator browser collector), then the corpus-02 scale-out and
-  closeout commits. Local only; not pushed or merged.
+- Current branch: `feat/phase-14-external-media-public-statements`, created from
+  `main` = `d00e7bf`; Phase 14 implementation has not started.
 - Current milestone: **Phase 13 COMPLETE (2026-09-22)**, tag
   `phase-13-complete`. Real-scale gate PASS at 61/50 accepted public records.
   Phase 14 is next/pending and must not begin without authorisation.
-- Push state (2026-09-21): `main` fast-forwarded to `bac0b0f` and pushed;
-  annotated tag `phase-12-complete` pushed. The Phase 13 branch is local.
-- Latest completion tag: `phase-13-complete` (local). `phase-12-complete` is at
-  `bac0b0f` on `main`.
-- Final Phase 12 implementation commit: `7a9779b`; the subsequent roadmap
-  closeout commit records the final audit and completion metadata.
-- Phase 12 is on `main`; its feature branch was not pushed separately.
+- Push state (2026-09-22): `main` fast-forwarded to `d00e7bf` and pushed;
+  annotated tag `phase-13-complete` and the Phase 13 feature branch pushed.
+- Latest completion tag: `phase-13-complete` at `d00e7bf`, the final Phase 13
+  closeout commit.
+- Phase 13 is on `main`; its feature branch is preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Migration head: `0009`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
