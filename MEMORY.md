@@ -5,11 +5,12 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `feat/phase-15-real-data-ui-completion-and-demo-removal`,
-  created from updated `main` = `efc4ee3`. Phase 15 implementation has not
-  started.
-- Current milestone: **Phase 14 COMPLETE (2026-09-22)**. The controlled
-  real-public-source gate passes with 2 sources, 3 items, 3 exact statements,
-  1 neutral comparison and no invalid court link or access violation.
+  created from updated `main` = `efc4ee3`. Phase 15 implementation checkpoint
+  is commit `5470511`; final verification and closeout are pending.
+- Current milestone: **Phase 15 IMPLEMENTATION CHECKPOINT (2026-09-22)**.
+  Production routes default to real APIs, demo fallbacks are absent from normal
+  routes, parsed reader content is coordinate-filtered, and real-empty entity
+  views remain honest and privacy-safe. Phase 15 is not complete.
 - Push state (2026-09-22): `main` fast-forwarded to `efc4ee3` and pushed with
   Phase 14 plus the Phase 15–17 roadmap files; annotated tag
   `phase-14-complete` and the Phase 14 feature branch were pushed.
@@ -304,11 +305,12 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 14 is **COMPLETE**. Phase 15 — Real Data UI Completion & Demo Removal —
-is next/pending. Do not implement it without explicit authorization; start by
-reading its complete roadmap and auditing every normal route. Existing non-
-blocking follow-ups remain: review quarantined `r31`; the court corpus and
-external media set are samples; performance figures are local only.
+Continue Phase 15 from implementation commit `5470511`. Run the deferred final
+repository gates, build and desktop/mobile Playwright route audit; reconcile any
+findings; then perform the roadmap closeout only if every acceptance criterion
+passes. Do not start Phase 16. Existing non-blocking follow-ups remain: review
+quarantined `r31`; the court corpus and external media set are samples;
+performance figures are local only.
 
 ## Non-negotiable rules
 
