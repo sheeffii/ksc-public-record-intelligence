@@ -46,6 +46,11 @@ def test_non_public_version_and_its_pages_are_withheld(demo_client):
     assert pages["items"][1]["has_redactions"] is True
     chunks = demo_client.get(f"{V1}/document-versions/F-DEMO-001/RED/chunks").json()
     assert [(c["para_from"], c["para_to"]) for c in chunks["items"]] == [(1, 9), (10, 20), (21, 40)]
+    page_two = demo_client.get(f"{V1}/document-versions/F-DEMO-001/RED/chunks?page=2").json()
+    assert [(c["para_from"], c["para_to"]) for c in page_two["items"]] == [
+        (10, 20),
+        (21, 40),
+    ]
     assert demo_client.get(f"{V1}/document-versions/F-DEMO-001/chunks").status_code == 404
 
 

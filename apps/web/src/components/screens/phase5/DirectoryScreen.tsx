@@ -2,9 +2,7 @@
 
 import type { VerificationState } from "@ksc/shared";
 import type { MockDirectory, MockDirectoryRow } from "@/mock";
-import { mockRepository } from "@/mock";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   DataTable,
@@ -20,10 +18,9 @@ import {
 } from "@/components/primitives/Filter";
 import { Panel } from "@/components/primitives/Panel";
 import { EmptyState } from "@/components/primitives/States";
-import { CitationChip, SourceBadge, VerificationBadge } from "@/components/provenance";
+import { SourceBadge, VerificationBadge } from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
-import { courtCitation, exhibitCitation } from "@/mock";
-import { ActionLink, DemoNotice, ScreenHeader } from "./ScreenChrome";
+import { ActionLink, ScreenHeader } from "./ScreenChrome";
 import { KeyValue, NoteStrip, Pager, SelectControl, ToolButton, Toolbar } from "./Workspace";
 
 const STATES: readonly VerificationState[] = [
@@ -43,14 +40,17 @@ const PAGE_SIZES = [10, 25, 50] as const;
 export function DirectoryScreen({
   kind,
   screenTitle,
+  initialRows = [],
 }: {
   kind: MockDirectory;
   screenTitle: string;
+  initialRows?: readonly MockDirectoryRow[];
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const tTable = useTranslations("table");
   const tFooter = useTranslations("footer");
+  const t15 = useTranslations("phase15");
   const [query, setQuery] = useState("");
   const [density, setDensity] = useState<Density>("compact");
   const [sortBy, setSortBy] = useState(kind === "findings" ? "id" : "title");
@@ -60,7 +60,7 @@ export function DirectoryScreen({
   const [pageSize, setPageSize] = useState<number>(10);
   const [selectedId, setSelectedId] = useState<string>();
 
-  const all = useMemo(() => mockRepository.getDirectory(kind), [kind]);
+  const all = useMemo(() => initialRows, [initialRows]);
   const rows = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const filtered = all.filter(
@@ -97,9 +97,9 @@ export function DirectoryScreen({
     setPage(1);
   }
   const csv = useMemo(() => {
-    const head = ["id", "title", "date", "references", "verification", "citation"];
+    const head = ["id", "title", "date", "references", "verification", "source_url"];
     const lines = rows.map((r) =>
-      [r.id, r.title, r.date, r.references, r.verification, courtCitation.display]
+      [r.id, r.title, r.date, r.references, r.verification, r.href]
         .map((v) => `"${String(v).replaceAll('"', '""')}"`)
         .join(","),
     );
@@ -120,7 +120,16 @@ export function DirectoryScreen({
       header: screenTitle,
       minWidth: 200,
       sortable: true,
-      cell: (row) => <span className="text-fg font-medium">{row.title}</span>,
+      cell: (row) => (
+        <span className="text-fg font-medium">
+          {kind === "findings" ? (
+            <span className="text-court mr-2 text-[9px] font-bold tracking-wide uppercase">
+              {t("courtFinding")}
+            </span>
+          ) : null}
+          {row.title}
+        </span>
+      ),
     },
     {
       key: "description",
@@ -153,6 +162,7 @@ export function DirectoryScreen({
   return (
     <AppShell footer={tFooter("referenceCounts")}>
       <ScreenHeader
+        realData
         eyebrow={t("allRecords")}
         title={screenTitle}
         description={
@@ -167,7 +177,7 @@ export function DirectoryScreen({
         actions={
           <a
             href={csv}
-            download={`${kind}-demo.csv`}
+            download={`${kind}.csv`}
             className="border-border bg-surface-raised text-fg rounded-control inline-flex h-8 items-center border px-3 text-[11px]"
           >
             {tb("exportCsv")}
@@ -246,7 +256,6 @@ export function DirectoryScreen({
           ) : null}
         </FilterRail>
         <div className="flex min-w-0 flex-col gap-3">
-          <DemoNotice />
           <Panel
             padded={false}
             footer={kind === "exhibits" ? tb("columnMeaning") : tTable("columnNote")}
@@ -255,7 +264,11 @@ export function DirectoryScreen({
               <div className="p-4">
                 <EmptyState
                   title={tb("noMatch")}
-                  reason={tb("noMatchReason")}
+                  reason={
+                    query || states.size || protectedOnly
+                      ? t15("noFilteredRecords")
+                      : t15(`empty.${kind}`)
+                  }
                   action={
                     <ToolButton
                       onClick={() => {
@@ -344,7 +357,6 @@ export function DirectoryScreen({
                   />
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <CitationChip citation={kind === "exhibits" ? exhibitCitation : courtCitation} />
                   <ActionLink href={selected.href} primary>
                     {selected.protected ? t("open") : tb("openFullDocument")}
                   </ActionLink>
@@ -358,26 +370,7 @@ export function DirectoryScreen({
             </p>
           </Panel>
           <Panel title={tb("linkedRecords")}>
-            <ul className="space-y-1 text-[11px]">
-              <li>
-                <Link className="text-accent" href="/witnesses/W01234">
-                  W01234
-                </Link>{" "}
-                · {t("testimony")}
-              </li>
-              <li>
-                <Link className="text-accent" href="/incidents/I-DEMO-01">
-                  I-DEMO-01
-                </Link>{" "}
-                · {t("incidents")}
-              </li>
-              <li>
-                <Link className="text-accent" href="/findings/F-DEMO-01">
-                  F-DEMO-01
-                </Link>{" "}
-                · {t("courtFindings")}
-              </li>
-            </ul>
+            <p className="text-fg-secondary text-[11px]">{t15("linkedRecordsUnavailable")}</p>
           </Panel>
           <NoteStrip>{t("resultOrdering")}</NoteStrip>
         </aside>

@@ -2,7 +2,7 @@ import type { MockRepository } from "@/mock/types";
 import { mockRepository } from "@/mock/repository";
 import type { ResearchRepository } from "./contract";
 
-/** The Phase 5 mock behind the asynchronous contract. Default in Phase 6. */
+/** Explicit test/story/visual-QA adapter. Never the production default. */
 export function createMockRepositoryAdapter(
   source: MockRepository = mockRepository,
 ): ResearchRepository {
@@ -10,6 +10,26 @@ export function createMockRepositoryAdapter(
     getDirectory: async (kind) => source.getDirectory(kind),
     getPerson: async (slug) => source.getPerson(slug),
     getWitness: async (code) => source.getWitness(code),
+    getIncident: async (slug) => {
+      const row = source.getDirectory("incidents").find((item) => item.id === slug);
+      if (!row) return null;
+      return {
+        slug,
+        title: row.title,
+        summary: row.description,
+        datePrecision: "unknown",
+        charges: [],
+        counts: {
+          documentMentions: 0,
+          transcriptMentions: 0,
+          exhibitRefs: 0,
+          findings: 0,
+          witnessesWhoReferred: 0,
+          incidents: 0,
+          citationsResolved: 0,
+        },
+      };
+    },
     getDocument: async (id) => source.getDocument(id),
     getFinding: async () => null,
     search: async (query) => source.search(query),

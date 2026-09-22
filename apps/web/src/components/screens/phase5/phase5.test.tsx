@@ -3,7 +3,7 @@ import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { messagesEn, renderWithProviders } from "@/test/render";
-import { exhibitCitation } from "@/mock";
+import { exhibitCitation, mockRepository } from "@/mock";
 import { DirectoryScreen } from "./DirectoryScreen";
 import { WitnessDossierScreen } from "./DossierScreens";
 import {
@@ -132,7 +132,13 @@ describe("Phase 5 safety contracts", () => {
 });
 
 it("directory screens render the approved table controls", () => {
-  renderWithProviders(<DirectoryScreen kind="people" screenTitle="People" />);
+  renderWithProviders(
+    <DirectoryScreen
+      kind="people"
+      screenTitle="People"
+      initialRows={mockRepository.getDirectory("people")}
+    />,
+  );
   expect(screen.getByRole("table")).toBeInTheDocument();
   expect(screen.getByRole("searchbox")).toBeInTheDocument();
   expect(screen.getByRole("radiogroup", { name: messagesEn.table.density })).toBeInTheDocument();

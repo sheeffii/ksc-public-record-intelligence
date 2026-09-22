@@ -15,7 +15,7 @@ export interface Crumb {
  */
 export function CaseStripe({
   crumbs = [],
-  showDemoFlag = true,
+  showDemoFlag = false,
 }: {
   crumbs?: Crumb[];
   showDemoFlag?: boolean;

@@ -7,3 +7,4 @@ export * from "./AiResearchReal";
 export * from "./AppealResearchReal";
 export * from "./ScreenChrome";
 export * from "./MediaWorkspace";
+export * from "./RealRecordScreens";

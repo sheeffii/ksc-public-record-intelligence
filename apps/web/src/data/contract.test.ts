@@ -60,10 +60,11 @@ describe.each(Object.entries(adapters))("%s repository", (_name, repo) => {
 });
 
 describe("repository selection", () => {
-  it("defaults to mock and switches to api only when configured", () => {
-    expect(resolveDataSource({})).toBe("mock");
-    expect(resolveDataSource({ NEXT_PUBLIC_DATA_SOURCE: "nonsense" })).toBe("mock");
+  it("defaults to the real API and enables fixtures only when explicitly configured", () => {
+    expect(resolveDataSource({})).toBe("api");
+    expect(resolveDataSource({ NEXT_PUBLIC_DATA_SOURCE: "nonsense" })).toBe("api");
     expect(resolveDataSource({ NEXT_PUBLIC_DATA_SOURCE: "api" })).toBe("api");
+    expect(resolveDataSource({ NEXT_PUBLIC_DATA_SOURCE: "mock" })).toBe("mock");
   });
 
   it("prefers the internal API URL on the server", () => {
@@ -77,7 +78,7 @@ describe("repository selection", () => {
   });
 
   it("creates either adapter from the environment without touching screens", async () => {
-    const mock = createRepository({}, true);
+    const mock = createRepository({ NEXT_PUBLIC_DATA_SOURCE: "mock" }, true);
     expect((await mock.getDirectory("witnesses")).length).toBeGreaterThan(0);
     const api = createRepository(
       { NEXT_PUBLIC_DATA_SOURCE: "api", API_INTERNAL_URL: "http://api.test" },

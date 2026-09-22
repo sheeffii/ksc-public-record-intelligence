@@ -342,7 +342,13 @@ class RecordRepository:
         )
 
     def list_document_chunks(
-        self, version_ref: str, *, limit: int, offset: int
+        self,
+        version_ref: str,
+        *,
+        limit: int,
+        offset: int,
+        page: int | None = None,
+        pdf_page_index: int | None = None,
     ) -> Page[DocumentChunkRead] | None:
         version = self._public_version(version_ref)
         if version is None:
@@ -352,6 +358,21 @@ class RecordRepository:
             .where(DocumentChunk.document_version_id == version.id)
             .order_by(DocumentChunk.sequence)
         )
+        if page is not None:
+            stmt = stmt.where(
+                DocumentChunk.page_from.is_not(None),
+                DocumentChunk.page_from <= page,
+                or_(DocumentChunk.page_to.is_(None), DocumentChunk.page_to >= page),
+            )
+        if pdf_page_index is not None:
+            stmt = stmt.where(
+                DocumentChunk.pdf_page_index_from.is_not(None),
+                DocumentChunk.pdf_page_index_from <= pdf_page_index,
+                or_(
+                    DocumentChunk.pdf_page_index_to.is_(None),
+                    DocumentChunk.pdf_page_index_to >= pdf_page_index,
+                ),
+            )
         rows, total = self._paginate(stmt, limit, offset)
         return Page(
             items=[mappers.to_document_chunk(c) for c in rows],

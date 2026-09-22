@@ -84,10 +84,22 @@ def list_document_pages(
 
 @router.get("/document-versions/{version_ref:path}/chunks", response_model=Page[DocumentChunkRead])
 def list_document_chunks(
-    version_ref: str, repo: Repo, limit: Limit = DEFAULT_PAGE_SIZE, offset: Offset = 0
+    version_ref: str,
+    repo: Repo,
+    limit: Limit = DEFAULT_PAGE_SIZE,
+    offset: Offset = 0,
+    page: Annotated[int | None, Query(ge=1)] = None,
+    pdf_page_index: Annotated[int | None, Query(ge=0)] = None,
 ) -> Page[DocumentChunkRead]:
     return _or_404(
-        repo.list_document_chunks(version_ref, limit=limit, offset=offset), "document version"
+        repo.list_document_chunks(
+            version_ref,
+            limit=limit,
+            offset=offset,
+            page=page,
+            pdf_page_index=pdf_page_index,
+        ),
+        "document version",
     )
 
 

@@ -122,4 +122,26 @@ describe("API → screen mapping", () => {
       href: "/witnesses/W-DEMO-001",
     });
   });
+
+  it("maps exact court search coordinates to a navigable citation", () => {
+    const result = toSearchResult({
+      ...fx.search.hits[0]!,
+      version_ref: "F-DEMO-001/RED",
+      page: 2,
+      para_from: 12,
+      para_to: 14,
+      target_path: "/documents/F-DEMO-001?version=F-DEMO-001%2FRED&page=2&para=12",
+    });
+
+    expect(result.href).toContain("/documents/F-DEMO-001");
+    expect(result.citation).toMatchObject({
+      sourceType: "court",
+      docId: "F-DEMO-001",
+      page: 2,
+      paraFrom: 12,
+      paraTo: 14,
+      resolved: true,
+      display: "F-DEMO-001/RED · p. 2 · ¶12–14",
+    });
+  });
 });

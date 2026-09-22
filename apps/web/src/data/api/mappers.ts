@@ -26,6 +26,7 @@ import type {
   FindingArgumentView,
   FindingCitationView,
   FindingView,
+  IncidentView,
   AiResearchRun,
   AiResearchSource,
   AiRunSummaryView,
@@ -284,7 +285,14 @@ export function documentRow(document: ApiDocumentSummary): DirectoryRow {
     id,
     title: document.title,
     kind: "documents",
-    description: document.document_type,
+    description: [
+      document.document_type,
+      document.language,
+      document.filing_party,
+      document.visibility,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     date: document.filing_date ?? document.document_date ?? NO_DATE,
     references: references(document.counts),
     verification: "unreviewed",
@@ -345,6 +353,20 @@ export function incidentRow(incident: ApiIncident): DirectoryRow {
     references: references(incident.counts),
     verification: "unreviewed",
     href: `/incidents/${incident.slug}`,
+  };
+}
+
+export function toIncident(incident: ApiIncident): IncidentView {
+  return {
+    slug: incident.slug,
+    title: incident.title,
+    summary: incident.summary ?? undefined,
+    location: incident.location ?? undefined,
+    dateFrom: incident.date_from ?? undefined,
+    dateTo: incident.date_to ?? undefined,
+    datePrecision: incident.date_precision,
+    charges: incident.charges_pleaded ?? [],
+    counts: toCounts(incident.counts),
   };
 }
 
@@ -519,11 +541,17 @@ export function toDocument(
     title: document.title,
     type: document.document_type,
     language: document.language ?? "",
-    page: chunks[0]?.page_from ?? 1,
+    page: chunks[0]?.page_from ?? chunks[0]?.pdf_page_index_from ?? 0,
+    coordinateKind:
+      chunks[0]?.page_from !== null && chunks[0]?.page_from !== undefined ? "source" : "pdf",
     paragraphs: isPublic
-      ? chunks.map((chunk, index) => ({
-          number: chunk.para_from ?? index + 1,
+      ? chunks.map((chunk) => ({
+          number: chunk.para_from ?? undefined,
           text: chunk.text,
+          page: chunk.page_from ?? undefined,
+          pageTo: chunk.page_to ?? undefined,
+          pdfPageIndex: chunk.pdf_page_index_from ?? undefined,
+          pdfPageIndexTo: chunk.pdf_page_index_to ?? undefined,
         }))
       : [],
     citation: {
@@ -538,7 +566,15 @@ export function toDocument(
     documentDate: document.document_date ?? undefined,
     filingDate: document.filing_date ?? undefined,
     versionRef: version?.official_version_ref,
+    versionType: version?.version_type,
+    versionLabel: version?.version_label ?? undefined,
     sourceUrl: version?.source_url ?? document.source_url ?? undefined,
+    artifactStatus: version?.artifact_status,
+    parsedAt: version?.parsed_at ?? undefined,
+    parserName: version?.parser_name ?? undefined,
+    parserVersion: version?.parser_version ?? undefined,
+    parseRequiresReview: version?.parse_requires_review,
+    extractionMethod: version?.text_extraction_method,
   };
 }
 
@@ -554,12 +590,41 @@ const SEARCH_HREF: Record<ApiSearchHit["category"], (ref: string) => string> = {
 };
 
 export function toSearchResult(hit: ApiSearchHit): SearchResult {
+  const sourceType: Citation["sourceType"] = hit.category === "transcripts" ? "witness" : "court";
+  const coordinate = [
+    hit.page !== null && hit.page !== undefined ? `p. ${hit.page}` : undefined,
+    hit.para_from !== null && hit.para_from !== undefined
+      ? `¶${hit.para_from}${hit.para_to && hit.para_to !== hit.para_from ? `–${hit.para_to}` : ""}`
+      : undefined,
+    hit.line_from !== null && hit.line_from !== undefined
+      ? `lines ${hit.line_from}${hit.line_to && hit.line_to !== hit.line_from ? `–${hit.line_to}` : ""}`
+      : undefined,
+    hit.pdf_page_index !== null && hit.pdf_page_index !== undefined && hit.page == null
+      ? `PDF ${hit.pdf_page_index}`
+      : undefined,
+  ].filter(Boolean);
+  const citation =
+    (hit.category === "documents" || hit.category === "transcripts") && hit.target_path
+      ? {
+          sourceType,
+          ref: hit.version_ref ?? hit.ref,
+          docId: documentRouteId(hit.ref),
+          page: hit.page ?? undefined,
+          paraFrom: hit.para_from ?? undefined,
+          paraTo: hit.para_to ?? undefined,
+          lineFrom: hit.line_from ?? undefined,
+          lineTo: hit.line_to ?? undefined,
+          resolved: true,
+          display: [hit.version_ref ?? hit.ref, ...coordinate].join(" · "),
+        }
+      : undefined;
   return {
     id: hit.category === "documents" ? documentRouteId(hit.ref) : hit.ref,
     category: hit.category,
     title: hit.protected ? hit.ref : hit.title,
     context: hit.protected ? "" : (hit.context ?? ""),
     href: hit.target_path ?? SEARCH_HREF[hit.category](hit.ref),
+    citation,
   };
 }
 

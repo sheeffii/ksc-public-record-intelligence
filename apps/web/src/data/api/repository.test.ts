@@ -27,7 +27,17 @@ describe("ApiRepository", () => {
     const { repo } = repository();
     expect(await repo.getPerson("nobody")).toBeNull();
     expect(await repo.getWitness("W-NONE")).toBeNull();
+    expect(await repo.getIncident("none")).toBeNull();
     expect(await repo.getDocument("F-NONE")).toBeNull();
+  });
+
+  it("loads only the requested reader coordinate", async () => {
+    const { repo, stub } = repository();
+    await repo.getDocument("F-DEMO-001", undefined, 2);
+    expect(stub.calls).toEqual([
+      "/documents/F-DEMO-001",
+      "/document-versions/F-DEMO-001/RED/chunks?limit=200&offset=0&page=2",
+    ]);
   });
 
   it("loads a document with the chunks of its newest public version", async () => {

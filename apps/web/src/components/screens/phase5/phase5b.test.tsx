@@ -3,6 +3,7 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { messagesEn, renderWithProviders } from "@/test/render";
+import { mockRepository } from "@/mock";
 import { DirectoryScreen } from "./DirectoryScreen";
 import { PersonDossierScreen, WitnessDossierScreen } from "./DossierScreens";
 import {
@@ -24,7 +25,13 @@ const tb = messagesEn.phase5b;
 describe("Phase 5B visual-parity remediation", () => {
   it("directory filters, sorts, paginates and exports the demo volume", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<DirectoryScreen kind="witnesses" screenTitle="Witnesses" />);
+    renderWithProviders(
+      <DirectoryScreen
+        kind="witnesses"
+        screenTitle="Witnesses"
+        initialRows={mockRepository.getDirectory("witnesses")}
+      />,
+    );
     const table = screen.getByRole("table");
     expect(within(table).getAllByRole("row").length).toBe(11); // header + 10 rows
     expect(screen.getAllByText("1–10 of 26").length).toBe(2);

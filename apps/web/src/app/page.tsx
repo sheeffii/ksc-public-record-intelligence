@@ -1,15 +1,13 @@
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { SearchIcon } from "@/components/primitives/icons";
 import { Panel } from "@/components/primitives/Panel";
-import { CitationChip, VerificationBadge } from "@/components/provenance";
+import { VerificationBadge } from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
-import { DemoDataFlag } from "@/components/shell/DemoDataFlag";
+import { getRepository } from "@/data";
 import { PRIMARY_NAV } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { courtCitation, mockRepository } from "@/mock";
 
-/** Seven live counts (PAGE_SPECS.md §02). None exists yet, so each renders a dash — never 0. */
 const STAT_KEYS = [
   "documents",
   "people",
@@ -20,26 +18,32 @@ const STAT_KEYS = [
   "network",
 ] as const;
 
-/**
- * Homepage (Artboard 02) — foundation version. Hero, search, explore grid.
- * No figure on this screen is fabricated: counts are pending dashes until the
- * records database holds anything, and the demo flag stays until every figure
- * is a live read.
- */
-export default function HomePage() {
-  const t = useTranslations("home");
-  const tNav = useTranslations("nav");
-  const tFooter = useTranslations("footer");
-  const tPhase = useTranslations("phase5");
-  const tb = useTranslations("phase5b");
-  const demoCounts: Record<(typeof STAT_KEYS)[number], number> = {
-    documents: mockRepository.getDirectory("documents").length,
-    people: mockRepository.getDirectory("people").length,
-    witnesses: mockRepository.getDirectory("witnesses").length,
-    exhibits: mockRepository.getDirectory("exhibits").length,
-    findings: mockRepository.getDirectory("findings").length,
-    incidents: mockRepository.getDirectory("incidents").length,
-    network: mockRepository.getNetwork().edges.length,
+export default async function HomePage() {
+  const [t, tNav, tFooter, tb, t15] = await Promise.all([
+    getTranslations("home"),
+    getTranslations("nav"),
+    getTranslations("footer"),
+    getTranslations("phase5b"),
+    getTranslations("phase15"),
+  ]);
+  const repository = getRepository();
+  const [documents, people, witnesses, exhibits, findings, incidents, network] = await Promise.all([
+    repository.getDirectory("documents"),
+    repository.getDirectory("people"),
+    repository.getDirectory("witnesses"),
+    repository.getDirectory("exhibits"),
+    repository.getDirectory("findings"),
+    repository.getDirectory("incidents"),
+    repository.getNetwork(),
+  ]);
+  const counts = {
+    documents: documents.length,
+    people: people.length,
+    witnesses: witnesses.length,
+    exhibits: exhibits.length,
+    findings: findings.length,
+    incidents: incidents.length,
+    network: network.edges.length,
   };
 
   return (
@@ -72,45 +76,27 @@ export default function HomePage() {
               {t("searchButton")}
             </button>
           </form>
-          <ul className="flex flex-wrap gap-1.5" aria-label={tNav("openSearch")}>
-            {(["witness", "filing", "exhibit", "paragraph"] as const).map((key) => (
-              <li key={key}>
-                <Link
-                  href={`/search?q=${encodeURIComponent(tb(`quick.${key}`))}`}
-                  className="rounded-chip border-border bg-surface-raised text-fg-secondary hover:text-fg identifier border px-2 py-0.5 text-[11px]"
-                >
-                  {tb(`quick.${key}`)}
-                </Link>
-              </li>
-            ))}
-          </ul>
           <p className="text-fg-muted max-w-2xl text-[11px] leading-relaxed">{t("principle")}</p>
         </div>
       </section>
 
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6">
-        <div className="rounded-card border-demo-border bg-demo-bg/40 text-fg-body flex flex-wrap items-center gap-3 border px-3 py-2 text-[11.5px]">
-          <DemoDataFlag compact />
-          <span>{tPhase("mockNotice")}</span>
-        </div>
-
+        <p className="text-fg-secondary text-[11.5px]">{t15("sourceBacked")}</p>
         <div>
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <h2 className="section-label">{t("explore")}</h2>
-            <p className="text-fg-muted text-[10.5px]">{tPhase("mockNotice")}</p>
+            <p className="text-fg-muted text-[10.5px]">{t15("sourceBacked")}</p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
             {STAT_KEYS.map((key) => {
-              const item = PRIMARY_NAV.find((n) => n.key === key);
+              const item = PRIMARY_NAV.find((nav) => nav.key === key);
               return (
                 <Link
                   key={key}
                   href={item?.href ?? "/"}
                   className="rounded-card border-border bg-surface hover:bg-surface-raised flex flex-col gap-1 border px-3 py-2.5"
                 >
-                  <span className="text-fg tabular text-[22px] font-bold tracking-[-0.02em]">
-                    {demoCounts[key]}
-                  </span>
+                  <span className="text-fg tabular text-[22px] font-bold">{counts[key]}</span>
                   <span className="text-fg-muted text-[10.5px]">{tNav(key)}</span>
                 </Link>
               );
@@ -139,64 +125,40 @@ export default function HomePage() {
             </Panel>
           ))}
         </div>
-        <div className="grid gap-3 lg:grid-cols-3">
+
+        <div className="grid gap-3 lg:grid-cols-2">
           <Panel title={tb("recentAdded")}>
-            {mockRepository
-              .getDirectory("documents")
-              .slice(0, 5)
-              .map((row) => (
-                <Link
-                  key={row.id}
-                  href={row.href}
-                  className="border-border-faint block border-b py-2"
-                >
-                  <span className="identifier text-doc">{row.id}</span>
-                  <span className="text-fg ml-2 text-[11px]">{row.title}</span>
-                </Link>
-              ))}
+            {documents.slice(0, 5).map((row) => (
+              <Link
+                key={row.id}
+                href={row.href}
+                className="border-border-faint block border-b py-2"
+              >
+                <span className="identifier text-doc">{row.id}</span>
+                <span className="text-fg ml-2 text-[11px]">{row.title}</span>
+              </Link>
+            ))}
+            {!documents.length ? (
+              <p className="text-fg-secondary text-[11px]">{t15("empty.documents")}</p>
+            ) : null}
           </Panel>
           <Panel title={tb("recentFindings")}>
-            {mockRepository
-              .getDirectory("findings")
-              .slice(0, 5)
-              .map((row) => (
-                <Link
-                  key={row.id}
-                  href={row.href}
-                  className="border-border-faint flex items-center justify-between gap-2 border-b py-2"
-                >
-                  <span className="min-w-0">
-                    <span className="identifier text-court">{row.id}</span>
-                    <span className="text-fg ml-2 text-[11px]">{row.title}</span>
-                  </span>
-                  <VerificationBadge state={row.verification} size="sm" />
-                </Link>
-              ))}
-            <div className="mt-3">
-              <CitationChip citation={courtCitation} />
-            </div>
-          </Panel>
-          <Panel title={tb("ingestion")}>
-            <ul className="space-y-2 text-[11px]">
-              {["KSC_CASE_PAGE", "KSC_PUBLIC_COURT_RECORDS", "KSC_PUBLIC_HEARING"].map((source) => (
-                <li key={source}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="identifier text-fg">{source}</span>
-                    <span className="tabular text-fg-muted">— / —</span>
-                  </div>
-                  <div
-                    role="progressbar"
-                    aria-label={source}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={0}
-                    className="bg-surface-raised mt-1 h-1 w-full rounded"
-                  />
-                  <span className="text-fg-muted text-[10px]">{tb("pendingSource")}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-fg-secondary mt-2 text-[11px]">{t("statsNote")}</p>
+            {findings.slice(0, 5).map((row) => (
+              <Link
+                key={row.id}
+                href={row.href}
+                className="border-border-faint flex items-center justify-between gap-2 border-b py-2"
+              >
+                <span className="min-w-0">
+                  <span className="identifier text-court">{row.id}</span>
+                  <span className="text-fg ml-2 text-[11px]">{row.title}</span>
+                </span>
+                <VerificationBadge state={row.verification} size="sm" />
+              </Link>
+            ))}
+            {!findings.length ? (
+              <p className="text-fg-secondary text-[11px]">{t15("empty.findings")}</p>
+            ) : null}
           </Panel>
         </div>
       </section>

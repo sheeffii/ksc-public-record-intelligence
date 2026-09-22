@@ -27,7 +27,7 @@ export function AppShell({
   children,
   mode = "dark",
   crumbs,
-  showDemoFlag = true,
+  showDemoFlag = false,
   footer,
 }: AppShellProps) {
   const t = useTranslations("app");

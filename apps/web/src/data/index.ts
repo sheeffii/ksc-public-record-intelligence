@@ -1,9 +1,9 @@
 /**
- * Repository selection. Mock remains the default in Phase 6; the API adapter
- * is opt-in through configuration so the swap is a deployment decision, not
- * a code change (ADR-009).
+ * Repository selection. Real API data is the production and development
+ * default. Synthetic fixtures are available only through an explicit mock
+ * setting for tests, stories, and visual QA.
  *
- *   NEXT_PUBLIC_DATA_SOURCE=mock | api      (default: mock)
+ *   NEXT_PUBLIC_DATA_SOURCE=mock | api      (default: api)
  *   NEXT_PUBLIC_API_URL=http://localhost:8000
  *   API_INTERNAL_URL=http://api:8000        (server-side only, inside Docker)
  */
@@ -19,7 +19,7 @@ export type RepositoryEnv = Partial<
 >;
 
 export function resolveDataSource(env: RepositoryEnv): DataSource {
-  return env.NEXT_PUBLIC_DATA_SOURCE === "api" ? "api" : "mock";
+  return env.NEXT_PUBLIC_DATA_SOURCE === "mock" ? "mock" : "api";
 }
 
 export function resolveApiBaseUrl(env: RepositoryEnv, isServer: boolean): string {

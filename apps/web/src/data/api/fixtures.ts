@@ -575,6 +575,7 @@ export const routes: Record<string, unknown> = {
   "/witnesses/W-DEMO-002": publicWitness,
   "/exhibits": page([exhibit]),
   "/incidents": page([incident]),
+  "/incidents/demo-incident-001": incident,
   "/findings": page([finding]),
   "/findings/FD-DEMO-001/matrix": findingDetail,
   "/events": page(events),

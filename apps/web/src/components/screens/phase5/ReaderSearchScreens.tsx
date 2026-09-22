@@ -45,26 +45,41 @@ export function DocumentReaderScreen({
   id,
   initialDocument,
   initialPage,
+  initialPdfPage,
 }: {
   id: string;
   initialDocument?: MockDocument;
   initialPage?: number;
+  initialPdfPage?: number;
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
+  const t15 = useTranslations("phase15");
   const isReal = initialDocument !== undefined;
   const document = initialDocument ?? mockRepository.getDocument(id);
   const isTranscript = !isReal && id.startsWith("T-");
-  const [page, setPage] = useState(initialPage ?? document.page);
+  const [page, setPage] = useState(initialPage ?? initialPdfPage ?? document.page);
+  const coordinateKind =
+    initialPdfPage !== undefined || (initialPage === undefined && document.coordinateKind === "pdf")
+      ? "pdfPage"
+      : "page";
   const [panelTab, setPanelTab] = useState<
     "summary" | "mentions" | "people" | "exhibits" | "findings" | "citations"
   >("summary");
   const [inDoc, setInDoc] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const total = document.pageCount ?? 52;
+  const total = document.pageCount ?? (isReal ? undefined : 52);
+  const coordinateLast =
+    total === undefined ? page : coordinateKind === "pdfPage" ? Math.max(0, total - 1) : total;
   const paragraphs = document.paragraphs.filter(
-    (p) => !inDoc || p.text.toLowerCase().includes(inDoc.toLowerCase()),
+    (p) =>
+      (!isReal ||
+        (coordinateKind === "pdfPage"
+          ? p.pdfPageIndex === undefined ||
+            (p.pdfPageIndex <= page && (p.pdfPageIndexTo ?? p.pdfPageIndex) >= page)
+          : p.page === undefined || (p.page <= page && (p.pageTo ?? p.page) >= page))) &&
+      (!inDoc || p.text.toLowerCase().includes(inDoc.toLowerCase())),
   );
   const panelTabs = ["summary", "mentions", "people", "exhibits", "findings", "citations"] as const;
 
@@ -97,16 +112,26 @@ export function DocumentReaderScreen({
               </span>
             ) : null}
             <ToolButton
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              href={
+                isReal
+                  ? `/documents/${encodeURIComponent(id)}?${coordinateKind}=${Math.max(coordinateKind === "pdfPage" ? 0 : 1, page - 1)}${document.versionRef ? `&version=${encodeURIComponent(document.versionRef)}` : ""}`
+                  : undefined
+              }
+              onClick={isReal ? undefined : () => setPage((p) => Math.max(1, p - 1))}
               ariaLabel={t("previous")}
             >
               ‹
             </ToolButton>
             <span className="tabular text-fg-secondary px-1 text-[11px]">
-              {tb("pager", { n: page, total })}
+              {tb("pager", { n: page, total: total ?? "—" })}
             </span>
             <ToolButton
-              onClick={() => setPage((p) => Math.min(total, p + 1))}
+              href={
+                isReal
+                  ? `/documents/${encodeURIComponent(id)}?${coordinateKind}=${Math.min(coordinateLast, page + 1)}${document.versionRef ? `&version=${encodeURIComponent(document.versionRef)}` : ""}`
+                  : undefined
+              }
+              onClick={isReal ? undefined : () => setPage((p) => Math.min(total ?? 52, p + 1))}
               ariaLabel={t("next")}
             >
               ›
@@ -152,15 +177,41 @@ export function DocumentReaderScreen({
                   {
                     key: "pages",
                     label: tb("docMeta.pages"),
-                    value: <span className="tabular">{total}</span>,
+                    value: <span className="tabular">{total ?? "—"}</span>,
                   },
                   { key: "lang", label: tb("docMeta.language"), value: document.language },
                   {
                     key: "version",
                     label: tb("docMeta.version"),
-                    value: document.versionRef ?? "—",
+                    value:
+                      [document.versionRef, document.versionType, document.versionLabel]
+                        .filter(Boolean)
+                        .join(" · ") || "—",
                   },
-                  { key: "public", label: tb("docMeta.publicState"), value: tb("redactedVersion") },
+                  {
+                    key: "public",
+                    label: tb("docMeta.publicState"),
+                    value: document.visibility ?? "—",
+                  },
+                  {
+                    key: "artifact",
+                    label: t15("artifact"),
+                    value: document.artifactStatus ?? "—",
+                  },
+                  {
+                    key: "parser",
+                    label: t15("parser"),
+                    value: document.parserName
+                      ? `${document.parserName}/${document.parserVersion ?? "—"}`
+                      : "—",
+                  },
+                  {
+                    key: "review",
+                    label: t15("parseReview"),
+                    value: document.parseRequiresReview
+                      ? t15("reviewRequired")
+                      : t15("reviewNotRequired"),
+                  },
                 ]}
               />
             </Panel>
@@ -215,8 +266,19 @@ export function DocumentReaderScreen({
                 </div>
               ) : null}
               <p className="identifier text-fg-muted mb-4 text-[10px]">
-                {document.id} · {t("page")} {page}
+                {document.id} · {coordinateKind === "pdfPage" ? t15("pdfIndex") : t("page")} {page}
               </p>
+              {isReal ? (
+                <div className="mb-4">
+                  <CitationChip
+                    citation={{
+                      ...document.citation,
+                      page: coordinateKind === "page" ? page : undefined,
+                      display: `${document.citation.ref} · ${coordinateKind === "pdfPage" ? `PDF ${page}` : `p. ${page}`}`,
+                    }}
+                  />
+                </div>
+              ) : null}
               {isTranscript ? (
                 <TranscriptPage />
               ) : !isReal && page === 2 ? (
@@ -227,22 +289,38 @@ export function DocumentReaderScreen({
                   reason={tb("redactedPage")}
                 />
               ) : (
-                paragraphs.map((paragraph) => (
+                paragraphs.map((paragraph, index) => (
                   <p
-                    key={paragraph.number}
-                    id={`para-${paragraph.number}`}
+                    key={`${paragraph.pdfPageIndex ?? page}-${paragraph.number ?? index}`}
+                    id={paragraph.number ? `para-${paragraph.number}` : `chunk-${index}`}
                     className="group relative mb-4 scroll-mt-24 pl-10 font-serif text-[13.5px] leading-[1.75] max-md:pl-8 max-md:text-[11.5px] max-md:leading-[1.85] md:text-[14px]"
                   >
-                    <a
-                      href={`#para-${paragraph.number}`}
-                      className="tabular text-fg-muted group-hover:text-accent absolute top-0.5 left-0 text-[10px]"
-                    >
-                      ¶{paragraph.number}
-                    </a>
+                    {paragraph.number ? (
+                      <a
+                        href={`#para-${paragraph.number}`}
+                        className="tabular text-fg-muted group-hover:text-accent absolute top-0.5 left-0 text-[10px]"
+                      >
+                        ¶{paragraph.number}
+                      </a>
+                    ) : (
+                      <span className="tabular text-fg-muted absolute top-0.5 left-0 text-[9px]">
+                        PDF {paragraph.pdfPageIndex ?? page}
+                      </span>
+                    )}
                     {paragraph.text}
                   </p>
                 ))
               )}
+              {isReal && paragraphs.length === 0 ? (
+                <EmptyState
+                  title={
+                    document.parseRequiresReview
+                      ? t15("parsedReviewRequired")
+                      : t15("noParsedCoordinate")
+                  }
+                  reason={`${document.versionRef ?? document.id} · page ${page}`}
+                />
+              ) : null}
               {!isReal ? (
                 <section className="border-border-faint mt-8 border-t pt-3">
                   <h3 className="section-label mb-1">{tb("footnotes")}</h3>
@@ -333,6 +411,9 @@ export function DocumentReaderScreen({
                 </Panel>
               ) : null}
               <div className="flex flex-wrap gap-2">
+                {isReal && document.sourceUrl ? (
+                  <ActionLink href={document.sourceUrl}>{t15("officialSource")}</ActionLink>
+                ) : null}
                 <ActionLink href="/ai">{t("askAi")}</ActionLink>
                 <ActionLink href="/appeal/argument/new">{t("addNote")}</ActionLink>
               </div>
@@ -381,6 +462,7 @@ const CATEGORIES = [
   "incidents",
   "findings",
   "locations",
+  "external",
 ] as const;
 type Category = (typeof CATEGORIES)[number];
 const PATTERNS: readonly { re: RegExp; kind: string }[] = [
@@ -395,12 +477,15 @@ const PATTERNS: readonly { re: RegExp; kind: string }[] = [
 export function SearchScreen({
   initialQuery = "",
   initialResults,
+  sourceScope = "court",
 }: {
   initialQuery?: string;
   initialResults?: readonly MockSearchResult[];
+  sourceScope?: "court" | "external" | "both";
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
+  const t15 = useTranslations("phase15");
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<Category | "all">("all");
@@ -433,7 +518,7 @@ export function SearchScreen({
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
-          router.push(`/search?q=${encodeURIComponent(query)}`);
+          router.push(`/search?q=${encodeURIComponent(query)}&scope=${sourceScope}`);
         }}
         className="border-border-subtle bg-bg-deep border-b px-4 py-3"
       >
@@ -452,13 +537,28 @@ export function SearchScreen({
         <p className="text-fg-secondary tabular mx-auto mt-2 w-full max-w-[1440px] text-[11px]">
           {tb("resultSummary", { count: filtered.length, groups: groups.length, ms: 3 })}
         </p>
+        <div className="mx-auto mt-2 flex w-full max-w-[1440px] gap-2">
+          {(["court", "external", "both"] as const).map((scope) => (
+            <ActionLink
+              key={scope}
+              href={`/search?q=${encodeURIComponent(query)}&scope=${scope}`}
+              primary={sourceScope === scope}
+            >
+              {scope === "court"
+                ? t15("courtRecord")
+                : scope === "external"
+                  ? t15("externalSources")
+                  : t15("bothSeparated")}
+            </ActionLink>
+          ))}
+        </div>
       </form>
       <TabStrip
         tabs={[
           { key: "all", label: `${tb("allCategories")} (${results.length})` },
           ...CATEGORIES.map((c) => ({
             key: c,
-            label: `${tb(c)} (${results.filter((r) => r.category === c).length})`,
+            label: `${c === "external" ? t15("externalSources") : tb(c)} (${results.filter((r) => r.category === c).length})`,
           })),
         ].map((tab) => ({ ...tab, href: undefined }))}
         active={category}
@@ -569,7 +669,7 @@ export function SearchScreen({
               >
                 <header className="border-border-faint flex items-center justify-between border-b px-3 py-1.5">
                   <h2 id={`group-${group.key}`} className="section-label">
-                    {tb(group.key)}
+                    {group.key === "external" ? t15("externalSources") : tb(group.key)}
                   </h2>
                   <span className="tabular text-fg-muted text-[10px]">{group.rows.length}</span>
                 </header>
@@ -598,8 +698,7 @@ export function SearchScreen({
               ]}
             />
             <p className="text-fg-secondary mt-2 text-[11px]">
-              <span className="section-label">{tb("variants")}</span> Demo location · Fshati Demo ·
-              Demo-Village
+              <span className="section-label">{tb("variants")}</span> {query || "—"}
             </p>
           </Panel>
           <Panel title={tb("syntaxReference")}>
@@ -611,18 +710,7 @@ export function SearchScreen({
             </ul>
           </Panel>
           <Panel title={tb("relatedEntities")}>
-            <ul className="space-y-1 text-[11px]">
-              <li>
-                <Link href="/people/demo-research-subject" className="text-accent">
-                  Demo Research Subject
-                </Link>
-              </li>
-              <li>
-                <Link href="/witnesses/W01234" className="text-accent identifier">
-                  W01234
-                </Link>
-              </li>
-            </ul>
+            <p className="text-fg-secondary text-[11px]">{t15("sourceBackedOnly")}</p>
           </Panel>
         </aside>
       </div>
@@ -631,6 +719,7 @@ export function SearchScreen({
 }
 
 function ResultRow({ row, query }: { row: MockSearchResult; query: string }) {
+  const t15 = useTranslations("phase15");
   const parts = query.trim()
     ? row.context.split(new RegExp(`(${query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "i"))
     : [row.context];
@@ -654,6 +743,11 @@ function ResultRow({ row, query }: { row: MockSearchResult; query: string }) {
         </span>
       </span>
       <span className="flex flex-wrap items-center gap-2 sm:justify-end">
+        {row.category === "external" ? (
+          <span className="rounded-badge border-border bg-surface-raised border px-1.5 py-0.5 text-[10px]">
+            {t15("externalSource")}
+          </span>
+        ) : null}
         {row.citation ? <SourceBadge type={row.citation.sourceType} size="sm" /> : null}
         {row.citation ? <CitationChip citation={row.citation} navigable={false} size="sm" /> : null}
       </span>

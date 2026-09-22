@@ -19,12 +19,12 @@ describe("AppShell — universal chrome", () => {
     expect(screen.getByText(messagesEn.footer.neutrality)).toBeInTheDocument();
   });
 
-  it("carries the demo-data flag by default and can drop it for figure-free screens", () => {
+  it("hides the demo-data flag by default and shows it only when explicitly requested", () => {
     const { unmount } = renderWithProviders(<AppShell>x</AppShell>);
-    expect(document.querySelector("[data-demo-flag]")).toBeInTheDocument();
-    unmount();
-    renderWithProviders(<AppShell showDemoFlag={false}>x</AppShell>);
     expect(document.querySelector("[data-demo-flag]")).not.toBeInTheDocument();
+    unmount();
+    renderWithProviders(<AppShell showDemoFlag>x</AppShell>);
+    expect(document.querySelector("[data-demo-flag]")).toBeInTheDocument();
   });
 
   it("applies the light surface only when asked (Document Reader / Public mode)", () => {

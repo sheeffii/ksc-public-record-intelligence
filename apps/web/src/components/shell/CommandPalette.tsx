@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { mockRepository } from "@/mock";
 
 export function CommandPalette() {
   const t = useTranslations("phase5");
@@ -21,7 +20,7 @@ export function CommandPalette() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   if (!open) return null;
-  const results = mockRepository.search(query).slice(0, 6);
+  const searchHref = `/search?q=${encodeURIComponent(query)}`;
   return (
     <div
       className="bg-scrim fixed inset-0 z-50 flex items-start justify-center p-4 pt-24"
@@ -43,20 +42,17 @@ export function CommandPalette() {
         />
         <div className="p-2">
           <p className="section-label px-2 py-1">{t("bestMatch")}</p>
-          {results.map((result) => (
-            <Link
-              key={result.id}
-              href={result.href}
-              onClick={() => setOpen(false)}
-              className="hover:bg-surface-raised rounded-control flex items-center justify-between px-3 py-2"
-            >
-              <span>
-                <strong className="text-fg text-[12px]">{result.title}</strong>
-                <small className="text-fg-muted ml-2">{result.category}</small>
-              </span>
-              <span className="text-accent">↵</span>
-            </Link>
-          ))}
+          <Link
+            href={searchHref}
+            onClick={() => setOpen(false)}
+            className="hover:bg-surface-raised rounded-control flex items-center justify-between px-3 py-2"
+          >
+            <span>
+              <strong className="text-fg text-[12px]">{query || t("searchRecords")}</strong>
+              <small className="text-fg-muted ml-2">{t("search")}</small>
+            </span>
+            <span className="text-accent">↵</span>
+          </Link>
         </div>
         <footer className="governance-text border-border-subtle border-t px-4 py-2">
           {t("keyboardHelp")}

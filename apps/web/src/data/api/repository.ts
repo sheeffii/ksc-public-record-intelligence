@@ -81,14 +81,29 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       return witness ? map.toWitness(witness) : null;
     },
 
-    async getDocument(id: string, versionRef?: string): Promise<DocumentView | null> {
+    async getIncident(slug: string) {
+      const incident = await client.get<ApiIncident>(`/incidents/${encodeURIComponent(slug)}`);
+      return incident ? map.toIncident(incident) : null;
+    },
+
+    async getDocument(
+      id: string,
+      versionRef?: string,
+      sourcePage?: number,
+      pdfPageIndex?: number,
+    ): Promise<DocumentView | null> {
       const document = await client.get<ApiDocumentDetail>(`/documents/${id}`);
       if (!document) return null;
       const version = versionRef
         ? document.versions.find((candidate) => candidate.official_version_ref === versionRef)
         : document.versions.at(-1);
       const chunks = version
-        ? await page<ApiDocumentChunk>(`/document-versions/${version.official_version_ref}/chunks`)
+        ? ((
+            await client.get<ApiPage<ApiDocumentChunk>>(
+              `/document-versions/${version.official_version_ref}/chunks`,
+              { limit: 200, offset: 0, page: sourcePage, pdf_page_index: pdfPageIndex },
+            )
+          )?.items ?? [])
         : [];
       return map.toDocument(document, chunks, version);
     },

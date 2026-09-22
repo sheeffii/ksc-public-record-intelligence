@@ -9,7 +9,13 @@
  * the same screen-facing types; nothing here changes what a screen renders.
  */
 
-import type { AnswerBlock, Citation, VerificationState, Witness } from "@ksc/shared";
+import type {
+  AnswerBlock,
+  Citation,
+  ReferenceCounts,
+  VerificationState,
+  Witness,
+} from "@ksc/shared";
 import type {
   MockDirectory,
   MockDirectoryRow,
@@ -33,6 +39,18 @@ export type NetworkEdge = MockNetworkEdge;
 export type PathHop = MockPathHop;
 export type TimelineItem = MockTimelineItem;
 export type EvidenceRow = MockEvidenceRow;
+
+export interface IncidentView {
+  slug: string;
+  title: string;
+  summary?: string;
+  location?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  datePrecision: string;
+  charges: readonly Record<string, unknown>[];
+  counts: ReferenceCounts;
+}
 
 export interface NetworkView {
   nodes: readonly NetworkNode[];
@@ -346,7 +364,13 @@ export interface ResearchRepository {
   getDirectory(kind: DirectoryKind): Promise<readonly DirectoryRow[]>;
   getPerson(slug: string): Promise<PersonDossier | null>;
   getWitness(code: string): Promise<Witness | null>;
-  getDocument(id: string, versionRef?: string): Promise<DocumentView | null>;
+  getIncident(slug: string): Promise<IncidentView | null>;
+  getDocument(
+    id: string,
+    versionRef?: string,
+    page?: number,
+    pdfPageIndex?: number,
+  ): Promise<DocumentView | null>;
   getFinding(key: string): Promise<FindingView | null>;
   search(query: string): Promise<readonly SearchResult[]>;
   getNetwork(): Promise<NetworkView>;
@@ -369,6 +393,7 @@ export const REPOSITORY_METHODS = [
   "getDirectory",
   "getPerson",
   "getWitness",
+  "getIncident",
   "getDocument",
   "getFinding",
   "search",

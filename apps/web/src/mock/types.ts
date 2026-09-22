@@ -38,7 +38,15 @@ export interface MockDocument {
   type: string;
   language: string;
   page: number;
-  paragraphs: { number: number; text: string }[];
+  coordinateKind?: "source" | "pdf";
+  paragraphs: {
+    number?: number;
+    text: string;
+    page?: number;
+    pageTo?: number;
+    pdfPageIndex?: number;
+    pdfPageIndexTo?: number;
+  }[];
   citation: Citation;
   /**
    * Set by the API repository. `not_public` means the record exists in the
@@ -50,12 +58,20 @@ export interface MockDocument {
   documentDate?: string;
   filingDate?: string;
   versionRef?: string;
+  versionType?: string;
+  versionLabel?: string;
   sourceUrl?: string;
+  artifactStatus?: "not_fetched" | "fetched" | "failed";
+  parsedAt?: string;
+  parserName?: string;
+  parserVersion?: string;
+  parseRequiresReview?: boolean;
+  extractionMethod?: string;
 }
 
 export interface MockSearchResult {
   id: string;
-  category: MockDirectory | "locations" | "transcripts";
+  category: MockDirectory | "locations" | "transcripts" | "external";
   title: string;
   context: string;
   href: string;

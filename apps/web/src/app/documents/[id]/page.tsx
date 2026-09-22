@@ -17,14 +17,27 @@ export default async function Page({
   const { id } = await params;
   const query = await searchParams;
   const decoded = query.document ?? decodeURIComponent(id);
-  const coordinate = query.page ?? query.pdfPage;
-  const initialPage = coordinate && /^\d+$/.test(coordinate) ? Number(coordinate) : undefined;
+  const sourcePage = query.page && /^\d+$/.test(query.page) ? Number(query.page) : undefined;
+  const pdfPageIndex =
+    query.pdfPage && /^\d+$/.test(query.pdfPage) ? Number(query.pdfPage) : undefined;
   if (
     resolveDataSource({ NEXT_PUBLIC_DATA_SOURCE: process.env.NEXT_PUBLIC_DATA_SOURCE }) === "mock"
   ) {
-    return <DocumentReaderScreen id={decoded} initialPage={initialPage} />;
+    return <DocumentReaderScreen id={decoded} initialPage={sourcePage ?? pdfPageIndex} />;
   }
-  const document = await getRepository().getDocument(decoded, query.version);
+  const document = await getRepository().getDocument(
+    decoded,
+    query.version,
+    sourcePage,
+    pdfPageIndex,
+  );
   if (!document) notFound();
-  return <DocumentReaderScreen id={decoded} initialDocument={document} initialPage={initialPage} />;
+  return (
+    <DocumentReaderScreen
+      id={decoded}
+      initialDocument={document}
+      initialPage={sourcePage}
+      initialPdfPage={pdfPageIndex}
+    />
+  );
 }

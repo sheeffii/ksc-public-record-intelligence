@@ -43,9 +43,13 @@ export { AiResearchScreen, AppealScreen, ArgumentLabScreen, PublicScreen } from 
 
 // ------------------------------------------------ evidence explorer -------
 
-export function EvidenceExplorerScreen() {
+export function EvidenceExplorerScreen({
+  initialRows = [],
+}: {
+  initialRows?: readonly import("@/data").DirectoryRow[];
+}) {
   const t = useTranslations("screens");
-  return <DirectoryScreen kind="exhibits" screenTitle={t("exhibits")} />;
+  return <DirectoryScreen kind="exhibits" screenTitle={t("exhibits")} initialRows={initialRows} />;
 }
 
 // ------------------------------------------------------------ network -----
