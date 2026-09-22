@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-22 (Phase 13 complete; real-scale gate PASS 61/50)
+Last updated: 2026-09-22 (Phase 14 complete; controlled real-public-source gate PASS)
 
 ## Milestones
 
@@ -21,19 +21,20 @@ Last updated: 2026-09-22 (Phase 13 complete; real-scale gate PASS 61/50)
 | **11** | **Citation-first AI / RAG**                                                                               | ✅ **Complete (2026-09-21)** — real-corpus AI quality gate PASS (ADR-016)                                |
 | **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                            |
 | **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
-| 14     | External media and public statements intelligence                                                         | **Next / pending** (post-core)                                                                           |
+| **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
 
 ## Roadmap
 
 The persistent execution plan is `docs/roadmap/` (installed 2026-09-19):
 `00_MASTER_ROADMAP.md` is the high-level plan and each `PHASE_*.md` is the
-execution specification for one milestone. Phases 6, 5B, 7, 8, 9, 10, 11, and
-12 are complete. Phase 13 is complete; Phase 14 is next/pending.
+execution specification for one milestone. Phases 6, 5B, and 7–14 are complete.
 The table above is the status record; the roadmap files hold scope and acceptance
 criteria. Phase 13 is complete: the second lawful operator-assisted capture
 raised the corpus to 62 source records / 61 held versions and the real-scale
-gate passes at 61/50. Repository code, migrations, tests and Git state win over
-stale roadmap text.
+gate passes at 61/50. Phase 14 is complete: 3 controlled public pages from 2
+publishers pass the external-source gate while remaining structurally separate
+and `EXTERNAL_ONLY`. No later phase is defined. Repository code, migrations,
+tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
 
@@ -387,6 +388,39 @@ check` and `head → base → head` are integration-tested.
   `0009`. The Phase 13 gate reports `completion_ready: true` at 61/50 accepted
   records; the Phase 10–12 gates pass against the combined pinned manifest.
 
+## Phase 14 result
+
+- Migration `0010` adds 5 tables in a separate external provenance domain:
+  public source/publisher, media item, exact statement, verified court bridge
+  and neutral comparison. It does not reuse a court document, evidence or AI
+  category for internet material.
+- The complete court-status taxonomy is enforced. `MENTIONED`, `TENDERED`,
+  `ADMITTED`, `REJECTED`, `DISCUSSED` and `RELIED_UPON` require an exact
+  citation and human verification; runtime reads also require resolution and a
+  same-case citation. `EXTERNAL_ONLY` and `UNKNOWN` never imply evidence.
+- A strict manual-URL manifest workflow stores only explicitly public HTTPS
+  pages, short exact excerpts and metadata. It rejects credentials, local/non-
+  global IPs, restricted access, timestamp inversions, hash changes, duplicates
+  and unsafe status promotion. Collection and current exclusions are documented.
+- The controlled set has 3 genuinely public pages from 2 publishers, 3 exact
+  hash-verified statements and 1 human-reviewed `NOT COMPARABLE` comparison.
+  All 3 items remain `EXTERNAL_ONLY`; no court link was invented and the court-
+  bridge network has zero edges.
+- Read-only API list/detail, comparison, external timeline and court-bridge
+  network projections are case-scoped and fail closed. `/media` adds separate
+  Court Record Only, External Public Sources and Both panels, status filtering,
+  explicit source/status badges, original-source links and visible limitations.
+- Phase 11 court-record RAG does not admit an external source category; a
+  validation regression proves external material cannot become Court evidence.
+  External-only material creates no appeal issue, red-team conclusion or hidden
+  identity link.
+- Final gate: 2 sources · 3 items · 3 statements · 3 external-only links · 1
+  comparison · 0 invalid/citation-backed links · 0 duplicates · 0 manifest
+  mismatches · 0 verification/access violations · 0 external court-RAG sources.
+  Final verification: 283 backend, 204 frontend and 4 Phase 14 desktop/mobile
+  Playwright tests pass; lint, typecheck, build, migration round-trip, drift,
+  live readiness and API probes pass.
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -411,21 +445,20 @@ check` and `head → base → head` are integration-tested.
 
 ## Test / evaluation status
 
-| Suite                                    | Count        | Last result                                         |
-| ---------------------------------------- | ------------ | --------------------------------------------------- |
-| Backend unit (pytest)                    | 187          | pass                                                |
-| Backend integration (pytest, live infra) | 85           | pass                                                |
-| Frontend (vitest)                        | 199          | pass                                                |
-| E2E (playwright)                         | 55 specs × 2 | 96 pass / 14 skip; real-data 12/12 pass (P10–12)    |
-| Evaluation                               | 1 real issue | Phase 12 controlled-corpus appeal quality gate PASS |
+| Suite                                    | Count        | Last result                                              |
+| ---------------------------------------- | ------------ | -------------------------------------------------------- |
+| Backend unit (pytest)                    | 194          | pass                                                     |
+| Backend integration (pytest, live infra) | 89           | pass                                                     |
+| Frontend (vitest)                        | 204          | pass                                                     |
+| E2E (playwright)                         | Phase 14     | 4/4 pass across desktop/mobile                           |
+| Evaluation                               | 3 real items | Phase 14 controlled real-public-source quality gate PASS |
 
 Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all pass.
 
 ## Deployment state
 
-Local only: stack verified 2026-09-21 with all five services healthy after
-rebuilding the API image (migration `0006` applied; ingestion status endpoint
-live). Git:
+Local stack verified 2026-09-22 with all five services healthy, live database
+at migration `0010`, and the real `/media` API/UI active. Git:
 Phase 6 tag `phase-6-complete` = `bdf7293`. Phase 5B is on `feat/phase-5b-visual-parity`, tag
 `phase-5b-complete`, not pushed. Phase 5B and Phase 7 were
 fast-forwarded into `main` on 2026-09-20: `main` = `origin/main` = `96e402a`,
@@ -436,9 +469,11 @@ or production workflow. Phase 10 is complete on
 `phase-11-complete` marks its final documentation checkpoint. On 2026-09-21 `main` was fast-forwarded to
 `277686b` (Phase 11 closeout) and pushed with tag `phase-11-complete`;
 Phase 12 was completed, fast-forwarded to `main`, pushed, and tagged
-`phase-12-complete`. Phase 13 is complete locally on
-`feat/phase-13-full-public-corpus-ingestion-hardening` with migration `0009`
-applied and local tag `phase-13-complete`. It is not pushed or merged.
+`phase-12-complete`. Phase 13 was fast-forwarded to `main` and pushed at
+`d00e7bf`; its feature branch and annotated `phase-13-complete` tag were also
+pushed. Phase 14 is complete locally on
+`feat/phase-14-external-media-public-statements`; implementation commit
+`9ff9a2b` and annotated `phase-14-complete` are not pushed or merged.
 
 ## Verification limitations
 
@@ -487,3 +522,9 @@ rows 4 · statement comparisons 1 · red-team reviews 1 · red-team findings 4 �
 distinct exact citations 7/7 resolved and navigable · human-verified Phase 12
 relationships 10 · incomplete-record abstentions 1. The canonical finding and
 finding-evidence fingerprint is unchanged. No additional record was ingested.
+
+Phase 14 external layer: 2 verified public publishers/sources · 3 public media
+items · 3 exact statements · 3 `EXTERNAL_ONLY` status rows · 1 neutral
+comparison · 0 citation-backed/invalid court links · 0 court-bridge edges · 0
+duplicates, manifest mismatches, verification violations or access violations.
+The external items do not enter the Phase 11 court-record retrieval table.

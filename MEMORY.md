@@ -5,17 +5,18 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `feat/phase-14-external-media-public-statements`, created from
-  `main` = `d00e7bf`; Phase 14 implementation has not started.
-- Current milestone: **Phase 13 COMPLETE (2026-09-22)**, tag
-  `phase-13-complete`. Real-scale gate PASS at 61/50 accepted public records.
-  Phase 14 is next/pending and must not begin without authorisation.
+  `main` = `d00e7bf`; branch-start bookkeeping commit `4290178` is preserved.
+- Current milestone: **Phase 14 COMPLETE (2026-09-22)**. The controlled
+  real-public-source gate passes with 2 sources, 3 items, 3 exact statements,
+  1 neutral comparison and no invalid court link or access violation.
 - Push state (2026-09-22): `main` fast-forwarded to `d00e7bf` and pushed;
   annotated tag `phase-13-complete` and the Phase 13 feature branch pushed.
-- Latest completion tag: `phase-13-complete` at `d00e7bf`, the final Phase 13
-  closeout commit.
+- Latest completion tag: annotated `phase-14-complete` on the final Phase 14
+  closeout commit (local; not pushed).
 - Phase 13 is on `main`; its feature branch is preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
-- Migration head: `0009`.
+- Phase 14 implementation commit: `9ff9a2b`.
+- Migration head and live database revision: `0010`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -31,6 +32,9 @@ Live checkpoint. Repository state wins over this note.
 - Phase 13 result: `docs/ingestion/PHASE13_QUALITY_GATE.md`,
   `docs/ingestion/phase13-quality-gate.json`, `docs/ingestion/PHASE13_OPERATIONS.md`,
   manifests `phase13-corpus-02.json` and combined `phase13-controlled-corpus.json`.
+- Phase 14 result: `docs/ingestion/PHASE14_QUALITY_GATE.md`,
+  `docs/ingestion/phase14-quality-gate.json`, operations guide and controlled
+  manifest `docs/ingestion/manifests/phase14-external-media.json`.
 - Second lawful capture `2026-09-21-corpus-02` lives at
   `~/Downloads/ksc-bc-2020-06-phase13-corpus-02` and imported bundle
   `data/captures/2026-09-21-corpus-02` (git-ignored).
@@ -194,34 +198,60 @@ Live checkpoint. Repository state wins over this note.
 - Backup/restore re-verified on the scaled corpus: isolated restore at `0009`
   with 61/61 objects and 36,443,971 bytes; isolated targets removed.
 
+## Phase 14 result
+
+- Migration `0010` adds a separate external provenance domain:
+  `external_sources`, `media_items`, exact `media_statements`, the sole
+  external-to-court bridge `court_media_links`, and neutral
+  `media_statement_comparisons`.
+- The explicit taxonomy is `EXTERNAL_ONLY`, `MENTIONED`, `TENDERED`, `ADMITTED`,
+  `REJECTED`, `DISCUSSED`, `RELIED_UPON`, `UNKNOWN`. Any stronger-than-
+  external/unknown status requires an exact citation and human verification in
+  PostgreSQL; reads also require a resolved citation from the same case.
+- Manual public-URL ingestion is deterministic and fail-closed: public HTTPS
+  only, no URL credentials/local/non-global IP, distinct publication/capture
+  timestamps, exact excerpt/hash validation, duplicate rejection, terms and
+  coverage notes, and no automatic strong court-status assignment.
+- The controlled real set contains 2 BIRN reports and 1 Human Rights Watch
+  institutional release. All remain `EXTERNAL_ONLY`; no court relationship was
+  invented. Three exact statements and one human-reviewed `NOT COMPARABLE`
+  comparison are stored. The court-bridge network has zero edges.
+- `/api/v1/media` exposes list/detail, comparison, timeline and verified bridge
+  network reads. `/media` provides Court Record Only, External Public Sources,
+  and Both — clearly separated modes, status filters, explicit badges, source
+  links and visible limitations in EN/SQ. External material is excluded from
+  the Phase 11 court-record RAG whitelist and creates no appeal/red-team claim.
+- Real gate PASS: 2 sources · 3 items · 3 exact statements · 3 court-status
+  rows · 1 comparison · 0 citation-backed/invalid links · 0 duplicates · 0
+  manifest mismatches · 0 verification/access violations · 0 external court-
+  record AI retrieval sources.
+
 ## Verification
 
-- Backend unit: 187 passed.
-- Backend integration: 85 passed (272 backend total).
-- Frontend: 199 passed; ESLint, TypeScript and Prettier pass.
-- Phase 13 closeout ran `make lint`, `make typecheck`, `make test` (272 backend
-  - 199 frontend), `make build`, Playwright (96 passed / 14 skipped), migration
-    round-trip and live model drift at `0009`, checksum backup/isolated restore,
-    corpus-02 import/dry-run/ingest/gate/parse/re-resolution, bundle re-run
-    idempotency, rebuilt Docker API/web with readiness, `/metrics` and structured
-    logs verified live.
+- Phase 14 closeout ran `make lint`, `make typecheck`, `make test` (283 backend
+  - 204 frontend), `make build`, migration `0009 → 0010 → 0009 → 0010`,
+    `alembic check`, the real-data gate, rebuilt Docker API/web readiness and live
+    media API checks.
+- Phase 14 Playwright: 4/4 passed across desktop and Pixel 7, covering exact
+  public-source navigation, source/status badges, limitations, neutral
+  comparison and separate source-scope modes.
 - The Phase 12 closeout additionally passed standard Playwright (96 passed, 14
   skipped) and real-data Phase 10–12 Playwright (12 passed across
   desktop/mobile) before its tag.
 - Real-data Playwright needs a host web on port 3000 in API mode
   (`NEXT_PUBLIC_DATA_SOURCE=api … next dev -p 3000`, Docker web stopped)
   because `CORS_ORIGINS` allows only `http://localhost:3000`.
-- The final roadmap closeout audit re-read the complete Phase 12 specification
-  and verified every acceptance criterion against code, migration `0008`, tests,
-  the live API/database/UI and the pinned real-corpus quality gate.
+- The final roadmap closeout audit re-read the complete Phase 14 specification
+  and verified every acceptance criterion against code, migration `0010`, tests,
+  the live API/database/UI and the pinned real-public-source quality gate.
 
 ## Architecture / decisions
 
-- ADR-001–016 remain in force; ADR-017 records human-verified potential issues,
-  exact source roles, neutral Court treatment/comparison semantics and the
-  shared Phase 11 AI boundary.
-- Migration `0008_appeal_research_red_team.py` adds the Phase 12 tables on top
-  of `0007_citation_first_ai_rag.py`.
+- ADR-001–020 remain in force; ADR-021 records the separate external provenance
+  domain, exact-citation court bridge, dedicated media namespace, court-RAG
+  exclusion and lawful manual-URL acquisition boundary.
+- Migration `0010_external_media_public_statements.py` adds the Phase 14 tables
+  on top of `0009_full_corpus_hardening.py`.
 - AI layer: `apps/api/src/ksc_api/services/{ai_providers,ai_research,ai_validation}.py`,
   router `routers/ai.py`, gate `workers/ingestion/src/ksc_ingestion/ai_quality_gate.py`,
   UI `apps/web/src/components/screens/phase5/AiResearchReal.tsx`.
@@ -264,17 +294,20 @@ Live checkpoint. Repository state wins over this note.
   single-node measurements at 61 versions.
 - Phase 13 reprocessing reconciles derived rows by stable ID and never deletes:
   a parser-origin citation that a newer parser no longer extracts stays in
-  place (still resolved deterministically) until explicit review. Observability
-  is partial: plain-text logs, no metrics endpoint, no alerting integration.
-  Scale claims (performance, lineage) are proven at 22 records only.
+  place (still resolved deterministically) until explicit review.
+- Phase 14 is a capability proof over 3 manually submitted public webpages,
+  not a comprehensive media archive. It includes no Facebook, TikTok or X
+  collection, no private/restricted/deleted source, and no external item with a
+  verified court relationship. Future platform connectors or external-AI use
+  require a new explicit milestone and terms/privacy review.
 
 ## Next
 
-Phase 13 is **COMPLETE**; Phase 14 (external media and public statements
-intelligence) is next/pending and must not begin without explicit
-authorisation. Open follow-ups, none blocking: review the quarantined `r31`
-mapping; the corpus is still a sample (37 of 40 new records are 2025–2026 and
-there is no public Trial Judgment); performance figures are local only.
+Phase 14 is **COMPLETE**. No later phase is defined or authorized. Stop before
+any private-source work, new platform connector, comprehensive social-media
+collection or external-AI expansion. Existing non-blocking follow-ups remain:
+review quarantined `r31`; the court corpus and external media set are samples;
+performance figures are local only.
 
 ## Non-negotiable rules
 

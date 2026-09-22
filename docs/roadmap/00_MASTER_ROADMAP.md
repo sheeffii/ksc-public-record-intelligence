@@ -74,7 +74,7 @@ The original core roadmap contains **13 numbered phases**. Two additional milest
 | 11 | Citation-First AI / RAG | **COMPLETE (2026-09-21)** |
 | 12 | Appeal Research, Red Team & Statement Comparison | **COMPLETE (2026-09-21)** |
 | 13 | Gradual Full Public Corpus Ingestion & Production Hardening | **COMPLETE (2026-09-22)** |
-| 14 | External Media & Public Statements Intelligence | **NEXT / PENDING** (post-core / optional future expansion) |
+| 14 | External Media & Public Statements Intelligence | **COMPLETE (2026-09-22)** — controlled real-public-source gate PASS |
 
 ## Recommended execution order from now
 
@@ -102,12 +102,12 @@ Phase 14
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
 
-Current checkpoint: Phase 13 is complete and tagged `phase-13-complete`. A
-second lawful operator-assisted capture raised the real public corpus to 62
-source records / 61 held versions, and the real-scale gate passes at 61/50
-accepted records. The official host remains fail-closed to automated clients;
-capture stays operator-assisted. Phase 14 is next/pending and must not begin
-without explicit authorisation.
+Current checkpoint: Phase 14 is complete. Migration `0010` adds a provenance-
+isolated external-public-source layer; a controlled set of 3 public pages from
+2 publishers passes the real-data gate with 3 exact statements, 1 neutral
+comparison, 0 invalid court links and 0 access violations. All items remain
+`EXTERNAL_ONLY` because no exact court relationship was established. Coverage
+is explicitly non-comprehensive; no later phase is defined or authorized.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

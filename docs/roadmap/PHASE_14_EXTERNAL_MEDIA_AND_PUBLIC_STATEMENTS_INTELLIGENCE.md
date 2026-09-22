@@ -1,6 +1,6 @@
 # Phase 14 — External Media & Public Statements Intelligence
 
-**Status:** Post-core future feature. Do not execute until the core court-record platform is stable through Phase 13.
+**Status:** COMPLETE (2026-09-22) — controlled real-public-source quality gate PASS (ADR-021).
 
 ## Goal
 
@@ -321,14 +321,14 @@ Test:
 
 Phase 14 is complete when:
 
-- external media layer is clearly separate;
-- lawful source collection is documented;
-- court status is explicit and citation-backed;
-- public statements can be compared without unsafe credibility labels;
-- users can see whether an item was mentioned/tendered/admitted/rejected/discussed/relied upon;
-- external search never silently contaminates court-record search;
-- coverage limitations are visible;
-- all privacy/access rules hold.
+- [x] external media layer is clearly separate;
+- [x] lawful source collection is documented;
+- [x] court status is explicit and citation-backed;
+- [x] public statements can be compared without unsafe credibility labels;
+- [x] users can see whether an item was mentioned/tendered/admitted/rejected/discussed/relied upon;
+- [x] external search never silently contaminates court-record search;
+- [x] coverage limitations are visible;
+- [x] all privacy/access rules hold.
 
 ## Stop condition
 
@@ -352,3 +352,56 @@ COMMITS
 NEXT
 MEMORY
 ```
+
+## Completion Record
+
+- Closeout audit: **PASS**, 2026-09-22. The complete phase specification and
+  every acceptance criterion were checked against implementation commit
+  `9ff9a2b`, migration `0010`, the migrated real database, API/UI, rebuilt
+  healthy Docker stack, automated tests, desktop/mobile Playwright and the
+  tracked real-data quality report.
+- External sources: a controlled manifest holds 3 genuinely public pages from
+  2 publishers (2 BIRN reports and 1 Human Rights Watch institutional release).
+  It retains canonical/original URL, publisher, distinct publication/capture
+  timestamps, access method, short exact excerpt, SHA-256, transcript origin,
+  review state, terms note and coverage limitation. No site was crawled and no
+  full article was mirrored.
+- Collection/access: the manual-URL importer accepts only explicit public HTTPS
+  sources and rejects credentials, local/non-global IPs, private/restricted
+  state, invalid timestamps, changed hashes, duplicate canonical URLs and
+  non-exact statements. Login, CAPTCHA, Cloudflare, private profiles, paywalls
+  and platform restrictions are never bypassed.
+- Model/provenance: `external_sources`, `media_items`, `media_statements`,
+  `court_media_links` and `media_statement_comparisons` remain outside the
+  court-record hierarchy. Stronger court statuses require an exact citation and
+  human verification in PostgreSQL; reads additionally require a resolved,
+  same-case citation.
+- Court status: all 3 real items are `EXTERNAL_ONLY`. No exact court citation
+  establishing one of these media-item relationships was found, so no
+  `MENTIONED`, `TENDERED`, `ADMITTED`, `REJECTED`, `DISCUSSED` or
+  `RELIED_UPON` relationship was invented. The full taxonomy is enforced and
+  visible; the external-to-court network has zero edges.
+- Comparison/search/UI: 3 exact hash-verified statements and 1 human-reviewed
+  `NOT COMPARABLE` comparison are exposed without a credibility inference.
+  `/media` offers Court Record Only, External Public Sources and Both — clearly
+  separated modes, status filters, explicit badges, original-source links and
+  visible coverage limitations in English and Albanian.
+- AI/appeal boundary: the Phase 11 court-record retrieval whitelist is
+  unchanged and rejects external material as Court evidence. The Phase 12
+  neutral comparison vocabulary is reused, while external anchors remain in
+  their own provenance domain; no appeal issue or red-team conclusion is
+  created from external-only material.
+- Real-data gate: 2 sources · 3 items · 3 exact statements · 3 external-only
+  status rows · 1 comparison · 0 citation-backed or invalid court links · 0
+  duplicate URLs · 0 manifest/database mismatches · 0 verification or access
+  violations · 0 external sources in court-record AI retrieval · PASS.
+- Tests/gates: 283 backend and 204 frontend tests pass; lint, formatting, mypy,
+  TypeScript, production build, `0009 → 0010 → 0009 → 0010`, `alembic check`,
+  live API/readiness checks and 4 Phase 14 Playwright tests across desktop and
+  mobile pass.
+- Evidence: `docs/ingestion/PHASE14_QUALITY_GATE.md`,
+  `docs/ingestion/phase14-quality-gate.json` and
+  `docs/ingestion/manifests/phase14-external-media.json`.
+- Scope stop: coverage is deliberately small and non-comprehensive. No private,
+  deleted, restricted, paywalled or login-gated source and no comprehensive
+  Facebook, TikTok or X coverage was added. No later phase is defined or begun.
