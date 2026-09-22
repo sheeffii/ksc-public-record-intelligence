@@ -73,8 +73,8 @@ The original core roadmap contains **13 numbered phases**. Two additional milest
 | 10 | Judgment, Findings & Evidence Matrix | **COMPLETE (2026-09-21)** |
 | 11 | Citation-First AI / RAG | **COMPLETE (2026-09-21)** |
 | 12 | Appeal Research, Red Team & Statement Comparison | **COMPLETE (2026-09-21)** |
-| 13 | Gradual Full Public Corpus Ingestion & Production Hardening | **IN PROGRESS — architecture ready; real scale 22/50 blocked by official access control** |
-| 14 | External Media & Public Statements Intelligence | Post-core / optional future expansion |
+| 13 | Gradual Full Public Corpus Ingestion & Production Hardening | **COMPLETE (2026-09-22)** |
+| 14 | External Media & Public Statements Intelligence | **NEXT / PENDING** (post-core / optional future expansion) |
 
 ## Recommended execution order from now
 
@@ -102,10 +102,12 @@ Phase 14
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
 
-Current checkpoint: Phase 12 is complete and tagged `phase-12-complete`. Phase
-13 is in progress on its feature branch. Its architecture and operational gate
-are implemented, but the official host remains fail-closed behind Cloudflare and
-the lawful corpus is 22/50 records. Phase 14 must not begin.
+Current checkpoint: Phase 13 is complete and tagged `phase-13-complete`. A
+second lawful operator-assisted capture raised the real public corpus to 62
+source records / 61 held versions, and the real-scale gate passes at 61/50
+accepted records. The official host remains fail-closed to automated clients;
+capture stays operator-assisted. Phase 14 is next/pending and must not begin
+without explicit authorisation.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

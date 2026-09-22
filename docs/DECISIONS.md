@@ -978,3 +978,56 @@ Relevant files:
 `scripts/ksc_operator_browser_capture.mjs`, `scripts/check_capture_pdfs.py`,
 `scripts/compare_capture.py`, `workers/ingestion/src/ksc_ingestion/capture_import.py`,
 and `docs/ingestion/CAPTURE_PLAN_2026-09-21-corpus-02.md`.
+
+---
+
+## ADR-020 — Metrics endpoint, structured logs and alert rules over the existing stack
+
+Date: 2026-09-22
+
+Status: Accepted
+
+Context:
+Phase 13 requires production-ready observability: API latency and error rate,
+ingestion jobs, parser and citation-resolution failures, queue depth, storage
+usage, database performance, AI errors/costs, failed source opens and
+background job health. The phase equally forbids infrastructure that is not
+needed yet. The numbers already exist in PostgreSQL and in the internal
+ingestion status endpoint; what was missing was a scrapeable surface, machine
+-readable logs and alert thresholds.
+
+Decision:
+
+1. `GET /metrics` returns Prometheus text exposition rendered by
+   `apps/api/src/ksc_api/observability.py` — no client library and no new
+   service. It carries in-process request counters and a latency histogram,
+   build info, and database-backed gauges read at scrape time (corpus,
+   verified bytes, parser review, citations by resolution state, acquisition
+   queue by state, stuck leases, quarantine by state, processing runs by
+   state, failed ingestion items, AI runs/withheld/failed/cost).
+2. Labels carry route templates and states only. A raw path, query string,
+   identifier, title or quote never becomes a label, so the metrics surface
+   cannot leak record content. A scrape never fails when PostgreSQL is
+   unavailable: `ksc_metrics_db_scrape_ok` reports 0 instead.
+3. Logs are structured JSON by default (`LOG_FORMAT=json`), one object per
+   line, with one access line per request carrying request id, method, route
+   template, status and duration; the response echoes `X-Request-ID`. The
+   container disables uvicorn's own access log so the structured line is the
+   only one. Logging restrictions of `docs/SECURITY.md` are unchanged.
+4. Alert thresholds live as configuration in `ops/alerts/ksc-api.rules.yml`
+   against those metric names; deploying a scraper remains a deployment
+   decision, not an application dependency.
+
+Consequences:
+
+- Operators can alert on API availability and latency, stuck leases, growing
+  blocked/failed acquisitions, open quarantine and parser review, failed
+  processing runs, ambiguous-citation regressions, storage growth and AI
+  failures without adding a metrics service to the stack.
+- Unit tests assert the exposition format, the route-template labelling and
+  the JSON log fields; an integration test asserts the gauges mirror the
+  internal ingestion status endpoint.
+
+Relevant files:
+`apps/api/src/ksc_api/{observability.py,logging_config.py,main.py,routers/system.py}`,
+`ops/alerts/ksc-api.rules.yml`, and `docs/ingestion/PHASE13_OPERATIONS.md`.

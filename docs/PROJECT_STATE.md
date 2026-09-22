@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-21 (Phase 13 in progress; real-scale gate blocked)
+Last updated: 2026-09-22 (Phase 13 complete; real-scale gate PASS 61/50)
 
 ## Milestones
 
@@ -20,18 +20,19 @@ Last updated: 2026-09-21 (Phase 13 in progress; real-scale gate blocked)
 | **10** | **Judgment, findings and evidence matrix**                                                                | ✅ **Complete (2026-09-21)** — real Court-decision quality gate PASS (ADR-015)                           |
 | **11** | **Citation-first AI / RAG**                                                                               | ✅ **Complete (2026-09-21)** — real-corpus AI quality gate PASS (ADR-016)                                |
 | **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                            |
-| **13** | **Gradual full public corpus ingestion and production hardening**                                         | **IN PROGRESS** — architecture ready; lawful real scale 22/50 (ADR-018)                                  |
-| 14     | External media and public statements intelligence                                                         | Post-core / later                                                                                        |
+| **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
+| 14     | External media and public statements intelligence                                                         | **Next / pending** (post-core)                                                                           |
 
 ## Roadmap
 
 The persistent execution plan is `docs/roadmap/` (installed 2026-09-19):
 `00_MASTER_ROADMAP.md` is the high-level plan and each `PHASE_*.md` is the
 execution specification for one milestone. Phases 6, 5B, 7, 8, 9, 10, 11, and
-12 are complete. Phase 13 is in progress; Phase 14 remains later.
+12 are complete. Phase 13 is complete; Phase 14 is next/pending.
 The table above is the status record; the roadmap files hold scope and acceptance
-criteria. Phase 13 is in progress and blocked only on the genuine 50-record
-real-scale gate. Repository code, migrations, tests and Git state win over
+criteria. Phase 13 is complete: the second lawful operator-assisted capture
+raised the corpus to 62 source records / 61 held versions and the real-scale
+gate passes at 61/50. Repository code, migrations, tests and Git state win over
 stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -341,7 +342,7 @@ check` and `head → base → head` are integration-tested.
   standard Playwright (96 passed / 14 skipped) and real-data Phase 10–12
   Playwright (12 passed across desktop/mobile).
 
-## Phase 13 in-progress result
+## Phase 13 result
 
 - Migration `0009` adds immutable source-metadata snapshots, one acquisition
   queue row per public artifact version, explicit quarantine, and auditable
@@ -368,11 +369,23 @@ check` and `head → base → head` are integration-tested.
   a declared-body request limit, weekly dependency updates for `apps/api`,
   `workers/ingestion`, pnpm and Actions, and guarded checksum-verified
   PostgreSQL/MinIO backup/restore tooling.
-- A real isolated restore succeeded at migration `0009` with all 22 objects and
-  24,429,094 bytes. The current real gate has architecture/integrity/performance
-  ready but completion false: 22 source records are below the required first
-  50-record scale step. Official `robots.txt` still returns Cloudflare 403
-  `cf-mitigated: challenge`; no bypass was attempted.
+- A local operator-assisted browser collector (ADR-019) produced the second
+  lawful capture `2026-09-21-corpus-02`: 40 public records selected, 39 accepted,
+  1 refused and quarantined for review. The operator's own Chrome performed every
+  official request and completed the Cloudflare check by hand; no access control
+  was bypassed and two live-probe items remain `blocked_by_access_control`.
+- Observability is complete (ADR-020): `/metrics` Prometheus exposition with
+  request counters, latency histogram and corpus/queue/quarantine/parser/
+  citation/AI gauges; structured JSON logs with request ids; alert rules in
+  `ops/alerts/ksc-api.rules.yml`.
+- Final real state: 62 source records · 56 documents · 61 versions (fetched,
+  parsed) · 61 objects · 36,443,971 bytes · 2,832 pages · 2,019 paragraphs ·
+  1,363 transcript segments · 15,730 citations (188 resolved · 3 ambiguous ·
+  15,420 unresolved · 119 invalid) · 1 open quarantine · 1 parser review ·
+  0 missing/hash-mismatched objects · 0 fetched non-public versions. A restore
+  into an isolated database and bucket verified 61/61 objects at migration
+  `0009`. The Phase 13 gate reports `completion_ready: true` at 61/50 accepted
+  records; the Phase 10–12 gates pass against the combined pinned manifest.
 
 ## Technical debt / notes
 
@@ -400,8 +413,8 @@ check` and `head → base → head` are integration-tested.
 
 | Suite                                    | Count        | Last result                                         |
 | ---------------------------------------- | ------------ | --------------------------------------------------- |
-| Backend unit (pytest)                    | 180          | pass                                                |
-| Backend integration (pytest, live infra) | 81           | pass                                                |
+| Backend unit (pytest)                    | 187          | pass                                                |
+| Backend integration (pytest, live infra) | 85           | pass                                                |
 | Frontend (vitest)                        | 199          | pass                                                |
 | E2E (playwright)                         | 55 specs × 2 | 96 pass / 14 skip; real-data 12/12 pass (P10–12)    |
 | Evaluation                               | 1 real issue | Phase 12 controlled-corpus appeal quality gate PASS |
@@ -423,10 +436,9 @@ or production workflow. Phase 10 is complete on
 `phase-11-complete` marks its final documentation checkpoint. On 2026-09-21 `main` was fast-forwarded to
 `277686b` (Phase 11 closeout) and pushed with tag `phase-11-complete`;
 Phase 12 was completed, fast-forwarded to `main`, pushed, and tagged
-`phase-12-complete`. Phase 13 is local on
-`feat/phase-13-full-public-corpus-ingestion-hardening` at checkpoint commit
-`679f74c`; migration `0009` is applied locally. It is not pushed, merged or
-tagged.
+`phase-12-complete`. Phase 13 is complete locally on
+`feat/phase-13-full-public-corpus-ingestion-hardening` with migration `0009`
+applied and local tag `phase-13-complete`. It is not pushed or merged.
 
 ## Verification limitations
 
@@ -445,12 +457,14 @@ hearings 2 · transcripts 3 · MinIO objects 22 · indexed documents 19 · pages
 Bytes came from the operator's browser downloads matched by SHA-256; the
 pipeline itself fetched nothing from the court site (ADR-011).
 
-Phase 13 checkpoint: 22 immutable source snapshots · 22 verified objects ·
-24,429,094 bytes · 0 missing/hash-mismatched objects · 0 fetched non-public
-versions · 0 open quarantine · 5 processing runs · local measured
-search/exact/network queries all below 3 ms. A forced reparse and
-re-resolution left every downstream Phase 8–12 row byte-identical. The genuine
-50-record scale gate remains unavailable.
+Phase 13 final: 62 immutable source snapshots · 61 verified objects ·
+36,443,971 bytes · 0 missing/hash-mismatched objects · 0 fetched non-public
+versions · 1 open quarantine (nothing stored for it) · 6 processing runs ·
+local measured search/exact/network queries all below 1.2 ms. Forced reparse,
+re-resolution and the corpus-02 ingestion left every authoritative Phase 9–12
+row unchanged; the Phase 9 deterministic projection was rebuilt to 48 nodes /
+178 edges / 54 events. Bundle manifests: `manifests/phase13-corpus-02.json`
+and the combined `manifests/phase13-controlled-corpus.json`.
 
 Phase 9 projection: graph nodes 13 · citation-backed edges 22 · source-backed
 timeline events 19 (document 11 · decision 6 · testimony 2). No additional

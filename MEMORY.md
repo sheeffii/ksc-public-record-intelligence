@@ -6,15 +6,16 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-13-full-public-corpus-ingestion-hardening`; its
   preserved branch-start checkpoint is `2adb1f1` from `main` = `bac0b0f`.
-  Phase 13 checkpoint commit (architecture, migration `0009`, tests, operations
-  docs, gate result 22/50): `679f74c`. Local only; not pushed, merged or tagged.
-- Current milestone: **Phase 13 IN PROGRESS (2026-09-21)**. Architecture,
-  operations and the real gate are implemented; completion is blocked at 22/50
-  lawfully available real records.
+  Phase 13 commits: `679f74c` (architecture/migration `0009`), `3de31ac`,
+  `2397a45` (operator browser collector), then the corpus-02 scale-out and
+  closeout commits. Local only; not pushed or merged.
+- Current milestone: **Phase 13 COMPLETE (2026-09-22)**, tag
+  `phase-13-complete`. Real-scale gate PASS at 61/50 accepted public records.
+  Phase 14 is next/pending and must not begin without authorisation.
 - Push state (2026-09-21): `main` fast-forwarded to `bac0b0f` and pushed;
   annotated tag `phase-12-complete` pushed. The Phase 13 branch is local.
-- Latest completion tag: `phase-12-complete` at `bac0b0f`. There is deliberately
-  no `phase-13-complete` tag.
+- Latest completion tag: `phase-13-complete` (local). `phase-12-complete` is at
+  `bac0b0f` on `main`.
 - Final Phase 12 implementation commit: `7a9779b`; the subsequent roadmap
   closeout commit records the final audit and completion metadata.
 - Phase 12 is on `main`; its feature branch was not pushed separately.
@@ -32,8 +33,12 @@ Live checkpoint. Repository state wins over this note.
   `docs/ingestion/manifests/phase11-controlled-corpus-quality.json`.
 - Phase 12 quality result: `docs/ingestion/PHASE12_QUALITY_GATE.md` and
   `docs/ingestion/manifests/phase12-controlled-corpus-quality.json`.
-- Phase 13 in-progress result: `docs/ingestion/phase13-quality-gate.json` and
-  `docs/ingestion/PHASE13_OPERATIONS.md`.
+- Phase 13 result: `docs/ingestion/PHASE13_QUALITY_GATE.md`,
+  `docs/ingestion/phase13-quality-gate.json`, `docs/ingestion/PHASE13_OPERATIONS.md`,
+  manifests `phase13-corpus-02.json` and combined `phase13-controlled-corpus.json`.
+- Second lawful capture `2026-09-21-corpus-02` lives at
+  `~/Downloads/ksc-bc-2020-06-phase13-corpus-02` and imported bundle
+  `data/captures/2026-09-21-corpus-02` (git-ignored).
 - Never push unless explicitly instructed.
 
 ## Phase 8 result
@@ -151,7 +156,7 @@ Live checkpoint. Repository state wins over this note.
   findings · 7/7 citations resolved/navigable · 10 human-verified relationships
   · 1 abstention · authoritative finding/evidence state unchanged.
 
-## Phase 13 in-progress result
+## Phase 13 result
 
 - Migration `0009` adds immutable source snapshots, lease-based artifact
   acquisition, quarantine, and processing-run history without changing
@@ -172,35 +177,39 @@ Live checkpoint. Repository state wins over this note.
   guarded restore was tested in an isolated database/bucket. It restored
   migration `0009`, 22 objects and 24,429,094 object bytes, then the isolated
   targets were removed.
-- Real gate: 22 source records · 19 documents · 22 fetched/parsed versions ·
-  1,979 pages · 1,233 paragraphs · 607 transcript segments · 14,212 citations
-  (30 resolved · 0 ambiguous · 14,105 unresolved · 77 invalid) · 22 verified
-  objects · 24,429,094 bytes · 0 missing/hash-mismatched objects · 0 fetched
-  non-public versions · 0 open quarantine. Search, exact lookup and network
-  queries were all under 3 ms locally.
-- A fresh identified probe of `repository.scp-ks.org/robots.txt` returned HTTP
-  403 with `cf-mitigated: challenge`; failure job
-  `4134154a-5026-4ebc-ba04-75a20bcc42ca` records it. No bypass was attempted.
-- Architecture/integrity/performance gates pass, but the genuine real-scale gate
-  is 22/50 and fails. Phase 13 remains in progress; no completion tag.
-- Resumed closeout audit (2026-09-21): forced reparse + reresolve left every
-  downstream Phase 8–12 row byte-identical (fingerprint diff; only
-  `processing_runs` 3 → 5); gate re-run identical; second isolated
-  backup/restore verified 22/22 objects by hash; fresh identified probe still
-  `cf-mitigated: challenge`. Per-criterion audit is in the Phase 13 roadmap
-  file. No larger lawful batch exists locally (`data/captures/` holds only the
-  22-PDF bundle; no inventory manifest).
+- Scale-out (2026-09-22): the attached-browser collector (ADR-019) captured
+  `2026-09-21-corpus-02` — 40 public records, 39 accepted, 1 refused. Import,
+  dry-run, ingestion, bundle gate (40/40 PASS), parse, re-resolution and the
+  Phase 9 rebuild all ran locally; nothing was fetched by the pipeline itself.
+- Real gate PASS: 62 source records · 56 documents · 61 fetched/parsed versions
+  · 61 accepted (threshold 50) · 2,832 pages · 2,019 paragraphs · 1,363
+  transcript segments · 15,730 citations (188 resolved · 3 ambiguous · 15,420
+  unresolved · 119 invalid) · 61 objects · 36,443,971 bytes · 0 missing/
+  hash-mismatched · 0 fetched non-public · 1 open quarantine · 1 parser review.
+  Search 1.16 ms · exact lookup 0.75 ms · network 1.17 ms.
+- Phase 9 projection rebuilt from the larger corpus: 48 nodes · 178 edges · 54
+  events; no edge rests on a non-resolved citation. Phase 10/11/12 gates pass
+  against the combined pinned manifest; AI audit history unchanged.
+- `r31` (`F03734RED`) is refused and quarantined: its PDF header prints
+  `KSC-BC-2020-06/F03734`, contradicting the published id. Nothing stored, no
+  guess made. `r37` (`PL003-F00004`) resolved once the `PL` sub-file series was
+  added alongside `IA` in the importer and resolver (unit-tested).
+- Observability completed (ADR-020): `/metrics` Prometheus exposition,
+  structured JSON access logs with request ids, `ops/alerts/ksc-api.rules.yml`.
+- Backup/restore re-verified on the scaled corpus: isolated restore at `0009`
+  with 61/61 objects and 36,443,971 bytes; isolated targets removed.
 
 ## Verification
 
-- Backend unit: 180 passed.
-- Backend integration: 81 passed (261 backend total).
+- Backend unit: 187 passed.
+- Backend integration: 85 passed (272 backend total).
 - Frontend: 199 passed; ESLint, TypeScript and Prettier pass.
-- Phase 13 checkpoint reran `make lint`, `make typecheck`, `make test` (261
-  backend + 199 frontend), production build, migration round-trip/model drift,
-  checksum backup/isolated restore, real-corpus force reparse/re-resolution and
-  gate, rebuilt stack health, API security-header/status/413 smoke and web
-  health.
+- Phase 13 closeout ran `make lint`, `make typecheck`, `make test` (272 backend
+  - 199 frontend), `make build`, Playwright (96 passed / 14 skipped), migration
+    round-trip and live model drift at `0009`, checksum backup/isolated restore,
+    corpus-02 import/dry-run/ingest/gate/parse/re-resolution, bundle re-run
+    idempotency, rebuilt Docker API/web with readiness, `/metrics` and structured
+    logs verified live.
 - The Phase 12 closeout additionally passed standard Playwright (96 passed, 14
   skipped) and real-data Phase 10–12 Playwright (12 passed across
   desktop/mobile) before its tag.
@@ -233,8 +242,9 @@ Live checkpoint. Repository state wins over this note.
 
 - OCR is not implemented because none of the controlled PDFs needs it. A future
   OCR fallback must label extraction method and confidence/review state.
-- The small natural corpus contains no ambiguous citation; an overlapping-page
-  fixture verifies the fail-closed state.
+- Ambiguous citations now exist in the real corpus (3, from overlapping
+  transcript-page references); they stay fail-closed and create no edge. An
+  overlapping-page fixture also verifies the state.
 - Most valid citations target records outside the controlled corpus and remain
   explicitly unresolved; Phase 9 creates no edge from them.
 - The controlled corpus has no approximate/range/month/year timeline date and no
@@ -252,6 +262,11 @@ Live checkpoint. Repository state wins over this note.
   sentencing analysis. The public Trial Judgment, F03743, F03746 and the
   pre-correction brief are absent; the comparison therefore remains
   `not_comparable` and the issue remains `NEEDS_MORE_EVIDENCE`.
+- Phase 13's corpus is a lawful sample, not the complete public corpus: 37 of
+  the 40 corpus-02 records are 2025–2026, there is still no public Trial
+  Judgment, and the three ambiguous citations are real overlapping
+  transcript-page references kept fail-closed. Performance figures are local
+  single-node measurements at 61 versions.
 - Phase 13 reprocessing reconciles derived rows by stable ID and never deletes:
   a parser-origin citation that a newer parser no longer extracts stays in
   place (still resolved deterministically) until explicit review. Observability
@@ -260,19 +275,11 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 13 is **IN PROGRESS / BLOCKED ON LAWFUL REAL SCALE**. Resume only when an
-authorized official inventory/capture can raise the real public corpus from 22
-to at least 50 records. The operator plan for the next capture
-(`2026-09-21-corpus-02`, ≈45 new public records, exclusion list of the held 22)
-is `docs/ingestion/CAPTURE_PLAN_2026-09-21-corpus-02.md`; on 2026-09-22 the
-attached-browser collector (ADR-019) produced that bundle at
-`~/Downloads/ksc-bc-2020-06-phase13-corpus-02` with 40 new public records
-(validated, comparator clean, NOT imported or ingested — review first);
-`scripts/compare_capture.py` classifies a capture-v0 manifest against the
-tracked corpus (duplicate / counterpart / new) before import. The agent session
-has no interactive browser, so the capture itself must be done by a human. Run the inventory/capture pipeline in bounded batches,
-repeat the real gate and full quality gates, then complete/tag only if every
-criterion passes. Do not bypass Cloudflare and do not begin Phase 14.
+Phase 13 is **COMPLETE**; Phase 14 (external media and public statements
+intelligence) is next/pending and must not begin without explicit
+authorisation. Open follow-ups, none blocking: review the quarantined `r31`
+mapping; the corpus is still a sample (37 of 40 new records are 2025–2026 and
+there is no public Trial Judgment); performance figures are local only.
 
 ## Non-negotiable rules
 

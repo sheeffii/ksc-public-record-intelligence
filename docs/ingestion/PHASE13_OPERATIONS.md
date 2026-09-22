@@ -62,12 +62,34 @@ counts and hashes, then remove those isolated test targets.
 
 ## Monitoring and alerts
 
-The internal `/api/v1/ingestion/status` endpoint and `ksc-ingest status` expose
-verified bytes, duplicate/failure counts, parser-review count, acquisition queue
-depth by state, open quarantine count, source snapshot count, processing runs,
-citations by resolution state and recent job checkpoints. Alert on stuck leases,
-growing blocked/failed/quarantine queues, parser review, storage growth, job
-failure, unresolved/ambiguous citation regressions and API readiness/latency.
+`GET /metrics` on the API returns Prometheus text exposition (no client
+library, no extra service): per-route request counters and a latency
+histogram (`ksc_http_requests_total`, `ksc_http_request_duration_seconds`),
+build info, and database-backed operational gauges read on each scrape —
+`ksc_source_records`, `ksc_document_versions`, `ksc_versions_fetched`,
+`ksc_versions_parse_review_required`, `ksc_verified_artifact_bytes`,
+`ksc_citations{state}`, `ksc_acquisition_queue{state}`,
+`ksc_acquisition_stuck_leases`, `ksc_quarantine{state}`,
+`ksc_processing_runs{state}`, `ksc_ingestion_items_failed`,
+`ksc_ai_runs`, `ksc_ai_runs_withheld`, `ksc_ai_runs_failed`,
+`ksc_ai_cost_usd_total`. `ksc_metrics_db_scrape_ok` is 0 when PostgreSQL could
+not be read; the scrape itself never fails. Labels carry route templates and
+states only — never identifiers, query strings or text.
+
+The same numbers are readable as JSON from the internal
+`/api/v1/ingestion/status` endpoint and from `ksc-ingest status`.
+
+Logs are structured JSON (`LOG_FORMAT=json`, one object per line) with an
+access line per request carrying `request_id`, `method`, `route`, `status`
+and `duration_ms`; the response echoes `X-Request-ID`. Log lines never carry
+document text, witness identifiers beyond public codes, or secrets
+(`docs/SECURITY.md`).
+
+Alert rules live in `ops/alerts/ksc-api.rules.yml`: API down, 5xx rate above
+2%, p95 latency above 500 ms, metrics scrape failing, stuck leases, growing
+blocked/failed acquisitions, open quarantine or parser-review rows older than
+a day, failed processing runs, new failed ingestion items, growing ambiguous
+citations, unexpected storage growth, and failing AI runs.
 
 Do not advance a corpus batch while error metrics regress. The Phase 13 scale
 gate starts at 50 real public records; synthetic fixtures can verify mechanics

@@ -1,6 +1,6 @@
 # Phase 13 — Gradual Full Public Corpus Ingestion & Production Hardening
 
-**Status:** IN PROGRESS — architecture/operations implemented; real-corpus scale gate blocked at 22/50 lawfully available records (2026-09-21).
+**Status:** COMPLETE (2026-09-22) — real-corpus scale gate PASS at 61/50 accepted public records (ADR-018, ADR-019, ADR-020).
 
 ## Goal
 
@@ -325,3 +325,61 @@ Decision: Phase 13 remains **IN PROGRESS — BLOCKED ON LAWFUL REAL SCALE**. No
 inventory/capture that lawfully raises the corpus to at least 50 records, then
 a bounded batch, the real gate and the full quality gates. Phase 14 does not
 begin.
+
+## Completion record — 2026-09-22
+
+Phase 13 is complete. The second lawful operator-assisted capture
+(`2026-09-21-corpus-02`, ADR-019) raised the corpus past the first gradual-scale
+step, and every mandatory acceptance criterion was verified against the live
+system rather than against documentation.
+
+### Acceptance criteria
+
+| Criterion | Result |
+| --- | --- |
+| corpus ingestion scales gradually and safely | **MET** — 22 → 62 source records in one bounded batch; 39 new versions stored, 1 refused and quarantined, 0 non-public fetched. Bundle re-runs are no-ops. |
+| public-only rule holds | **MET** — every record public/public-redacted at the source, page-1 stamp checked, 0 fetched non-public versions; the official host stayed fail-closed to automated clients and no access control was bypassed. |
+| version history is preserved | **MET** — SHA-addressed immutable objects; 62 source-metadata snapshots; translations add versions without renaming documents; re-ingestion changes no hash or object key. |
+| data-quality metrics exist | **MET** — discovery, download, duplicate, parse review, citation states, queue depth, quarantine, bytes and processing runs in `ksc-ingest status`, `/api/v1/ingestion/status` and `/metrics`. OCR fallback rate remains not applicable (no OCR). |
+| quarantine/reprocessing exists | **MET** — the one ambiguous reference is an open quarantine row with nothing stored; open-quarantine versions are excluded from parse and resolution; `parse --force` and `reresolve` rebuild derived state deterministically. |
+| search/network remain performant | **MET** — at 61 held versions, document FTS 1.2 ms, exact identifier lookup 0.8 ms, 100-row network neighbourhood 1.2 ms (threshold 500 ms). PostgreSQL FTS still needs no separate search engine; the graph is 48 nodes / 178 edges, within SVG range (ADR-014). |
+| backups restore successfully | **MET** — checksum backup of 61 objects restored into an isolated database and bucket at migration `0009` with 61/61 hashes and 36,443,971 bytes verified; isolated targets removed. |
+| observability is production-ready | **MET** — `/metrics` (request counters, latency histogram, corpus/queue/quarantine/parser/citation/AI gauges), structured JSON logs with request ids, and `ops/alerts/ksc-api.rules.yml` (ADR-020). |
+| source/audit lineage remains intact at scale | **MET** — every Phase 9–12 row's citation is still resolved and points at a pre-existing target; authoritative fingerprints over Phase 10–12 tables and the 22 held corpus-01 versions are unchanged through ingestion, reparse and re-resolution. |
+| AI never bypasses verification/citation layers | **MET** — Phase 11 gate passes on the scaled corpus (4 cases, 1 grounded answer, 3/3 abstentions, citation/quote/category/navigation 100%), with AI audit history and human-verification states unchanged. |
+
+### Verified state
+
+- Corpus: 62 source records · 56 documents · 61 versions (61 fetched, 61 parsed,
+  56 indexed) · 61 immutable objects · 36,443,971 bytes · 0 missing objects ·
+  0 hash mismatches · 0 fetched non-public versions.
+- Parsing: 2,832 pages · 2,019 paragraphs · 1,363 transcript segments ·
+  1 review-required version (an image-only annex, `F00002/A03`).
+- Citations: 15,730 — 188 resolved · 3 ambiguous · 15,420 unresolved ·
+  119 invalid. The three ambiguous rows are real overlapping transcript-page
+  references and stay fail-closed.
+- Projection: 48 graph nodes · 178 citation-backed edges · 54 source-backed
+  timeline events; no edge rests on a non-resolved citation.
+- Gates: Phase 13 real gate `completion_ready: true` (61/50 accepted); bundle
+  gate 40/40 PASS; Phase 10, 11 and 12 real-corpus gates PASS against the
+  combined pinned manifest.
+- Tests: 272 backend (unit + integration) · 199 frontend · 96 Playwright passed
+  / 14 skipped · lint, format, mypy, TypeScript and the production build pass ·
+  migration round-trip and live-DB model drift clean at `0009`.
+
+### Known limitations carried forward
+
+- The public Trial Judgment still does not exist, so Phase 10's matrix remains
+  proven against the F03752 Court-decision benchmark only.
+- One record (`r31`, published `F03734RED`) is refused and quarantined: its PDF
+  header prints `KSC-BC-2020-06/F03734` while the repository publishes
+  `F03734RED`. Nothing was stored and no mapping was guessed; it awaits human
+  review.
+- Two live-probe items remain `blocked_by_access_control`: the official host
+  answers automated clients with a Cloudflare challenge. Lawful capture is
+  operator-assisted (ADR-011, ADR-019).
+- Performance figures are local (single-node Docker) at 61 versions; they are
+  not a claim about production hardware or a several-hundred-record corpus.
+- 37 of the 40 new records date from 2025–2026; the batch is not a historical
+  backfill, and the corpus is still a sample of the public record, not the
+  complete public corpus.
