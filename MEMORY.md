@@ -4,16 +4,17 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-14-external-media-public-statements`, created from
-  `main` = `d00e7bf`; branch-start bookkeeping commit `4290178` is preserved.
+- Current branch: `feat/phase-15-real-data-ui-completion-and-demo-removal`,
+  created from updated `main` = `efc4ee3`. Phase 15 implementation has not
+  started.
 - Current milestone: **Phase 14 COMPLETE (2026-09-22)**. The controlled
   real-public-source gate passes with 2 sources, 3 items, 3 exact statements,
   1 neutral comparison and no invalid court link or access violation.
-- Push state (2026-09-22): `main` fast-forwarded to `d00e7bf` and pushed;
-  annotated tag `phase-13-complete` and the Phase 13 feature branch pushed.
-- Latest completion tag: annotated `phase-14-complete` on the final Phase 14
-  closeout commit (local; not pushed).
-- Phase 13 is on `main`; its feature branch is preserved on `origin`.
+- Push state (2026-09-22): `main` fast-forwarded to `efc4ee3` and pushed with
+  Phase 14 plus the Phase 15–17 roadmap files; annotated tag
+  `phase-14-complete` and the Phase 14 feature branch were pushed.
+- Latest completion tag: annotated `phase-14-complete` at `5717d24`, pushed.
+- Phase 14 is on `main`; its feature branch is preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
 - Migration head and live database revision: `0010`.
@@ -303,11 +304,11 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 14 is **COMPLETE**. No later phase is defined or authorized. Stop before
-any private-source work, new platform connector, comprehensive social-media
-collection or external-AI expansion. Existing non-blocking follow-ups remain:
-review quarantined `r31`; the court corpus and external media set are samples;
-performance figures are local only.
+Phase 14 is **COMPLETE**. Phase 15 — Real Data UI Completion & Demo Removal —
+is next/pending. Do not implement it without explicit authorization; start by
+reading its complete roadmap and auditing every normal route. Existing non-
+blocking follow-ups remain: review quarantined `r31`; the court corpus and
+external media set are samples; performance figures are local only.
 
 ## Non-negotiable rules
 

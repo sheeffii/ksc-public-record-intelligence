@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-22 (Phase 14 complete; controlled real-public-source gate PASS)
+Last updated: 2026-09-22 (Phase 14 pushed; Phase 15 branch started, implementation pending)
 
 ## Milestones
 
@@ -22,6 +22,9 @@ Last updated: 2026-09-22 (Phase 14 complete; controlled real-public-source gate 
 | **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                            |
 | **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
 | **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
+| **15** | **Real data UI completion and demo removal**                                                              | **Next / pending**                                                                                       |
+| **16** | **Production readiness, security and lawyer beta**                                                        | **Pending** — depends on Phase 15                                                                        |
+| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **Pending** — depends on Phase 16 unless explicitly approved otherwise                                   |
 
 ## Roadmap
 
@@ -33,8 +36,8 @@ criteria. Phase 13 is complete: the second lawful operator-assisted capture
 raised the corpus to 62 source records / 61 held versions and the real-scale
 gate passes at 61/50. Phase 14 is complete: 3 controlled public pages from 2
 publishers pass the external-source gate while remaining structurally separate
-and `EXTERNAL_ONLY`. No later phase is defined. Repository code, migrations,
-tests and Git state win over stale roadmap text.
+and `EXTERNAL_ONLY`. Phase 15 is next/pending and has not started. Repository
+code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
 
@@ -471,9 +474,11 @@ or production workflow. Phase 10 is complete on
 Phase 12 was completed, fast-forwarded to `main`, pushed, and tagged
 `phase-12-complete`. Phase 13 was fast-forwarded to `main` and pushed at
 `d00e7bf`; its feature branch and annotated `phase-13-complete` tag were also
-pushed. Phase 14 is complete locally on
-`feat/phase-14-external-media-public-statements`; implementation commit
-`9ff9a2b` and annotated `phase-14-complete` are not pushed or merged.
+pushed. Phase 14 was fast-forwarded to `main` and pushed through roadmap commit
+`efc4ee3`; its feature branch and annotated `phase-14-complete` tag at
+`5717d24` were pushed. Phase 15 branch
+`feat/phase-15-real-data-ui-completion-and-demo-removal` starts from `efc4ee3`;
+implementation has not begun.
 
 ## Verification limitations
 
