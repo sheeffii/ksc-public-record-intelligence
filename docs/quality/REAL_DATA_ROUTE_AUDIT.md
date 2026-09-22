@@ -1,7 +1,7 @@
 # Phase 15 real-data route audit
 
-Implementation checkpoint, 2026-09-22. Counts are the latest verified Phase
-13/14 live-database counts and must be re-measured at the Phase 15 final gate.
+Implementation checkpoint, updated 2026-09-22 after the Phase 15B verification
+pass. Counts were rechecked against the controlled real-case database.
 `EMPTY` means the real API currently has no verified source-backed rows; the UI
 shows an honest empty state. Explicit `NEXT_PUBLIC_DATA_SOURCE=mock` remains
 available only for tests, stories and visual QA. The unset/default mode is API.
@@ -37,3 +37,19 @@ Normal production route sources are guarded by
 `apps/web/src/app/phase15-route-gate.test.ts`: the API is the default, route
 files may not import fixture data directly, synthetic identifiers are refused,
 and this audit may not contain a `MIXED` or `DEMO` classification row.
+
+## Phase 15B verification checkpoint
+
+- Desktop and mobile real-data Playwright: **PASS**, 38/38 Phase 15 checks.
+- Search and Reader: real results/content, no production demo badge, exact
+  coordinate and official-source checks pass.
+- Network: 48 human-readable document nodes and 178 citation-backed edges are
+  visible after correcting the API-coordinate adapter; inspector provenance is
+  preserved and UUID endpoints are not the primary presentation.
+- Findings: one verified finding; the directory uses a concise judgment/paragraph
+  label and excerpt while the canonical full text remains on the detail route.
+- People, Witnesses, Exhibits and Claims: the real case has zero rows. The rows
+  present in those tables belong only to `KSC-DEMO-0000`, so production keeps
+  honest empty states rather than projecting unreviewed entities.
+- Homepage again presents the approved three-panel summary row, with live
+  ingestion counts in the third panel.

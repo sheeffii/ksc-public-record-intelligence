@@ -375,9 +375,10 @@ export function findingRow(finding: ApiFindingSummary): DirectoryRow | null {
   if (verification === null) return null;
   return {
     id: finding.finding_key,
-    title: finding.finding_key,
+    title: `${documentRouteId(finding.judgment_ref)} · ¶${finding.para_from}${finding.para_to && finding.para_to !== finding.para_from ? `–${finding.para_to}` : ""}`,
     kind: "findings",
-    description: finding.text,
+    description:
+      finding.text.length > 180 ? `${finding.text.slice(0, 177).trimEnd()}…` : finding.text,
     date: NO_DATE,
     references: references(finding.counts),
     verification,
@@ -628,7 +629,7 @@ export function toSearchResult(hit: ApiSearchHit): SearchResult {
   };
 }
 
-/** Deterministic ring layout; a real layout engine is a later phase. */
+/** Deterministic percentage-based ring layout; a real layout engine is a later phase. */
 export function toNetworkNode(node: ApiGraphNode, index: number, total: number): NetworkNode {
   const angle = (2 * Math.PI * index) / Math.max(total, 1);
   const type =
@@ -637,8 +638,8 @@ export function toNetworkNode(node: ApiGraphNode, index: number, total: number):
     id: node.id,
     label: node.protected ? node.ref : node.label,
     type: type ?? "court",
-    x: Math.round(400 + 300 * Math.cos(angle)),
-    y: Math.round(300 + 220 * Math.sin(angle)),
+    x: Math.round(50 + 34 * Math.cos(angle)),
+    y: Math.round(50 + 34 * Math.sin(angle)),
     ref: node.ref,
     entityKind: node.entity_kind,
   };

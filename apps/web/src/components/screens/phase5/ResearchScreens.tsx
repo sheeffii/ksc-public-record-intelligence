@@ -136,6 +136,8 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
     n.label.toLowerCase().includes(query.trim().toLowerCase()),
   );
   const degree = (id: string) => edges.filter((e) => e.from === id || e.to === id).length;
+  const nodeLabel = (id: string) => nodes.find((node) => node.id === id)?.label ?? id;
+  const relationshipLabel = (value: string) => value.replaceAll("_", " ");
 
   function handleGraphAction(key: string) {
     if (key === "zoomIn") setZoom((v) => Math.min(1.4, v + 0.1));
@@ -196,9 +198,9 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
         </div>
       </Panel>
       <Panel title={t("whyConnection")}>
-        <p className="text-fg text-[11px]">{selectedEdge.relation}</p>
+        <p className="text-fg text-[11px]">{relationshipLabel(selectedEdge.relation)}</p>
         <p className="text-fg-muted mt-1 text-[10px]">
-          {selectedEdge.from} → {selectedEdge.to}
+          {nodeLabel(selectedEdge.from)} → {nodeLabel(selectedEdge.to)}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <SourceBadge type={selectedEdge.sourceType} />
@@ -228,7 +230,7 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
                 onClick={() => setSelectedEdge(e)}
                 className="text-left hover:underline"
               >
-                {e.from} → {e.to} · {e.relation}
+                {nodeLabel(e.from)} → {nodeLabel(e.to)} · {relationshipLabel(e.relation)}
               </button>
             </li>
           ))}

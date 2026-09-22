@@ -7,6 +7,7 @@ import {
   toDocument,
   toEvidenceRows,
   toNetworkEdge,
+  toNetworkNode,
   toSearchResult,
   toVerification,
   toWitness,
@@ -52,6 +53,21 @@ describe("API → screen mapping", () => {
     expect(toVerification("unreviewed")).toBe("unreviewed");
     expect(toVerification("human_rejected")).toBeNull();
     expect(findingRow({ ...fx.finding, verification_state: "human_rejected" })).toBeNull();
+  });
+
+  it("keeps real graph nodes inside the percentage-based canvas", () => {
+    const node = toNetworkNode(fx.network.nodes[0]!, 0, fx.network.nodes.length);
+    expect(node.x).toBeGreaterThanOrEqual(16);
+    expect(node.x).toBeLessThanOrEqual(84);
+    expect(node.y).toBeGreaterThanOrEqual(16);
+    expect(node.y).toBeLessThanOrEqual(84);
+  });
+
+  it("keeps finding rows concise while preserving the canonical detail link", () => {
+    const row = findingRow({ ...fx.finding, text: "A".repeat(240) });
+    expect(row?.title).toContain("¶");
+    expect(row?.description.length).toBeLessThanOrEqual(180);
+    expect(row?.href).toBe(`/findings/${fx.finding.finding_key}`);
   });
 
   it("keeps protected witnesses code-only", () => {

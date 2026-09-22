@@ -513,7 +513,12 @@ export function SearchScreen({
 
   return (
     <AppShell showDemoFlag={initialResults === undefined}>
-      <ScreenHeader eyebrow={t("search")} title={t("search")} description={tb("searchSyntax")} />
+      <ScreenHeader
+        realData={initialResults !== undefined}
+        eyebrow={t("search")}
+        title={t("search")}
+        description={tb("searchSyntax")}
+      />
       <form
         role="search"
         onSubmit={(e) => {

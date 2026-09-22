@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.skip(Boolean(process.env.E2E_REAL_DATA), "legacy demo-mode visual coverage");
+
 /**
  * Phase 5B visual checks. Each representative screen is rendered at the
  * project's viewport, its designed regions are asserted, and a full-page

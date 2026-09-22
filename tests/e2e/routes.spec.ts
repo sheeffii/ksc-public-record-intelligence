@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.skip(Boolean(process.env.E2E_REAL_DATA), "legacy demo-mode route coverage");
+
 /** Every approved route (ROUTE_MAP.md §2) with a representative identifier. */
 const ROUTES = [
   "/",

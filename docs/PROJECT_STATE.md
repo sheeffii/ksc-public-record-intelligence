@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-22 (Phase 15 implementation checkpoint; final gate pending)
+Last updated: 2026-09-22 (Phase 15B verification checkpoint; closeout pending)
 
 ## Milestones
 
@@ -451,6 +451,24 @@ check` and `head → base → head` are integration-tested.
   typecheck, focused ESLint/Ruff and `git diff --check`. The final repository
   gate, build, desktop/mobile Playwright audit and roadmap closeout have not run;
   Phase 15 is not complete and has no completion tag.
+
+## Phase 15B verification checkpoint
+
+- The full lint/format gate, 283 backend tests, 236 frontend tests, strict
+  typecheck and production build passed before targeted 15B remediation.
+- Verification fixed the remaining production Search demo badge, restored
+  mobile Reader source access coverage, corrected off-canvas Network node
+  coordinates, replaced UUID-first relationship presentation with readable
+  labels, and made Findings index rows concise without changing canonical text.
+- The real case contains no projected people, witnesses, exhibits or claims;
+  existing rows are isolated to `KSC-DEMO-0000`, so honest empty states remain.
+- Homepage/Findings/Network/People were checked against the approved design
+  specifications. The homepage three-panel row and live ingestion summary were
+  restored; Network hierarchy/provenance and Findings list/detail hierarchy now
+  match the intended patterns.
+- Targeted frontend checks pass (28/28) and Phase 15 desktop/mobile Playwright
+  passes (38/38). Phase 15 remains open pending explicit closeout; no completion
+  tag exists and Phase 16 has not started.
 
 ## Technical debt / notes
 

@@ -4,7 +4,7 @@ import { SearchIcon } from "@/components/primitives/icons";
 import { Panel } from "@/components/primitives/Panel";
 import { VerificationBadge } from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
-import { getRepository } from "@/data";
+import { getRepository, resolveApiBaseUrl, resolveDataSource } from "@/data";
 import { PRIMARY_NAV } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,33 @@ const STAT_KEYS = [
   "network",
 ] as const;
 
+type IngestionSummary = {
+  source_records: number;
+  versions: number;
+  versions_parsed: number;
+  items_failed: number;
+  quarantine_open: number;
+};
+
+async function getIngestionSummary(): Promise<IngestionSummary | null> {
+  const env = {
+    NEXT_PUBLIC_DATA_SOURCE: process.env.NEXT_PUBLIC_DATA_SOURCE,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    API_INTERNAL_URL: process.env.API_INTERNAL_URL,
+  };
+  if (resolveDataSource(env) !== "api") return null;
+  try {
+    const response = await fetch(`${resolveApiBaseUrl(env, true)}/api/v1/ingestion/status`, {
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as { counts: IngestionSummary };
+    return payload.counts;
+  } catch {
+    return null;
+  }
+}
+
 export default async function HomePage() {
   const [t, tNav, tFooter, tb, t15] = await Promise.all([
     getTranslations("home"),
@@ -27,15 +54,17 @@ export default async function HomePage() {
     getTranslations("phase15"),
   ]);
   const repository = getRepository();
-  const [documents, people, witnesses, exhibits, findings, incidents, network] = await Promise.all([
-    repository.getDirectory("documents"),
-    repository.getDirectory("people"),
-    repository.getDirectory("witnesses"),
-    repository.getDirectory("exhibits"),
-    repository.getDirectory("findings"),
-    repository.getDirectory("incidents"),
-    repository.getNetwork(),
-  ]);
+  const [documents, people, witnesses, exhibits, findings, incidents, network, ingestion] =
+    await Promise.all([
+      repository.getDirectory("documents"),
+      repository.getDirectory("people"),
+      repository.getDirectory("witnesses"),
+      repository.getDirectory("exhibits"),
+      repository.getDirectory("findings"),
+      repository.getDirectory("incidents"),
+      repository.getNetwork(),
+      getIngestionSummary(),
+    ]);
   const counts = {
     documents: documents.length,
     people: people.length,
@@ -126,7 +155,7 @@ export default async function HomePage() {
           ))}
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-3">
           <Panel title={tb("recentAdded")}>
             {documents.slice(0, 5).map((row) => (
               <Link
@@ -159,6 +188,30 @@ export default async function HomePage() {
             {!findings.length ? (
               <p className="text-fg-secondary text-[11px]">{t15("empty.findings")}</p>
             ) : null}
+          </Panel>
+          <Panel title={tb("ingestion")}>
+            {ingestion ? (
+              <dl className="space-y-2 text-[11px]">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-fg-secondary">{t15("sourceRecords")}</dt>
+                  <dd className="text-fg tabular font-semibold">{ingestion.source_records}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-fg-secondary">{t15("parsedVersions")}</dt>
+                  <dd className="text-fg tabular font-semibold">
+                    {ingestion.versions_parsed}/{ingestion.versions}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-fg-secondary">{t15("openIngestionIssues")}</dt>
+                  <dd className="text-fg tabular font-semibold">
+                    {ingestion.items_failed + ingestion.quarantine_open}
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="text-fg-secondary text-[11px]">{t15("ingestionUnavailable")}</p>
+            )}
           </Panel>
         </div>
       </section>
