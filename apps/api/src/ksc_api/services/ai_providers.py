@@ -143,13 +143,24 @@ def _optional_int(value: Any) -> int | None:
 class _HttpJsonProvider:
     name: str
 
-    def __init__(self, *, endpoint: str, api_key: str, model: str, timeout: float = 30) -> None:
+    def __init__(
+        self,
+        *,
+        endpoint: str,
+        api_key: str,
+        model: str,
+        timeout: float = 30,
+        max_output_tokens: int = 1600,
+        max_retries: int = 1,
+    ) -> None:
         if not endpoint or not api_key or not model:
             raise ProviderError(f"{self.name} provider is not fully configured")
         self.endpoint = endpoint
         self.api_key = api_key
         self.model = model
         self.timeout = timeout
+        self.max_output_tokens = max_output_tokens
+        self.max_retries = max_retries
 
     def _post(self, payload: dict[str, Any], headers: dict[str, str]) -> dict[str, Any]:
         request = urllib.request.Request(  # noqa: S310 - configured provider endpoint
@@ -158,11 +169,18 @@ class _HttpJsonProvider:
             headers={"content-type": "application/json", **headers},
             method="POST",
         )
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:  # noqa: S310
-                body = json.loads(response.read())
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-            raise ProviderError(f"{self.name} provider request failed") from exc
+        last_error: Exception | None = None
+        for _ in range(self.max_retries + 1):
+            try:
+                with urllib.request.urlopen(  # noqa: S310 - allowlisted by production settings
+                    request, timeout=self.timeout
+                ) as response:
+                    body = json.loads(response.read())
+                break
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+                last_error = exc
+        else:
+            raise ProviderError(f"{self.name} provider request failed") from last_error
         if not isinstance(body, dict):
             raise ProviderError(f"{self.name} provider returned a non-object response")
         return body
@@ -192,6 +210,7 @@ class OpenAiCompatibleProvider(_HttpJsonProvider):
             {
                 "model": self.model,
                 "temperature": request.temperature,
+                "max_tokens": self.max_output_tokens,
                 "response_format": {"type": "json_object"},
                 "messages": [
                     {"role": "system", "content": request.system_prompt},
@@ -223,7 +242,7 @@ class AnthropicCompatibleProvider(_HttpJsonProvider):
             {
                 "model": self.model,
                 "temperature": request.temperature,
-                "max_tokens": 1600,
+                "max_tokens": self.max_output_tokens,
                 "system": request.system_prompt,
                 "messages": [
                     {

@@ -20,6 +20,7 @@ from ksc_api.schemas.ai import (
     AiRunSummary,
     run_read,
 )
+from ksc_api.security import AiCapacity, Researcher
 from ksc_api.services.ai_providers import ProviderError
 from ksc_api.services.ai_research import AiResearchService
 
@@ -43,7 +44,7 @@ Service = Annotated[AiResearchService, Depends(get_ai_service)]
 
 
 @router.post("/runs", response_model=AiRunRead, status_code=status.HTTP_201_CREATED)
-def create_ai_run(payload: AiQuestionCreate, service: Service) -> AiRunRead:
+def create_ai_run(payload: AiQuestionCreate, _: AiCapacity, service: Service) -> AiRunRead:
     try:
         return run_read(service.create_run(payload.question))
     except (ValueError, RuntimeError) as exc:
@@ -75,7 +76,9 @@ def list_ai_runs(
 
 
 @router.post("/runs/{run_id}/notes", response_model=AiNoteRead, status_code=status.HTTP_201_CREATED)
-def save_ai_research_note(run_id: uuid.UUID, payload: AiNoteCreate, service: Service) -> AiNoteRead:
+def save_ai_research_note(
+    run_id: uuid.UUID, payload: AiNoteCreate, _: Researcher, service: Service
+) -> AiNoteRead:
     try:
         note = service.save_research_note(run_id, payload.title)
     except LookupError as exc:

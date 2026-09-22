@@ -21,6 +21,7 @@ from ksc_api.schemas.appeal import (
     ReviewStateUpdate,
     StatementComparisonRead,
 )
+from ksc_api.security import Researcher, Verifier
 from ksc_api.services.appeal_research import AppealResearchService
 
 router = APIRouter(prefix="/api/v1", tags=["appeal-research"])
@@ -58,7 +59,7 @@ def read_appeal_issue(issue_key: str, service: Service) -> AppealIssueDetail:
 
 @router.patch("/appeal/issues/{issue_key}/review", response_model=AppealIssueSummary)
 def review_appeal_issue(
-    issue_key: str, payload: ReviewStateUpdate, service: Service
+    issue_key: str, payload: ReviewStateUpdate, _: Verifier, service: Service
 ) -> AppealIssueSummary:
     issue = service.update_review_state(
         issue_key, VerificationState(payload.verification_state), payload.reviewer
@@ -82,7 +83,7 @@ def read_argument_lab(issue_key: str, service: Service) -> ArgumentLabRead:
     status_code=status.HTTP_201_CREATED,
 )
 def save_appeal_note(
-    issue_key: str, payload: ResearchNoteCreate, service: Service
+    issue_key: str, payload: ResearchNoteCreate, _: Researcher, service: Service
 ) -> ResearchNoteCreated:
     try:
         note = service.save_note(issue_key, payload)

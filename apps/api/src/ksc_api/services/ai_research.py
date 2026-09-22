@@ -7,7 +7,7 @@ import json
 import re
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, time
 from decimal import Decimal
 from pathlib import Path
 from urllib.parse import quote
@@ -129,6 +129,15 @@ class AiResearchService:
         question = " ".join(question.split())
         if len(question) < 3 or len(question) > 2000:
             raise ValueError("question must contain between 3 and 2000 characters")
+        if self.provider.name != "deterministic":
+            day_start = datetime.combine(datetime.now(UTC).date(), time.min, tzinfo=UTC)
+            runs_today = self.session.scalar(
+                select(func.count())
+                .select_from(AiRun)
+                .where(AiRun.created_at >= day_start, AiRun.provider == self.provider.name)
+            )
+            if (runs_today or 0) >= self.settings.ai_max_daily_runs:
+                raise RuntimeError("external AI daily run budget reached")
         prompt, prompt_hash = self._prompt()
         prompt_version = self._prompt_version(prompt, prompt_hash)
         run = AiRun(
@@ -708,6 +717,8 @@ class AiResearchService:
 
 def provider_from_settings(settings: Settings) -> AiProvider:
     provider = settings.ai_provider.casefold() or "deterministic"
+    if provider == "disabled":
+        raise ProviderError("AI provider is disabled")
     if provider == "deterministic":
         return DeterministicExtractiveProvider()
     if provider == "openai_compatible":
@@ -715,12 +726,18 @@ def provider_from_settings(settings: Settings) -> AiProvider:
             endpoint=settings.openai_compatible_url,
             api_key=settings.openai_api_key,
             model=settings.ai_model,
+            timeout=settings.ai_timeout_seconds,
+            max_output_tokens=settings.ai_max_output_tokens,
+            max_retries=settings.ai_max_retries,
         )
     if provider == "anthropic_compatible":
         return AnthropicCompatibleProvider(
             endpoint=settings.anthropic_compatible_url,
             api_key=settings.anthropic_api_key,
             model=settings.ai_model,
+            timeout=settings.ai_timeout_seconds,
+            max_output_tokens=settings.ai_max_output_tokens,
+            max_retries=settings.ai_max_retries,
         )
     raise ProviderError(f"unsupported AI provider: {settings.ai_provider}")
 

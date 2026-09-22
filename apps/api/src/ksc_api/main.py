@@ -23,8 +23,6 @@ from ksc_api.observability import request_metrics, route_template
 from ksc_api.repositories.records import CaseNotConfiguredError
 from ksc_api.routers import ai, appeal, ingestion, media, records, system
 
-MAX_REQUEST_BYTES = 10 * 1024 * 1024
-
 
 def create_app() -> FastAPI:
     settings = get_settings()
@@ -39,13 +37,16 @@ def create_app() -> FastAPI:
             "Primary sources, the database, provenance and citations are authoritative; "
             "AI output, when it exists, is analysis only."
         ),
+        docs_url=None if settings.app_env in {"staging", "production"} else "/docs",
+        redoc_url=None if settings.app_env in {"staging", "production"} else "/redoc",
+        openapi_url=None if settings.app_env in {"staging", "production"} else "/openapi.json",
     )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_credentials=False,
+        allow_methods=["GET", "HEAD", "OPTIONS", "POST", "PATCH"],
+        allow_headers=["Accept", "Authorization", "Content-Type", "X-Request-ID"],
     )
     app.include_router(system.router)
     app.include_router(records.router)
@@ -61,7 +62,7 @@ def create_app() -> FastAPI:
         content_length = request.headers.get("content-length")
         if content_length is not None:
             try:
-                too_large = int(content_length) > MAX_REQUEST_BYTES
+                too_large = int(content_length) > settings.max_request_bytes
             except ValueError:
                 too_large = True
             if too_large:
@@ -105,6 +106,9 @@ def create_app() -> FastAPI:
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Cache-Control"] = "no-store"
+        if settings.app_env in {"staging", "production"}:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
 
     @app.exception_handler(CaseNotConfiguredError)

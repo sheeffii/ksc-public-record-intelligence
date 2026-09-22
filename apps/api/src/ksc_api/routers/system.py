@@ -62,7 +62,14 @@ def ready(
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return ReadyResponse(
         status="ready" if all_ok else "degraded",
-        components=[ComponentReport(name=r.name, ok=r.ok, detail=r.detail) for r in results],
+        components=[
+            ComponentReport(
+                name=r.name,
+                ok=r.ok,
+                detail=None if settings.app_env in {"staging", "production"} else r.detail,
+            )
+            for r in results
+        ],
     )
 
 
