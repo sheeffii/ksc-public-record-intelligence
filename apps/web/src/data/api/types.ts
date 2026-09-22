@@ -18,6 +18,51 @@ export type ApiResolutionState = "resolved" | "unresolved" | "ambiguous" | "inva
 export type ApiParty = "spo" | "defence" | "victims_counsel" | "court" | "other";
 export type ApiDateType = "event" | "document" | "filing" | "testimony" | "decision";
 export type ApiStance = "supports" | "contradicts" | "qualifies" | "neutral" | "unclear";
+export type ApiCourtMediaStatus =
+  | "external_only"
+  | "mentioned"
+  | "tendered"
+  | "admitted"
+  | "rejected"
+  | "discussed"
+  | "relied_upon"
+  | "unknown";
+
+export interface ApiMediaWorkspace {
+  items: {
+    id: string;
+    title: string;
+    publisher: string;
+    canonical_url: string;
+    published_at: string | null;
+    captured_at: string;
+    source_type: string;
+    language: string;
+    court_statuses: ApiCourtMediaStatus[];
+    verification_state: ApiVerificationState;
+  }[];
+  comparisons: {
+    id: string;
+    comparison_key: string;
+    title: string;
+    classification: string;
+    statement_a: { text: string };
+    statement_b: { text: string } | null;
+    court_citation_b: ApiCitation | null;
+    explanation: string;
+    verification_state: ApiVerificationState;
+  }[];
+  coverage: {
+    sources: number;
+    items: number;
+    statements: number;
+    court_links: number;
+    citation_backed_court_links: number;
+    comparisons: number;
+  };
+  court_status_taxonomy: ApiCourtMediaStatus[];
+  limitations: string[];
+}
 
 export interface ApiAiSource {
   id: string;

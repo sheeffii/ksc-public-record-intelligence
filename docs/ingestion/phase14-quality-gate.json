@@ -1,0 +1,17 @@
+{
+  "access_violations": 0,
+  "ai_external_retrieval_sources": 0,
+  "citation_backed_court_links": 0,
+  "comparisons": 1,
+  "court_links": 3,
+  "coverage_limitations_documented": true,
+  "duplicate_urls": 0,
+  "exact_statements": 3,
+  "generated_at": "2026-09-22",
+  "invalid_court_links": 0,
+  "manifest_item_mismatches": 0,
+  "passed": true,
+  "real_public_items": 3,
+  "real_public_sources": 2,
+  "verification_violations": 0
+}

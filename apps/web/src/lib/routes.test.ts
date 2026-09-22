@@ -20,6 +20,7 @@ const ROUTE_MAP_PATTERNS = [
   "/network",
   "/network/path",
   "/appeal",
+  "/media",
   "/appeal/argument/:id",
   "/ai",
   "/ai/:sessionId",
@@ -27,7 +28,7 @@ const ROUTE_MAP_PATTERNS = [
   "/public/:topic",
 ];
 
-describe("route registry mirrors ROUTE_MAP.md §2", () => {
+describe("route registry mirrors ROUTE_MAP.md §2 plus the Phase 14 extension", () => {
   it("contains every approved route exactly once", () => {
     expect(ROUTES.map((r) => r.pattern).sort()).toEqual([...ROUTE_MAP_PATTERNS].sort());
   });
@@ -37,12 +38,13 @@ describe("route registry mirrors ROUTE_MAP.md §2", () => {
     expect(light.sort()).toEqual(["/documents/:id", "/public", "/public/:topic"]);
   });
 
-  it("leaves the five undesigned directories without an artboard", () => {
+  it("leaves the directory-style and Phase 14 extension routes without an artboard", () => {
     const undesigned = ROUTES.filter((r) => r.artboard === null).map((r) => r.pattern);
     expect(undesigned.sort()).toEqual([
       "/documents",
       "/findings",
       "/incidents",
+      "/media",
       "/people",
       "/witnesses",
     ]);
@@ -64,6 +66,7 @@ describe("navKeyForPath", () => {
     expect(navKeyForPath("/witnesses/W01234/compare")).toBe("witnesses");
     expect(navKeyForPath("/network/path")).toBe("network");
     expect(navKeyForPath("/appeal/argument/new")).toBe("appeal");
+    expect(navKeyForPath("/media")).toBe("media");
     expect(navKeyForPath("/ai/abc")).toBe("ai");
   });
 });

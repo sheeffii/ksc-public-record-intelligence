@@ -41,6 +41,21 @@ fetched by other means.
 - Redactions are rendered as visible blocks with their extent. Redacted content is
   never reconstructed, inferred or machine-translated in place.
 
+## External public sources
+
+Phase 14 accepts reviewed manifests of manually submitted public HTTPS URLs.
+The importer rejects credentials in URLs, local/private hostnames and anything
+not explicitly marked public. Login-gated, CAPTCHA/Cloudflare-protected,
+paywalled, private-profile, deleted and platform-restricted material is not
+collected or reconstructed. The controlled sample stores short exact excerpts,
+hashes and provenance rather than mirroring full articles.
+
+External material is isolated from court evidence. A status beyond
+`EXTERNAL_ONLY` or `UNKNOWN` requires a human-verified court link with an exact
+persisted citation; the read service additionally requires that citation to be
+resolved. External-only items create no court graph edge and are not eligible
+for the Phase 11 court-record retrieval whitelist.
+
 ## Future private-data separation
 
 Phase 4 holds public data only. If private material (e.g. a client's own working

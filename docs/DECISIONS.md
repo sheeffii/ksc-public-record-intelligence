@@ -1031,3 +1031,55 @@ Consequences:
 Relevant files:
 `apps/api/src/ksc_api/{observability.py,logging_config.py,main.py,routers/system.py}`,
 `ops/alerts/ksc-api.rules.yml`, and `docs/ingestion/PHASE13_OPERATIONS.md`.
+
+---
+
+## ADR-021 — External public sources are a separate provenance domain
+
+Date: 2026-09-22
+
+Status: Accepted
+
+Context:
+Phase 14 adds public news, institutional releases and public statements. Their
+availability on the internet does not make them part of the court record, and
+the approved Phase 1–13 design has no external-media artboard or route. Reusing
+court document, graph or AI categories would silently collapse that distinction.
+
+Decision:
+
+1. External publisher/source, item and exact-statement records live in dedicated
+   tables. The original/canonical URL, publication and capture timestamps,
+   access method, excerpt hash, transcript origin, repost state, verification and
+   coverage limitations remain explicit.
+2. `court_media_links` is the only external-to-court bridge. `EXTERNAL_ONLY` and
+   `UNKNOWN` may have no citation. Every stronger court status requires an exact
+   citation and human verification at the database boundary, and a resolved
+   citation at the read boundary.
+3. External search, timeline, graph and comparisons use the `/api/v1/media`
+   namespace. The new `/media` route is a minimal Phase 14 extension to the
+   approved shell, token and string-table systems. It displays external and court
+   results in separate panels and does not alter `docs/design/`.
+4. The Phase 11 court-record RAG whitelist remains unchanged. External sources
+   cannot be retrieved or promoted into court/evidence answer categories. A
+   future external-AI workflow requires a distinct source/answer category,
+   versioned prompt and validator review.
+5. Initial acquisition is manifest-driven manual public URL submission. It
+   stores only short reviewed excerpts and metadata, performs no crawl, and
+   rejects non-HTTPS, credential-bearing, local or non-public input.
+
+Consequences:
+
+- An external-only item produces no edge in the court bridge network and no
+  court status is inferred from textual similarity or repetition.
+- Neutral public-statement comparisons reuse the Phase 12 classification
+  vocabulary but retain external anchors; they cannot make credibility findings.
+- Facebook, TikTok and X coverage is explicitly absent rather than implied.
+- The Phase 14 real-data gate can pass with zero citation-backed court links when
+  no genuine relationship is established; it fails if any stronger status lacks
+  exact resolved provenance.
+
+Relevant files:
+`apps/api/src/ksc_api/models/media.py`, migration `0010`,
+`workers/ingestion/src/ksc_ingestion/external_media.py`,
+`docs/ingestion/manifests/phase14-external-media.json`, and `/media`.

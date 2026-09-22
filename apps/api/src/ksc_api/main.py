@@ -21,7 +21,7 @@ from ksc_api.config import get_settings
 from ksc_api.logging_config import configure_logging
 from ksc_api.observability import request_metrics, route_template
 from ksc_api.repositories.records import CaseNotConfiguredError
-from ksc_api.routers import ai, appeal, ingestion, records, system
+from ksc_api.routers import ai, appeal, ingestion, media, records, system
 
 MAX_REQUEST_BYTES = 10 * 1024 * 1024
 
@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
     app.include_router(ingestion.router)
     app.include_router(ai.router)
     app.include_router(appeal.router)
+    app.include_router(media.router)
 
     @app.middleware("http")
     async def _security_boundary(

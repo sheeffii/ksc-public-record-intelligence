@@ -279,6 +279,51 @@ export interface AppealWorkspaceView {
   limitations: readonly string[];
 }
 
+export type CourtMediaStatus =
+  | "external_only"
+  | "mentioned"
+  | "tendered"
+  | "admitted"
+  | "rejected"
+  | "discussed"
+  | "relied_upon"
+  | "unknown";
+
+export interface MediaWorkspaceView {
+  items: readonly {
+    id: string;
+    title: string;
+    publisher: string;
+    canonicalUrl: string;
+    publishedAt?: string;
+    capturedAt: string;
+    sourceType: string;
+    language: string;
+    courtStatuses: readonly CourtMediaStatus[];
+    verification: VerificationState;
+  }[];
+  comparisons: readonly {
+    id: string;
+    key: string;
+    title: string;
+    classification: string;
+    statementA: string;
+    statementB?: string;
+    explanation: string;
+    verification: VerificationState;
+  }[];
+  coverage: {
+    sources: number;
+    items: number;
+    statements: number;
+    courtLinks: number;
+    citationBackedCourtLinks: number;
+    comparisons: number;
+  };
+  taxonomy: readonly CourtMediaStatus[];
+  limitations: readonly string[];
+}
+
 export interface ArgumentLabView {
   issue: AppealIssueSummaryView;
   title: string;
@@ -317,6 +362,7 @@ export interface ResearchRepository {
   getAppealIssue(key: string): Promise<AppealIssueView | null>;
   getArgumentLab(key: string): Promise<ArgumentLabView | null>;
   listStatementComparisons(issueKey?: string): Promise<readonly StatementComparisonView[]>;
+  getMediaWorkspace(query?: string, courtStatus?: CourtMediaStatus): Promise<MediaWorkspaceView>;
 }
 
 export const REPOSITORY_METHODS = [
@@ -339,4 +385,5 @@ export const REPOSITORY_METHODS = [
   "getAppealIssue",
   "getArgumentLab",
   "listStatementComparisons",
+  "getMediaWorkspace",
 ] as const satisfies readonly (keyof ResearchRepository)[];

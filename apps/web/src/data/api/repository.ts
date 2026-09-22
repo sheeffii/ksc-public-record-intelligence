@@ -37,6 +37,7 @@ import type {
   ApiFindingDetail,
   ApiFindingSummary,
   ApiIncident,
+  ApiMediaWorkspace,
   ApiNetwork,
   ApiPage,
   ApiPerson,
@@ -202,6 +203,48 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
         issue_key: issueKey,
       });
       return (comparisons ?? []).map(map.toStatementComparison);
+    },
+
+    async getMediaWorkspace(query?: string, courtStatus?: import("../contract").CourtMediaStatus) {
+      const workspace = await client.get<ApiMediaWorkspace>("/media", {
+        q: query,
+        court_status: courtStatus,
+      });
+      if (!workspace) throw new Error("External public sources are unavailable");
+      return {
+        items: workspace.items.map((item) => ({
+          id: item.id,
+          title: item.title,
+          publisher: item.publisher,
+          canonicalUrl: item.canonical_url,
+          publishedAt: item.published_at ?? undefined,
+          capturedAt: item.captured_at,
+          sourceType: item.source_type,
+          language: item.language,
+          courtStatuses: item.court_statuses,
+          verification: map.toVerification(item.verification_state) ?? "unreviewed",
+        })),
+        comparisons: workspace.comparisons.map((comparison) => ({
+          id: comparison.id,
+          key: comparison.comparison_key,
+          title: comparison.title,
+          classification: comparison.classification,
+          statementA: comparison.statement_a.text,
+          statementB: comparison.statement_b?.text,
+          explanation: comparison.explanation,
+          verification: map.toVerification(comparison.verification_state) ?? "unreviewed",
+        })),
+        coverage: {
+          sources: workspace.coverage.sources,
+          items: workspace.coverage.items,
+          statements: workspace.coverage.statements,
+          courtLinks: workspace.coverage.court_links,
+          citationBackedCourtLinks: workspace.coverage.citation_backed_court_links,
+          comparisons: workspace.coverage.comparisons,
+        },
+        taxonomy: workspace.court_status_taxonomy,
+        limitations: workspace.limitations,
+      };
     },
   };
 }

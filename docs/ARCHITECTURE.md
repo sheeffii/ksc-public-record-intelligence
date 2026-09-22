@@ -217,6 +217,23 @@ reviews, if later created through the Phase 11 boundary, must reference an
 audited `ai_run`; the real controlled-corpus benchmark is human-reviewed and
 returns `insufficient_record` rather than filling missing material.
 
+### External public-source layer (ADR-021)
+
+Phase 14 is a sibling research layer, not an extension of the court evidence
+hierarchy. `external_sources`, `media_items` and `media_statements` retain
+lawfully public URL metadata, publication/capture timestamps, hashes and exact
+short excerpts. `court_media_links` is the only bridge into the court record.
+`MENTIONED`, `TENDERED`, `ADMITTED`, `REJECTED`, `DISCUSSED` and `RELIED_UPON`
+require a human-verified exact court citation; invalid links are withheld from
+the API even if malformed data is introduced outside the application.
+
+External search, timeline and network projections have their own `/api/v1/media`
+namespace. Combined search renders court and external results in separate panels.
+An `EXTERNAL_ONLY` item creates no court-network edge. The Phase 11 retrieval
+schema does not admit an external source category, so external material cannot
+silently enter a court-record answer. Future AI use needs an explicit external
+answer category and a separately reviewed prompt/validator contract.
+
 ## Cross-cutting rules enforced in code
 
 | Rule                                         | Where                                                                               |

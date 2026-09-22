@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "case_number": "KSC-BC-2020-06",
+  "collection_method": "manual_url",
+  "reviewed_by": "phase14-human-review",
+  "reviewed_at": "2026-09-22T15:00:00+02:00",
+  "coverage_limitations": [
+    "This is a small controlled sample, not a comprehensive media archive.",
+    "Private, login-gated, paywalled, deleted and access-controlled sources are excluded.",
+    "No comprehensive Facebook, TikTok or X collection was attempted.",
+    "No court-record relationship was inferred for any sample item."
+  ],
+  "items": [
+    {
+      "key": "birn-2024-07-23-zyrapi",
+      "platform": "web",
+      "source_type": "news_report",
+      "publisher": "Balkan Investigative Reporting Network",
+      "account": "BIRN",
+      "source_canonical_url": "https://balkaninsight.com/",
+      "canonical_url": "https://dev.balkaninsight.com/2024/07/23/ex-kla-supremos-testimony-at-thaci-trial-bolsters-both-prosecution-and-defence-cases/btj",
+      "original_url": "https://dev.balkaninsight.com/2024/07/23/ex-kla-supremos-testimony-at-thaci-trial-bolsters-both-prosecution-and-defence-cases/btj",
+      "title": "Ex-KLA Supremo's Testimony at Thaci Trial Bolsters Both Prosecution and Defence Cases",
+      "published_at": "2024-07-23T07:34:00+02:00",
+      "captured_at": "2026-09-22T15:00:00+02:00",
+      "language": "en",
+      "visibility": "public",
+      "access_status": "public",
+      "access_method": "manual_url",
+      "item_kind": "original",
+      "transcript_origin": "publisher_webpage",
+      "terms_note": "Public webpage inspected manually; only a short exact excerpt and metadata are retained.",
+      "coverage_note": "One openly accessible BIRN report; no site-wide crawl or paywalled content.",
+      "captured_text": "Bislim Zyrapi, former Chief of the Kosovo Liberation Army, KLA, General Staff, testified from July 1 to 18 in almost fully public sessions.",
+      "content_sha256": "3fe0a1e6be8a3b102a2b031b5052dd8398349b97d5a5468749c15fe8c8351bf3",
+      "source_metadata": { "byline": "Xhorxhina Bami", "capture_mode": "manual_public_page" },
+      "statements": [
+        {
+          "speaker": "BIRN report",
+          "text": "Bislim Zyrapi, former Chief of the Kosovo Liberation Army, KLA, General Staff, testified from July 1 to 18 in almost fully public sessions."
+        }
+      ],
+      "court_status": "external_only",
+      "court_status_note": "No exact court citation establishing a media-item relationship was located; the report remains external context."
+    },
+    {
+      "key": "birn-2023-12-07-mitchell",
+      "platform": "web",
+      "source_type": "news_report",
+      "publisher": "Balkan Investigative Reporting Network",
+      "account": "BIRN",
+      "source_canonical_url": "https://balkaninsight.com/",
+      "canonical_url": "https://dev.balkaninsight.com/2023/12/07/thaci-trial-witness-links-revenge-crimes-to-people-in-kla-insignia/btj",
+      "original_url": "https://dev.balkaninsight.com/2023/12/07/thaci-trial-witness-links-revenge-crimes-to-people-in-kla-insignia/btj",
+      "title": "Thaci Trial Witness Links Revenge Crimes to People in KLA Insignia",
+      "published_at": "2023-12-07T18:32:00+01:00",
+      "captured_at": "2026-09-22T15:00:00+02:00",
+      "language": "en",
+      "visibility": "public",
+      "access_status": "public",
+      "access_method": "manual_url",
+      "item_kind": "original",
+      "transcript_origin": "publisher_webpage",
+      "terms_note": "Public webpage inspected manually; only a short exact excerpt and metadata are retained.",
+      "coverage_note": "One openly accessible BIRN report; no site-wide crawl or paywalled content.",
+      "captured_text": "Thaci attributed many crimes of revenge to 'individuals not related to KLA' but using its uniform.",
+      "content_sha256": "12c41944ab4b515817b27deaed290b20ec77001d1eb34f4497572b17f0907d92",
+      "source_metadata": { "byline": "Xhorxhina Bami", "capture_mode": "manual_public_page" },
+      "statements": [
+        {
+          "speaker": "BIRN report",
+          "text": "Thaci attributed many crimes of revenge to 'individuals not related to KLA' but using its uniform."
+        }
+      ],
+      "court_status": "external_only",
+      "court_status_note": "No exact court citation establishing a media-item relationship was located; the report remains external context."
+    },
+    {
+      "key": "hrw-2023-03-31-trial",
+      "platform": "web",
+      "source_type": "institutional_release",
+      "publisher": "Human Rights Watch",
+      "account": null,
+      "source_canonical_url": "https://www.hrw.org/",
+      "canonical_url": "https://www.hrw.org/news/2023/03/31/kosovo-war-crimes-trial-begin-hague",
+      "original_url": "https://www.hrw.org/news/2023/03/31/kosovo-war-crimes-trial-begin-hague",
+      "title": "Kosovo: War Crimes Trial to Begin in The Hague",
+      "published_at": "2023-03-31T00:00:00-04:00",
+      "captured_at": "2026-09-22T15:00:00+02:00",
+      "language": "en",
+      "visibility": "public",
+      "access_status": "public",
+      "access_method": "manual_url",
+      "item_kind": "original",
+      "transcript_origin": "publisher_webpage",
+      "terms_note": "Public institutional webpage inspected manually; only a short exact excerpt and metadata are retained.",
+      "coverage_note": "One openly accessible institutional release; no site-wide crawl.",
+      "captured_text": "Before the Kosovo Specialist Chambers, the defendants are entitled to a range of fair trial guarantees, including the presumption of innocence.",
+      "content_sha256": "07b8eb5a88dd6adb56f977e902d5e29959ea866a937a6563f2a980dc30a4f31b",
+      "source_metadata": {
+        "publisher_type": "human_rights_organization",
+        "capture_mode": "manual_public_page"
+      },
+      "statements": [
+        {
+          "speaker": "Human Rights Watch",
+          "text": "Before the Kosovo Specialist Chambers, the defendants are entitled to a range of fair trial guarantees, including the presumption of innocence."
+        }
+      ],
+      "court_status": "external_only",
+      "court_status_note": "No exact court citation establishing a media-item relationship was located; the release remains external context."
+    }
+  ],
+  "comparisons": [
+    {
+      "key": "birn-report-contexts-001",
+      "title": "Two reports concerning different public testimony contexts",
+      "item_a": "birn-2024-07-23-zyrapi",
+      "statement_a": 1,
+      "item_b": "birn-2023-12-07-mitchell",
+      "statement_b": 1,
+      "classification": "not_comparable",
+      "explanation": "The exact excerpts concern different speakers, subjects and dates; the controlled record does not support a contradiction or consistency finding."
+    }
+  ]
+}

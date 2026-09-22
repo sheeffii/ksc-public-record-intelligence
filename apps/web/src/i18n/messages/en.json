@@ -19,6 +19,7 @@
     "timeline": "Timeline",
     "network": "Network",
     "appeal": "Appeal",
+    "media": "External Sources",
     "ai": "AI Research",
     "public": "Simple mode",
     "more": "More",
@@ -201,6 +202,7 @@
     "network": "Network Explorer",
     "evidencePath": "Evidence Path",
     "appeal": "Potential Issues for Review",
+    "media": "External Media & Public Statements",
     "argumentLab": "Argument Lab + Red Team",
     "ai": "AI Research",
     "aiSession": "AI Research — saved session",
@@ -893,6 +895,47 @@
       "timeline_difference": "Timeline Difference",
       "consistent": "Consistent",
       "not_comparable": "Not Comparable"
+    }
+  },
+  "media": {
+    "eyebrow": "EXTERNAL PUBLIC SOURCES",
+    "title": "External media and public statements",
+    "description": "Lawfully public context kept structurally separate from the court record and court evidence.",
+    "searchModes": "Search mode",
+    "query": "Search terms",
+    "mode": "Source scope",
+    "courtOnly": "Court Record Only",
+    "externalOnly": "External Public Sources",
+    "both": "Both — clearly separated",
+    "search": "Search",
+    "statusFilter": "Court status",
+    "boundaryBadge": "EXTERNAL PUBLIC SOURCE",
+    "boundary": "Public availability does not make this material court evidence. A stronger court status requires an exact verified court citation.",
+    "externalResults": "External public sources",
+    "courtResults": "Court-record results",
+    "externalBadge": "EXTERNAL PUBLIC SOURCE",
+    "courtBadge": "COURT RECORD",
+    "openExternalSource": "Open public source",
+    "dateUnknown": "Publication date unknown",
+    "noResults": "No results in this source layer.",
+    "coverageLimitations": "Coverage limitations",
+    "comparisons": "Public statement comparison",
+    "classification": {
+      "possible_contradiction": "POSSIBLE CONTRADICTION",
+      "qualification": "QUALIFICATION",
+      "timeline_difference": "TIMELINE DIFFERENCE",
+      "consistent": "CONSISTENT",
+      "not_comparable": "NOT COMPARABLE"
+    },
+    "status": {
+      "external_only": "EXTERNAL ONLY",
+      "mentioned": "MENTIONED IN COURT RECORD",
+      "tendered": "TENDERED",
+      "admitted": "ADMITTED COURT EXHIBIT",
+      "rejected": "REJECTED",
+      "discussed": "COURT-DISCUSSED",
+      "relied_upon": "COURT-RELIED MATERIAL",
+      "unknown": "STATUS UNKNOWN"
     }
   },
   "phase11": {

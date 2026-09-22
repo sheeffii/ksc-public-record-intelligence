@@ -117,6 +117,7 @@ export const ROUTES: readonly RouteSpec[] = [
   { key: "network", pattern: "/network", artboard: "03", mode: "dark", nav: "network" },
   { key: "evidencePath", pattern: "/network/path", artboard: "20", mode: "dark", nav: "network" },
   { key: "appeal", pattern: "/appeal", artboard: "13", mode: "dark", nav: "appeal" },
+  { key: "media", pattern: "/media", artboard: null, mode: "dark", nav: "media" },
   {
     key: "argumentLab",
     pattern: "/appeal/argument/:id",
@@ -156,6 +157,7 @@ export const PRIMARY_NAV: readonly NavItem[] = [
   { key: "incidents", href: "/incidents", overflow: true },
   { key: "timeline", href: "/timeline", overflow: true },
   { key: "appeal", href: "/appeal", overflow: true },
+  { key: "media", href: "/media", overflow: true },
   { key: "ai", href: "/ai", isAi: true },
 ];
 

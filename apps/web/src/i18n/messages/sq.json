@@ -19,6 +19,7 @@
     "timeline": "Kronologjia",
     "network": "Rrjeti",
     "appeal": "Apeli",
+    "media": "Burimet e jashtme",
     "ai": "Hulumtim me IA",
     "public": "Mënyra e thjeshtë",
     "more": "Më shumë",
@@ -201,6 +202,7 @@
     "network": "Eksploruesi i rrjetit",
     "evidencePath": "Rruga e provave",
     "appeal": "Çështje potenciale për shqyrtim",
+    "media": "Media e jashtme dhe deklaratat publike",
     "argumentLab": "Laboratori i argumenteve + Ekipi i kuq",
     "ai": "Hulumtim me IA",
     "aiSession": "Hulumtim me IA — sesion i ruajtur",
@@ -893,6 +895,47 @@
       "timeline_difference": "Dallim në kronologji",
       "consistent": "Në përputhje",
       "not_comparable": "E pakrahasueshme"
+    }
+  },
+  "media": {
+    "eyebrow": "BURIME PUBLIKE TË JASHTME",
+    "title": "Media e jashtme dhe deklaratat publike",
+    "description": "Kontekst publik i ligjshëm, i mbajtur strukturisht ndaras nga regjistri dhe provat gjyqësore.",
+    "searchModes": "Mënyra e kërkimit",
+    "query": "Fjalët e kërkimit",
+    "mode": "Fushëveprimi i burimit",
+    "courtOnly": "Vetëm regjistri gjyqësor",
+    "externalOnly": "Burime publike të jashtme",
+    "both": "Të dyja — qartësisht të ndara",
+    "search": "Kërko",
+    "statusFilter": "Statusi gjyqësor",
+    "boundaryBadge": "BURIM PUBLIK I JASHTËM",
+    "boundary": "Disponueshmëria publike nuk e bën materialin provë gjyqësore. Një status më i fortë kërkon citim të saktë dhe të verifikuar gjyqësor.",
+    "externalResults": "Burimet publike të jashtme",
+    "courtResults": "Rezultatet nga regjistri gjyqësor",
+    "externalBadge": "BURIM PUBLIK I JASHTËM",
+    "courtBadge": "REGJISTËR GJYQËSOR",
+    "openExternalSource": "Hap burimin publik",
+    "dateUnknown": "Data e publikimit nuk dihet",
+    "noResults": "Nuk ka rezultate në këtë shtresë burimore.",
+    "coverageLimitations": "Kufizimet e mbulimit",
+    "comparisons": "Krahasimi i deklaratave publike",
+    "classification": {
+      "possible_contradiction": "KUNDËRTHËNIE E MUNDSHME",
+      "qualification": "CILËSIM",
+      "timeline_difference": "DALLIM NË KRONOLOGJI",
+      "consistent": "NË PËRPUTHJE",
+      "not_comparable": "E PAKRAHASUESHME"
+    },
+    "status": {
+      "external_only": "VETËM I JASHTËM",
+      "mentioned": "PËRMENDUR NË REGJISTRIN GJYQËSOR",
+      "tendered": "DORËZUAR",
+      "admitted": "PROVË GJYQËSORE E PRANUAR",
+      "rejected": "REFUZUAR",
+      "discussed": "TRAJTUAR NGA GJYKATA",
+      "relied_upon": "MATERIAL KU ËSHTË MBËSHTETUR GJYKATA",
+      "unknown": "STATUS I PANJOHUR"
     }
   },
   "phase11": {

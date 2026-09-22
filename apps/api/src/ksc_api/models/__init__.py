@@ -83,6 +83,15 @@ from ksc_api.models.evidence import (
 from ksc_api.models.graph import NODE_FK_COLUMNS, GraphNode, Relationship
 from ksc_api.models.hearing import Hearing, Transcript, TranscriptSegment, WitnessAppearance
 from ksc_api.models.ingestion import IngestionJob, IngestionJobItem
+from ksc_api.models.media import (
+    COMPARISON_CLASSES,
+    COURT_MEDIA_STATUSES,
+    CourtMediaLink,
+    ExternalSource,
+    MediaItem,
+    MediaStatement,
+    MediaStatementComparison,
+)
 from ksc_api.models.operations import (
     ArtifactAcquisition,
     ArtifactQuarantine,
@@ -93,6 +102,8 @@ from ksc_api.models.research import ResearchNote, ResearchNoteCitation
 from ksc_api.models.source_record import SourceRecord
 
 __all__ = [
+    "COMPARISON_CLASSES",
+    "COURT_MEDIA_STATUSES",
     "INGESTION_FAILURE_STATUSES",
     "NODE_FK_COLUMNS",
     "PUBLIC_VISIBILITIES",
@@ -121,6 +132,7 @@ __all__ = [
     "ClaimMention",
     "ClaimOrigin",
     "ClaimStance",
+    "CourtMediaLink",
     "DatePrecision",
     "DateType",
     "Document",
@@ -135,6 +147,7 @@ __all__ = [
     "Event",
     "ExaminationType",
     "Exhibit",
+    "ExternalSource",
     "Finding",
     "FindingEvidenceLink",
     "FindingLinkType",
@@ -147,6 +160,9 @@ __all__ = [
     "IngestionJobItem",
     "IngestionJobStatus",
     "Location",
+    "MediaItem",
+    "MediaStatement",
+    "MediaStatementComparison",
     "Organization",
     "Party",
     "Person",

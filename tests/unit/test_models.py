@@ -37,6 +37,13 @@ PHASE13_TABLES = {
     "artifact_quarantine",
     "processing_runs",
 }
+PHASE14_TABLES = {
+    "external_sources",
+    "media_items",
+    "media_statements",
+    "court_media_links",
+    "media_statement_comparisons",
+}
 PHASE6_TABLES = {
     "source_records",
     "document_versions",
@@ -89,7 +96,18 @@ def test_schema_contains_phase4_foundation_and_phase6_evidence_model():
         | PHASE11_TABLES
         | PHASE12_TABLES
         | PHASE13_TABLES
+        | PHASE14_TABLES
     )
+
+
+def test_external_media_is_public_only_and_court_status_is_provenance_guarded():
+    assert "ck_external_sources_public_only" in _checks("external_sources")
+    assert "ck_media_items_held_items_public_only" in _checks("media_items")
+    assert {
+        "ck_court_media_links_court_status_allowed",
+        "ck_court_media_links_court_status_requires_citation",
+        "ck_court_media_links_court_status_requires_human_verification",
+    } <= _checks("court_media_links")
 
 
 def test_document_keeps_the_three_date_types_separate():

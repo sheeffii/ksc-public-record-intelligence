@@ -179,16 +179,29 @@ links unchanged. It adds one `NEEDS_MORE_EVIDENCE` issue, five human-verified
 source links, one human-verified two-citation comparison, one human red-team
 review, four red-team findings, and four explicit missing-material rows.
 
+## External media and public statements
+
+These tables are outside the court-record hierarchy. Public availability is
+provenance, not proof, and never implies admission or reliance.
+
+| table                         | purpose                               | key columns / rules                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `external_sources`            | public publisher/platform provenance  | case + canonical URL unique; platform, source type, publisher/account, language, public visibility, permitted access method, terms and coverage notes; public-only CHECK and verification.                                                                                                                                              |
+| `media_items`                 | one captured public URL               | original/canonical URL, title/publisher, distinct publication and capture timestamps, language, exact captured-text SHA-256, transcript origin, original/repost/clip/embed state, archive metadata and public-only access state.                                                                                                        |
+| `media_statements`            | exact source fragment                 | ordered item anchor, optional confidently public person link, speaker label, exact text/hash, character or timecode coordinates, transcript origin and verification. Protected witness identity is never inferred.                                                                                                                      |
+| `court_media_links`           | the sole external-to-court bridge     | explicit status (`external_only`, `mentioned`, `tendered`, `admitted`, `rejected`, `discussed`, `relied_upon`, `unknown`); every status beyond external/unknown requires a court citation and human verification. Runtime also requires that citation to resolve. Optional document/exhibit/finding anchors never replace the citation. |
+| `media_statement_comparisons` | neutral comparison over exact sources | external statement A plus exactly one external statement or court citation B; only Possible Contradiction, Qualification, Timeline Difference, Consistent or Not Comparable; explanation, extraction origin and verification, never credibility.                                                                                        |
+
 ## Invariants tested
 
-- The table set is exactly the 3 Phase 4 + 34 Phase 6 + 1 Phase 7 + 1 Phase 8 +
-  2 Phase 11 + 6 Phase 12 tables; `alembic check` reports no drift between
+- The table set includes the foundation through Phase 13 plus the five Phase 14
+  external-source tables; `alembic check` reports no drift between
   models and the migrated schema.
 - No person field contains score / rank / rating / weight / priority /
   probability / likelihood. The only rank/value fields added in Phase 11 order
   retrieved passages and cannot reference a person.
-- The migration chain preserves existing records; the Phase 12
-  `0007 → 0008 → 0007 → 0008` round trip is clean and `alembic check` reports
+- The migration chain preserves existing records; the current
+  `0009 → 0010 → 0009 → 0010` round trip is clean and `alembic check` reports
   no model/schema drift.
 - Protected witness without identity; page and line validation; SHA-256
   duplicates; resolved/unresolved target consistency; mandatory relationship

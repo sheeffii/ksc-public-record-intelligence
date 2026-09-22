@@ -100,3 +100,26 @@ def test_arbitrary_ai_analysis_is_rejected_even_when_it_names_a_whitelisted_sour
         )
     )
     assert "UNSUPPORTED_CLAIM" in {error.code for error in validate_response(response, (item,))}
+
+
+def test_external_media_cannot_be_promoted_into_a_court_answer_category():
+    external = ProviderSource(
+        id="external-1",
+        category="external_public_source",
+        ref="https://example.invalid/public",
+        citation="EXTERNAL PUBLIC SOURCE",
+        text="A public statement outside the court record.",
+    )
+    response = ProviderResponse(
+        claims=(
+            ProviderClaim(
+                kind="evidence",
+                text=external.text,
+                content_type="verbatim_quote",
+                source_ids=(external.id,),
+            ),
+        )
+    )
+    assert "CITATION_DOES_NOT_SUPPORT_CLAIM" in {
+        error.code for error in validate_response(response, (external,))
+    }

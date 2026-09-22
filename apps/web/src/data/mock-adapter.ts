@@ -43,5 +43,28 @@ export function createMockRepositoryAdapter(
     getAppealIssue: async () => null,
     getArgumentLab: async () => null,
     listStatementComparisons: async () => [],
+    getMediaWorkspace: async () => ({
+      items: [],
+      comparisons: [],
+      coverage: {
+        sources: 0,
+        items: 0,
+        statements: 0,
+        courtLinks: 0,
+        citationBackedCourtLinks: 0,
+        comparisons: 0,
+      },
+      taxonomy: [
+        "external_only",
+        "mentioned",
+        "tendered",
+        "admitted",
+        "rejected",
+        "discussed",
+        "relied_upon",
+        "unknown",
+      ],
+      limitations: [],
+    }),
   };
 }

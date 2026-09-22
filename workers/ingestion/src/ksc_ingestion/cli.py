@@ -41,6 +41,12 @@ from ksc_ingestion.capture import BundleError, load_bundle, load_inventory
 from ksc_ingestion.capture_import import SourceImportError, import_capture
 from ksc_ingestion.corpus_manifest import build_manifest, validate_manifest_file, write_manifest
 from ksc_ingestion.evidence_pipeline import Phase9Pipeline
+from ksc_ingestion.external_media import (
+    MediaManifestError,
+    import_media_manifest,
+    run_phase14_gate,
+    write_phase14_report,
+)
 from ksc_ingestion.fetch import HttpFetcher
 from ksc_ingestion.findings_pipeline import Phase10Pipeline
 from ksc_ingestion.findings_quality_gate import run_phase10_gate, write_phase10_report
@@ -485,6 +491,49 @@ def cmd_gate_phase13(args: argparse.Namespace) -> int:
     return 0 if report.completion_ready else 1
 
 
+def cmd_import_media(args: argparse.Namespace) -> int:
+    """Import a reviewed manifest of manually submitted public URLs; no network access."""
+    settings = get_settings()
+    try:
+        with get_sessionmaker()() as session:
+            case = session.scalar(select(Case).where(Case.case_number == settings.case_id))
+            if case is None:
+                print(f"case {settings.case_id} is not seeded", file=sys.stderr)
+                return 2
+            result = import_media_manifest(session, case, Path(args.manifest))
+    except MediaManifestError as exc:
+        print(f"media manifest rejected: {exc}", file=sys.stderr)
+        return 2
+    print(
+        f"sources={result.sources} items={result.items} statements={result.statements} "
+        f"court_links={result.court_links} comparisons={result.comparisons}"
+    )
+    return 0
+
+
+def cmd_gate_phase14(args: argparse.Namespace) -> int:
+    """Audit the controlled real external-source set and the court/source boundary."""
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        case = session.scalar(select(Case).where(Case.case_number == settings.case_id))
+        if case is None:
+            print(f"case {settings.case_id} is not seeded", file=sys.stderr)
+            return 2
+        report = run_phase14_gate(session, case, Path(args.manifest), args.generated_at)
+    print(
+        f"sources={report.real_public_sources} items={report.real_public_items} "
+        f"statements={report.exact_statements} links={report.court_links} "
+        f"invalid_links={report.invalid_court_links} comparisons={report.comparisons} "
+        f"manifest_mismatches={report.manifest_item_mismatches} "
+        f"verification_violations={report.verification_violations} "
+        f"passed={str(report.passed).lower()}"
+    )
+    if args.json:
+        write_phase14_report(report, Path(args.json))
+        print(f"report written to {args.json}")
+    return 0 if report.passed else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ksc-ingest", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -613,6 +662,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_phase13_gate.add_argument("--minimum-records", type=int, default=50)
     p_phase13_gate.add_argument("--json")
     p_phase13_gate.set_defaults(func=cmd_gate_phase13)
+    p_media = sub.add_parser(
+        "import-media", help="import reviewed external public URLs from a Phase 14 manifest"
+    )
+    p_media.add_argument("manifest")
+    p_media.set_defaults(func=cmd_import_media)
+    p_phase14_gate = sub.add_parser(
+        "gate-phase14", help="audit real external sources and the court-record boundary"
+    )
+    p_phase14_gate.add_argument(
+        "--manifest", default="docs/ingestion/manifests/phase14-external-media.json"
+    )
+    p_phase14_gate.add_argument("--generated-at", default="2026-09-22")
+    p_phase14_gate.add_argument("--json")
+    p_phase14_gate.set_defaults(func=cmd_gate_phase14)
     return parser
 
 
