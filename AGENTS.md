@@ -31,3 +31,19 @@ Instructions for any AI coding agent working in this repository.
     `docs/DECISIONS.md` when they change.
 12. Commits: Conventional Commits, short, no AI attribution trailers. Never push
     unless explicitly told to.
+
+## Context Efficiency Rule
+
+For phase execution:
+
+1. Read AGENTS.md, PROJECT_STATE.md, MEMORY.md and the active phase roadmap.
+2. Do not recursively read all previous phase documentation.
+3. Consult older phase docs only when a current requirement depends on them.
+4. Inspect code with targeted searches rather than broad repository reads.
+5. Run focused tests during implementation.
+6. Run the full repository regression suite only at the final verification gate.
+7. Do not repeatedly rerun unchanged full test suites after small edits.
+8. Prefer existing repository patterns over broad refactors.
+9. Keep phase implementation, verification and closeout as separate checkpoints.
+10. Update PROJECT_STATE.md after each checkpoint so the next agent does not
+    need to reconstruct prior reasoning.
