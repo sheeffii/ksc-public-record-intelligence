@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-22 (Phase 15 complete)
+Last updated: 2026-09-22 (Phase 15 pushed; Phase 16 branch started, implementation pending)
 
 ## Milestones
 
@@ -505,11 +505,10 @@ Phase 12 was completed, fast-forwarded to `main`, pushed, and tagged
 `d00e7bf`; its feature branch and annotated `phase-13-complete` tag were also
 pushed. Phase 14 was fast-forwarded to `main` and pushed through roadmap commit
 `efc4ee3`; its feature branch and annotated `phase-14-complete` tag at
-`5717d24` were pushed. Phase 15 branch
-`feat/phase-15-real-data-ui-completion-and-demo-removal` starts from `efc4ee3`;
-its implementation commits are `5470511` and `0c2c40d`. Phase 15 is complete
-and tagged locally as `phase-15-complete`; neither the branch nor tag has been
-pushed.
+`5717d24` were pushed. Phase 15 was fast-forwarded to `main` and pushed at
+`01cb693`; its feature branch and annotated `phase-15-complete` tag were also
+pushed. Phase 16 branch `feat/phase-16-production-readiness-security-beta`
+starts from `01cb693`; implementation has not begun.
 
 ## Verification limitations
 

@@ -4,18 +4,16 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-15-real-data-ui-completion-and-demo-removal`,
-  created from updated `main` = `efc4ee3`. Phase 15 implementation commits are
-  `5470511` and `0c2c40d`; closeout is complete.
+- Current branch: `feat/phase-16-production-readiness-security-beta`, created
+  from updated `main` = `01cb693`. Phase 16 implementation has not started.
 - Current milestone: **Phase 15 COMPLETE (2026-09-22)**. Production routes
   default to real APIs or honest empty states, demo fallbacks are absent from
   normal routes, parsed Reader content is coordinate-filtered, and entity views
   remain honest and privacy-safe. Phase 16 is next/pending and has not started.
-- Push state (2026-09-22): `main` fast-forwarded to `efc4ee3` and pushed with
-  Phase 14 plus the Phase 15–17 roadmap files; annotated tag
-  `phase-14-complete` and the Phase 14 feature branch were pushed.
-- Latest completion tag: annotated `phase-15-complete`, local and not pushed.
-- Phase 14 is on `main`; its feature branch is preserved on `origin`.
+- Push state (2026-09-22): `main` fast-forwarded to `01cb693` and pushed;
+  annotated tag `phase-15-complete` and the Phase 15 feature branch were pushed.
+- Latest completion tag: annotated `phase-15-complete` at `01cb693`, pushed.
+- Phase 15 is on `main`; its feature branch is preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
 - Migration head and live database revision: `0010`.
