@@ -5,16 +5,16 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `feat/phase-15-real-data-ui-completion-and-demo-removal`,
-  created from updated `main` = `efc4ee3`. Phase 15 implementation checkpoint
-  is commit `5470511`; final verification and closeout are pending.
-- Current milestone: **Phase 15 IMPLEMENTATION CHECKPOINT (2026-09-22)**.
-  Production routes default to real APIs, demo fallbacks are absent from normal
-  routes, parsed reader content is coordinate-filtered, and real-empty entity
-  views remain honest and privacy-safe. Phase 15 is not complete.
+  created from updated `main` = `efc4ee3`. Phase 15 implementation commits are
+  `5470511` and `0c2c40d`; closeout is complete.
+- Current milestone: **Phase 15 COMPLETE (2026-09-22)**. Production routes
+  default to real APIs or honest empty states, demo fallbacks are absent from
+  normal routes, parsed Reader content is coordinate-filtered, and entity views
+  remain honest and privacy-safe. Phase 16 is next/pending and has not started.
 - Push state (2026-09-22): `main` fast-forwarded to `efc4ee3` and pushed with
   Phase 14 plus the Phase 15–17 roadmap files; annotated tag
   `phase-14-complete` and the Phase 14 feature branch were pushed.
-- Latest completion tag: annotated `phase-14-complete` at `5717d24`, pushed.
+- Latest completion tag: annotated `phase-15-complete`, local and not pushed.
 - Phase 14 is on `main`; its feature branch is preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
@@ -230,6 +230,16 @@ Live checkpoint. Repository state wins over this note.
 
 ## Verification
 
+- Phase 15 final evidence: lint/format, 283 backend tests, 236 frontend tests,
+  strict typecheck and production build pass. Targeted frontend verification is
+  28/28 and Phase 15 desktop/mobile Playwright is 38/38.
+- The route gate confirms real API or honest empty-state behavior with no normal
+  production demo dependency. Reader exact-source access, 48 readable Network
+  nodes / 178 provenance-backed edges, Findings list/detail hierarchy, Search
+  source separation and the approved homepage hierarchy pass verification.
+- The current structured / verified projections contain 0 Person, Witness and
+  Exhibit records. This does not establish that the underlying public court
+  record contains none. Protected-witness safeguards remain intact.
 - Phase 14 closeout ran `make lint`, `make typecheck`, `make test` (283 backend
   - 204 frontend), `make build`, migration `0009 → 0010 → 0009 → 0010`,
     `alembic check`, the real-data gate, rebuilt Docker API/web readiness and live
@@ -305,12 +315,10 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Continue Phase 15 from implementation commit `5470511`. Run the deferred final
-repository gates, build and desktop/mobile Playwright route audit; reconcile any
-findings; then perform the roadmap closeout only if every acceptance criterion
-passes. Do not start Phase 16. Existing non-blocking follow-ups remain: review
-quarantined `r31`; the court corpus and external media set are samples;
-performance figures are local only.
+Phase 15 is complete. Phase 16 is next/pending; do not begin it without explicit
+authorization. Existing non-blocking follow-ups remain: review quarantined
+`r31`; the court corpus and external media set are samples; performance figures
+are local only.
 
 ## Non-negotiable rules
 

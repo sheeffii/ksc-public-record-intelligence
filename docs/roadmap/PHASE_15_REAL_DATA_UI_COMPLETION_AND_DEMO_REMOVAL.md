@@ -1,6 +1,10 @@
 # Phase 15 — Real Data UI Completion & Demo Removal
 
-**Status:** Pending. Execute only after Phase 14 is complete or formally deferred.
+**Status:** COMPLETE (2026-09-22).
+
+- Final verified implementation: `0c2c40d`
+- Closeout commit: the commit carrying this completion record
+- Tag: `phase-15-complete`
 
 ## Goal
 
@@ -309,16 +313,33 @@ Completion requires zero unapproved demo dependencies on normal production route
 
 Phase 15 is complete when:
 
-- every normal production route is audited;
-- all production routes use real APIs or honest empty states;
-- demo/mock data is removed from normal production execution;
-- Reader displays real parsed court material;
-- People/Witness behavior is source-backed and privacy-safe;
-- Findings/Network/Timeline/Search use real data;
-- External/Court source boundaries remain intact;
-- route-level real-data gate passes;
-- desktop/mobile real-data Playwright passes;
-- no prior provenance/verification rule is weakened.
+- [x] every normal production route is audited;
+- [x] all production routes use real APIs or honest empty states;
+- [x] demo/mock data is removed from normal production execution;
+- [x] Reader displays real parsed court material;
+- [x] People/Witness behavior is source-backed and privacy-safe;
+- [x] Findings/Network/Timeline/Search use real data;
+- [x] External/Court source boundaries remain intact;
+- [x] route-level real-data gate passes;
+- [x] desktop/mobile real-data Playwright passes;
+- [x] no prior provenance/verification rule is weakened.
+
+## Completion Record
+
+Completed 2026-09-22. Implementation commits `5470511` and `0c2c40d`, with
+checkpoint `e06455e`, remove demo dependencies from normal production routes
+and preserve real API or honest empty-state behavior. Documents and Reader use
+parsed Court data with exact-source navigation; Findings, Network, Timeline and
+Search use their real-data paths; Court and External provenance remain separate;
+and protected-witness safeguards remain intact. The current structured /
+verified projections contain 0 Person, Witness and Exhibit records; this does
+not establish that the underlying public court record contains none.
+
+Recorded gates pass: lint/format, 283 backend tests, 236 frontend tests, strict
+typecheck, production build, 28/28 targeted frontend checks, and 38/38 Phase 15
+desktop/mobile Playwright checks. Network verification rendered 48 readable
+nodes and 178 provenance-backed edges. The approved homepage, Findings and
+Network hierarchy was verified after remediation. No Phase 16 work was begun.
 
 ## Stop condition
 

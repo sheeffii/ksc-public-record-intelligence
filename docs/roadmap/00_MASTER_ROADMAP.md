@@ -78,8 +78,8 @@ The original core roadmap contains **13 numbered phases**. Five additional miles
 | 12 | Appeal Research, Red Team & Statement Comparison | **COMPLETE (2026-09-21)** |
 | 13 | Gradual Full Public Corpus Ingestion & Production Hardening | **COMPLETE (2026-09-22)** |
 | 14 | External Media & Public Statements Intelligence | **COMPLETE (2026-09-22)** — controlled real-public-source gate PASS |
-| 15 | Real Data UI Completion & Demo Removal | **NEXT / PENDING** |
-| 16 | Production Readiness, Security & Lawyer Beta | **PENDING** — depends on Phase 15 |
+| 15 | Real Data UI Completion & Demo Removal | **COMPLETE (2026-09-22)** |
+| 16 | Production Readiness, Security & Lawyer Beta | **NEXT / PENDING** |
 | 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **PENDING** — depends on Phase 16 unless explicitly approved otherwise |
 
 ## Recommended execution order from now
@@ -114,13 +114,12 @@ Phase 17
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
 
-Current checkpoint: Phase 14 is complete. Migration `0010` adds a provenance-
-isolated external-public-source layer; a controlled set of 3 public pages from
-2 publishers passes the real-data gate with 3 exact statements, 1 neutral
-comparison, 0 invalid court links and 0 access violations. All items remain
-`EXTERNAL_ONLY` because no exact court relationship was established. Coverage
-is explicitly non-comprehensive. Phase 15 is next/pending; no Phase 15
-implementation has begun.
+Current checkpoint: Phase 15 is complete. Normal production routes default to
+real APIs or honest empty states, with no demo dependency; Documents and Reader
+use parsed Court data, and the real-data route gate passes across desktop and
+mobile. The current structured / verified projections contain 0 Person,
+Witness and Exhibit records; this does not establish that the underlying public
+court record contains none. Phase 16 is next/pending and has not begun.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

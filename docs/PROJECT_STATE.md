@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-22 (Phase 15B verification checkpoint; closeout pending)
+Last updated: 2026-09-22 (Phase 15 complete)
 
 ## Milestones
 
@@ -22,8 +22,8 @@ Last updated: 2026-09-22 (Phase 15B verification checkpoint; closeout pending)
 | **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                            |
 | **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
 | **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
-| **15** | **Real data UI completion and demo removal**                                                              | **Implementation checkpoint** — final verification and closeout pending                                  |
-| **16** | **Production readiness, security and lawyer beta**                                                        | **Pending** — depends on Phase 15                                                                        |
+| **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                            |
+| **16** | **Production readiness, security and lawyer beta**                                                        | **Next / Pending**                                                                                       |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **Pending** — depends on Phase 16 unless explicitly approved otherwise                                   |
 
 ## Roadmap
@@ -36,11 +36,11 @@ criteria. Phase 13 is complete: the second lawful operator-assisted capture
 raised the corpus to 62 source records / 61 held versions and the real-scale
 gate passes at 61/50. Phase 14 is complete: 3 controlled public pages from 2
 publishers pass the external-source gate while remaining structurally separate
-and `EXTERNAL_ONLY`. Phase 15 implementation is coherent at commit `5470511`:
-production routes default to real APIs, demo fallbacks are removed from normal
-routes, and the route audit is recorded. Final verification and closeout remain
-pending. Repository code, migrations, tests and Git state win over stale
-roadmap text.
+and `EXTERNAL_ONLY`. Phase 15 is complete: production routes default to real
+APIs or honest empty states, demo fallbacks are removed from normal routes, and
+the desktop/mobile route-level gate passes. Phase 16 is next/pending and has not
+begun. Repository code, migrations, tests and Git state win over stale roadmap
+text.
 
 ## Completed features (Phase 4)
 
@@ -427,48 +427,30 @@ check` and `head → base → head` are integration-tested.
   Playwright tests pass; lint, typecheck, build, migration round-trip, drift,
   live readiness and API probes pass.
 
-## Phase 15 implementation checkpoint
+## Completed features (Phase 15)
 
-- `docs/quality/REAL_DATA_ROUTE_AUDIT.md` classifies every production route and
-  records its real endpoint, current corpus count, provenance behavior and
-  verification coverage. No production route is classified as `MIXED` or
-  `DEMO`; source-backed categories without reviewed rows render honest empty
-  states.
-- The unset/default web data source is the API. Explicit mock mode remains only
-  for tests, stories and visual QA; production route modules no longer import
-  fixtures or synthetic identifiers.
-- Directories, homepage, public views, person/witness/incident detail, Evidence
-  and Search now read repository data. Search exposes Court, External and Both
-  modes while keeping the result domains visibly separate.
-- Document Reader loads coordinate-filtered parsed chunks and shows exact source
-  or PDF coordinates, version, parser, artifact, review and public-state
-  metadata plus the official source link. It does not invent missing text or
-  coordinates.
-- Witnesses remain structurally code-only when protected. Court and External
-  provenance remain separate, and empty entity projections do not become
-  inferred records.
-- Focused implementation checks pass: 90 frontend tests, 5 backend tests, web
-  typecheck, focused ESLint/Ruff and `git diff --check`. The final repository
-  gate, build, desktop/mobile Playwright audit and roadmap closeout have not run;
-  Phase 15 is not complete and has no completion tag.
-
-## Phase 15B verification checkpoint
-
-- The full lint/format gate, 283 backend tests, 236 frontend tests, strict
-  typecheck and production build passed before targeted 15B remediation.
-- Verification fixed the remaining production Search demo badge, restored
-  mobile Reader source access coverage, corrected off-canvas Network node
-  coordinates, replaced UUID-first relationship presentation with readable
-  labels, and made Findings index rows concise without changing canonical text.
-- The real case contains no projected people, witnesses, exhibits or claims;
-  existing rows are isolated to `KSC-DEMO-0000`, so honest empty states remain.
-- Homepage/Findings/Network/People were checked against the approved design
-  specifications. The homepage three-panel row and live ingestion summary were
-  restored; Network hierarchy/provenance and Findings list/detail hierarchy now
-  match the intended patterns.
-- Targeted frontend checks pass (28/28) and Phase 15 desktop/mobile Playwright
-  passes (38/38). Phase 15 remains open pending explicit closeout; no completion
-  tag exists and Phase 16 has not started.
+- `docs/quality/REAL_DATA_ROUTE_AUDIT.md` classifies every normal production
+  route. None is `MIXED` or `DEMO`; the unset/default source is the API, and
+  categories without reviewed rows render honest empty states.
+- Documents and Reader use real parsed Court data with exact coordinate and
+  official-source navigation. Search keeps Court, External and Both modes
+  separate. Findings retain the canonical detail text and concise list
+  hierarchy. Network renders 48 readable nodes and 178 provenance-backed edges.
+- The current structured / verified projections contain 0 Person, Witness,
+  Exhibit and Claim records. This does not establish that the underlying public
+  court record contains none. Production does not substitute demo or inferred
+  records.
+- Protected witnesses remain code-only, prior provenance and verification rules
+  remain intact, and Court and External source domains remain separate.
+- The approved homepage, Findings and Network hierarchy was checked after
+  remediation. The homepage three-panel row and live ingestion summary were
+  restored without a material design regression.
+- Final recorded gates pass: lint/format, 283 backend tests, 236 frontend tests,
+  strict typecheck, production build, 28/28 targeted frontend checks, and 38/38
+  Phase 15 desktop/mobile Playwright checks.
+- Implementation commits: `5470511` and `0c2c40d`; checkpoint: `e06455e`;
+  completion date: 2026-09-22; annotated tag: `phase-15-complete`. Phase 16 has
+  not started.
 
 ## Technical debt / notes
 
@@ -498,8 +480,9 @@ check` and `head → base → head` are integration-tested.
 | ---------------------------------------- | ------------ | -------------------------------------------------------- |
 | Backend unit (pytest)                    | 194          | pass                                                     |
 | Backend integration (pytest, live infra) | 89           | pass                                                     |
-| Frontend (vitest)                        | 204          | pass                                                     |
-| E2E (playwright)                         | Phase 14     | 4/4 pass across desktop/mobile                           |
+| Frontend (vitest)                        | 236          | pass                                                     |
+| E2E (playwright)                         | Phase 15     | 38/38 pass across desktop/mobile                         |
+| Targeted frontend verification           | Phase 15     | 28/28 pass                                               |
 | Evaluation                               | 3 real items | Phase 14 controlled real-public-source quality gate PASS |
 
 Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all pass.
@@ -524,8 +507,9 @@ pushed. Phase 14 was fast-forwarded to `main` and pushed through roadmap commit
 `efc4ee3`; its feature branch and annotated `phase-14-complete` tag at
 `5717d24` were pushed. Phase 15 branch
 `feat/phase-15-real-data-ui-completion-and-demo-removal` starts from `efc4ee3`;
-its implementation checkpoint is commit `5470511`. It has not been pushed,
-completed or tagged.
+its implementation commits are `5470511` and `0c2c40d`. Phase 15 is complete
+and tagged locally as `phase-15-complete`; neither the branch nor tag has been
+pushed.
 
 ## Verification limitations
 
