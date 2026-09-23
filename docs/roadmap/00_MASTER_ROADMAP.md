@@ -79,8 +79,8 @@ The original core roadmap contains **13 numbered phases**. Five additional miles
 | 13 | Gradual Full Public Corpus Ingestion & Production Hardening | **COMPLETE (2026-09-22)** |
 | 14 | External Media & Public Statements Intelligence | **COMPLETE (2026-09-22)** — controlled real-public-source gate PASS |
 | 15 | Real Data UI Completion & Demo Removal | **COMPLETE (2026-09-22)** |
-| 16 | Production Readiness, Security & Lawyer Beta | **NEXT / PENDING** |
-| 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **PENDING** — depends on Phase 16 unless explicitly approved otherwise |
+| 16 | Production Readiness, Security & Lawyer Beta | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred |
+| 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **AUTHORIZED / NOT STARTED (2026-09-24)** — proceeding in parallel with Phase 16 deferred |
 
 ## Recommended execution order from now
 
@@ -106,10 +106,8 @@ Phase 13
 Phase 14
   ↓
 Phase 15
-  ↓
-Phase 16
-  ↓
-Phase 17
+  ├─ Phase 16 (IN PROGRESS; external deployment/alerting deferred)
+  └─ Phase 17 (AUTHORIZED in parallel; not started)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -119,7 +117,10 @@ real APIs or honest empty states, with no demo dependency; Documents and Reader
 use parsed Court data, and the real-data route gate passes across desktop and
 mobile. The current structured / verified projections contain 0 Person,
 Witness and Exhibit records; this does not establish that the underlying public
-court record contains none. Phase 16 is next/pending and has not begun.
+court record contains none. Phase 16 remains **IN PROGRESS** with only external
+deployment/alerting blockers intentionally deferred; it will resume when public
+deployment is desired. Phase 17 is explicitly authorized to proceed in parallel
+as the current data-expansion priority, but implementation has not started.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

@@ -4,14 +4,18 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-16-production-readiness-security-beta`, created
-  from updated `main` = `01cb693`. Phase 16 implementation has not started.
-- Current milestone: **Phase 15 COMPLETE (2026-09-22)**. Production routes
-  default to real APIs or honest empty states, demo fallbacks are absent from
-  normal routes, parsed Reader content is coordinate-filtered, and entity views
-  remain honest and privacy-safe. Phase 16 is next/pending and has not started.
+- Current branch: `feat/phase-17-corpus-expansion-structured-data`, created from
+  Phase 16 blocker-resolution commit `eb01a87` with all useful Phase 16 fixes.
+- Current milestone: **Phase 17 AUTHORIZED / NOT STARTED (2026-09-24)** as a
+  parallel data-expansion milestone. Phase 16 remains **IN PROGRESS**; local
+  implementation/security/performance/accessibility work is complete, while
+  external deployment/alerting gates are intentionally deferred until public
+  deployment is desired.
 - Push state (2026-09-22): `main` fast-forwarded to `01cb693` and pushed;
   annotated tag `phase-15-complete` and the Phase 15 feature branch were pushed.
+- Phase 16 remains local at `eb01a87`; the Phase 17 branch is local. No push or
+  merge was performed for this handoff because the repository workflow did not
+  require one.
 - Latest completion tag: annotated `phase-15-complete` at `01cb693`, pushed.
 - Phase 15 is on `main`; its feature branch is preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
@@ -313,10 +317,12 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 15 is complete. Phase 16 is next/pending; do not begin it without explicit
-authorization. Existing non-blocking follow-ups remain: review quarantined
-`r31`; the court corpus and external media set are samples; performance figures
-are local only.
+Phase 17 is explicitly authorized to proceed in parallel, but implementation has
+not started. Resume from its declared-scope planning on
+`feat/phase-17-corpus-expansion-structured-data`. Do not close Phase 16; resume
+its external deployment/alerting gates only when public deployment is desired.
+Existing non-blocking follow-ups remain: review quarantined `r31`; the court
+corpus and external media set are samples; performance figures are local only.
 
 ## Non-negotiable rules
 

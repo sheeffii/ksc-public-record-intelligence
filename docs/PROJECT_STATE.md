@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-23 (Phase 16 blocker-resolution checkpoint; external actions remain)
+Last updated: 2026-09-24 (Phase 16 deferred; Phase 17 authorized in parallel)
 
 ## Milestones
 
@@ -23,8 +23,8 @@ Last updated: 2026-09-23 (Phase 16 blocker-resolution checkpoint; external actio
 | **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
 | **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
 | **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
-| **16** | **Production readiness, security and lawyer beta**                                                        | **Local load/security/accessibility gates pass; deployment, live alerts and external beta pending**      |
-| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **Pending** — depends on Phase 16 unless explicitly approved otherwise                                   |
+| **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred             |
+| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **AUTHORIZED / NOT STARTED (2026-09-24)** — proceeding in parallel with deferred Phase 16                 |
 
 ## Roadmap
 
@@ -41,8 +41,12 @@ APIs or honest empty states, demo fallbacks are removed from normal routes, and
 the desktop/mobile route-level gate passes. Phase 16A implements the production,
 security and operations surfaces. Phase 16B verified the local implementation;
 the blocker-resolution pass closed performance and manual security/accessibility.
-An authorized deployment target, live alert/IAM verification, production smoke
-and real external beta remain pending.
+An authorized deployment target, live alert/IAM verification and production
+smoke remain pending. The external beta protocol is documented as an external
+dependency, not an active completion blocker. Phase 16 remains **IN PROGRESS**;
+its remaining blockers are external deployment/alerting only and it will resume
+when public deployment is desired. Phase 17 is explicitly authorized to proceed
+in parallel as the current data-expansion priority, without closing Phase 16.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -520,8 +524,10 @@ check` and `head → base → head` are integration-tested.
 - No authorized staging/production target, alert receiver/provider credentials
   or managed-service credentials are configured. Deployment/HTTPS smoke, live
   alert delivery and managed DB/object-store IAM verification were not claimed.
-- Phase 16 remains in progress. External beta participation is still unclaimed,
-  and Phase 17 has not started.
+- Phase 16 remains in progress. Its remaining external deployment/alerting gates
+  are intentionally deferred until public deployment is desired; the unclaimed
+  external beta is already documented as an external dependency. Phase 17 is
+  explicitly authorized to proceed in parallel but has not started.
 
 ## Technical debt / notes
 
@@ -579,8 +585,10 @@ pushed. Phase 14 was fast-forwarded to `main` and pushed through roadmap commit
 `5717d24` were pushed. Phase 15 was fast-forwarded to `main` and pushed at
 `01cb693`; its feature branch and annotated `phase-15-complete` tag were also
 pushed. Phase 16 branch `feat/phase-16-production-readiness-security-beta`
-starts from `01cb693`; Phase 16B local verification is pending unresolved gates
-and has not been deployed.
+starts from `01cb693` and currently ends at local blocker-resolution commit
+`eb01a87`; it has not been deployed or pushed. Phase 17 branch
+`feat/phase-17-corpus-expansion-structured-data` starts from `eb01a87`, retaining
+the useful Phase 16 fixes. Phase 17 implementation has not started.
 
 ## Verification limitations
 
