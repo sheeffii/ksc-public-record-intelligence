@@ -43,7 +43,7 @@ export function ToolButton({
   const classes = cn(
     "rounded-control inline-flex h-8 min-w-11 items-center justify-center gap-1 border px-2.5 text-[11px] font-medium",
     primary
-      ? "border-accent bg-accent text-white hover:bg-accent-bright"
+      ? "border-accent bg-accent text-bg-deep hover:bg-accent-bright"
       : pressed
         ? "border-accent bg-surface-high text-fg"
         : "border-border bg-surface-raised text-fg hover:bg-surface-high",

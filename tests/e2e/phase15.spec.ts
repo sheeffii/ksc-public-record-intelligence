@@ -51,11 +51,11 @@ test.describe("Phase 15 production real-data routes", () => {
 
   test("network renders readable nodes and provenance-backed relationships", async ({ page }) => {
     await page.goto("/network");
-    const graph = page.getByRole("main", { name: "Network" });
+    const graph = page.getByRole("region", { name: "Network" });
     await expect(graph.getByRole("button").first()).toBeVisible();
     await expect(page.getByText("Why does this connection exist?")).toBeVisible();
     await expect(page.getByText(/→.*· cited in/i).first()).toBeVisible();
-    await expect(page.locator("main svg line").first()).toBeAttached();
+    await expect(graph.locator("svg line").first()).toBeAttached();
   });
 
   test("empty source-backed directories stay honest", async ({ page }) => {

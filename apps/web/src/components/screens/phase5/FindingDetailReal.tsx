@@ -60,7 +60,7 @@ export function RealFindingDetailScreen({ finding }: { finding: FindingView }) {
         description={t("realDataNotice")}
         realData
       />
-      <main className="mx-auto grid w-full max-w-[1440px] gap-4 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_330px]">
+      <div className="mx-auto grid w-full max-w-[1440px] gap-4 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="min-w-0 space-y-4">
           <SectionCard id="court-finding" number="01" title={t("courtFinding")}>
             <RecordBlock
@@ -259,7 +259,7 @@ export function RealFindingDetailScreen({ finding }: { finding: FindingView }) {
             <p className="text-fg-secondary text-[11px]">{t("noInference")}</p>
           </Panel>
         </aside>
-      </main>
+      </div>
     </AppShell>
   );
 }

@@ -411,8 +411,9 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
             </div>
           </Panel>
         </aside>
-        <main
+        <div
           className="bg-bg-graph relative min-h-[560px] cursor-grab touch-none overflow-hidden active:cursor-grabbing"
+          role="region"
           aria-label={t("network")}
           onPointerDown={(event) => {
             if ((event.target as Element).closest("button")) return;
@@ -510,12 +511,11 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
           <p className="governance-text bg-bg-deep/80 absolute bottom-4 left-4 max-w-xs rounded px-3 py-2">
             {footer("network")}
           </p>
-        </main>
-        <details
-          open
+        </div>
+        <div
           className={`border-border bg-surface max-lg:rounded-t-sheet max-lg:shadow-sheet border-l max-lg:fixed max-lg:right-0 max-lg:bottom-14 max-lg:left-0 max-lg:z-30 ${detentClass} max-lg:overflow-auto max-lg:border-t ${fullscreen ? "lg:hidden" : ""}`}
         >
-          <summary className="text-fg-secondary flex cursor-pointer list-none items-center justify-between px-4 py-2 text-[10px] font-semibold tracking-[0.16em] uppercase lg:hidden">
+          <div className="text-fg-secondary flex items-center justify-between px-4 py-2 text-[10px] font-semibold tracking-[0.16em] uppercase lg:hidden">
             <span>
               {t("viewDetails")} · {selectedNode.label}
             </span>
@@ -529,9 +529,9 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
             >
               {detent}
             </button>
-          </summary>
+          </div>
           {inspector}
-        </details>
+        </div>
       </div>
     </AppShell>
   );

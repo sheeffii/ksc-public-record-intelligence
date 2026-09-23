@@ -171,7 +171,7 @@ export function AiResearchReal({
           </Panel>
         </aside>
 
-        <main className="min-w-0 space-y-3">
+        <div className="min-w-0 space-y-3">
           <form onSubmit={submit} className="flex flex-wrap gap-2">
             <label className="sr-only" htmlFor="ai-question">
               {t("questionLabel")}
@@ -186,7 +186,7 @@ export function AiResearchReal({
             <button
               type="submit"
               disabled={loading || question.trim().length < 3}
-              className="rounded-control border-accent bg-accent h-11 min-w-24 border px-4 text-[11px] font-semibold text-white disabled:opacity-50"
+              className="rounded-control border-accent bg-accent text-bg-deep h-11 min-w-24 border px-4 text-[11px] font-semibold disabled:opacity-50"
             >
               {loading ? t("retrieving") : t("ask")}
             </button>
@@ -277,7 +277,7 @@ export function AiResearchReal({
               <p className="text-fg-secondary text-[12px]">{t("emptyBody")}</p>
             </Panel>
           ) : null}
-        </main>
+        </div>
 
         <aside className="min-w-0 space-y-3 lg:col-span-2 xl:col-span-1">
           <Panel title={t("citationStatus")}>

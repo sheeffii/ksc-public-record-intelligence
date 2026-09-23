@@ -57,6 +57,13 @@ class ProviderError(RuntimeError):
     pass
 
 
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Provider endpoints are allowlisted; redirects must not escape that boundary."""
+
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
+        return None
+
+
 _KIND_BY_CATEGORY = {
     "court_finding": "court",
     "witness_testimony": "testimony",
@@ -172,9 +179,8 @@ class _HttpJsonProvider:
         last_error: Exception | None = None
         for _ in range(self.max_retries + 1):
             try:
-                with urllib.request.urlopen(  # noqa: S310 - allowlisted by production settings
-                    request, timeout=self.timeout
-                ) as response:
+                opener = urllib.request.build_opener(_NoRedirectHandler())
+                with opener.open(request, timeout=self.timeout) as response:
                     body = json.loads(response.read())
                 break
             except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:

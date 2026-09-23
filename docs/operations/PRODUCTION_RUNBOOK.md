@@ -58,11 +58,20 @@ drop privileges to the normal application account.
 - Ingestion/capture import: use the existing operator bundle and CLI; never
   automate around source access controls. Run the worker image only through the
   protected `operations` profile, mount the reviewed bundle read-only, and
-  verify the corpus gate afterward. There is no public ingestion endpoint.
-- Quarantine: verifier inspects the original public source and stored hash;
-  release/reject explicitly and retain audit history.
-- Parser/re-resolution: back up first, run the bounded parser/resolver CLI,
-  review changed counts and unresolved/ambiguous citations, then rerun gates.
+  run `ksc-ingest import-capture ...`, `ksc-ingest bundle ...`, and
+  `ksc-ingest gate ...` with the reviewed paths. There is no public ingestion
+  endpoint.
+- Quarantine: a verifier uses the protected ingestion status endpoint and
+  database audit view to inspect the original public source and stored hash.
+  Release/reject is an explicit operator database procedure until a dedicated
+  CLI exists; require a ticket, two-person review, a pre-change backup and an
+  `audit_log` row. Never delete the quarantine record or overwrite an object.
+- Parser reprocessing: back up first, run `ksc-ingest parse --force`, review
+  changed parser counts/review flags, then rerun the corpus quality gate.
+- Citation re-resolution: back up first, run `ksc-ingest reresolve`, review
+  changed resolved/ambiguous/unresolved/invalid counts, then rerun the corpus
+  quality gate. Rebuild downstream evidence only after the citation delta is
+  approved.
 - Health/metrics: `/health` is liveness, `/ready` checks DB/Redis/storage, and
   internal `/metrics` feeds the existing Phase 13 metrics and alert rules.
 - Database: enable managed-service TLS, `pg_stat_statements`, connection/CPU

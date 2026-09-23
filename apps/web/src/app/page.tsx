@@ -100,7 +100,7 @@ export default async function HomePage() {
             </label>
             <button
               type="submit"
-              className="rounded-inset border-accent bg-accent hover:bg-accent-bright h-11 border px-4 text-[13px] font-semibold text-white"
+              className="rounded-inset border-accent bg-accent hover:bg-accent-bright text-bg-deep h-11 border px-4 text-[13px] font-semibold"
             >
               {t("searchButton")}
             </button>

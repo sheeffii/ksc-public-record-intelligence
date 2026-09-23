@@ -33,7 +33,7 @@ describe("Phase 5 safety contracts", () => {
   it("supports network search, isolate, collapse, and reset controls", async () => {
     const user = userEvent.setup();
     renderWithProviders(<NetworkScreen />);
-    const graph = screen.getByRole("main", { name: messagesEn.phase5.network });
+    const graph = screen.getByRole("region", { name: messagesEn.phase5.network });
     const search = screen.getByRole("textbox", { name: messagesEn.phase5.searchWithin });
 
     await user.type(search, "W01234");
@@ -51,12 +51,9 @@ describe("Phase 5 safety contracts", () => {
     expect(isolate).toHaveAttribute("aria-pressed", "false");
     expect(within(graph).getByRole("button", { name: "Illustrative finding" })).toBeInTheDocument();
 
-    const inspectorToggle = screen
-      .getByText(new RegExp(messagesEn.phase5.viewDetails))
-      .closest("summary")!;
-    expect(inspectorToggle.closest("details")).toHaveAttribute("open");
+    const inspectorToggle = screen.getByRole("button", { name: "peek" });
     await user.click(inspectorToggle);
-    expect(inspectorToggle.closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "half" })).toBeInTheDocument();
   });
 
   it("filters real network edges by both date-range bounds", () => {

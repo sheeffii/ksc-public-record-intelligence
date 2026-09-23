@@ -35,7 +35,7 @@ export function AppShell({
     <div className="flex min-h-dvh flex-col">
       <a
         href="#main"
-        className="focus:rounded-control focus:bg-accent sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1.5 focus:text-white"
+        className="focus:rounded-control focus:bg-accent focus:text-bg-deep sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1.5"
       >
         {t("skipToContent")}
       </a>

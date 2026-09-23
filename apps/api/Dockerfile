@@ -15,7 +15,9 @@ WORKDIR /app
 
 COPY apps/api/pyproject.toml apps/api/README.md ./
 COPY apps/api/src ./src
-RUN pip install --upgrade pip && pip install .
+RUN pip install --upgrade pip \
+ && pip install . \
+ && pip uninstall -y pip
 
 COPY apps/api/alembic.ini ./
 COPY apps/api/alembic ./alembic

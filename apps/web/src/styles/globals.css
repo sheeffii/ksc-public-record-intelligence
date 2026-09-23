@@ -34,8 +34,8 @@
   --text-primary: #e8edf5;
   --text-body: #c8d0e0;
   --text-secondary: #8b9bc0;
-  --text-muted: #5c6a88;
-  --text-faint: #4a5875;
+  --text-muted: #8b9bc0;
+  --text-faint: #7f91b5;
   --accent: #4d8fff;
   --accent-bright: #60a5ff;
 
@@ -111,8 +111,8 @@
   --text-primary: #0f172a;
   --text-body: #334155;
   --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --text-faint: #94a3b8;
+  --text-muted: #64748b;
+  --text-faint: #64748b;
   --accent: #2f6fe4;
   --accent-bright: #2563eb;
 

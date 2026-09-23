@@ -14,6 +14,7 @@ COPY workers/ingestion /app/workers/ingestion
 COPY packages/prompts /app/packages/prompts
 RUN pip install --upgrade pip \
  && pip install /app/apps/api /app/workers/ingestion \
+ && pip uninstall -y pip \
  && chown -R worker:worker /app
 
 USER worker

@@ -88,12 +88,25 @@ class Settings(BaseSettings):
         if (
             canonical.scheme != "https"
             or not canonical.netloc
+            or canonical.username is not None
+            or canonical.password is not None
             or canonical.path not in {"", "/"}
             or canonical.query
+            or canonical.fragment
         ):
             errors.append("CANONICAL_URL must be an absolute HTTPS URL")
         origins = self.cors_origin_list
-        if not origins or any(urlparse(origin).scheme != "https" for origin in origins):
+        parsed_origins = [urlparse(origin) for origin in origins]
+        if not origins or any(
+            parsed.scheme != "https"
+            or not parsed.netloc
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+            for parsed in parsed_origins
+        ):
             errors.append("CORS_ORIGINS must contain only HTTPS origins")
         if "*" in origins:
             errors.append("CORS_ORIGINS may not contain a wildcard")
@@ -102,18 +115,38 @@ class Settings(BaseSettings):
         database = urlparse(self.database_url)
         if (
             "ksc_dev_password" in self.database_url
+            or "change_me" in self.database_url.casefold()
             or "sslmode=" not in self.database_url
             or database.username in {None, "postgres", "root"}
+            or database.password is None
+            or len(database.password) < 16
         ):
-            errors.append("DATABASE_URL must use non-development credentials and declare sslmode")
+            errors.append(
+                "DATABASE_URL must use non-placeholder credentials of at least 16 characters "
+                "and declare sslmode"
+            )
         if not self.minio_secure:
             errors.append("MINIO_SECURE must be true")
-        if self.minio_secret_key in {"", "ksc_minio_dev_password"}:
+        if (
+            self.minio_secret_key in {"", "ksc_minio_dev_password"}
+            or "change_me" in self.minio_secret_key.casefold()
+            or len(self.minio_secret_key) < 32
+        ):
             errors.append("MINIO_SECRET_KEY must be a non-development secret")
-        if self.minio_access_key in {"", "ksc_minio"}:
+        if (
+            self.minio_access_key in {"", "ksc_minio"}
+            or "change_me" in self.minio_access_key.casefold()
+        ):
             errors.append("MINIO_ACCESS_KEY must be a dedicated production identity")
-        if not urlparse(self.redis_url).password:
-            errors.append("REDIS_URL must include authentication")
+        redis_password = urlparse(self.redis_url).password
+        if (
+            not redis_password
+            or "change_me" in redis_password.casefold()
+            or len(redis_password) < 32
+        ):
+            errors.append(
+                "REDIS_URL must include non-placeholder authentication of at least 32 characters"
+            )
 
         role_values = {
             "RESEARCHER_API_KEYS": self.researcher_api_keys,
@@ -123,8 +156,10 @@ class Settings(BaseSettings):
         tokens = []
         for name, value in role_values.items():
             keys = [item.strip() for item in value.split(",") if item.strip()]
-            if not keys or any(len(item) < 32 for item in keys):
-                errors.append(f"{name} must contain token(s) of at least 32 characters")
+            if not keys or any(len(item) < 32 or "change_me" in item.casefold() for item in keys):
+                errors.append(
+                    f"{name} must contain non-placeholder token(s) of at least 32 characters"
+                )
             tokens.extend(keys)
         if len(tokens) != len(set(tokens)):
             errors.append("privileged API tokens must be unique across roles")
@@ -156,7 +191,7 @@ class Settings(BaseSettings):
             secret = (
                 self.openai_api_key if provider == "openai_compatible" else self.anthropic_api_key
             )
-            if not secret:
+            if not secret or "change_me" in secret.casefold():
                 errors.append("the selected external AI provider secret is required")
         if errors:
             raise ValueError("invalid production configuration: " + "; ".join(errors))

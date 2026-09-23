@@ -64,7 +64,7 @@ export function ActionLink({
       className={cn(
         "rounded-control inline-flex h-8 items-center justify-center border px-3 text-[11px] font-semibold",
         primary
-          ? "border-accent bg-accent hover:bg-accent-bright text-white"
+          ? "border-accent bg-accent hover:bg-accent-bright text-bg-deep"
           : "border-border bg-surface-raised text-fg hover:bg-surface-high",
       )}
     >
@@ -81,7 +81,11 @@ export function TabStrip({
   active?: string;
 }) {
   return (
-    <nav aria-label="Sections" className="border-border-subtle bg-bg-deep overflow-x-auto border-b">
+    <nav
+      aria-label="Sections"
+      className="border-border-subtle bg-bg-deep overflow-x-auto border-b"
+      tabIndex={0}
+    >
       <div className="mx-auto flex h-10 w-full max-w-[1440px] min-w-max items-end gap-1 px-4">
         {tabs.map((tab) => {
           const isActive = (active ?? tabs[0]?.key) === tab.key;

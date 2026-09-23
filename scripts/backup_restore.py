@@ -17,6 +17,7 @@ import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
+import psycopg
 from minio import Minio
 
 
@@ -95,6 +96,25 @@ def _object_path(root: Path, object_name: str) -> Path:
     return path
 
 
+def _assert_empty_restore_database() -> None:
+    """Refuse a restore that could overwrite application-owned relations."""
+    with psycopg.connect(_database_url(restore=True)) as connection:
+        occupied = connection.execute(
+            """
+            SELECT EXISTS (
+              SELECT 1
+              FROM pg_class AS relation
+              JOIN pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+              WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema')
+                AND namespace.nspname !~ '^pg_toast'
+                AND relation.relkind IN ('r', 'p', 'S', 'v', 'm', 'f')
+            )
+            """
+        ).fetchone()
+    if occupied is None or occupied[0]:
+        raise SystemExit("restore database must be empty")
+
+
 def backup(target: Path) -> None:
     if target.exists() and any(target.iterdir()):
         raise SystemExit(f"backup target must be empty: {target}")
@@ -160,6 +180,7 @@ def restore(source: Path, *, confirmed: bool) -> None:
         if path.stat().st_size != item["byte_size"] or _sha256(path) != item["sha256"]:
             raise SystemExit(f"object backup checksum mismatch: {item['object_name']}")
 
+    _assert_empty_restore_database()
     client, bucket = _client()
     if client.bucket_exists(bucket):
         if next(client.list_objects(bucket, recursive=True), None) is not None:

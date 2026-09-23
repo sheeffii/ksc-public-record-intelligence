@@ -59,7 +59,7 @@ export function MediaWorkspace({
                   <option value="both">{t("both")}</option>
                 </select>
               </label>
-              <button className="bg-accent rounded-control h-8 px-3 text-[11px] font-semibold text-white">
+              <button className="bg-accent text-bg-deep rounded-control h-8 px-3 text-[11px] font-semibold">
                 {t("search")}
               </button>
             </form>

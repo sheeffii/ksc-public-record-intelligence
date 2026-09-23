@@ -48,7 +48,7 @@ export function RealAppealScreen({
         description={t("neutralFraming")}
         realData
       />
-      <main className="mx-auto grid w-full max-w-[1440px] gap-4 p-3 md:p-4 xl:grid-cols-[230px_minmax(0,1fr)_300px]">
+      <div className="mx-auto grid w-full max-w-[1440px] gap-4 p-3 md:p-4 xl:grid-cols-[230px_minmax(0,1fr)_300px]">
         <aside className="space-y-3">
           <Panel title={t("categories")}>
             <ul className="space-y-2 text-[11px]">
@@ -183,7 +183,7 @@ export function RealAppealScreen({
             <p className="text-fg-secondary text-[11px]">{t("willNotDoBody")}</p>
           </Panel>
         </aside>
-      </main>
+      </div>
     </AppShell>
   );
 }
@@ -203,7 +203,7 @@ export function RealArgumentLabScreen({ lab }: { lab: ArgumentLabView }) {
         description={t("argumentLabNote")}
         realData
       />
-      <main className="mx-auto w-full max-w-[1440px] space-y-4 p-3 md:p-4">
+      <div className="mx-auto w-full max-w-[1440px] space-y-4 p-3 md:p-4">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
           <SectionCard title={t("sourceBackedOutline")}>
             <p className="font-serif text-[13px] leading-relaxed">{lab.draft}</p>
@@ -247,7 +247,7 @@ export function RealArgumentLabScreen({ lab }: { lab: ArgumentLabView }) {
           ))}
         </div>
         <NoteStrip tone="legal">{lab.notice}</NoteStrip>
-      </main>
+      </div>
     </AppShell>
   );
 }
@@ -266,7 +266,7 @@ export function RealStatementComparisonScreen({
         description={t("comparisonNeutral")}
         realData
       />
-      <main className="mx-auto w-full max-w-[1200px] space-y-4 p-3 md:p-4">
+      <div className="mx-auto w-full max-w-[1200px] space-y-4 p-3 md:p-4">
         <SectionCard
           title={comparison.title}
           aside={<VerificationBadge state={comparison.verification} size="sm" />}
@@ -294,7 +294,7 @@ export function RealStatementComparisonScreen({
           <p className="text-fg-secondary mt-3 text-[11px]">{comparison.explanation}</p>
         </SectionCard>
         <NoteStrip tone="legal">{t("noCredibilityInference")}</NoteStrip>
-      </main>
+      </div>
     </AppShell>
   );
 }

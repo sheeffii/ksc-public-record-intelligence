@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-22 (Phase 16A implementation checkpoint; live verification pending)
+Last updated: 2026-09-23 (Phase 16B verification checkpoint; blockers remain)
 
 ## Milestones
 
@@ -23,7 +23,7 @@ Last updated: 2026-09-22 (Phase 16A implementation checkpoint; live verification
 | **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
 | **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
 | **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
-| **16** | **Production readiness, security and lawyer beta**                                                        | **16A implemented; final/live gates and external beta pending**                                          |
+| **16** | **Production readiness, security and lawyer beta**                                                        | **16B verified locally; load/live/manual gates and external beta pending**                               |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **Pending** — depends on Phase 16 unless explicitly approved otherwise                                   |
 
 ## Roadmap
@@ -39,9 +39,9 @@ publishers pass the external-source gate while remaining structurally separate
 and `EXTERNAL_ONLY`. Phase 15 is complete: production routes default to real
 APIs or honest empty states, demo fallbacks are removed from normal routes, and
 the desktop/mobile route-level gate passes. Phase 16A implements the production,
-security and operations surfaces; final live gates and the real external beta
-remain pending. Repository code, migrations, tests and Git state win over stale
-roadmap text.
+security and operations surfaces. Phase 16B verified the local implementation;
+the failed load target, live/manual checks and real external beta remain pending.
+Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
 
@@ -478,6 +478,30 @@ check` and `head → base → head` are integration-tested.
   smoke, external beta, final Phase 16 gate, completion tag or Phase 17 work has
   occurred.
 
+## Phase 16B verification checkpoint
+
+- Production fail-fast validation, role-protected privileged routes, AI-disabled
+  operation, redirect-safe external AI, request limits and reproducible compose/
+  runtime images were verified. No authorized external target was deployed.
+- The isolated database/object restore drill passed: migration `0010`, 57 public
+  tables, 61 documents, 66 versions, 66 fetched versions and 61 objects matched;
+  the restored state hash was `3be5769ccd20256441a3c06662a8c34d`. Non-empty
+  restore was refused and all drill resources were removed.
+- Dependency audits found no known high/critical issue; rebuilt API, web and
+  worker runtime images each scanned with 0 high/critical findings. Readiness,
+  metrics, request IDs, structured logs and all 17 Prometheus rules passed local
+  checks; live alert routing and managed-service permissions remain pending.
+- Automated accessibility passed 18/18 axe routes and 38/38 real-data desktop/
+  mobile workflows. Manual keyboard, contrast and 200% zoom review remains.
+- The single representative load gate completed 1,323 requests with 0.00% errors,
+  p50 755.43 ms and p95 2.85 s; it failed the p95 <1 s target. At 10 VUs the web,
+  API and PostgreSQL used about 64%, 119% and 39% CPU respectively.
+- The evidence-only Phase 16 gate is **PENDING**: authorization, restore and
+  supply-chain evidence pass; load fails; live deployment/alerts/security,
+  manual accessibility and production smoke are pending. The prepared beta
+  protocol has no real participant completion and remains an external dependency.
+  Phase 16 is not complete and Phase 17 has not started.
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -504,10 +528,10 @@ check` and `head → base → head` are integration-tested.
 
 | Suite                                    | Count        | Last result                                              |
 | ---------------------------------------- | ------------ | -------------------------------------------------------- |
-| Backend unit (pytest)                    | 194          | pass                                                     |
+| Backend unit (pytest)                    | 203          | pass                                                     |
 | Backend integration (pytest, live infra) | 89           | pass                                                     |
-| Frontend (vitest)                        | 236          | pass                                                     |
-| E2E (playwright)                         | Phase 15     | 38/38 pass across desktop/mobile                         |
+| Frontend (vitest)                        | 239          | pass                                                     |
+| E2E (playwright)                         | Phase 16     | 38/38 workflows; 18/18 axe routes pass desktop/mobile    |
 | Targeted frontend verification           | Phase 15     | 28/28 pass                                               |
 | Evaluation                               | 3 real items | Phase 14 controlled real-public-source quality gate PASS |
 
@@ -534,8 +558,8 @@ pushed. Phase 14 was fast-forwarded to `main` and pushed through roadmap commit
 `5717d24` were pushed. Phase 15 was fast-forwarded to `main` and pushed at
 `01cb693`; its feature branch and annotated `phase-15-complete` tag were also
 pushed. Phase 16 branch `feat/phase-16-production-readiness-security-beta`
-starts from `01cb693`; Phase 16A implementation is in progress locally and is
-not deployed.
+starts from `01cb693`; Phase 16B local verification is pending unresolved gates
+and has not been deployed.
 
 ## Verification limitations
 

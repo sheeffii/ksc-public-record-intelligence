@@ -42,6 +42,9 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           load: true
+          # Trivy must scan the loaded runtime filesystem, not BuildKit's
+          # third-party builder SBOM (which includes packages absent at runtime).
+          provenance: false
           tags: ksc-${{ matrix.service }}:${{ github.sha }}
           build-args: |
             GIT_SHA=${{ github.sha }}
