@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-23 (Phase 16B verification checkpoint; blockers remain)
+Last updated: 2026-09-23 (Phase 16 blocker-resolution checkpoint; external actions remain)
 
 ## Milestones
 
@@ -23,7 +23,7 @@ Last updated: 2026-09-23 (Phase 16B verification checkpoint; blockers remain)
 | **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
 | **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
 | **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
-| **16** | **Production readiness, security and lawyer beta**                                                        | **16B verified locally; load/live/manual gates and external beta pending**                               |
+| **16** | **Production readiness, security and lawyer beta**                                                        | **Local load/security/accessibility gates pass; deployment, live alerts and external beta pending**      |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **Pending** — depends on Phase 16 unless explicitly approved otherwise                                   |
 
 ## Roadmap
@@ -40,7 +40,9 @@ and `EXTERNAL_ONLY`. Phase 15 is complete: production routes default to real
 APIs or honest empty states, demo fallbacks are removed from normal routes, and
 the desktop/mobile route-level gate passes. Phase 16A implements the production,
 security and operations surfaces. Phase 16B verified the local implementation;
-the failed load target, live/manual checks and real external beta remain pending.
+the blocker-resolution pass closed performance and manual security/accessibility.
+An authorized deployment target, live alert/IAM verification, production smoke
+and real external beta remain pending.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -501,6 +503,25 @@ check` and `head → base → head` are integration-tested.
   manual accessibility and production smoke are pending. The prepared beta
   protocol has no real participant completion and remains an external dependency.
   Phase 16 is not complete and Phase 17 has not started.
+
+## Phase 16 blocker-resolution checkpoint
+
+- Targeted profiling isolated repeated read fan-out on home, finding detail and
+  appeal. A 30-second server cache was added only to those read-only projections;
+  the k6 gate now enforces the unchanged p95 <1 s target globally and per route.
+- The final nine-route run passed: 5,940 requests, 0.00% errors, p50 75.18 ms,
+  p95 467.66 ms; every route passed its own threshold (worst p95 732.08 ms).
+- The focused manual application-security review passed with 0 critical, 0 high
+  and 0 medium findings. Two accepted low risks are recorded in the security
+  report; live managed-service grants/edge policy still require a real target.
+- The manual keyboard, focus, command-dialog, contrast, 200%-equivalent reflow,
+  desktop and representative-mobile review passed after fixing command-palette
+  focus trapping and restoration. Existing axe/workflow evidence remains valid.
+- No authorized staging/production target, alert receiver/provider credentials
+  or managed-service credentials are configured. Deployment/HTTPS smoke, live
+  alert delivery and managed DB/object-store IAM verification were not claimed.
+- Phase 16 remains in progress. External beta participation is still unclaimed,
+  and Phase 17 has not started.
 
 ## Technical debt / notes
 

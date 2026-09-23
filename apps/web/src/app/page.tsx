@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { SearchIcon } from "@/components/primitives/icons";
 import { Panel } from "@/components/primitives/Panel";
@@ -35,7 +36,7 @@ async function getIngestionSummary(): Promise<IngestionSummary | null> {
   if (resolveDataSource(env) !== "api") return null;
   try {
     const response = await fetch(`${resolveApiBaseUrl(env, true)}/api/v1/ingestion/status`, {
-      cache: "no-store",
+      headers: { accept: "application/json" },
     });
     if (!response.ok) return null;
     const payload = (await response.json()) as { counts: IngestionSummary };
@@ -45,6 +46,26 @@ async function getIngestionSummary(): Promise<IngestionSummary | null> {
   }
 }
 
+const getHomeData = unstable_cache(
+  async () => {
+    const repository = getRepository();
+    const [documents, people, witnesses, exhibits, findings, incidents, network, ingestion] =
+      await Promise.all([
+        repository.getDirectory("documents"),
+        repository.getDirectory("people"),
+        repository.getDirectory("witnesses"),
+        repository.getDirectory("exhibits"),
+        repository.getDirectory("findings"),
+        repository.getDirectory("incidents"),
+        repository.getNetwork(),
+        getIngestionSummary(),
+      ]);
+    return { documents, people, witnesses, exhibits, findings, incidents, network, ingestion };
+  },
+  ["production-home-data"],
+  { revalidate: 30 },
+);
+
 export default async function HomePage() {
   const [t, tNav, tFooter, tb, t15] = await Promise.all([
     getTranslations("home"),
@@ -53,18 +74,8 @@ export default async function HomePage() {
     getTranslations("phase5b"),
     getTranslations("phase15"),
   ]);
-  const repository = getRepository();
-  const [documents, people, witnesses, exhibits, findings, incidents, network, ingestion] =
-    await Promise.all([
-      repository.getDirectory("documents"),
-      repository.getDirectory("people"),
-      repository.getDirectory("witnesses"),
-      repository.getDirectory("exhibits"),
-      repository.getDirectory("findings"),
-      repository.getDirectory("incidents"),
-      repository.getNetwork(),
-      getIngestionSummary(),
-    ]);
+  const { documents, people, witnesses, exhibits, findings, incidents, network, ingestion } =
+    await getHomeData();
   const counts = {
     documents: documents.length,
     people: people.length,

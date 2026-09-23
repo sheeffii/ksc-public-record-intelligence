@@ -1,5 +1,18 @@
 import { AppealScreen, RealAppealScreen } from "@/components/screens/phase5";
 import { getRepository, resolveDataSource } from "@/data";
+import { unstable_cache } from "next/cache";
+
+const getAppealWorkspace = unstable_cache(
+  () => getRepository().listAppealIssues(),
+  ["production-appeal-workspace"],
+  { revalidate: 30 },
+);
+
+const getAppealIssue = unstable_cache(
+  (key: string) => getRepository().getAppealIssue(key),
+  ["production-appeal-issue"],
+  { revalidate: 30 },
+);
 
 export default async function Page({
   searchParams,
@@ -11,10 +24,9 @@ export default async function Page({
   ) {
     return <AppealScreen />;
   }
-  const repository = getRepository();
-  const workspace = await repository.listAppealIssues();
+  const workspace = await getAppealWorkspace();
   const requested = (await searchParams).issue;
   const key = requested ?? workspace.issues[0]?.key;
-  const issue = key ? await repository.getAppealIssue(key) : null;
+  const issue = key ? await getAppealIssue(key) : null;
   return <RealAppealScreen workspace={workspace} issue={issue ?? undefined} />;
 }
