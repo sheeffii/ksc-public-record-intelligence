@@ -4,8 +4,8 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-18-research-experience-visual-excellence`, created
-  from the Phase 17 closeout commit `fd344fb`.
+- Current branch: `main`. It contains all work through Phase 18 (Phases 15–18,
+  including Phase 16 `eb01a87` and Phase 17 `0e382b3`).
 - Current milestone: **Phase 18 COMPLETE (2026-09-24)**, tag
   `phase-18-complete`; no later phase is defined or started. Phase
   16 remains **IN PROGRESS**; local
@@ -14,14 +14,14 @@ Live checkpoint. Repository state wins over this note.
   deployment is desired.
 - Phase 18 Pass A implementation commit: `5733533`; Pass B implementation
   follows `c65a5f7` (see `git log`).
-- Push state (2026-09-24): Phase 18 branch
-  `feat/phase-18-research-experience-visual-excellence` and tag
-  `phase-18-complete` are pushed; the branch is not merged to `main`. `main` remains at the pushed Phase 15 baseline `01cb693`.
+- Push state (2026-09-24): `main` fast-forwarded to the Phase 18 closeout
+  `1cb4cc4` and pushed; tag `phase-18-complete` is pushed. The Phase 18 feature
+  branch is preserved on `origin`.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
-  `0e382b3`, with the closeout commit tagged `phase-17-complete`. The Phase 17
-  branch and tag are pushed, and the branch is not merged to `main`.
+  `0e382b3`, with the closeout commit tagged `phase-17-complete`. Both are
+  contained in `main`.
 - Latest completion tag: annotated `phase-18-complete`.
-- Phase 15 is on `main`; its feature branch is preserved on `origin`.
+- Phase 15–18 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
 - Migration head and live database revision: `0012`.
@@ -323,7 +323,7 @@ Live checkpoint. Repository state wins over this note.
 
 Phase 18 is complete (completion record in `docs/PROJECT_STATE.md`). No
 Phase 18 roadmap file existed; any next milestone needs a new roadmap file and
-explicit authorization. Do not merge to `main` unless asked. Known limitations: dossier occurrences are lexical search matches
+explicit authorization; start it on a new branch from `main`. Known limitations: dossier occurrences are lexical search matches
 (no structured mention table), no source-backed hearing totals, and unfocused
 `/network` still reads the bounded 500-edge default. Do not close Phase 16;
 resume its external deployment/alerting gates only when public deployment is
