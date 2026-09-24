@@ -84,6 +84,7 @@ from ksc_api.schemas.records import (
     DocumentPageRead,
     DocumentParagraphRead,
     DocumentSummary,
+    EntityMentionRead,
     EventRead,
     EvidencePathRead,
     ExhibitRead,
@@ -211,7 +212,7 @@ class RecordRepository:
                         occurrence_fk,
                         func.count(func.distinct(EntityOccurrence.document_version_id)),
                     )
-                    .where(occurrence_fk.in_(id_list))
+                    .where(occurrence_fk.in_(id_list), _verified_mention())
                     .group_by(occurrence_fk)
                 ).all()
             }
@@ -224,6 +225,7 @@ class RecordRepository:
                     )
                     .where(
                         occurrence_fk.in_(id_list),
+                        _verified_mention(),
                         EntityOccurrence.transcript_segment_id.is_not(None),
                     )
                     .group_by(occurrence_fk)
@@ -545,6 +547,117 @@ class RecordRepository:
             return None
         counts = self._counts(EntityKind.EXHIBIT, [exhibit.id]).get(exhibit.id, mappers.ZERO_COUNTS)
         return mappers.to_exhibit(exhibit, counts)
+
+    # ----------------------------------------------------------- mentions --
+    def list_entity_mentions(
+        self,
+        kind: str,
+        key: str,
+        *,
+        limit: int,
+        offset: int,
+        state: str | None = None,
+    ) -> Page[EntityMentionRead] | None:
+        """Persisted Phase 19A mentions for one entity, verified first. Rows
+        without rule lineage and `rejected` rows are never served."""
+        entity_id: uuid.UUID | None
+        if kind == "person":
+            entity_id = self.session.scalar(
+                select(Person.id).where(Person.case_id == self.case.id, Person.slug == key)
+            )
+        elif kind == "organization":
+            entity_id = self.session.scalar(
+                select(Organization.id).where(
+                    Organization.case_id == self.case.id, Organization.slug == key
+                )
+            )
+        elif kind == "witness":
+            entity_id = self.session.scalar(
+                select(Witness.id).where(Witness.case_id == self.case.id, Witness.code == key)
+            )
+        else:
+            entity_id = self.session.scalar(
+                select(Exhibit.id).where(
+                    Exhibit.case_id == self.case.id,
+                    Exhibit.official_exhibit_id == key,
+                    public_visibility(Exhibit.visibility),
+                )
+            )
+        if entity_id is None:
+            return None
+        states = ["verified", "review_required"] if state is None else [state]
+        successor = aliased(DocumentVersion)
+        stmt = (
+            select(
+                EntityOccurrence,
+                DocumentVersion,
+                Document,
+                select(successor.id)
+                .where(successor.supersedes_version_id == DocumentVersion.id)
+                .exists()
+                .label("superseded"),
+            )
+            .join(DocumentVersion, DocumentVersion.id == EntityOccurrence.document_version_id)
+            .join(Document, Document.id == DocumentVersion.document_id)
+            .where(
+                getattr(EntityOccurrence, f"{kind}_id") == entity_id,
+                EntityOccurrence.rule_id.is_not(None),
+                EntityOccurrence.mention_state.in_(states),
+                Document.case_id == self.case.id,
+                public_visibility(Document.visibility),
+                public_visibility(DocumentVersion.visibility),
+            )
+            .order_by(
+                (EntityOccurrence.mention_state != "verified"),
+                Document.official_ref,
+                EntityOccurrence.pdf_page_index.nulls_last(),
+                EntityOccurrence.line_from.nulls_last(),
+                EntityOccurrence.char_start,
+                EntityOccurrence.id,
+            )
+        )
+        total = int(
+            self.session.scalar(select(func.count()).select_from(stmt.order_by(None).subquery()))
+            or 0
+        )
+        items = [
+            EntityMentionRead(
+                id=row.id,
+                entity_kind=kind,
+                match_class=(
+                    "VERIFIED_MENTION" if row.mention_state == "verified" else "REVIEW_REQUIRED"
+                ),
+                rule_id=row.rule_id or "",
+                rule_version=row.rule_version or 0,
+                occurrence_text=row.occurrence_text,
+                document_ref=document.official_ref,
+                document_title=document.title,
+                version_ref=version.official_version_ref,
+                version_superseded=bool(superseded),
+                language=row.language,
+                char_anchor=row.char_anchor,
+                char_start=row.char_start,
+                char_end=row.char_end,
+                pdf_page_index=row.pdf_page_index,
+                page=row.page_number,
+                paragraph=row.paragraph_number,
+                line_from=row.line_from,
+                line_to=row.line_to,
+                source_url=version.source_url,
+                target_path=_document_target_path(
+                    document,
+                    version,
+                    pdf_page_index=row.pdf_page_index,
+                    paragraph=row.paragraph_number,
+                    page=row.page_number,
+                    line=row.line_from,
+                ),
+            )
+            for row, version, document, superseded in self.session.execute(
+                stmt.limit(limit).offset(offset)
+            ).all()
+        ]
+        return Page(items=items, total=total, limit=limit, offset=offset)
 
     # ---------------------------------------------------------- incidents --
     def list_incidents(self, *, limit: int, offset: int) -> Page[IncidentRead]:
@@ -1659,6 +1772,11 @@ class RecordRepository:
         if date_to:
             stmt = stmt.where(record_date <= date_to)
         return stmt
+
+
+def _verified_mention() -> Any:
+    """Only rule-lineaged, verified Phase 19A rows count as mentions."""
+    return and_(EntityOccurrence.rule_id.is_not(None), EntityOccurrence.mention_state == "verified")
 
 
 def _document_target_path(

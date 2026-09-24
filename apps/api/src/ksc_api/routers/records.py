@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -22,6 +22,7 @@ from ksc_api.schemas.records import (
     DocumentPageRead,
     DocumentParagraphRead,
     DocumentSummary,
+    EntityMentionRead,
     EventRead,
     EvidencePathRead,
     ExhibitRead,
@@ -166,6 +167,66 @@ def list_exhibits(
 @router.get("/exhibits/{exhibit_id}", response_model=ExhibitRead)
 def read_exhibit(exhibit_id: str, repo: Repo) -> ExhibitRead:
     return _or_404(repo.get_exhibit(exhibit_id), "exhibit")
+
+
+# -------------------------------------------------------------- mentions --
+MentionState = Annotated[Literal["verified", "review_required"] | None, Query()]
+
+
+@router.get("/people/{slug}/mentions", response_model=Page[EntityMentionRead])
+def list_person_mentions(
+    slug: str,
+    repo: Repo,
+    limit: Limit = DEFAULT_PAGE_SIZE,
+    offset: Offset = 0,
+    state: MentionState = None,
+) -> Page[EntityMentionRead]:
+    return _or_404(
+        repo.list_entity_mentions("person", slug, limit=limit, offset=offset, state=state),
+        "person",
+    )
+
+
+@router.get("/organizations/{slug}/mentions", response_model=Page[EntityMentionRead])
+def list_organization_mentions(
+    slug: str,
+    repo: Repo,
+    limit: Limit = DEFAULT_PAGE_SIZE,
+    offset: Offset = 0,
+    state: MentionState = None,
+) -> Page[EntityMentionRead]:
+    return _or_404(
+        repo.list_entity_mentions("organization", slug, limit=limit, offset=offset, state=state),
+        "organization",
+    )
+
+
+@router.get("/witnesses/{code}/mentions", response_model=Page[EntityMentionRead])
+def list_witness_mentions(
+    code: str,
+    repo: Repo,
+    limit: Limit = DEFAULT_PAGE_SIZE,
+    offset: Offset = 0,
+    state: MentionState = None,
+) -> Page[EntityMentionRead]:
+    return _or_404(
+        repo.list_entity_mentions("witness", code, limit=limit, offset=offset, state=state),
+        "witness",
+    )
+
+
+@router.get("/exhibits/{exhibit_id}/mentions", response_model=Page[EntityMentionRead])
+def list_exhibit_mentions(
+    exhibit_id: str,
+    repo: Repo,
+    limit: Limit = DEFAULT_PAGE_SIZE,
+    offset: Offset = 0,
+    state: MentionState = None,
+) -> Page[EntityMentionRead]:
+    return _or_404(
+        repo.list_entity_mentions("exhibit", exhibit_id, limit=limit, offset=offset, state=state),
+        "exhibit",
+    )
 
 
 # ------------------------------------------------------------- incidents --

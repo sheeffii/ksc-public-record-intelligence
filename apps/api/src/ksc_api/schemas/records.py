@@ -421,12 +421,17 @@ SearchCategory = Literal[
 ]
 
 
+MentionClass = Literal["VERIFIED_MENTION", "REVIEW_REQUIRED", "SEARCH_MATCH"]
+
+
 class SearchHit(ReadModel):
     category: SearchCategory
     ref: str
     title: str
     context: str | None
     protected: bool = False
+    # A lexical hit is never a verified mention; see `EntityMentionRead`.
+    match_class: Literal["SEARCH_MATCH"] = "SEARCH_MATCH"
     match_kind: Literal["exact_identifier", "title", "phrase", "keyword"] = "keyword"
     version_ref: str | None = None
     pdf_page_index: int | None = None
@@ -437,6 +442,35 @@ class SearchHit(ReadModel):
     line_to: int | None = None
     source_url: str | None = None
     target_path: str | None = None
+
+
+class EntityMentionRead(ReadModel):
+    """A persisted Phase 19A deterministic mention. `char_start`/`char_end`
+    index into the text named by `char_anchor`. Rejected rows are never served."""
+
+    id: uuid.UUID
+    entity_kind: Literal["person", "witness", "organization", "exhibit"]
+    match_class: Literal["VERIFIED_MENTION", "REVIEW_REQUIRED"]
+    rule_id: str
+    rule_version: int
+    occurrence_text: str
+    document_ref: str
+    document_title: str
+    version_ref: str
+    version_superseded: bool
+    language: str | None
+    char_anchor: Literal[
+        "transcript_segment_text", "transcript_speaker_label", "document_page_text"
+    ]
+    char_start: int
+    char_end: int
+    pdf_page_index: int | None
+    page: int | None
+    paragraph: int | None
+    line_from: int | None
+    line_to: int | None
+    source_url: str | None
+    target_path: str
 
 
 class SearchRead(ReadModel):
