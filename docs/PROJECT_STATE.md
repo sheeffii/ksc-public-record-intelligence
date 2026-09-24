@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 16 deferred; Phase 17 authorized in parallel)
+Last updated: 2026-09-24 (Phase 17 Pass A inventory/coverage checkpoint)
 
 ## Milestones
 
@@ -24,7 +24,7 @@ Last updated: 2026-09-24 (Phase 16 deferred; Phase 17 authorized in parallel)
 | **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
 | **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred             |
-| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **AUTHORIZED / NOT STARTED (2026-09-24)** — proceeding in parallel with deferred Phase 16                 |
+| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **IN PROGRESS — PASS A (2026-09-24)** — reproducible known-corpus inventory and structured audit complete; new official discovery required before acquisition |
 
 ## Roadmap
 
@@ -526,8 +526,28 @@ check` and `head → base → head` are integration-tested.
   alert delivery and managed DB/object-store IAM verification were not claimed.
 - Phase 16 remains in progress. Its remaining external deployment/alerting gates
   are intentionally deferred until public deployment is desired; the unclaimed
-  external beta is already documented as an external dependency. Phase 17 is
-  explicitly authorized to proceed in parallel but has not started.
+  external beta is already documented as an external dependency. Phase 17 was
+  explicitly authorized to proceed in parallel.
+
+## Phase 17 Pass A checkpoint
+
+- Declared scope: officially discovered public `KSC-BC-2020-06` records in EN/SQ;
+  the report says “known public corpus indexed as of 2026-09-24” and makes no
+  complete-corpus claim.
+- A reproducible metadata-only report inventories all 62 official source rows
+  and their detail/PDF URLs, version markers, acquisition, parse and index state.
+  The held corpus is 56 documents / 61 fetched, parsed and indexed PDF versions,
+  2,832 pages, 2,019 numbered paragraphs, 1,363 transcript segments and 15,730
+  citations. One conflicting official record remains unmapped/unfetched for review.
+- The structured audit records 0 People, Witness, Organization and Exhibit rows
+  without treating zero as absence from the case. All 3 hearings, 1,363 transcript
+  fragments, 54 events and 178 relationships pass their applicable source/version/
+  coordinate provenance checks.
+- The current inventory contains no genuinely new unheld record. A 75-record
+  metadata-first operator discovery batch is recommended for the missing 2021–2024
+  and document-type/language strata; acquisition remains fail-closed until that
+  official inventory exists. No bulk download or access-control bypass occurred.
+- Phase 17 remains in progress. Pass A does not close the phase or start Phase 18.
 
 ## Technical debt / notes
 

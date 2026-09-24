@@ -52,6 +52,7 @@ from ksc_ingestion.findings_pipeline import Phase10Pipeline
 from ksc_ingestion.findings_quality_gate import run_phase10_gate, write_phase10_report
 from ksc_ingestion.parse_pipeline import Phase8Pipeline
 from ksc_ingestion.phase13_quality_gate import run_phase13_gate, write_phase13_report
+from ksc_ingestion.phase17_report import build_phase17_pass_a_report, write_phase17_pass_a_report
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor, RunOutcome
 from ksc_ingestion.probe import probe, record_probe
 from ksc_ingestion.quality_gate import report_to_table, run_gate, write_report
@@ -160,6 +161,21 @@ def cmd_inventory(args: argparse.Namespace) -> int:
             queued = AcquisitionQueue(session, case).enqueue_missing()
             session.commit()
         print(f"queued_missing_artifacts={queued}")
+    return 0
+
+
+def cmd_phase17_report(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        report = build_phase17_pass_a_report(
+            session, case_number=settings.case_id, generated_at=args.generated_at
+        )
+    write_phase17_pass_a_report(report, Path(args.out))
+    print(
+        f"official_inventory={report.official_inventory_count} "
+        f"held={report.held_corpus_count} parsed={report.counts.parsed_versions} "
+        f"indexed={report.counts.indexed_versions} out={args.out}"
+    )
     return 0
 
 
@@ -562,6 +578,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_inventory.add_argument("--dry-run", action="store_true")
     p_inventory.add_argument("--no-resume", action="store_true")
     p_inventory.set_defaults(func=cmd_inventory)
+
+    p_phase17_report = sub.add_parser(
+        "report-phase17a", help="write the metadata-only Phase 17A inventory and coverage report"
+    )
+    p_phase17_report.add_argument("--generated-at", type=date.fromisoformat, default=date.today())
+    p_phase17_report.add_argument("--out", required=True)
+    p_phase17_report.set_defaults(func=cmd_phase17_report)
 
     p_queue = sub.add_parser(
         "queue-artifacts", help="enqueue missing bytes for already-known public versions"

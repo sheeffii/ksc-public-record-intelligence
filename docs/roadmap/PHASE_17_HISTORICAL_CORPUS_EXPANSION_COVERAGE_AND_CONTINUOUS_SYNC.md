@@ -1,6 +1,6 @@
 # Phase 17 — Historical Corpus Expansion, Coverage & Continuous Sync
 
-**Status:** Pending. Execute after Phase 16, or as an explicitly approved post-beta expansion milestone.
+**Status:** In progress — Pass A inventory/coverage checkpoint recorded 2026-09-24. Phase 17 was explicitly authorized to proceed in parallel with deferred Phase 16 external gates.
 
 ## Goal
 
