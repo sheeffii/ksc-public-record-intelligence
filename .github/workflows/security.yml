@@ -15,7 +15,7 @@ jobs:
   dependencies:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - uses: pnpm/action-setup@v4
@@ -35,7 +35,7 @@ jobs:
           - { service: web, dockerfile: apps/web/Dockerfile }
           - { service: worker, dockerfile: workers/ingestion/Dockerfile }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
