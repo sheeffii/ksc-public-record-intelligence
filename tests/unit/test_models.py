@@ -12,6 +12,7 @@ from ksc_api.models import (
     Document,
     DocumentIngestionState,
     GraphNode,
+    Hearing,
     RecordIdentifier,
     Relationship,
     VerificationState,
@@ -116,6 +117,10 @@ def test_document_keeps_the_three_date_types_separate():
         assert name in cols
         # Independently nullable; none is derived from another.
         assert cols[name].nullable
+
+
+def test_hearing_session_label_fits_official_transcript_titles():
+    assert Hearing.__table__.columns["session_label"].type.length == 255
 
 
 def test_no_model_carries_a_score_rank_or_weight_field():

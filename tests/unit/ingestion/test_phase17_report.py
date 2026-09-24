@@ -10,6 +10,7 @@ from ksc_ingestion.sources import UrlKind, classify
 
 REPO = Path(__file__).resolve().parents[3]
 REPORT = REPO / "docs" / "ingestion" / "manifests" / "phase17-pass-a-coverage.json"
+PASS_B_REPORT = REPO / "docs" / "ingestion" / "manifests" / "phase17-pass-b-coverage.json"
 
 
 def test_tracked_phase17_report_matches_the_real_baseline() -> None:
@@ -81,3 +82,39 @@ def test_report_contains_metadata_only() -> None:
     for record in raw["inventory"]:
         assert not forbidden & set(record)
     assert REPORT.stat().st_size < 100_000
+
+
+def test_pass_b_report_reconciles_the_official_corpus_and_quarantine() -> None:
+    report = json.loads(PASS_B_REPORT.read_text(encoding="utf-8"))
+
+    assert report["discovery"] | {"years": {}, "languages": {}, "record_types": {}} == {
+        "genuinely_new_candidates": 75,
+        "selected": 75,
+        "accepted": 73,
+        "duplicates": 0,
+        "failed": 0,
+        "quarantined": 2,
+        "missing_pdfs": 0,
+        "bytes": 42_867_559,
+        "years": {},
+        "languages": {},
+        "record_types": {},
+    }
+    assert report["official_corpus"]["after"]["source_records"] == 135
+    assert report["official_corpus"]["after"]["documents"] == 116
+    assert report["official_corpus"]["after"]["versions"] == 134
+    assert report["quality_gate"]["passed"] == 73
+    assert report["structured_data"]["events"] == {"before": 54, "after": 127}
+    assert report["structured_data"]["relationships"] == {"before": 178, "after": 291}
+    assert report["citations"]["after"] == {
+        "resolved": 306,
+        "ambiguous": 3,
+        "unresolved": 16_831,
+        "invalid": 141,
+        "total": 17_281,
+    }
+    assert {row["record_id"] for row in report["quarantine"]} == {"r17", "r22"}
+    assert all(
+        row["reason"] == "transcript page 1 has no open-session heading"
+        for row in report["quarantine"]
+    )

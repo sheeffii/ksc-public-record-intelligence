@@ -122,6 +122,6 @@ def test_downgrade_to_base_and_reupgrade(migrated_database_url):
             "media_statement_comparisons",
         } <= set(inspect(engine).get_table_names())
         with engine.connect() as conn:
-            assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0010"
+            assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0011"
     finally:
         engine.dispose()

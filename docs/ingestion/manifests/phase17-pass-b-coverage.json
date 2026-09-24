@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "phase": "17B",
+  "generated_at": "2026-09-24",
+  "case_number": "KSC-BC-2020-06",
+  "scope": "Official public records only; historical/manual benchmark artifacts are excluded.",
+  "discovery": {
+    "genuinely_new_candidates": 75,
+    "selected": 75,
+    "accepted": 73,
+    "duplicates": 0,
+    "failed": 0,
+    "quarantined": 2,
+    "missing_pdfs": 0,
+    "bytes": 42867559,
+    "years": { "2021": 16, "2022": 14, "2023": 21, "2024": 21, "2025": 1 },
+    "languages": { "en": 57, "sq": 16 },
+    "record_types": { "filing": 50, "transcript": 23 }
+  },
+  "quarantine": [
+    { "record_id": "r17", "reason": "transcript page 1 has no open-session heading" },
+    { "record_id": "r22", "reason": "transcript page 1 has no open-session heading" }
+  ],
+  "official_corpus": {
+    "before": {
+      "source_records": 62,
+      "documents": 56,
+      "versions": 61,
+      "pdfs": 61,
+      "bytes": 36443971,
+      "pages": 2832,
+      "paragraphs": 2019,
+      "transcript_segments": 1363
+    },
+    "after": {
+      "source_records": 135,
+      "documents": 116,
+      "versions": 134,
+      "pdfs": 134,
+      "bytes": 79311530,
+      "pages": 5725,
+      "paragraphs": 3133,
+      "transcript_segments": 8547
+    },
+    "parse_status": {
+      "parsed": 134,
+      "indexed": 134,
+      "review_required": 3,
+      "new_review_required": 2,
+      "failed": 0
+    }
+  },
+  "structured_data": {
+    "people": { "before": 0, "after": 0 },
+    "witnesses": { "before": 0, "after": 0 },
+    "organizations": { "before": 0, "after": 0 },
+    "exhibits": { "before": 0, "after": 0 },
+    "hearings": { "before": 3, "after": 16 },
+    "statements": { "before": 1363, "after": 8547 },
+    "events": { "before": 54, "after": 127 },
+    "relationships": { "before": 178, "after": 291 }
+  },
+  "citations": {
+    "before": {
+      "resolved": 188,
+      "ambiguous": 3,
+      "unresolved": 15420,
+      "invalid": 119,
+      "total": 15730
+    },
+    "after": {
+      "resolved": 306,
+      "ambiguous": 3,
+      "unresolved": 16831,
+      "invalid": 141,
+      "total": 17281
+    }
+  },
+  "quality_gate": {
+    "accepted_records": 73,
+    "passed": 73,
+    "failed": 0,
+    "documents": 60,
+    "versions": 73
+  },
+  "lineage": {
+    "citation_resolution": "completed",
+    "deterministic_evidence_projection": "completed",
+    "unsupported_entity_inference": false
+  },
+  "completeness_claim": "Expanded known public corpus indexed as of 2026-09-24; not a complete-corpus claim."
+}

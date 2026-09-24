@@ -111,3 +111,16 @@ def test_phase13_manifests_describe_the_scaled_corpus() -> None:
     assert combined.document_count == 56 and combined.total_bytes == 24_429_094 + 12_014_877
     assert len({r.sha256 for r in combined.records}) == 61
     assert len(combined.refused) == 1
+
+
+def test_phase17_pass_b_manifest_describes_the_accepted_batch() -> None:
+    manifest = validate_manifest_file(
+        REPO / "docs" / "ingestion" / "manifests" / "phase17-corpus-03.json"
+    )
+    assert manifest.bundle_id == "2026-09-24-corpus-03"
+    assert manifest.record_count == 73
+    assert manifest.document_count == 60
+    assert manifest.version_count == 73
+    assert manifest.total_bytes == 42_867_559
+    assert len({record.sha256 for record in manifest.records}) == 73
+    assert all(record.quality_gate.status == "PASS" for record in manifest.records)

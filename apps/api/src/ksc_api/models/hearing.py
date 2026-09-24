@@ -49,7 +49,7 @@ class Hearing(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     hearing_date: Mapped[date] = mapped_column(Date, nullable=False)
     # Sessions on the same day (morning / afternoon) in order.
     session_sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    session_label: Mapped[str | None] = mapped_column(String(64))
+    session_label: Mapped[str | None] = mapped_column(String(255))
     hearing_type: Mapped[str | None] = mapped_column(String(64))
     official_ref: Mapped[str | None] = mapped_column(String(128))
     source_url: Mapped[str | None] = mapped_column(String(1024))

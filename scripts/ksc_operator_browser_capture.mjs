@@ -57,6 +57,7 @@ function parseArgs(argv) {
     output: join(process.env.HOME ?? ".", "Downloads", "ksc-bc-2020-06-phase13-corpus-02"),
     profile: join(ROOT, ".tmp", "ksc-operator-browser-profile"),
     exclude: join(ROOT, "docs", "ingestion", "manifests", "phase7-controlled-corpus.json"),
+    excludeInventory: null,
     bundleId: "2026-09-21-corpus-02",
     paceMs: 2500,
     probe: false,
@@ -74,6 +75,7 @@ function parseArgs(argv) {
     else if (a === "--output") args.output = resolve(next().replace(/^~/, process.env.HOME ?? "~"));
     else if (a === "--profile") args.profile = resolve(next());
     else if (a === "--exclude") args.exclude = resolve(next());
+    else if (a === "--exclude-inventory") args.excludeInventory = resolve(next());
     else if (a === "--bundle-id") args.bundleId = next();
     else if (a === "--pace-ms") args.paceMs = Number(next());
     else if (a === "--captured-by") args.capturedBy = next();
@@ -383,6 +385,202 @@ async function runProbe(context, page, args) {
 //   translations: .detail-row "Translations" > .list-wrapper (.list-title + a[href*=details.php])
 const STRATA = [
   {
+    key: "lead_f01771",
+    quota: 1,
+    record: "stl_filing",
+    filingNumber: "F01771",
+    sort: "oldest",
+    desc: "Known Phase 17 lead F01771",
+  },
+  {
+    key: "lead_f02082",
+    quota: 1,
+    record: "stl_filing",
+    filingNumber: "F02082",
+    sort: "oldest",
+    desc: "Known Phase 17 lead F02082/RED",
+  },
+  {
+    key: "transcripts_2021",
+    quota: 6,
+    record: "stl_transcript",
+    sort: "oldest",
+    startPage: 2,
+    maxPages: 2,
+    year: 2021,
+    desc: "2021 transcripts, historically paged",
+  },
+  {
+    key: "filings_2021_early",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 50,
+    maxPages: 2,
+    year: 2021,
+    desc: "2021 filings, early-year historical page",
+  },
+  {
+    key: "filings_2021_late",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 80,
+    maxPages: 2,
+    year: 2021,
+    desc: "2021 filings, late-year historical page",
+  },
+  {
+    key: "transcripts_2022",
+    quota: 6,
+    record: "stl_transcript",
+    sort: "oldest",
+    startPage: 5,
+    maxPages: 3,
+    year: 2022,
+    desc: "2022 transcripts, historically paged",
+  },
+  {
+    key: "filings_2022_early",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 100,
+    maxPages: 2,
+    year: 2022,
+    desc: "2022 filings, early-year historical page",
+  },
+  {
+    key: "filings_2022_late",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 130,
+    maxPages: 2,
+    year: 2022,
+    desc: "2022 filings, late-year historical page",
+  },
+  {
+    key: "transcripts_2023_opening",
+    quota: 6,
+    record: "stl_transcript",
+    sort: "oldest",
+    startPage: 9,
+    maxPages: 2,
+    year: 2023,
+    desc: "2023 opening/trial transcripts, historically paged",
+  },
+  {
+    key: "filings_2023_early",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 150,
+    maxPages: 2,
+    year: 2023,
+    desc: "2023 filings, early-year historical page",
+  },
+  {
+    key: "filings_2023_mid",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 180,
+    maxPages: 2,
+    year: 2023,
+    desc: "2023 filings, mid-year historical page",
+  },
+  {
+    key: "filings_2023_late",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 210,
+    maxPages: 2,
+    year: 2023,
+    desc: "2023 filings, late-year historical page",
+  },
+  {
+    key: "transcripts_2024",
+    quota: 6,
+    record: "stl_transcript",
+    sort: "oldest",
+    startPage: 40,
+    maxPages: 2,
+    year: 2024,
+    desc: "2024 transcripts, historically paged",
+  },
+  {
+    key: "filings_2024_early",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 240,
+    maxPages: 2,
+    year: 2024,
+    desc: "2024 filings, early-year historical page",
+  },
+  {
+    key: "filings_2024_mid",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 260,
+    maxPages: 2,
+    year: 2024,
+    desc: "2024 filings, mid-year historical page",
+  },
+  {
+    key: "filings_2024_late",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 280,
+    maxPages: 2,
+    year: 2024,
+    desc: "2024 filings, late-year historical page",
+  },
+  {
+    key: "transcripts_2025",
+    quota: 6,
+    record: "stl_transcript",
+    sort: "oldest",
+    startPage: 70,
+    maxPages: 2,
+    year: 2025,
+    desc: "2025 transcripts, historically paged",
+  },
+  {
+    key: "filings_2025_early",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 300,
+    maxPages: 2,
+    year: 2025,
+    desc: "2025 filings, early-year historical page",
+  },
+  {
+    key: "filings_2025_mid",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 340,
+    maxPages: 2,
+    year: 2025,
+    desc: "2025 filings, mid-year historical page",
+  },
+  {
+    key: "filings_2025_late",
+    quota: 5,
+    record: "stl_filing",
+    sort: "oldest",
+    startPage: 370,
+    maxPages: 2,
+    year: 2025,
+    desc: "2025 filings, late-year historical page",
+  },
+  {
     key: "chambers_newest",
     quota: 6,
     record: "stl_filing",
@@ -527,6 +725,7 @@ function listingUrl(args, stratum, pageNo) {
   if (stratum.submitter) u.searchParams.set("icc_filters[filing_submitter]", stratum.submitter);
   if (stratum.level) u.searchParams.set("icc_filters[filing_court_level]", stratum.level);
   if (stratum.filingType) u.searchParams.append("icc_filters[filing_type][]", stratum.filingType);
+  if (stratum.filingNumber) u.searchParams.set("icc_filters[filing_number]", stratum.filingNumber);
   if (pageNo > 1) u.searchParams.set("page", String(pageNo));
   return u.toString();
 }
@@ -606,6 +805,10 @@ function filingKey(documentId) {
 async function collect(context, page, args) {
   const known = JSON.parse(readFileSync(args.exclude, "utf8"));
   const heldDocIds = new Set(known.records.map((r) => r.external_record_id));
+  if (args.excludeInventory) {
+    const inventory = JSON.parse(readFileSync(args.excludeInventory, "utf8"));
+    for (const record of inventory.inventory ?? []) heldDocIds.add(record.source_record_id);
+  }
   const heldHashes = new Set(known.records.map((r) => r.sha256));
   const heldFilings = new Set(
     known.records.map((r) => filingKey(r.published_document_id)).filter(Boolean),
@@ -737,11 +940,10 @@ async function collect(context, page, args) {
     if (stopReached()) break;
     let taken = 0;
     const perAccused = new Map();
-    for (
-      let pageNo = 1;
-      pageNo <= args.maxListingPages && taken < stratum.quota && !stopReached();
-      pageNo++
-    ) {
+    const firstPage = stratum.startPage ?? 1;
+    const pageLimit = stratum.maxPages ?? args.maxListingPages;
+    for (let offset = 0; offset < pageLimit && taken < stratum.quota && !stopReached(); offset++) {
+      const pageNo = firstPage + offset;
       const url = listingUrl(args, stratum, pageNo);
       await go(page, url, args.paceMs);
       events.listings += 1;
@@ -751,6 +953,7 @@ async function collect(context, page, args) {
         if (taken >= stratum.quota || stopReached()) break;
         if (!item.href || item.case_number !== args.case) continue;
         if (!/pdf/i.test(item.format ?? "")) continue;
+        if (stratum.year && !item.date?.endsWith(String(stratum.year))) continue;
         // Scope: English and Albanian only (the project's languages; the
         // importer's classification parser is EN/SQ).
         if (!/\((eng|sqi)\)/i.test(item.language ?? "")) continue;
@@ -829,7 +1032,7 @@ async function collect(context, page, args) {
 
 function captureNotes(args, selected, summary) {
   const lines = [
-    `# KSC Public Record Intelligence — Phase 13 operator-assisted capture \`${args.bundleId}\``,
+    `# KSC Public Record Intelligence — Phase 17 operator-assisted capture \`${args.bundleId}\``,
     "",
     `**Case:** ${args.case}`,
     `**Captured:** ${new Date().toISOString().slice(0, 10)} by ${args.capturedBy}`,
@@ -854,7 +1057,7 @@ function captureNotes(args, selected, summary) {
     ...STRATA.map((s) => `- ${s.desc} (quota ${s.quota})`),
     `- Albanian translations linked from selected English detail pages (quota ${SQI_QUOTA})`,
     "",
-    "Records already held in `2026-09-20-corpus-01` were skipped by repository doc_id and by",
+    "Records already represented in the configured corpus/inventory were skipped by repository doc_id and by",
     "SHA-256. `selection_reason` states the listing a record came from; nothing else was inferred.",
     "",
     "## Boundaries observed",
@@ -918,9 +1121,9 @@ function writeBundle(args, records, notes) {
   for (const d of ["pages", "raw_pages", "files"]) mkdirSync(join(out, d), { recursive: true });
   const manifest = {
     bundle: {
-      name: `${args.case.toLowerCase()}-phase13-corpus-02`,
+      name: `${args.case.toLowerCase()}-${args.bundleId}`,
       project: "KSC Public Record Intelligence",
-      phase: "Phase 13 operator-assisted public capture",
+      phase: "Phase 17 operator-assisted public capture",
       bundle_id: args.bundleId,
       case_number: args.case,
       capture_date: new Date().toISOString().slice(0, 10),
