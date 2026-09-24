@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 17 complete)
+Last updated: 2026-09-24 (Phase 18 Pass A checkpoint)
 
 ## Milestones
 
@@ -24,8 +24,8 @@ Last updated: 2026-09-24 (Phase 17 complete)
 | **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
 | **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
-| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                      |
-| **18** | **Next milestone**                                                                                         | **NEXT / PENDING** — not started                                                                          |
+| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
+| **18** | **Research experience and visual excellence**                                                             | **IN PROGRESS** — Pass A implemented and verified; Phase 18 not complete                                 |
 
 ## Roadmap
 
@@ -47,7 +47,8 @@ smoke remain pending. The external beta protocol is documented as an external
 dependency, not an active completion blocker. Phase 16 remains **IN PROGRESS**;
 its remaining blockers are external deployment/alerting only and it will resume
 when public deployment is desired. Phase 17 is complete against its explicitly
-declared known-public-corpus scope. Phase 18 is next/pending and has not started.
+declared known-public-corpus scope. Phase 18 Pass A aligns the research surfaces
+to that real-data baseline; Phase 18 remains in progress.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -615,6 +616,36 @@ check` and `head → base → head` are integration-tested.
   strict typecheck passed, migration round-trip passed, and Alembic drift check
   passed. Phase 18 is NEXT / PENDING and has not started.
 
+## Phase 18 Pass A checkpoint
+
+- Implementation commit: `5733533` (`feat(web): refine real-data research
+experience`).
+- Audited Homepage, Search, Documents/Reader, People, Witnesses, Exhibits,
+  Findings, Network and Timeline against the approved design and real Phase 17
+  baseline. Actionable remaining gaps are recorded in
+  `docs/PHASE18_PASS_A_UX_AUDIT.md`.
+- Homepage now presents meaningful corpus measures: 116 documents, 5,725 parsed
+  pages, 8,547 transcript segments, 48 people, 201 witness codes, 981 exhibits
+  and 10,395 resolved citations, plus explicit research paths and date-ordered
+  recent documents.
+- People and witness directories preserve separate document, transcript and
+  relationship counts. Detail views expose source-backed activity paths;
+  protected witnesses remain code-only. No hearing count is inferred because
+  the current witness API does not expose one.
+- Exhibits display their explicit status; `UNKNOWN` is a neutral uncertainty
+  notice and never implies admitted, rejected or tendered. Finding summaries are
+  clamped in list rows, and search results distinguish what/where/source.
+- Network exploration now renders a bounded selected-node neighbourhood rather
+  than attempting all 10,380 relationships, uses readable labels, live counts
+  and exact provenance, and no longer overlaps subset nodes using whole-graph
+  coordinates. Timeline uses a readable chronological real-event list.
+- Dense tables become stacked cards below 860px. Live visual checks passed at
+  1440px, 1024px and Pixel 7 widths for the high-priority routes. The local
+  Docker API/web images were rebuilt from migration `0012` and are healthy.
+- Focused Phase 18/frontend/data/i18n tests pass (35/35); the complete frontend
+  suite also passed earlier in this pass (239/239). Next production build passed.
+  Phase 18 is not complete and Phase 18B has not started.
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -639,13 +670,13 @@ check` and `head → base → head` are integration-tested.
 
 ## Test / evaluation status
 
-| Suite                                    | Count        | Last result                                              |
-| ---------------------------------------- | ------------ | -------------------------------------------------------- |
-| Backend (pytest)                         | 303          | pass                                                     |
-| Frontend (vitest)                        | 239          | pass                                                     |
-| E2E (playwright)                         | Phase 16     | 38/38 workflows; 18/18 axe routes pass desktop/mobile    |
-| Targeted frontend verification           | Phase 15     | 28/28 pass                                               |
-| Evaluation                               | 3 real items | Phase 14 controlled real-public-source quality gate PASS |
+| Suite                          | Count        | Last result                                              |
+| ------------------------------ | ------------ | -------------------------------------------------------- |
+| Backend (pytest)               | 303          | pass                                                     |
+| Frontend (vitest)              | 239          | pass                                                     |
+| E2E (playwright)               | Phase 16     | 38/38 workflows; 18/18 axe routes pass desktop/mobile    |
+| Targeted frontend verification | Phase 15     | 28/28 pass                                               |
+| Evaluation                     | 3 real items | Phase 14 controlled real-public-source quality gate PASS |
 
 Lint/typecheck: ruff, ruff format, mypy --strict, eslint, tsc, prettier — all pass.
 

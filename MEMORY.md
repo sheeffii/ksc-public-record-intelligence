@@ -4,13 +4,15 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-17-corpus-expansion-structured-data`, created from
-  Phase 16 blocker-resolution commit `eb01a87` with all useful Phase 16 fixes.
-- Current milestone: **Phase 17 COMPLETE (2026-09-24)** against the declared
-  known-public-corpus scope. Phase 16 remains **IN PROGRESS**; local
+- Current branch: `feat/phase-18-research-experience-visual-excellence`, created
+  from the Phase 17 closeout commit `fd344fb`.
+- Current milestone: **Phase 18 IN PROGRESS — Pass A implemented and verified
+  (2026-09-24)**. Phase 18 is not complete and Phase 18B has not started. Phase
+  16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
   external deployment/alerting gates are intentionally deferred until public
   deployment is desired.
+- Phase 18 Pass A implementation commit: `5733533`.
 - Push state (2026-09-22): `main` fast-forwarded to `01cb693` and pushed;
   annotated tag `phase-15-complete` and the Phase 15 feature branch were pushed.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
@@ -317,16 +319,15 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 17 is complete and quality-gated on
-`feat/phase-17-corpus-expansion-structured-data`: 48 people, 201 protected
-witness codes, 6 organizations, 981 exhibits and 15,024 exact occurrences;
-10,395 citations resolve and 10,380 relationships are projected. The four
-surname-only `Smith` occurrences remain review-required and must not be merged
-without explicit source evidence. Phase 18 is NEXT / PENDING; do not begin it
-without explicit authorization. Do not close Phase 16; resume
-its external deployment/alerting gates only when public deployment is desired.
-Existing non-blocking follow-ups remain: review quarantined `r31`; the court
-corpus and external media set are samples; performance figures are local only.
+Phase 18 Pass A is implemented on
+`feat/phase-18-research-experience-visual-excellence`. The audit is
+`docs/PHASE18_PASS_A_UX_AUDIT.md`; real-data desktop/tablet/Pixel 7 checks and
+the focused 35-test gate pass. Do not mark Phase 18 complete and do not begin
+Phase 18B without explicit authorization. Remaining UX work is API-bound:
+structured reader context, person/witness occurrence payloads and future
+server-side network neighbourhood pagination/clustering. Do not close Phase 16;
+resume its external deployment/alerting gates only when public deployment is
+desired. The four surname-only `Smith` occurrences remain review-required.
 
 ## Non-negotiable rules
 
