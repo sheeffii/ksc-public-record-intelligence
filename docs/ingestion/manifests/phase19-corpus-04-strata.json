@@ -12,7 +12,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03699",
-      "desc": "Unheld filing F03699 cited 58x by held records"
+      "desc": "Unheld filing F03699 cited 58x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00777",
@@ -20,7 +22,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00777",
-      "desc": "Unheld filing F00777 cited 55x by held records"
+      "desc": "Unheld filing F00777 cited 55x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00455",
@@ -28,7 +32,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00455",
-      "desc": "Unheld filing F00455 cited 53x by held records"
+      "desc": "Unheld filing F00455 cited 53x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00026",
@@ -36,7 +42,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00026",
-      "desc": "Unheld filing F00026 cited 52x by held records"
+      "desc": "Unheld filing F00026 cited 52x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00789",
@@ -44,7 +52,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00789",
-      "desc": "Unheld filing F00789 cited 37x by held records"
+      "desc": "Unheld filing F00789 cited 37x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01977",
@@ -52,7 +62,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01977",
-      "desc": "Unheld filing F01977 cited 36x by held records"
+      "desc": "Unheld filing F01977 cited 36x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03766",
@@ -60,7 +72,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03766",
-      "desc": "Unheld filing F03766 cited 35x by held records"
+      "desc": "Unheld filing F03766 cited 35x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00999",
@@ -68,7 +82,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00999",
-      "desc": "Unheld filing F00999 cited 34x by held records"
+      "desc": "Unheld filing F00999 cited 34x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03747",
@@ -76,7 +92,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03747",
-      "desc": "Unheld filing F03747 cited 34x by held records"
+      "desc": "Unheld filing F03747 cited 34x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03697",
@@ -84,7 +102,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03697",
-      "desc": "Unheld filing F03697 cited 30x by held records"
+      "desc": "Unheld filing F03697 cited 30x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03065",
@@ -92,7 +112,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03065",
-      "desc": "Unheld filing F03065 cited 25x by held records"
+      "desc": "Unheld filing F03065 cited 25x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01534",
@@ -100,7 +122,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01534",
-      "desc": "Unheld filing F01534 cited 23x by held records"
+      "desc": "Unheld filing F01534 cited 23x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03176",
@@ -108,7 +132,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03176",
-      "desc": "Unheld filing F03176 cited 20x by held records"
+      "desc": "Unheld filing F03176 cited 20x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00386",
@@ -116,7 +142,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00386",
-      "desc": "Unheld filing F00386 cited 19x by held records"
+      "desc": "Unheld filing F00386 cited 19x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03639",
@@ -124,7 +152,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03639",
-      "desc": "Unheld filing F03639 cited 17x by held records"
+      "desc": "Unheld filing F03639 cited 17x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03308",
@@ -132,7 +162,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03308",
-      "desc": "Unheld filing F03308 cited 17x by held records"
+      "desc": "Unheld filing F03308 cited 17x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00801",
@@ -140,7 +172,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00801",
-      "desc": "Unheld filing F00801 cited 16x by held records"
+      "desc": "Unheld filing F00801 cited 16x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01528",
@@ -148,7 +182,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01528",
-      "desc": "Unheld filing F01528 cited 16x by held records"
+      "desc": "Unheld filing F01528 cited 16x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f02198",
@@ -156,7 +192,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F02198",
-      "desc": "Unheld filing F02198 cited 16x by held records"
+      "desc": "Unheld filing F02198 cited 16x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01603",
@@ -164,7 +202,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01603",
-      "desc": "Unheld filing F01603 cited 15x by held records"
+      "desc": "Unheld filing F01603 cited 15x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00045",
@@ -172,7 +212,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00045",
-      "desc": "Unheld filing F00045 cited 14x by held records"
+      "desc": "Unheld filing F00045 cited 14x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f02426",
@@ -180,7 +222,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F02426",
-      "desc": "Unheld filing F02426 cited 14x by held records"
+      "desc": "Unheld filing F02426 cited 14x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03737",
@@ -188,7 +232,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03737",
-      "desc": "Unheld filing F03737 cited 14x by held records"
+      "desc": "Unheld filing F03737 cited 14x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00134",
@@ -196,7 +242,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00134",
-      "desc": "Unheld filing F00134 cited 13x by held records"
+      "desc": "Unheld filing F00134 cited 13x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00611",
@@ -204,7 +252,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00611",
-      "desc": "Unheld filing F00611 cited 13x by held records"
+      "desc": "Unheld filing F00611 cited 13x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00494",
@@ -212,7 +262,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00494",
-      "desc": "Unheld filing F00494 cited 13x by held records"
+      "desc": "Unheld filing F00494 cited 13x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03708",
@@ -220,7 +272,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03708",
-      "desc": "Unheld filing F03708 cited 13x by held records"
+      "desc": "Unheld filing F03708 cited 13x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00412",
@@ -228,7 +282,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00412",
-      "desc": "Unheld filing F00412 cited 13x by held records"
+      "desc": "Unheld filing F00412 cited 13x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00034",
@@ -236,7 +292,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00034",
-      "desc": "Unheld filing F00034 cited 12x by held records"
+      "desc": "Unheld filing F00034 cited 12x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01226",
@@ -244,7 +302,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01226",
-      "desc": "Unheld filing F01226 cited 12x by held records"
+      "desc": "Unheld filing F01226 cited 12x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03702",
@@ -252,7 +312,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03702",
-      "desc": "Unheld filing F03702 cited 12x by held records"
+      "desc": "Unheld filing F03702 cited 12x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01536",
@@ -260,7 +322,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01536",
-      "desc": "Unheld filing F01536 cited 11x by held records"
+      "desc": "Unheld filing F01536 cited 11x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01296",
@@ -268,7 +332,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01296",
-      "desc": "Unheld filing F01296 cited 11x by held records"
+      "desc": "Unheld filing F01296 cited 11x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03086",
@@ -276,7 +342,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03086",
-      "desc": "Unheld filing F03086 cited 11x by held records"
+      "desc": "Unheld filing F03086 cited 11x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01594",
@@ -284,7 +352,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01594",
-      "desc": "Unheld filing F01594 cited 11x by held records"
+      "desc": "Unheld filing F01594 cited 11x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00006",
@@ -292,7 +362,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00006",
-      "desc": "Unheld filing F00006 cited 10x by held records"
+      "desc": "Unheld filing F00006 cited 10x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01532",
@@ -300,7 +372,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01532",
-      "desc": "Unheld filing F01532 cited 10x by held records"
+      "desc": "Unheld filing F01532 cited 10x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01268",
@@ -308,7 +382,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01268",
-      "desc": "Unheld filing F01268 cited 10x by held records"
+      "desc": "Unheld filing F01268 cited 10x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01110",
@@ -316,7 +392,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01110",
-      "desc": "Unheld filing F01110 cited 10x by held records"
+      "desc": "Unheld filing F01110 cited 10x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f00127",
@@ -324,7 +402,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F00127",
-      "desc": "Unheld filing F00127 cited 9x by held records"
+      "desc": "Unheld filing F00127 cited 9x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f02313",
@@ -332,7 +412,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F02313",
-      "desc": "Unheld filing F02313 cited 9x by held records"
+      "desc": "Unheld filing F02313 cited 9x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01679",
@@ -340,7 +422,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01679",
-      "desc": "Unheld filing F01679 cited 9x by held records"
+      "desc": "Unheld filing F01679 cited 9x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f01323",
@@ -348,7 +432,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F01323",
-      "desc": "Unheld filing F01323 cited 9x by held records"
+      "desc": "Unheld filing F01323 cited 9x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "lead_f03609",
@@ -356,7 +442,9 @@
       "record": "stl_filing",
       "sort": "oldest",
       "filingNumber": "F03609",
-      "desc": "Unheld filing F03609 cited 9x by held records"
+      "desc": "Unheld filing F03609 cited 9x by held records",
+      "language": "eng",
+      "skipAnnexes": true
     },
     {
       "key": "transcript_20240710",
@@ -365,8 +453,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "10/07/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-07-10 cited 60x by date"
+      "desc": "Transcript of 2024-07-10 cited 60x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20240715",
@@ -375,8 +463,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "15/07/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-07-15 cited 53x by date"
+      "desc": "Transcript of 2024-07-15 cited 53x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20241203",
@@ -385,8 +473,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "03/12/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-12-03 cited 47x by date"
+      "desc": "Transcript of 2024-12-03 cited 47x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20241202",
@@ -395,8 +483,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "02/12/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-12-02 cited 45x by date"
+      "desc": "Transcript of 2024-12-02 cited 45x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20240326",
@@ -405,8 +493,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "26/03/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-03-26 cited 40x by date"
+      "desc": "Transcript of 2024-03-26 cited 40x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20240703",
@@ -415,8 +503,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "03/07/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-07-03 cited 36x by date"
+      "desc": "Transcript of 2024-07-03 cited 36x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20240717",
@@ -425,8 +513,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "17/07/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-07-17 cited 34x by date"
+      "desc": "Transcript of 2024-07-17 cited 34x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20250326",
@@ -435,8 +523,8 @@
       "sort": "oldest",
       "year": 2025,
       "date": "26/03/2025",
-      "maxPages": 12,
-      "desc": "Transcript of 2025-03-26 cited 30x by date"
+      "desc": "Transcript of 2025-03-26 cited 30x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20230714",
@@ -445,8 +533,8 @@
       "sort": "oldest",
       "year": 2023,
       "date": "14/07/2023",
-      "maxPages": 12,
-      "desc": "Transcript of 2023-07-14 cited 28x by date"
+      "desc": "Transcript of 2023-07-14 cited 28x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20240529",
@@ -455,8 +543,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "29/05/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-05-29 cited 26x by date"
+      "desc": "Transcript of 2024-05-29 cited 26x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20240704",
@@ -465,8 +553,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "04/07/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-07-04 cited 26x by date"
+      "desc": "Transcript of 2024-07-04 cited 26x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20240222",
@@ -475,8 +563,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "22/02/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-02-22 cited 25x by date"
+      "desc": "Transcript of 2024-02-22 cited 25x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20241107",
@@ -485,8 +573,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "07/11/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-11-07 cited 25x by date"
+      "desc": "Transcript of 2024-11-07 cited 25x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20240625",
@@ -495,8 +583,8 @@
       "sort": "oldest",
       "year": 2024,
       "date": "25/06/2024",
-      "maxPages": 12,
-      "desc": "Transcript of 2024-06-25 cited 22x by date"
+      "desc": "Transcript of 2024-06-25 cited 22x by date",
+      "language": "eng"
     },
     {
       "key": "transcript_20230712",
@@ -505,8 +593,8 @@
       "sort": "oldest",
       "year": 2023,
       "date": "12/07/2023",
-      "maxPages": 12,
-      "desc": "Transcript of 2023-07-12 cited 22x by date"
+      "desc": "Transcript of 2023-07-12 cited 22x by date",
+      "language": "eng"
     },
     {
       "key": "chambers_2025",

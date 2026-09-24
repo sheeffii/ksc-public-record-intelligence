@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 19 Pass B checkpoint)
+Last updated: 2026-09-25 (Phase 19 Pass B acquisition checkpoint)
 
 ## Milestones
 
@@ -770,6 +770,30 @@ experience`).
     span highlighting (19D);
   - exhibit sub-number model;
   - 38 surname-level counsel identities.
+
+## Phase 19 Pass B acquisition checkpoint (2026-09-25)
+
+- Batch `2026-09-25-corpus-04`, captured through the operator-attached browser
+  with 0 challenges.
+  - 67 records selected by the ranked strata.
+  - 63 accepted and parsed; 4 quarantined for human review (3 with no official
+    reference, 1 conflicting SQ `F00026` header); 0 duplicates.
+  - Manifest: `docs/ingestion/manifests/phase19-corpus-04.json`.
+- Fixes found by the batch:
+  - collector filing-number and date filters;
+  - the parser now fails closed on repeated printed page numbers;
+  - the Phase 17 builder now keeps its legacy rows consistent with the mention
+    state.
+- Corpus: 135/116/134 → 202 source records / 173 documents / 197 versions;
+  pages 8,943; segments 15,171; hearings 31 (19 trial).
+- Intelligence:
+  - 22,322 verified mentions;
+  - 26 appearance rows over 18 hearings;
+  - 31 exhibit status events (2 admitted);
+  - CITED_IN 13,124, MENTIONED_IN 1,022, TESTIFIED_AT 21.
+- Citations: resolved 13,142, ambiguous 194, unresolved 6,308, invalid 218.
+- Both gates pass. Details: `docs/ingestion/PHASE19_DATA_QUALITY.md` →
+  "Acquisition checkpoint".
 
 ## Technical debt / notes
 

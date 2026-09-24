@@ -1,30 +1,30 @@
 {
   "by_anchor": {
-    "document_page_text": 13251,
-    "transcript_segment_text": 1086,
-    "transcript_speaker_label": 4800
+    "document_page_text": 14870,
+    "transcript_segment_text": 2676,
+    "transcript_speaker_label": 9149
   },
   "by_language": {
-    "en": 16081,
-    "sq": 3056
+    "en": 23471,
+    "sq": 3224
   },
   "by_rule": {
-    "exhibit.identifier.exact": 5894,
-    "organization.acronym.exact": 225,
-    "organization.name.exact": 318,
-    "person.full_name.exact": 2725,
-    "person.speaker_label.honorific": 2194,
-    "person.speaker_label.role_qualified": 2602,
+    "exhibit.identifier.exact": 6308,
+    "organization.acronym.exact": 309,
+    "organization.name.exact": 610,
+    "person.full_name.exact": 4771,
+    "person.speaker_label.honorific": 4369,
+    "person.speaker_label.role_qualified": 4776,
     "person.speaker_label.shared_surname": 4,
-    "witness.code.exact": 5175
+    "witness.code.exact": 5548
   },
   "case_number": "KSC-BC-2020-06",
   "dedup_conflicts": 0,
   "exhibit_status_counts": {
-    "admitted": 1,
-    "unknown": 980
+    "admitted": 2,
+    "unknown": 1030
   },
-  "generated_at": "2026-09-24",
+  "generated_at": "2026-09-25",
   "kinds": {
     "exhibit": {
       "rejected": 0,
@@ -33,8 +33,8 @@
       "sample_reproduced": 100,
       "sampled": 100,
       "search_only": null,
-      "unregistered_identifiers": 2357,
-      "verified": 5894
+      "unregistered_identifiers": 2245,
+      "verified": 6308
     },
     "organization": {
       "rejected": 0,
@@ -44,17 +44,17 @@
       "sampled": 100,
       "search_only": null,
       "unregistered_identifiers": null,
-      "verified": 543
+      "verified": 919
     },
     "person": {
       "rejected": 0,
-      "review_required": 2198,
+      "review_required": 4373,
       "sample_precision": 1.0,
       "sample_reproduced": 100,
       "sampled": 100,
-      "search_only": 14194,
+      "search_only": 20140,
       "unregistered_identifiers": null,
-      "verified": 5327
+      "verified": 9547
     },
     "witness": {
       "rejected": 0,
@@ -64,15 +64,15 @@
       "sampled": 100,
       "search_only": 0,
       "unregistered_identifiers": 0,
-      "verified": 5175
+      "verified": 5548
     }
   },
-  "language_metadata_conflicts": 13,
+  "language_metadata_conflicts": 19,
   "legacy_rows": 0,
   "passed": true,
   "precision_threshold": 1.0,
   "processor": "phase19a-mentions",
-  "projection_run_id": "b515f811-1136-4c2a-877a-d428523a18ce",
+  "projection_run_id": "4e1f5223-18b9-4d72-b829-1e76509b3800",
   "protected_identity_violations": 0,
   "provenance_violations": 0,
   "review_state_violations": 0,
@@ -89,9 +89,9 @@
   },
   "sample_seed": 19,
   "smith_review_required": 4,
-  "total_review_required": 2198,
-  "total_rows": 19137,
-  "total_verified": 16939,
-  "verified_with_line": 3688,
-  "verified_with_paragraph": 749
+  "total_review_required": 4373,
+  "total_rows": 26695,
+  "total_verified": 22322,
+  "verified_with_line": 7452,
+  "verified_with_paragraph": 1080
 }

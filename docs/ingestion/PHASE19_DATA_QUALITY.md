@@ -260,3 +260,108 @@ Then run `import-capture` → `parse` → `reresolve` → `build-evidence` →
 | Exhibit status events / admitted  |  0 / 3 |  23 / 1 |                                      +23 / −2 |
 | Verified mentions                 | 14,214 |  16,939 |                                        +2,725 |
 | Review-required mentions          |  2,198 |   2,198 |                                             0 |
+
+## Acquisition checkpoint — batch `2026-09-25-corpus-04`
+
+The batch was captured through the operator-attached browser (ADR-011). The
+operator passed the Cloudflare check; the collector then made only ordinary
+navigations, with 0 challenges during the run. Manifest:
+`manifests/phase19-corpus-04.json` (metadata only; bytes live in object storage
+by SHA-256).
+
+Two collector defects found and fixed before the successful run:
+
+- **Filing-number filter.** The public form matches digits only (`03667`).
+  `F03667` returns nothing, which is why every lead in corpus-03 had silently
+  captured nothing.
+- **Hearing dates.** These now use the form's own date range. Paging oldest-first
+  could not reach 2024 within the page budget.
+
+| Stage                                        |                                               Count |
+| -------------------------------------------- | --------------------------------------------------: |
+| Selected by the ranked strata                |         67 (66 new, 1 counterpart of a held filing) |
+| Filing leads captured                        | 37 of 45 (8 had no public English non-annex record) |
+| Hearing-date transcripts captured            |                                            15 of 15 |
+| 2025 filings                                 |                                            11 of 11 |
+| Albanian counterparts                        |                                                   6 |
+| Duplicates of held records                   |                                                   0 |
+| Accepted, stored, parsed, indexed            |                                                  63 |
+| Quarantined for human review (not persisted) |                                                   4 |
+| Failed downloads / hash mismatches           |                                                   0 |
+
+The 4 quarantined records:
+
+- 3 records with no official reference: the records listed under leads F01534
+  (an annex), F03176 and F02426.
+- 1 Albanian F00026 translation, whose PDF header
+  `KSC-BC-2020-06/F00026/RED/sqi/COR` contradicts its published ID
+  `F00026RED`.
+
+The pipeline does not derive references, so these wait for a human.
+
+Two ingestion defects were found and fixed:
+
+1. **Repeated printed page numbers.** A reclassified filing (`F02198`) stamps
+   "1 of 8" on every page. Repeated printed numbers are now withheld: the pages
+   keep their exact PDF index and the version is flagged for review. Before the
+   fix this aborted the parse run.
+2. **Phase 17 builder state.** The builder wrote review-required legacy rows
+   without the Phase 19A state, which the consistency CHECK rejected.
+
+Reconciliation ran in this order: `parse` → `reresolve` → `build-structured`
+(registries) → `reresolve` → `build-evidence` → `build-intelligence` →
+`report-phase19b` / `gate-phase19a`. Both gates pass: all 17 invariants are 0,
+with 0 provenance violations and 0 duplicate conflicts.
+
+### Corpus before / after
+
+| Measure             |     Before |       After |           Δ |
+| ------------------- | ---------: | ----------: | ----------: |
+| Source records      |        135 |         202 |         +67 |
+| Documents           |        116 |         173 |         +57 |
+| Versions            |        134 |         197 |         +63 |
+| Bytes               | 79,311,530 | 118,310,439 | +38,998,909 |
+| Pages               |      5,725 |       8,943 |      +3,218 |
+| Transcript segments |      8,547 |      15,171 |      +6,624 |
+| Hearings            |         16 |          31 |         +15 |
+
+### Intelligence before / after
+
+| Measure                                |           Before |                                   After |
+| -------------------------------------- | ---------------: | --------------------------------------: |
+| Verified mentions                      |           16,939 |                                  22,322 |
+| Review-required mentions               |            2,198 | 4,373 (new surname-only counsel labels) |
+| People                                 |               49 |     62 (8 new publicly named witnesses) |
+| Witness codes                          |              201 |                                     212 |
+| Witness appearance rows                |               10 |                                      26 |
+| Hearings with a recorded appearance    |                3 |                                      18 |
+| Exhibits                               |              981 |                                   1,032 |
+| Exhibit status events / admitted       |           23 / 1 |        31 / 2 (P01277, bench statement) |
+| Organizations                          |                6 |                                       6 |
+| CITED_IN / MENTIONED_IN / TESTIFIED_AT | 10,555 / 596 / 5 |                     13,124 / 1,022 / 21 |
+
+### Citations before / after
+
+| State      | Before |                                     After |
+| ---------- | -----: | ----------------------------------------: |
+| Resolved   | 10,570 |                                    13,142 |
+| Ambiguous  |    160 |                                       194 |
+| Unresolved |  6,410 |                                     6,308 |
+| Invalid    |    141 | 218 (mostly citations of other KSC cases) |
+
+Newly resolved by rule:
+
+- hearing-date transcript citations: 29 → 548;
+- transcript page ranges: 62 → 510;
+- zero-padded identifiers: 166 → 257.
+
+### Coverage after the batch
+
+- **Trial hearings:** 4 → 19. Hearings by year: 2021 3, 2022 2, 2023 6,
+  2024 15, 2025 2, 2026 3.
+- **2025 main case:** 2 decisions, 10 party filings and 2 transcripts. Before
+  this batch it had 0, 0 and 1.
+- **Languages:** documents with both EN and SQ went 18 → 24. Party filings still
+  have no Albanian counterpart (0 of 77).
+- **Parse review:** 5 versions need it (`F00002/A03`, `F02198`, `T/2024-04-29`,
+  `T/2024-04-30/sqi`, `T/2024-07-15`).

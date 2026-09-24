@@ -1,44 +1,47 @@
 {
   "schema_version": 1,
   "phase": "19B",
-  "generated_at": "2026-09-24",
+  "generated_at": "2026-09-25",
   "case_number": "KSC-BC-2020-06",
   "corpus": {
-    "documents": 116,
-    "versions": 134,
+    "documents": 173,
+    "versions": 197,
     "by_year_and_class": {
       "2020": {
-        "decision_or_order": 2
+        "decision_or_order": 3,
+        "party_or_registry_filing": 2
       },
       "2021": {
         "appeal_or_subcase": 5,
-        "decision_or_order": 1,
-        "party_or_registry_filing": 3,
+        "decision_or_order": 4,
+        "party_or_registry_filing": 5,
         "transcript": 3
       },
       "2022": {
-        "decision_or_order": 4,
-        "party_or_registry_filing": 6,
+        "decision_or_order": 7,
+        "party_or_registry_filing": 8,
         "transcript": 2
       },
       "2023": {
         "appeal_or_subcase": 2,
-        "decision_or_order": 2,
-        "party_or_registry_filing": 10,
-        "transcript": 4
+        "decision_or_order": 7,
+        "party_or_registry_filing": 13,
+        "transcript": 6
       },
       "2024": {
-        "decision_or_order": 2,
-        "party_or_registry_filing": 12,
-        "transcript": 3
+        "decision_or_order": 3,
+        "party_or_registry_filing": 13,
+        "transcript": 15
       },
       "2025": {
-        "appeal_or_subcase": 5,
-        "transcript": 1
+        "appeal_or_subcase": 6,
+        "decision_or_order": 2,
+        "party_or_registry_filing": 10,
+        "transcript": 2
       },
       "2026": {
         "appeal_or_subcase": 4,
-        "decision_or_order": 11,
+        "decision_or_order": 17,
         "party_or_registry_filing": 26,
         "transcript": 3
       },
@@ -47,25 +50,25 @@
       }
     },
     "parties": {
-      "defence": 34,
-      "court": 29,
-      "spo": 22,
-      "unstated": 22,
+      "court": 52,
+      "defence": 41,
+      "unstated": 37,
+      "spo": 34,
       "other": 6,
       "victims_counsel": 3
     },
     "version_variants": {
-      "BASE": 64,
-      "RED": 45,
-      "SQI": 25,
+      "BASE": 104,
+      "RED": 64,
+      "SQI": 30,
       "A01": 3,
       "RED2": 2,
       "COR": 1
     },
     "language_counterparts": {
-      "en_only": 91,
-      "en+sq": 18,
-      "sq_only": 7
+      "en_only": 143,
+      "en+sq": 24,
+      "sq_only": 6
     },
     "language_counterparts_by_class": {
       "annex": {
@@ -73,42 +76,45 @@
         "en_only": 4
       },
       "appeal_or_subcase": {
-        "en_only": 14,
-        "sq_only": 2
+        "en_only": 15,
+        "en+sq": 1,
+        "sq_only": 1
       },
       "decision_or_order": {
-        "en_only": 15,
-        "en+sq": 4,
+        "en_only": 31,
+        "en+sq": 9,
         "sq_only": 3
       },
       "party_or_registry_filing": {
-        "en_only": 57
+        "en_only": 77
       },
       "transcript": {
+        "en_only": 16,
         "en+sq": 13,
-        "sq_only": 2,
-        "en_only": 1
+        "sq_only": 2
       }
     },
-    "hearings": 16,
+    "hearings": 31,
     "hearings_by_kind": {
       "status_or_procedural": 7,
       "opening_or_closing": 5,
-      "trial_hearing": 4
+      "trial_hearing": 19
     },
     "hearings_by_year": {
       "2021": 3,
       "2022": 2,
-      "2023": 4,
-      "2024": 3,
-      "2025": 1,
+      "2023": 6,
+      "2024": 15,
+      "2025": 2,
       "2026": 3
     },
-    "hearings_with_recorded_appearance": 3,
+    "hearings_with_recorded_appearance": 18,
     "versions_requiring_parse_review": [
       "KSC-BC-2020-06/F00002/A03",
       "KSC-BC-2020-06/T/2024-04-30/sqi",
-      "KSC-BC-2020-06/T/2024-04-29"
+      "KSC-BC-2020-06/T/2024-04-29",
+      "KSC-BC-2020-06/F02198",
+      "KSC-BC-2020-06/T/2024-07-15"
     ],
     "empty_text_pages": 8,
     "transcript_segments_without_lines": 0
@@ -116,156 +122,141 @@
   "entities": {
     "people_by_role": {
       "judge": 6,
-      "counsel_or_participant": 38,
+      "counsel_or_participant": 43,
       "accused": 4,
-      "witness": 1
+      "witness": 9
     },
     "people_by_identity_basis": {
       "role_qualified_label": 6,
-      "surname_level_label": 38,
-      "source_backed_full_name": 5
+      "surname_level_label": 43,
+      "source_backed_full_name": 13
     },
-    "people_with_verified_mention": 11,
-    "people_with_review_required_mentions": 38,
-    "witnesses": 201,
-    "witnesses_with_verified_mention": 201,
-    "witnesses_with_recorded_appearance": 2,
+    "people_with_verified_mention": 19,
+    "people_with_review_required_mentions": 43,
+    "witnesses": 212,
+    "witnesses_with_verified_mention": 212,
+    "witnesses_with_recorded_appearance": 4,
     "organizations": 6,
     "organizations_with_verified_mention": 6,
-    "exhibits": 981,
-    "exhibits_with_verified_mention": 860,
-    "exhibits_with_status_events": 5,
+    "exhibits": 1032,
+    "exhibits_with_verified_mention": 913,
+    "exhibits_with_status_events": 12,
     "exhibit_status": {
-      "unknown": 980,
-      "admitted": 1
+      "unknown": 1030,
+      "admitted": 2
     },
     "exhibit_status_events": {
-      "number_assigned:bound": 8,
-      "number_assigned:unbound": 8,
+      "number_assigned:bound": 14,
+      "number_assigned:unbound": 9,
       "admitted:unbound": 4,
-      "admitted:bound": 3
+      "admitted:bound": 4
     }
   },
   "relationships": {
     "cited_in:citation": {
-      "edges": 10555,
-      "evidence": 10555
+      "edges": 13124,
+      "evidence": 13124
     },
     "mentioned_in:entity_occurrence": {
-      "edges": 596,
-      "evidence": 3268
+      "edges": 1022,
+      "evidence": 5690
     },
     "testified_at:witness_appearance": {
-      "edges": 5,
-      "evidence": 10
+      "edges": 21,
+      "evidence": 26
     }
   },
   "citations": {
     "states": {
-      "resolved": 10570,
-      "unresolved": 6410,
-      "invalid": 141,
-      "ambiguous": 160
+      "unresolved": 6308,
+      "resolved": 13142,
+      "invalid": 218,
+      "ambiguous": 194
     },
     "by_state_and_rule": {
-      "ambiguous:ambiguous.subcase_bare_filing": 157,
-      "ambiguous:ambiguous.transcript_page": 3,
-      "invalid:invalid.coordinate_missing": 4,
-      "invalid:invalid.other_case": 75,
+      "ambiguous:ambiguous.subcase_bare_filing": 184,
+      "ambiguous:ambiguous.transcript_page": 10,
+      "invalid:invalid.coordinate_missing": 14,
+      "invalid:invalid.other_case": 142,
       "invalid:invalid.transcript_line_grid": 62,
-      "resolved:identifier.exact": 10299,
-      "resolved:identifier.zero_padded": 166,
-      "resolved:transcript.hearing_date": 29,
-      "resolved:transcript.page_line": 7,
-      "resolved:transcript.page_range": 62,
+      "resolved:identifier.exact": 11793,
+      "resolved:identifier.zero_padded": 257,
+      "resolved:transcript.hearing_date": 548,
+      "resolved:transcript.page_line": 27,
+      "resolved:transcript.page_range": 510,
       "resolved:unrecorded": 7,
       "unresolved:unrecorded": 1,
       "unresolved:unresolved.malformed_transcript_reference": 22,
-      "unresolved:unresolved.target_not_held": 2456,
-      "unresolved:unresolved.transcript_date_not_held": 1296,
-      "unresolved:unresolved.transcript_page_not_held": 2621,
-      "unresolved:unresolved.version_not_held": 14
+      "unresolved:unresolved.target_not_held": 3022,
+      "unresolved:unresolved.transcript_date_not_held": 777,
+      "unresolved:unresolved.transcript_page_not_held": 2187,
+      "unresolved:unresolved.version_not_held": 299
     },
-    "distinct_unheld_filing_targets": 548,
+    "distinct_unheld_filing_targets": 699,
     "top_unheld_filing_targets": [
-      ["F03699", 58],
-      ["F00777", 55],
-      ["F00455", 53],
-      ["F00026", 52],
-      ["IA003/F00005", 40],
-      ["F00789", 37],
-      ["F01977", 36],
-      ["F03766", 35],
-      ["F00999", 34],
-      ["F03747", 34],
-      ["F03697", 30],
+      ["IA003/F00005", 68],
+      ["F00027", 52],
+      ["F03697", 41],
+      ["IA004/F00005", 39],
+      ["IA008/F00004", 37],
+      ["F03588", 36],
+      ["IA035/F00005", 35],
+      ["IA022/F00005", 32],
+      ["IA002/F00005", 31],
+      ["F03176", 31],
       ["IA028/F00002", 29],
-      ["F03065", 25],
-      ["IA004/F00005", 23],
-      ["F01534", 23],
-      ["IA008/F00004", 22],
-      ["IA022/F00005", 22],
-      ["IA035/F00005", 20],
-      ["F03176", 20],
-      ["F00386", 19],
-      ["IA002/F00005", 19],
-      ["IA010/F00008", 18],
+      ["F00034", 28],
+      ["F03590", 28],
+      ["F03587", 27],
+      ["IA017/F00011", 26],
+      ["IA010/F00008", 26],
+      ["IA034/F00005", 26],
+      ["IA001/F00005", 25],
+      ["F01534", 25],
+      ["IA033/F00006", 25],
+      ["F00134", 23],
+      ["IA006/F00005", 22],
+      ["F01296", 19],
+      ["F00413", 18],
+      ["IA015/F00005", 18],
       ["IA042/F00001", 18],
-      ["F03639", 17],
-      ["F03308", 17],
-      ["IA033/F00006", 17],
-      ["F00801", 16],
-      ["F01528", 16],
-      ["F02198", 16],
-      ["F01603", 15],
-      ["IA034/F00005", 15],
-      ["F00045", 14],
+      ["F01528", 17],
+      ["F03611", 17],
+      ["F00127", 16],
+      ["F01933", 16],
+      ["F02115", 16],
+      ["F03121", 16],
+      ["F03702", 16],
+      ["IA016/F00005", 15],
+      ["F01323", 15],
+      ["F00978", 15],
       ["F02426", 14],
-      ["IA006/F00005", 14],
-      ["F03737", 14],
-      ["F00134", 13],
-      ["F00611", 13],
-      ["F00494", 13],
-      ["F03708", 13],
-      ["F00412", 13],
-      ["F00034", 12],
-      ["F01226", 12],
-      ["F03702", 12],
+      ["F00582", 13],
+      ["F00002", 12],
+      ["F00576", 12],
+      ["F00177", 12],
+      ["F03177", 12],
+      ["F03620", 12],
+      ["F03671", 12],
       ["IA028/F00004", 12],
-      ["IA001/F00005", 11],
-      ["F01536", 11],
-      ["F01296", 11],
-      ["F03086", 11],
-      ["F01594", 11],
-      ["F00006", 10],
-      ["IA017/F00011", 10],
-      ["F01532", 10],
-      ["F01268", 10],
-      ["F01110", 10],
-      ["IA015/F00005", 9],
-      ["F00127", 9],
-      ["F02313", 9],
-      ["F01679", 9],
-      ["F01323", 9],
-      ["F03609", 9]
+      ["F00371", 11],
+      ["IA020/F00005", 11],
+      ["F00631", 11],
+      ["F00709", 11],
+      ["F01530", 11],
+      ["F00271", 11],
+      ["F03314", 11],
+      ["F00536", 10],
+      ["F00895", 10],
+      ["F01212", 10],
+      ["F03256", 10],
+      ["F00802", 9],
+      ["F00548", 9],
+      ["IA014/F00008", 9],
+      ["F01243", 9]
     ],
-    "distinct_unheld_hearing_dates": 160,
+    "distinct_unheld_hearing_dates": 145,
     "top_unheld_hearing_dates": [
-      ["2024-07-10", 60],
-      ["2024-07-15", 53],
-      ["2024-12-03", 47],
-      ["2024-12-02", 45],
-      ["2024-03-26", 40],
-      ["2024-07-03", 36],
-      ["2024-07-17", 34],
-      ["2025-03-26", 30],
-      ["2023-07-14", 28],
-      ["2024-05-29", 26],
-      ["2024-07-04", 26],
-      ["2024-02-22", 25],
-      ["2024-11-07", 25],
-      ["2024-06-25", 22],
-      ["2023-07-12", 22],
       ["2023-07-17", 22],
       ["2024-07-11", 21],
       ["2024-07-16", 19],
@@ -275,96 +266,111 @@
       ["2024-07-09", 16],
       ["2023-11-16", 15],
       ["2024-07-01", 14],
-      ["2025-09-15", 14]
+      ["2025-09-15", 14],
+      ["2025-11-11", 14],
+      ["2024-10-24", 14],
+      ["2023-11-15", 14],
+      ["2024-12-04", 13],
+      ["2024-03-27", 13],
+      ["2024-07-02", 13],
+      ["2025-01-21", 13],
+      ["2024-08-19", 13],
+      ["2024-11-06", 12],
+      ["2024-06-06", 12],
+      ["2024-12-05", 12],
+      ["2024-03-25", 11],
+      ["2024-06-26", 11],
+      ["2024-09-30", 11],
+      ["2024-04-24", 11]
     ],
     "sources_with_most_unresolved": [
       {
         "source": "KSC-BC-2020-06/F03667/COR/RED",
         "total": 8623,
-        "unresolved": 2660,
-        "unresolved_share": 0.308
+        "unresolved": 2210,
+        "unresolved_share": 0.256
       },
       {
         "source": "KSC-BC-2020-06/F03668/RED2",
         "total": 2928,
-        "unresolved": 1385,
-        "unresolved_share": 0.473
+        "unresolved": 854,
+        "unresolved_share": 0.292
       },
       {
         "source": "KSC-BC-2020-06/F03668/RED/A01/RED",
         "total": 170,
-        "unresolved": 121,
-        "unresolved_share": 0.712
+        "unresolved": 111,
+        "unresolved_share": 0.653
       },
       {
         "source": "KSC-BC-2020-06/F00994/RED",
         "total": 95,
-        "unresolved": 92,
-        "unresolved_share": 0.968
+        "unresolved": 83,
+        "unresolved_share": 0.874
       },
       {
-        "source": "KSC-BC-2020-06/F02445",
-        "total": 82,
-        "unresolved": 77,
-        "unresolved_share": 0.939
+        "source": "KSC-BC-2020-06/F01110/RED",
+        "total": 90,
+        "unresolved": 75,
+        "unresolved_share": 0.833
       },
       {
-        "source": "KSC-BC-2020-06/F02445/sqi",
-        "total": 82,
-        "unresolved": 77,
-        "unresolved_share": 0.939
+        "source": "KSC-BC-2020-06/F00801/RED",
+        "total": 77,
+        "unresolved": 67,
+        "unresolved_share": 0.87
       },
       {
-        "source": "KSC-BC-2020-06/F03765",
-        "total": 79,
-        "unresolved": 74,
-        "unresolved_share": 0.937
-      },
-      {
-        "source": "KSC-BC-2020-06/F03760/RED",
-        "total": 82,
-        "unresolved": 72,
-        "unresolved_share": 0.878
+        "source": "KSC-BC-2020-06/F03308/RED",
+        "total": 80,
+        "unresolved": 66,
+        "unresolved_share": 0.825
       },
       {
         "source": "KSC-BC-2020-06/F03664/RED2",
         "total": 2000,
-        "unresolved": 70,
-        "unresolved_share": 0.035
+        "unresolved": 66,
+        "unresolved_share": 0.033
       },
       {
-        "source": "KSC-BC-2020-06/F03769/RED",
-        "total": 79,
-        "unresolved": 70,
-        "unresolved_share": 0.886
+        "source": "KSC-BC-2020-06/IA042/F00005/RED",
+        "total": 118,
+        "unresolved": 64,
+        "unresolved_share": 0.542
       },
       {
-        "source": "KSC-BC-2020-06/F03775",
-        "total": 83,
-        "unresolved": 70,
-        "unresolved_share": 0.843
+        "source": "KSC-BC-2020-06/F03766",
+        "total": 90,
+        "unresolved": 59,
+        "unresolved_share": 0.656
       },
       {
-        "source": "KSC-BC-2020-06/F03660/sqi",
-        "total": 72,
-        "unresolved": 69,
-        "unresolved_share": 0.958
+        "source": "KSC-BC-2020-06/F02445",
+        "total": 82,
+        "unresolved": 58,
+        "unresolved_share": 0.707
+      },
+      {
+        "source": "KSC-BC-2020-06/F02445/sqi",
+        "total": 82,
+        "unresolved": 58,
+        "unresolved_share": 0.707
       }
     ]
   },
   "mentions": {
-    "total_rows": 19137,
-    "verified": 16939,
-    "review_required": 2198,
+    "total_rows": 26695,
+    "verified": 22322,
+    "review_required": 4373,
     "by_rule": {
-      "exhibit.identifier.exact": 5894,
-      "organization.acronym.exact": 225,
-      "organization.name.exact": 318,
-      "person.full_name.exact": 2725,
-      "person.speaker_label.honorific": 2194,
-      "person.speaker_label.role_qualified": 2602,
+      "exhibit.identifier.exact": 6308,
+      "organization.acronym.exact": 309,
+      "organization.name.exact": 610,
+      "person.full_name.exact": 4771,
+      "person.speaker_label.honorific": 4369,
+      "person.speaker_label.role_qualified": 4776,
       "person.speaker_label.shared_surname": 4,
-      "witness.code.exact": 5175
+      "witness.code.exact": 5548
     },
     "phase19a_gate_passed": true,
     "provenance_violations": 0
@@ -392,213 +398,225 @@
     "principle": "Official public KSC sources only, through the operator-attached browser (ADR-011). Ranked by how many held citations each record would resolve; no record is guessed or fetched outside the public repository UI.",
     "main_case_filings_by_citation_count": [
       {
-        "filing": "F03699",
-        "citations": 58
-      },
-      {
-        "filing": "F00777",
-        "citations": 55
-      },
-      {
-        "filing": "F00455",
-        "citations": 53
-      },
-      {
-        "filing": "F00026",
+        "filing": "F00027",
         "citations": 52
       },
       {
-        "filing": "F00789",
-        "citations": 37
+        "filing": "F03697",
+        "citations": 41
       },
       {
-        "filing": "F01977",
+        "filing": "F03588",
         "citations": 36
       },
       {
-        "filing": "F03766",
-        "citations": 35
+        "filing": "F03176",
+        "citations": 31
       },
       {
-        "filing": "F00999",
-        "citations": 34
+        "filing": "F00034",
+        "citations": 28
       },
       {
-        "filing": "F03747",
-        "citations": 34
+        "filing": "F03590",
+        "citations": 28
       },
       {
-        "filing": "F03697",
-        "citations": 30
-      },
-      {
-        "filing": "F03065",
-        "citations": 25
+        "filing": "F03587",
+        "citations": 27
       },
       {
         "filing": "F01534",
+        "citations": 25
+      },
+      {
+        "filing": "F00134",
         "citations": 23
       },
       {
-        "filing": "F03176",
-        "citations": 20
-      },
-      {
-        "filing": "F00386",
+        "filing": "F01296",
         "citations": 19
       },
       {
-        "filing": "F03639",
-        "citations": 17
-      },
-      {
-        "filing": "F03308",
-        "citations": 17
-      },
-      {
-        "filing": "F00801",
-        "citations": 16
+        "filing": "F00413",
+        "citations": 18
       },
       {
         "filing": "F01528",
+        "citations": 17
+      },
+      {
+        "filing": "F03611",
+        "citations": 17
+      },
+      {
+        "filing": "F00127",
         "citations": 16
       },
       {
-        "filing": "F02198",
+        "filing": "F01933",
         "citations": 16
       },
       {
-        "filing": "F01603",
+        "filing": "F02115",
+        "citations": 16
+      },
+      {
+        "filing": "F03121",
+        "citations": 16
+      },
+      {
+        "filing": "F03702",
+        "citations": 16
+      },
+      {
+        "filing": "F01323",
         "citations": 15
       },
       {
-        "filing": "F00045",
-        "citations": 14
+        "filing": "F00978",
+        "citations": 15
       },
       {
         "filing": "F02426",
         "citations": 14
       },
       {
-        "filing": "F03737",
-        "citations": 14
-      },
-      {
-        "filing": "F00134",
+        "filing": "F00582",
         "citations": 13
       },
       {
-        "filing": "F00611",
-        "citations": 13
-      },
-      {
-        "filing": "F00494",
-        "citations": 13
-      },
-      {
-        "filing": "F03708",
-        "citations": 13
-      },
-      {
-        "filing": "F00412",
-        "citations": 13
-      },
-      {
-        "filing": "F00034",
+        "filing": "F00002",
         "citations": 12
       },
       {
-        "filing": "F01226",
+        "filing": "F00576",
         "citations": 12
       },
       {
-        "filing": "F03702",
+        "filing": "F00177",
         "citations": 12
       },
       {
-        "filing": "F01536",
+        "filing": "F03177",
+        "citations": 12
+      },
+      {
+        "filing": "F03620",
+        "citations": 12
+      },
+      {
+        "filing": "F03671",
+        "citations": 12
+      },
+      {
+        "filing": "F00371",
         "citations": 11
       },
       {
-        "filing": "F01296",
+        "filing": "F00631",
         "citations": 11
       },
       {
-        "filing": "F03086",
+        "filing": "F00709",
         "citations": 11
       },
       {
-        "filing": "F01594",
+        "filing": "F01530",
         "citations": 11
       },
       {
-        "filing": "F00006",
+        "filing": "F00271",
+        "citations": 11
+      },
+      {
+        "filing": "F03314",
+        "citations": 11
+      },
+      {
+        "filing": "F00536",
         "citations": 10
       },
       {
-        "filing": "F01532",
+        "filing": "F00895",
         "citations": 10
       },
       {
-        "filing": "F01268",
+        "filing": "F01212",
         "citations": 10
       },
       {
-        "filing": "F01110",
+        "filing": "F03256",
         "citations": 10
       },
       {
-        "filing": "F00127",
+        "filing": "F00802",
         "citations": 9
       },
       {
-        "filing": "F02313",
+        "filing": "F00548",
         "citations": 9
       },
       {
-        "filing": "F01679",
-        "citations": 9
-      },
-      {
-        "filing": "F01323",
-        "citations": 9
-      },
-      {
-        "filing": "F03609",
+        "filing": "F01243",
         "citations": 9
       }
     ],
     "appeal_subcase_filings_by_citation_count": [
       {
         "filing": "IA003/F00005",
-        "citations": 40
+        "citations": 68
+      },
+      {
+        "filing": "IA004/F00005",
+        "citations": 39
+      },
+      {
+        "filing": "IA008/F00004",
+        "citations": 37
+      },
+      {
+        "filing": "IA035/F00005",
+        "citations": 35
+      },
+      {
+        "filing": "IA022/F00005",
+        "citations": 32
+      },
+      {
+        "filing": "IA002/F00005",
+        "citations": 31
       },
       {
         "filing": "IA028/F00002",
         "citations": 29
       },
       {
-        "filing": "IA004/F00005",
-        "citations": 23
-      },
-      {
-        "filing": "IA008/F00004",
-        "citations": 22
-      },
-      {
-        "filing": "IA022/F00005",
-        "citations": 22
-      },
-      {
-        "filing": "IA035/F00005",
-        "citations": 20
-      },
-      {
-        "filing": "IA002/F00005",
-        "citations": 19
+        "filing": "IA017/F00011",
+        "citations": 26
       },
       {
         "filing": "IA010/F00008",
+        "citations": 26
+      },
+      {
+        "filing": "IA034/F00005",
+        "citations": 26
+      },
+      {
+        "filing": "IA001/F00005",
+        "citations": 25
+      },
+      {
+        "filing": "IA033/F00006",
+        "citations": 25
+      },
+      {
+        "filing": "IA006/F00005",
+        "citations": 22
+      },
+      {
+        "filing": "IA015/F00005",
         "citations": 18
       },
       {
@@ -606,95 +624,23 @@
         "citations": 18
       },
       {
-        "filing": "IA033/F00006",
-        "citations": 17
-      },
-      {
-        "filing": "IA034/F00005",
+        "filing": "IA016/F00005",
         "citations": 15
-      },
-      {
-        "filing": "IA006/F00005",
-        "citations": 14
       },
       {
         "filing": "IA028/F00004",
         "citations": 12
       },
       {
-        "filing": "IA001/F00005",
+        "filing": "IA020/F00005",
         "citations": 11
       },
       {
-        "filing": "IA017/F00011",
-        "citations": 10
-      },
-      {
-        "filing": "IA015/F00005",
+        "filing": "IA014/F00008",
         "citations": 9
       }
     ],
     "transcripts_by_cited_hearing_date": [
-      {
-        "hearing_date": "2024-07-10",
-        "citations": 60
-      },
-      {
-        "hearing_date": "2024-07-15",
-        "citations": 53
-      },
-      {
-        "hearing_date": "2024-12-03",
-        "citations": 47
-      },
-      {
-        "hearing_date": "2024-12-02",
-        "citations": 45
-      },
-      {
-        "hearing_date": "2024-03-26",
-        "citations": 40
-      },
-      {
-        "hearing_date": "2024-07-03",
-        "citations": 36
-      },
-      {
-        "hearing_date": "2024-07-17",
-        "citations": 34
-      },
-      {
-        "hearing_date": "2025-03-26",
-        "citations": 30
-      },
-      {
-        "hearing_date": "2023-07-14",
-        "citations": 28
-      },
-      {
-        "hearing_date": "2024-05-29",
-        "citations": 26
-      },
-      {
-        "hearing_date": "2024-07-04",
-        "citations": 26
-      },
-      {
-        "hearing_date": "2024-02-22",
-        "citations": 25
-      },
-      {
-        "hearing_date": "2024-11-07",
-        "citations": 25
-      },
-      {
-        "hearing_date": "2024-06-25",
-        "citations": 22
-      },
-      {
-        "hearing_date": "2023-07-12",
-        "citations": 22
-      },
       {
         "hearing_date": "2023-07-17",
         "citations": 22
@@ -734,6 +680,66 @@
       {
         "hearing_date": "2025-09-15",
         "citations": 14
+      },
+      {
+        "hearing_date": "2025-11-11",
+        "citations": 14
+      },
+      {
+        "hearing_date": "2024-10-24",
+        "citations": 14
+      },
+      {
+        "hearing_date": "2023-11-15",
+        "citations": 14
+      },
+      {
+        "hearing_date": "2024-12-04",
+        "citations": 13
+      },
+      {
+        "hearing_date": "2024-03-27",
+        "citations": 13
+      },
+      {
+        "hearing_date": "2024-07-02",
+        "citations": 13
+      },
+      {
+        "hearing_date": "2025-01-21",
+        "citations": 13
+      },
+      {
+        "hearing_date": "2024-08-19",
+        "citations": 13
+      },
+      {
+        "hearing_date": "2024-11-06",
+        "citations": 12
+      },
+      {
+        "hearing_date": "2024-06-06",
+        "citations": 12
+      },
+      {
+        "hearing_date": "2024-12-05",
+        "citations": 12
+      },
+      {
+        "hearing_date": "2024-03-25",
+        "citations": 11
+      },
+      {
+        "hearing_date": "2024-06-26",
+        "citations": 11
+      },
+      {
+        "hearing_date": "2024-09-30",
+        "citations": 11
+      },
+      {
+        "hearing_date": "2024-04-24",
+        "citations": 11
       }
     ],
     "language_counterparts_missing": {
@@ -742,21 +748,22 @@
         "en_only": 4
       },
       "appeal_or_subcase": {
-        "en_only": 14,
-        "sq_only": 2
+        "en_only": 15,
+        "en+sq": 1,
+        "sq_only": 1
       },
       "decision_or_order": {
-        "en_only": 15,
-        "en+sq": 4,
+        "en_only": 31,
+        "en+sq": 9,
         "sq_only": 3
       },
       "party_or_registry_filing": {
-        "en_only": 57
+        "en_only": 77
       },
       "transcript": {
+        "en_only": 16,
         "en+sq": 13,
-        "sq_only": 2,
-        "en_only": 1
+        "sq_only": 2
       }
     }
   },

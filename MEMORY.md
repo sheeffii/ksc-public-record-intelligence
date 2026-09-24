@@ -324,26 +324,31 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-The Phase 19A (verified mentions) and 19B (corpus intelligence) checkpoints are
-recorded. See `docs/PROJECT_STATE.md` → "Phase 19 Pass B checkpoint" and
-`docs/ingestion/PHASE19_DATA_QUALITY.md`. Migration head is `0014`.
+The Phase 19A, 19B and 19B-acquisition checkpoints are recorded.
 
-The reconciliation order after any data change:
+- Batch `2026-09-25-corpus-04`: 63 accepted, 4 quarantined; manifest in
+  `docs/ingestion/manifests/phase19-corpus-04.json`. The raw capture is in
+  `data/operator/2026-09-25-corpus-04-raw` and the bundle in
+  `data/captures/2026-09-25-corpus-04` (both git-ignored).
+- Migration head is `0014`.
 
-1. `reresolve`
-2. `build-evidence`
-3. `build-intelligence`
-4. `report-phase19b` (plus `gate-phase19a`)
+The reconciliation order after new records:
 
-Next is Phase 19C, the balanced acquisition batch. Start it only when explicitly
-authorized. It needs the operator-attached browser and uses
-`--strata docs/ingestion/manifests/phase19-corpus-04-strata.json`. Still open:
+1. `parse`
+2. `reresolve`
+3. `build-structured`
+4. `reresolve`
+5. `build-evidence`
+6. `build-intelligence`
+7. `report-phase19b` (plus `gate-phase19a`)
 
+Next is Phase 19C, and only when explicitly authorized. Still open:
+
+- human review of the 4 quarantined records and 5 parse-review versions;
 - the human sampling audit;
-- 19D UI consumption of the new APIs and Reader span highlighting.
+- 19D UI consumption and Reader span highlighting.
 
-Do not close Phase 16. The four `Smith` rows and all honorific-only counsel
-labels stay review-required.
+Do not close Phase 16.
 
 ## Non-negotiable rules
 
