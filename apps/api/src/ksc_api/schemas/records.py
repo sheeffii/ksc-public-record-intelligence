@@ -397,6 +397,93 @@ class RelationshipRead(ReadModel):
     date_precision: DatePrecision
 
 
+EvidenceKind = Literal[
+    "citation", "entity_occurrence", "witness_appearance", "exhibit_status_event"
+]
+
+
+class ProvenanceRead(ReadModel):
+    """One exact-source answer to "why does this exist?", identical in shape for
+    every evidence kind (citation, entity occurrence, witness appearance)."""
+
+    kind: EvidenceKind
+    rule: str | None
+    document_ref: str
+    document_title: str
+    version_ref: str
+    language: str | None
+    pdf_page_index: int | None
+    page: int | None
+    paragraph: int | None
+    line_from: int | None
+    line_to: int | None
+    char_anchor: str | None
+    char_start: int | None
+    char_end: int | None
+    text: str
+    source_url: str | None
+    target_path: str
+
+
+class EdgeRead(ReadModel):
+    id: uuid.UUID
+    from_node_id: uuid.UUID
+    to_node_id: uuid.UUID
+    relationship_type: RelationshipType
+    extraction_origin: RelationshipOrigin
+    verification_state: VerificationState
+    source_category: str
+    relationship_date: date | None
+    # Number of exact source anchors behind the edge — a count, never a weight.
+    evidence_count: int
+    provenance: ProvenanceRead
+
+
+class EdgePageRead(ReadModel):
+    """A bounded, cursor-paginated slice of the evidence graph."""
+
+    items: list[EdgeRead]
+    nodes: list[GraphNodeRead]
+    total: int
+    by_type: dict[str, int]
+    next_cursor: str | None
+
+
+class WitnessAppearanceRead(ReadModel):
+    """A hearing with a recorded public appearance, backed by the transcript's
+    own page header. Page counts are header pages only; nothing is estimated."""
+
+    hearing_date: date
+    session_label: str | None
+    transcript_ref: str | None
+    version_ref: str
+    language: str | None
+    page_from: int | None
+    page_to: int | None
+    header_pages: int
+    open_session_pages: int
+    private_session_pages: int
+    closed_session_pages: int
+    examinations: list[dict[str, Any]]
+    rule_id: str
+    provenance: ProvenanceRead
+
+
+class ExhibitStatusEventRead(ReadModel):
+    """An explicit court-record statement about an exhibit (history, not a guess)."""
+
+    exhibit_identifier: str
+    event_type: Literal[
+        "number_assigned", "admitted", "rejected", "marked_for_identification", "withdrawn"
+    ]
+    classification: str | None
+    # Date of the hearing in which the court made the statement.
+    statement_date: date | None
+    speaker: str | None
+    rule_id: str
+    provenance: ProvenanceRead
+
+
 class NetworkRead(ReadModel):
     nodes: list[GraphNodeRead]
     edges: list[RelationshipRead]

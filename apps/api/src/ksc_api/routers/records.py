@@ -22,10 +22,12 @@ from ksc_api.schemas.records import (
     DocumentPageRead,
     DocumentParagraphRead,
     DocumentSummary,
+    EdgePageRead,
     EntityMentionRead,
     EventRead,
     EvidencePathRead,
     ExhibitRead,
+    ExhibitStatusEventRead,
     FindingDetail,
     FindingSummary,
     IncidentRead,
@@ -35,6 +37,7 @@ from ksc_api.schemas.records import (
     RelationshipRead,
     SearchRead,
     TranscriptRead,
+    WitnessAppearanceRead,
     WitnessRead,
 )
 
@@ -333,6 +336,33 @@ def read_network(
     )
 
 
+@router.get("/network/edges", response_model=EdgePageRead)
+def list_network_edges(
+    repo: Repo,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+    cursor: uuid.UUID | None = None,
+    focus_ref: str | None = None,
+    relationship_type: RelationshipType | None = None,
+    entity_kind: EntityKind | None = None,
+    evidence_kind: Literal["citation", "entity_occurrence", "witness_appearance"] | None = None,
+    document_ref: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> EdgePageRead:
+    """Bounded, cursor-paginated evidence edges with one exact provenance each."""
+    return repo.network_edges(
+        limit=limit,
+        cursor=str(cursor) if cursor else None,
+        focus_ref=focus_ref,
+        relationship_type=relationship_type,
+        entity_kind=entity_kind,
+        evidence_kind=evidence_kind,
+        document_ref=document_ref,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
 @router.get("/network/path", response_model=EvidencePathRead)
 def read_evidence_path(
     repo: Repo,
@@ -378,3 +408,19 @@ def search(
         date_from=date_from,
         date_to=date_to,
     )
+
+
+# ------------------------------------------------ appearances / status --
+@router.get("/witnesses/{code}/appearances", response_model=list[WitnessAppearanceRead])
+def list_witness_appearances(code: str, repo: Repo) -> list[WitnessAppearanceRead]:
+    return _or_404(repo.list_appearances("witness", code), "witness")
+
+
+@router.get("/people/{slug}/appearances", response_model=list[WitnessAppearanceRead])
+def list_person_appearances(slug: str, repo: Repo) -> list[WitnessAppearanceRead]:
+    return _or_404(repo.list_appearances("person", slug), "person")
+
+
+@router.get("/exhibits/{exhibit_id}/status-events", response_model=list[ExhibitStatusEventRead])
+def list_exhibit_status_events(exhibit_id: str, repo: Repo) -> list[ExhibitStatusEventRead]:
+    return _or_404(repo.list_exhibit_status_events(exhibit_id), "exhibit")

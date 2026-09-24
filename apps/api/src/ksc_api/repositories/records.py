@@ -64,6 +64,7 @@ from ksc_api.models import (
     VerificationState,
     Visibility,
     Witness,
+    WitnessIdentityStatus,
     normalize_identifier,
 )
 from ksc_api.repositories import mappers
@@ -73,6 +74,7 @@ from ksc_api.repositories.filters import (
     not_rejected,
     public_visibility,
 )
+from ksc_api.repositories.intelligence import IntelligenceReadsMixin
 from ksc_api.schemas.citation import CitationRead, IdentifierMatch, ResolveResult
 from ksc_api.schemas.common import Page
 from ksc_api.schemas.records import (
@@ -130,7 +132,7 @@ class CaseNotConfiguredError(LookupError):
     """The configured case number has no row. Seed first."""
 
 
-class RecordRepository:
+class RecordRepository(IntelligenceReadsMixin):
     def __init__(self, session: Session, case: Case) -> None:
         self.session = session
         self.case = case
@@ -1328,25 +1330,34 @@ class RecordRepository:
         nodes = self.session.scalars(
             select(GraphNode).where(GraphNode.id.in_(list(node_ids))).order_by(GraphNode.label)
         ).all()
+        # One query per entity kind instead of one per node.
+        by_kind: dict[EntityKind, set[uuid.UUID]] = {}
+        for node in nodes:
+            by_kind.setdefault(node.entity_kind, set()).add(node.entity_id)
+        refs: dict[uuid.UUID, tuple[str, bool]] = {}
+        for kind, ids in by_kind.items():
+            if kind == EntityKind.WITNESS:
+                for witness_id, code, status in self.session.execute(
+                    select(Witness.id, Witness.code, Witness.identity_status).where(
+                        Witness.id.in_(list(ids))
+                    )
+                ):
+                    # A protected witness node carries only its code, whatever the label says.
+                    refs[witness_id] = (code, status != WitnessIdentityStatus.PUBLIC)
+                continue
+            model = _NODE_MODEL[kind]
+            ref_column = getattr(model, _NODE_REF_ATTR[kind])
+            for entity_id, ref in self.session.execute(
+                select(model.id, ref_column).where(model.id.in_(list(ids)))
+            ):
+                refs[entity_id] = (str(ref), False)
         result: list[GraphNodeRead] = []
         for node in nodes:
-            ref, protected = self._node_ref(node)
+            # Fail closed: an unreadable witness stays protected.
+            fallback = (node.label, node.entity_kind == EntityKind.WITNESS)
+            ref, protected = refs.get(node.entity_id, fallback)
             result.append(mappers.to_graph_node(node, ref, protected))
         return result
-
-    def _node_ref(self, node: GraphNode) -> tuple[str, bool]:
-        kind = node.entity_kind
-        entity_id = node.entity_id
-        if kind == EntityKind.WITNESS:
-            witness = self.session.get(Witness, entity_id)
-            protected = witness is None or witness.is_protected
-            # A protected witness node carries only its code, whatever the label says.
-            return (witness.code if witness else node.label), protected
-        model = _NODE_MODEL[kind]
-        entity = self.session.get(model, entity_id)
-        if entity is None:
-            return node.label, False
-        return str(getattr(entity, _NODE_REF_ATTR[kind])), False
 
     # ------------------------------------------------------------- search --
     def search(
