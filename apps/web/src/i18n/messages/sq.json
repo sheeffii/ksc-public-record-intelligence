@@ -399,6 +399,7 @@
     "resultSummary": "{count} rezultate në {groups} kategori për {ms} ms",
     "allCategories": "Të gjitha",
     "people": "Persona",
+    "organizations": "Organizata",
     "witnesses": "Dëshmitarë",
     "documents": "Dokumente",
     "transcripts": "Transkripte",
@@ -1075,6 +1076,12 @@
     "whereMatched": "Ku u përputh",
     "source": "Burimi",
     "matchedBy": "Përputhur nga kërkimi i tekstit ose identifikuesit të mbështetur në burim",
+    "matchKind": {
+      "exact_identifier": "identifikues i saktë",
+      "title": "titulli i regjistrit",
+      "phrase": "frazë e saktë",
+      "keyword": "fjalë kyçe"
+    },
     "networkInitialLimit": "Shfaqet një grup pune i kufizuar. Kërko, filtro ose zgjidh një nyje për eksplorim progresiv.",
     "networkCountsUnavailable": "Numrat në këtë panel llogariten nga grafiku aktual i ngarkuar dhe i mbështetur në prejardhje.",
     "corpusOverview": "Regjistri publik në një vështrim",
@@ -1086,6 +1093,16 @@
     "findingsSection": "Konstatimet e Gjykatës",
     "evidenceSection": "Provat dhe provat materiale",
     "appealSection": "Çështje të mundshme për rishikim",
-    "unknown": "I PANJOHUR"
+    "unknown": "I PANJOHUR",
+    "sourceOccurrences": "Paraqitjet në burime",
+    "openExactSource": "Hap burimin e saktë",
+    "noDescription": "Në regjistrin publik të mbajtur nuk është përcaktuar një përshkrim i veçantë.",
+    "officialIdentifier": "Identifikuesi zyrtar",
+    "organizations": "Organizatat",
+    "overview": "Përmbledhje",
+    "organizationType": "Lloji i organizatës",
+    "pagination": "Faqet e rezultateve të kërkimit",
+    "pageOf": "Faqja {page} nga {total}",
+    "networkNoFocusedRecords": "Nuk ka marrëdhënie të mbështetura në prejardhje për këtë regjistër të fokusuar."
   }
 }

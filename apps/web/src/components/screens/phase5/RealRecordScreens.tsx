@@ -1,9 +1,23 @@
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { EmptyState } from "@/components/primitives/States";
 import { Panel } from "@/components/primitives/Panel";
-import { ProtectionNotice, SourceBadge } from "@/components/provenance";
+import {
+  CitationChip,
+  ProtectionNotice,
+  SourceBadge,
+  VerificationBadge,
+} from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
-import type { IncidentView, PersonDossier, WitnessDossier } from "@/data";
+import type {
+  ExhibitDossier,
+  IncidentView,
+  NetworkView,
+  OrganizationDossier,
+  PersonDossier,
+  SearchResult,
+  WitnessDossier,
+} from "@/data";
 import type { DirectoryKind, DirectoryRow } from "@/data";
 import { ActionLink, ScreenHeader } from "./ScreenChrome";
 import { KeyValue, NoteStrip, StatStrip } from "./Workspace";
@@ -18,7 +32,15 @@ const countKeys = [
   "citationsResolved",
 ] as const;
 
-export function RealPersonScreen({ person }: { person: PersonDossier }) {
+export function RealPersonScreen({
+  person,
+  occurrences = [],
+  network = { nodes: [], edges: [] },
+}: {
+  person: PersonDossier;
+  occurrences?: readonly SearchResult[];
+  network?: NetworkView;
+}) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const t15 = useTranslations("phase15");
@@ -81,13 +103,22 @@ export function RealPersonScreen({ person }: { person: PersonDossier }) {
             </div>
           </Panel>
         </div>
+        <ResearchTrail entityRef={person.slug} occurrences={occurrences} network={network} />
         <NoteStrip tone="legal">{tb("noScore")}</NoteStrip>
       </div>
     </AppShell>
   );
 }
 
-export function RealWitnessScreen({ dossier }: { dossier: WitnessDossier }) {
+export function RealWitnessScreen({
+  dossier,
+  occurrences = [],
+  network = { nodes: [], edges: [] },
+}: {
+  dossier: WitnessDossier;
+  occurrences?: readonly SearchResult[];
+  network?: NetworkView;
+}) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const t15 = useTranslations("phase15");
@@ -173,6 +204,242 @@ export function RealWitnessScreen({ dossier }: { dossier: WitnessDossier }) {
             {witness.protected ? <ProtectionNotice /> : null}
           </div>
         </div>
+        <ResearchTrail entityRef={witness.code} occurrences={occurrences} network={network} />
+      </div>
+    </AppShell>
+  );
+}
+
+function ResearchTrail({
+  entityRef,
+  occurrences,
+  network,
+}: {
+  entityRef: string;
+  occurrences: readonly SearchResult[];
+  network: NetworkView;
+}) {
+  const t = useTranslations("phase5");
+  const t18 = useTranslations("phase18");
+  const sources = occurrences.filter(
+    (row, index, all) =>
+      (row.category === "documents" || row.category === "transcripts") &&
+      // Only coordinate-bearing hits are exact occurrences; title-only matches stay in Search.
+      (row.citation?.page !== undefined ||
+        row.citation?.paraFrom !== undefined ||
+        row.citation?.lineFrom !== undefined) &&
+      all.findIndex((candidate) => candidate.href === row.href) === index,
+  );
+  const focusNode = network.nodes.find((node) => node.ref === entityRef);
+  const edges = focusNode
+    ? network.edges.filter((edge) => edge.from === focusNode.id || edge.to === focusNode.id)
+    : [];
+  const nodeLabel = (id: string) => network.nodes.find((node) => node.id === id)?.label ?? "—";
+  if (!sources.length && !edges.length) return null;
+  return (
+    <div className="grid gap-3 lg:grid-cols-2">
+      {sources.length ? (
+        <Panel title={t18("sourceOccurrences")}>
+          <ul className="divide-border-faint divide-y">
+            {sources.map((row) => (
+              <li key={row.href} className="py-2 first:pt-0 last:pb-0">
+                <Link href={row.href} className="text-accent text-[11px] font-semibold">
+                  {row.title}
+                </Link>
+                {row.context ? (
+                  <p className="text-fg-secondary mt-1 line-clamp-3 text-[11px] leading-relaxed">
+                    {row.context}
+                  </p>
+                ) : null}
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  {row.citation ? <CitationChip citation={row.citation} size="sm" /> : null}
+                  {row.matchKind ? (
+                    <span className="text-fg-tertiary font-mono text-[10px]">
+                      {t18(`matchKind.${row.matchKind}`)}
+                    </span>
+                  ) : null}
+                  <ActionLink href={row.href}>{t18("openExactSource")}</ActionLink>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      {edges.length ? (
+        <Panel title={t18("relationships")}>
+          <ul className="divide-border-faint divide-y">
+            {edges.map((edge) => {
+              const other = edge.from === focusNode?.id ? edge.to : edge.from;
+              return (
+                <li key={edge.id} className="space-y-1.5 py-2 first:pt-0 last:pb-0">
+                  <p className="text-fg text-[11px] font-medium">
+                    {edge.relation.replaceAll("_", " ")} · {nodeLabel(other)}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <SourceBadge type={edge.sourceType} size="sm" />
+                    <VerificationBadge state={edge.verification} size="sm" />
+                    <CitationChip citation={edge.citation} size="sm" />
+                    {edge.sourcePath ? (
+                      <ActionLink href={edge.sourcePath}>{t("openSource")}</ActionLink>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
+      ) : null}
+    </div>
+  );
+}
+
+export function RealExhibitScreen({
+  exhibit,
+  occurrences,
+  network,
+}: {
+  exhibit: ExhibitDossier;
+  occurrences: readonly SearchResult[];
+  network: NetworkView;
+}) {
+  const t = useTranslations("phase5");
+  const t15 = useTranslations("phase15");
+  const t18 = useTranslations("phase18");
+  const tr = useTranslations("referenceCounts");
+  return (
+    <AppShell crumbs={[{ label: t("exhibits"), href: "/exhibits" }, { label: exhibit.id }]}>
+      <ScreenHeader
+        realData
+        eyebrow={t15("verifiedPublicRecord")}
+        title={exhibit.title}
+        description={t15("sourceBacked")}
+        actions={<SourceBadge type="exhibit" />}
+      />
+      <div className="mx-auto w-full max-w-[1100px] space-y-3 p-3 md:p-4">
+        <StatStrip
+          label={t15("referenceCounts")}
+          disclaimer={tr("disclaimer")}
+          items={countKeys.map((key) => ({ key, label: tr(key), value: exhibit.counts[key] }))}
+        />
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_320px]">
+          <Panel title={t15("summary")}>
+            <p className="text-fg-body text-[12px] leading-relaxed">
+              {exhibit.description ?? t18("noDescription")}
+            </p>
+          </Panel>
+          <Panel title={t("metadata")}>
+            <KeyValue
+              rows={[
+                { key: "id", label: t18("officialIdentifier"), value: exhibit.id },
+                { key: "status", label: t18("status"), value: exhibit.status.toUpperCase() },
+                { key: "party", label: t18("tenderedBy"), value: exhibit.tenderedBy ?? "—" },
+                {
+                  key: "date",
+                  label: t15("date"),
+                  value: exhibit.admittedDate ?? exhibit.documentDate ?? "—",
+                },
+              ]}
+            />
+            {exhibit.throughWitnessCode ? (
+              <div className="mt-3">
+                <ActionLink href={`/witnesses/${exhibit.throughWitnessCode}`}>
+                  {t18("throughWitness")}: {exhibit.throughWitnessCode}
+                </ActionLink>
+              </div>
+            ) : null}
+          </Panel>
+        </div>
+        <ResearchTrail entityRef={exhibit.id} occurrences={occurrences} network={network} />
+      </div>
+    </AppShell>
+  );
+}
+
+export function RealOrganizationScreen({
+  organization,
+  occurrences,
+  network,
+}: {
+  organization: OrganizationDossier;
+  occurrences: readonly SearchResult[];
+  network: NetworkView;
+}) {
+  const t15 = useTranslations("phase15");
+  const t18 = useTranslations("phase18");
+  const tr = useTranslations("referenceCounts");
+  return (
+    <AppShell
+      crumbs={[
+        { label: t18("organizations"), href: "/organizations" },
+        { label: organization.name },
+      ]}
+    >
+      <ScreenHeader
+        realData
+        eyebrow={t15("verifiedPublicRecord")}
+        title={organization.name}
+        description={t15("sourceBacked")}
+        actions={<SourceBadge type="court" />}
+      />
+      <div className="mx-auto w-full max-w-[1100px] space-y-3 p-3 md:p-4">
+        <StatStrip
+          label={t15("referenceCounts")}
+          disclaimer={tr("disclaimer")}
+          items={countKeys.map((key) => ({ key, label: tr(key), value: organization.counts[key] }))}
+        />
+        <Panel title={t18("overview")}>
+          <KeyValue
+            rows={[
+              { key: "kind", label: t18("organizationType"), value: organization.kind ?? "—" },
+              {
+                key: "variants",
+                label: t15("aliases"),
+                value: organization.nameVariants.join(" · ") || "—",
+              },
+            ]}
+          />
+        </Panel>
+        <ResearchTrail entityRef={organization.slug} occurrences={occurrences} network={network} />
+      </div>
+    </AppShell>
+  );
+}
+
+export function OrganizationDirectoryScreen({ rows }: { rows: readonly OrganizationDossier[] }) {
+  const t15 = useTranslations("phase15");
+  const t18 = useTranslations("phase18");
+  return (
+    <AppShell>
+      <ScreenHeader
+        realData
+        eyebrow={t15("verifiedPublicRecord")}
+        title={t18("organizations")}
+        description={t15("sourceBacked")}
+      />
+      <div className="mx-auto w-full max-w-[1100px] p-3 md:p-4">
+        <Panel title={t18("organizations")}>
+          <ul className="divide-border-faint divide-y">
+            {rows.map((row) => (
+              <li key={row.slug} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <span>
+                  <Link
+                    href={`/organizations/${row.slug}`}
+                    className="text-accent text-[12px] font-semibold"
+                  >
+                    {row.name}
+                  </Link>
+                  <span className="text-fg-secondary mt-1 block text-[11px]">
+                    {row.kind ?? "—"}
+                  </span>
+                </span>
+                <span className="tabular text-fg-muted text-[10px]">
+                  {row.counts.documentMentions + row.counts.transcriptMentions}{" "}
+                  {t18("sourceOccurrences").toLowerCase()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
       </div>
     </AppShell>
   );

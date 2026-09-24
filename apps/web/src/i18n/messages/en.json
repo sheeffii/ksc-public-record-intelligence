@@ -399,6 +399,7 @@
     "resultSummary": "{count} results across {groups} categories in {ms} ms",
     "allCategories": "All",
     "people": "People",
+    "organizations": "Organizations",
     "witnesses": "Witnesses",
     "documents": "Documents",
     "transcripts": "Transcripts",
@@ -1075,6 +1076,12 @@
     "whereMatched": "Where it matched",
     "source": "Source",
     "matchedBy": "Matched by source-backed text or identifier search",
+    "matchKind": {
+      "exact_identifier": "exact identifier",
+      "title": "record title",
+      "phrase": "exact phrase",
+      "keyword": "keyword"
+    },
     "networkInitialLimit": "Showing a bounded working set. Search, filter, or select a node to explore progressively.",
     "networkCountsUnavailable": "Counts in this inspector are computed from the currently loaded provenance-backed graph.",
     "corpusOverview": "Public record at a glance",
@@ -1086,6 +1093,16 @@
     "findingsSection": "Court findings",
     "evidenceSection": "Evidence and exhibits",
     "appealSection": "Potential issues for review",
-    "unknown": "UNKNOWN"
+    "unknown": "UNKNOWN",
+    "sourceOccurrences": "Source occurrences",
+    "openExactSource": "Open exact source",
+    "noDescription": "No separate description is established in the held public record.",
+    "officialIdentifier": "Official identifier",
+    "organizations": "Organizations",
+    "overview": "Overview",
+    "organizationType": "Organization type",
+    "pagination": "Search result pages",
+    "pageOf": "Page {page} of {total}",
+    "networkNoFocusedRecords": "No provenance-backed relationships are available for this focused record."
   }
 }

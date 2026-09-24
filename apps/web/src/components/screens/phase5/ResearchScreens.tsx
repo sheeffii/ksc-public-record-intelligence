@@ -66,14 +66,22 @@ const NODE_KINDS = [
   "defence",
 ] as const;
 
-export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView }) {
+export function NetworkScreen({
+  initialNetwork,
+  initialFocus,
+}: {
+  initialNetwork?: NetworkView;
+  initialFocus?: string;
+}) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const footer = useTranslations("footer");
   const t18 = useTranslations("phase18");
   const realData = initialNetwork !== undefined;
   const { nodes, edges } = initialNetwork ?? mockRepository.getNetwork();
-  const [selectedNode, setSelectedNode] = useState(nodes[0]!);
+  const [selectedNode, setSelectedNode] = useState(
+    nodes.find((node) => node.ref === initialFocus) ?? nodes[0]!,
+  );
   const [selectedEdge, setSelectedEdge] = useState(edges[0]!);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -106,10 +114,34 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
     panX: number;
     panY: number;
   } | null>(null);
-  const neighbourIds = new Set(
+  if (!selectedNode) {
+    return (
+      <AppShell footer={footer("network")}>
+        <ScreenHeader
+          realData={realData}
+          eyebrow={t("network")}
+          title={t("network")}
+          description={t18("networkInitialLimit")}
+        />
+        <div className="mx-auto w-full max-w-[900px] p-4">
+          <EmptyState title={t18("relationships")} reason={t18("networkNoFocusedRecords")} />
+        </div>
+      </AppShell>
+    );
+  }
+  const neighbourIds = new Set([selectedNode.id]);
+  for (let hop = 0; hop < Number(depth); hop += 1) {
+    for (const edge of edges) {
+      if (neighbourIds.has(edge.from) || neighbourIds.has(edge.to)) {
+        neighbourIds.add(edge.from);
+        neighbourIds.add(edge.to);
+      }
+    }
+  }
+  const directNeighbourIds = new Set(
     edges
-      .filter((e) => e.from === selectedNode.id || e.to === selectedNode.id)
-      .flatMap((e) => [e.from, e.to]),
+      .filter((edge) => edge.from === selectedNode.id || edge.to === selectedNode.id)
+      .flatMap((edge) => [edge.from, edge.to]),
   );
   const typeFilteredNodes = nodes.filter(
     (node) => entityFilter === "all" || node.entityKind === entityFilter,
@@ -118,13 +150,13 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
     (node) => node.id === selectedNode.id || neighbourIds.has(node.id),
   );
   const visibleNodes = (
-    isolated
-      ? connectedNodes
-      : expanded
+    !expanded
+      ? typeFilteredNodes.filter((node) => directNeighbourIds.has(node.id))
+      : isolated || realData
         ? connectedNodes.length > 1
           ? connectedNodes
           : typeFilteredNodes
-        : typeFilteredNodes.slice(0, 3)
+        : typeFilteredNodes
   ).slice(0, depth === "1" ? 3 : depth === "2" ? 12 : 75);
   const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
   const visibleEdges = edges.filter(
@@ -147,7 +179,7 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
     const adjacent = edges.find((edge) => edge.from === node.id || edge.to === node.id);
     if (adjacent) setSelectedEdge(adjacent);
   }
-  const nodeLabel = (id: string) => nodes.find((node) => node.id === id)?.label ?? id;
+  const nodeLabel = (id: string) => nodes.find((node) => node.id === id)?.label ?? "—";
   const relationshipLabel = (value: string) => value.replaceAll("_", " ");
 
   function handleGraphAction(key: string) {
@@ -607,7 +639,7 @@ export function EvidencePathScreen({
   const [alternate, setAlternate] = useState(0);
   const shown = hops.slice(0, Number(maxHops) + 1);
   const complete = shown.length === hops.length;
-  const label = (id: string) => nodes.find((n) => n.id === id)?.label ?? id;
+  const label = (id: string) => nodes.find((n) => n.id === id)?.label ?? "—";
   return (
     <AppShell footer={footer("network")}>
       <ScreenHeader

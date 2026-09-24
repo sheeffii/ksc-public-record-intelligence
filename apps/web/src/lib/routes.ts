@@ -174,6 +174,7 @@ export const MOBILE_NAV = [
 export function navKeyForPath(pathname: string): NavKey {
   if (pathname === "/") return "home";
   const first = `/${pathname.split("/")[1] ?? ""}`;
+  if (first === "/organizations") return "people";
   const match = ROUTES.find((r) => r.pattern === first || r.pattern.startsWith(`${first}/`));
   return match?.nav ?? "home";
 }

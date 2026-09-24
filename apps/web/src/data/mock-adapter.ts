@@ -22,6 +22,9 @@ export function createMockRepositoryAdapter(
       },
       relationshipCount: 0,
     }),
+    getOrganization: async () => null,
+    listOrganizations: async () => [],
+    getExhibit: async () => null,
     getIncident: async (slug) => {
       const row = source.getDirectory("incidents").find((item) => item.id === slug);
       if (!row) return null;

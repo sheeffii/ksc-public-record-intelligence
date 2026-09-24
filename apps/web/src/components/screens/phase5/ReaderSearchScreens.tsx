@@ -1,6 +1,6 @@
 "use client";
 
-import type { SourceType, VerificationState } from "@ksc/shared";
+import type { SourceType } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,7 @@ import {
 } from "@/mock";
 import { ActionLink, DemoNotice, ScreenHeader, TabStrip } from "./ScreenChrome";
 import { KeyValue, NoteStrip, SectionCard, Segmented, ToolButton, Toolbar } from "./Workspace";
+import type { NetworkView } from "@/data";
 
 // ------------------------------------------------------------ reader ------
 
@@ -46,11 +47,13 @@ export function DocumentReaderScreen({
   initialDocument,
   initialPage,
   initialPdfPage,
+  contextNetwork,
 }: {
   id: string;
   initialDocument?: MockDocument;
   initialPage?: number;
   initialPdfPage?: number;
+  contextNetwork?: NetworkView;
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
@@ -83,6 +86,27 @@ export function DocumentReaderScreen({
       (!inDoc || p.text.toLowerCase().includes(inDoc.toLowerCase())),
   );
   const panelTabs = ["summary", "mentions", "people", "exhibits", "findings", "citations"] as const;
+  const contextNode = contextNetwork?.nodes.find(
+    (node) => node.ref === id || node.ref?.endsWith(`/${id}`),
+  );
+  const contextEdges = contextNode
+    ? (contextNetwork?.edges.filter(
+        (edge) => edge.from === contextNode.id || edge.to === contextNode.id,
+      ) ?? [])
+    : [];
+  const contextRows = contextEdges.flatMap((edge) => {
+    const otherId = edge.from === contextNode?.id ? edge.to : edge.from;
+    const node = contextNetwork?.nodes.find((candidate) => candidate.id === otherId);
+    if (!node) return [];
+    const matchesTab =
+      panelTab === "summary" ||
+      panelTab === "mentions" ||
+      panelTab === "citations" ||
+      (panelTab === "people" && (node.entityKind === "person" || node.entityKind === "witness")) ||
+      (panelTab === "exhibits" && node.entityKind === "exhibit") ||
+      (panelTab === "findings" && node.entityKind === "finding");
+    return matchesTab ? [{ edge, node }] : [];
+  });
 
   return (
     <AppShell
@@ -355,11 +379,31 @@ export function DocumentReaderScreen({
               ))}
             </div>
             <div className="space-y-3 p-3">
-              {isReal ? (
+              {isReal && contextRows.length === 0 ? (
                 <EmptyState
                   title={tb(`researchTabs.${panelTab}`)}
                   reason={t18("readerContextUnavailable")}
                 />
+              ) : null}
+              {isReal && contextRows.length ? (
+                <ul className="divide-border-faint divide-y">
+                  {contextRows.map(({ edge, node }) => (
+                    <li key={edge.id} className="space-y-2 py-2 first:pt-0 last:pb-0">
+                      <p className="text-fg text-[11px] font-semibold">{node.label}</p>
+                      <p className="text-fg-secondary text-[10px]">
+                        {edge.relation.replaceAll("_", " ")}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <SourceBadge type={edge.sourceType} size="sm" />
+                        <VerificationBadge state={edge.verification} size="sm" />
+                        <CitationChip citation={edge.citation} size="sm" />
+                        {edge.sourcePath ? (
+                          <ActionLink href={edge.sourcePath}>{t("openSource")}</ActionLink>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               ) : null}
               {!isReal && panelTab === "summary" ? (
                 <AiAnalysisBlock citations={[courtCitation]}>
@@ -462,6 +506,7 @@ function TranscriptPage() {
 
 const CATEGORIES = [
   "people",
+  "organizations",
   "witnesses",
   "documents",
   "transcripts",
@@ -493,11 +538,12 @@ export function SearchScreen({
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const t15 = useTranslations("phase15");
+  const t18 = useTranslations("phase18");
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<Category | "all">("all");
   const [sources, setSources] = useState<Set<SourceType>>(new Set());
-  const [verif, setVerif] = useState<Set<VerificationState>>(new Set());
+  const [page, setPage] = useState(1);
   const results = useMemo(
     () => initialResults ?? mockRepository.search(query),
     [initialResults, query],
@@ -505,19 +551,20 @@ export function SearchScreen({
   const filtered = results.filter(
     (r) =>
       (category === "all" || r.category === category) &&
-      (sources.size === 0 || (r.citation && sources.has(r.citation.sourceType))) &&
-      (verif.size === 0 || verif.has("verified")),
+      (sources.size === 0 || (r.citation && sources.has(r.citation.sourceType))),
   );
+  const pageSize = 12;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visible = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
   const groups = CATEGORIES.map((key) => ({
     key,
-    rows: filtered.filter((r) => r.category === key),
+    rows: visible.filter((r) => r.category === key),
   })).filter((g) => g.rows.length > 0);
   const pattern = PATTERNS.find((p) => p.re.test(query.trim()));
   const activeFilters = [
     ...[...sources].map((s) => ({ id: `src:${s}`, label: `${tb("sourceType")}: ${s}` })),
-    ...[...verif].map((v) => ({ id: `ver:${v}`, label: `${tb("verification")}: ${v}` })),
   ];
-
   return (
     <AppShell showDemoFlag={initialResults === undefined}>
       <ScreenHeader
@@ -581,11 +628,16 @@ export function SearchScreen({
             <Segmented
               label={tb("allCategories")}
               value={category}
-              onChange={setCategory}
+              onChange={(next) => {
+                setCategory(next);
+                setPage(1);
+              }}
               options={[
                 { key: "all", label: tb("allCategories") },
-                { key: "findings", label: tb("findings") },
-                { key: "people", label: tb("people") },
+                ...CATEGORIES.map((key) => ({
+                  key,
+                  label: key === "external" ? t15("externalSources") : tb(key),
+                })),
               ]}
             />
           </FilterSection>
@@ -596,32 +648,15 @@ export function SearchScreen({
                 label={s}
                 count={results.filter((r) => r.citation?.sourceType === s).length}
                 checked={sources.has(s)}
-                onChange={(c) =>
+                onChange={(c) => {
+                  setPage(1);
                   setSources((prev) => {
                     const n = new Set(prev);
                     if (c) n.add(s);
                     else n.delete(s);
                     return n;
-                  })
-                }
-              />
-            ))}
-          </FilterSection>
-          <FilterSection title={tb("verification")}>
-            {(["verified", "unreviewed"] as const).map((v) => (
-              <FilterOption
-                key={v}
-                label={v}
-                count={v === "verified" ? results.length : 0}
-                checked={verif.has(v)}
-                onChange={(c) =>
-                  setVerif((prev) => {
-                    const n = new Set(prev);
-                    if (c) n.add(v);
-                    else n.delete(v);
-                    return n;
-                  })
-                }
+                  });
+                }}
               />
             ))}
           </FilterSection>
@@ -647,12 +682,14 @@ export function SearchScreen({
             filters={activeFilters}
             onRemove={(id) => {
               const [k, v] = id.split(":");
-              if (k === "src") setSources((p) => new Set([...p].filter((s) => s !== v)));
-              else setVerif((p) => new Set([...p].filter((s) => s !== v)));
+              if (k === "src") {
+                setSources((p) => new Set([...p].filter((s) => s !== v)));
+                setPage(1);
+              }
             }}
             onClearAll={() => {
               setSources(new Set());
-              setVerif(new Set());
+              setPage(1);
             }}
           />
           {groups.length === 0 ? (
@@ -664,8 +701,8 @@ export function SearchScreen({
                   onClick={() => {
                     setQuery("");
                     setSources(new Set());
-                    setVerif(new Set());
                     setCategory("all");
+                    setPage(1);
                   }}
                 >
                   {tb("allCategories")}
@@ -691,6 +728,25 @@ export function SearchScreen({
               </section>
             ))
           )}
+          {filtered.length > pageSize ? (
+            <nav aria-label={t18("pagination")} className="flex items-center justify-between gap-3">
+              <ToolButton
+                onClick={() => setPage((value) => Math.max(1, value - 1))}
+                disabled={safePage === 1}
+              >
+                {t("previous")}
+              </ToolButton>
+              <span className="tabular text-fg-secondary text-[11px]">
+                {t18("pageOf", { page: safePage, total: pageCount })}
+              </span>
+              <ToolButton
+                onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
+                disabled={safePage === pageCount}
+              >
+                {t("next")}
+              </ToolButton>
+            </nav>
+          ) : null}
           <NoteStrip>{tb("rankingDisclaimer")}</NoteStrip>
         </div>
         <aside className="min-w-0 space-y-3 lg:col-span-2 xl:col-span-1">
@@ -758,7 +814,10 @@ function ResultRow({ row, query }: { row: MockSearchResult; query: string }) {
             ),
           )}
         </span>
-        <span className="text-fg-muted block text-[10px]">{t18("matchedBy")}</span>
+        <span className="text-fg-muted block text-[10px]">
+          {t18("matchedBy")}
+          {row.matchKind ? ` · ${t18(`matchKind.${row.matchKind}`)}` : ""}
+        </span>
       </span>
       <span className="flex flex-wrap items-center gap-2 sm:justify-end">
         <span className="section-label">{t18("source")}</span>

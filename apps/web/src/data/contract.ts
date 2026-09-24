@@ -37,6 +37,29 @@ export interface WitnessDossier {
   counts: ReferenceCounts;
   relationshipCount: number;
 }
+export interface OrganizationDossier {
+  slug: string;
+  name: string;
+  kind?: string;
+  nameVariants: readonly string[];
+  description?: string;
+  counts: ReferenceCounts;
+  relationshipCount: number;
+}
+export interface ExhibitDossier {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  tenderedBy?: string;
+  throughWitnessCode?: string;
+  admittedDate?: string;
+  documentDate?: string;
+  documentVersionRef?: string;
+  visibility: string;
+  counts: ReferenceCounts;
+  relationshipCount: number;
+}
 export type DocumentView = MockDocument;
 export type SearchResult = MockSearchResult;
 export type NetworkNode = MockNetworkNode;
@@ -369,6 +392,9 @@ export interface ResearchRepository {
   getDirectory(kind: DirectoryKind): Promise<readonly DirectoryRow[]>;
   getPerson(slug: string): Promise<PersonDossier | null>;
   getWitness(code: string): Promise<WitnessDossier | null>;
+  getOrganization(slug: string): Promise<OrganizationDossier | null>;
+  listOrganizations(): Promise<readonly OrganizationDossier[]>;
+  getExhibit(id: string): Promise<ExhibitDossier | null>;
   getIncident(slug: string): Promise<IncidentView | null>;
   getDocument(
     id: string,
@@ -378,7 +404,7 @@ export interface ResearchRepository {
   ): Promise<DocumentView | null>;
   getFinding(key: string): Promise<FindingView | null>;
   search(query: string): Promise<readonly SearchResult[]>;
-  getNetwork(): Promise<NetworkView>;
+  getNetwork(focusRef?: string): Promise<NetworkView>;
   getPath(fromNodeId?: string, toNodeId?: string, maxHops?: number): Promise<readonly PathHop[]>;
   getTimeline(): Promise<readonly TimelineItem[]>;
   getEvidence(): Promise<readonly EvidenceRow[]>;
@@ -398,6 +424,9 @@ export const REPOSITORY_METHODS = [
   "getDirectory",
   "getPerson",
   "getWitness",
+  "getOrganization",
+  "listOrganizations",
+  "getExhibit",
   "getIncident",
   "getDocument",
   "getFinding",

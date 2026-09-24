@@ -27,6 +27,8 @@ import type {
   FindingCitationView,
   FindingView,
   IncidentView,
+  OrganizationDossier,
+  ExhibitDossier,
   AiResearchRun,
   AiResearchSource,
   AiRunSummaryView,
@@ -62,6 +64,7 @@ import type {
   ApiFindingDetail,
   ApiGraphNode,
   ApiIncident,
+  ApiOrganization,
   ApiParty,
   ApiPerson,
   ApiReferenceCounts,
@@ -342,14 +345,41 @@ export function exhibitRow(exhibit: ApiExhibit): DirectoryRow {
     date: exhibit.admitted_date ?? exhibit.document_date ?? NO_DATE,
     references: references(exhibit.counts),
     verification: "unreviewed",
-    href: exhibit.document_version_ref
-      ? `/documents/${documentRouteId(exhibit.document_version_ref)}`
-      : "/exhibits",
+    href: `/exhibits/${encodeURIComponent(exhibit.official_exhibit_id)}`,
     status: exhibit.status,
     party: exhibit.tendered_by ?? undefined,
     relatedWitness: exhibit.through_witness_code ?? undefined,
     counts: toCounts(exhibit.counts),
     relationshipCount: exhibit.counts.relationships,
+  };
+}
+
+export function toExhibit(exhibit: ApiExhibit): ExhibitDossier {
+  return {
+    id: exhibit.official_exhibit_id,
+    title: exhibit.title,
+    description: exhibit.description ?? undefined,
+    status: exhibit.status,
+    tenderedBy: exhibit.tendered_by ?? undefined,
+    throughWitnessCode: exhibit.through_witness_code ?? undefined,
+    admittedDate: exhibit.admitted_date ?? undefined,
+    documentDate: exhibit.document_date ?? undefined,
+    documentVersionRef: exhibit.document_version_ref ?? undefined,
+    visibility: exhibit.visibility,
+    counts: toCounts(exhibit.counts),
+    relationshipCount: exhibit.counts.relationships,
+  };
+}
+
+export function toOrganization(organization: ApiOrganization): OrganizationDossier {
+  return {
+    slug: organization.slug,
+    name: organization.name,
+    kind: organization.kind ?? undefined,
+    nameVariants: organization.name_variants,
+    description: organization.description ?? undefined,
+    counts: toCounts(organization.counts),
+    relationshipCount: organization.counts.relationships,
   };
 }
 
@@ -602,8 +632,9 @@ const SEARCH_HREF: Record<ApiSearchHit["category"], (ref: string) => string> = {
   documents: (ref) => documentHref(ref),
   transcripts: (ref) => documentHref(ref),
   people: (ref) => `/people/${ref}`,
+  organizations: (ref) => `/organizations/${ref}`,
   witnesses: (ref) => `/witnesses/${ref}`,
-  exhibits: (ref) => `/exhibits?q=${encodeURIComponent(ref)}`,
+  exhibits: (ref) => `/exhibits/${encodeURIComponent(ref)}`,
   incidents: (ref) => `/incidents/${ref}`,
   findings: (ref) => `/findings/${ref}`,
   locations: (ref) => `/search?q=${encodeURIComponent(ref)}`,
@@ -645,6 +676,7 @@ export function toSearchResult(hit: ApiSearchHit): SearchResult {
     context: hit.protected ? "" : (hit.context ?? ""),
     href: hit.target_path ?? SEARCH_HREF[hit.category](hit.ref),
     citation,
+    matchKind: hit.match_kind,
   };
 }
 

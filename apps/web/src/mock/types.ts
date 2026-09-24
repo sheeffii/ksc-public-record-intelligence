@@ -77,11 +77,12 @@ export interface MockDocument {
 
 export interface MockSearchResult {
   id: string;
-  category: MockDirectory | "locations" | "transcripts" | "external";
+  category: MockDirectory | "locations" | "transcripts" | "organizations" | "external";
   title: string;
   context: string;
   href: string;
   citation?: Citation;
+  matchKind?: "exact_identifier" | "title" | "phrase" | "keyword";
 }
 
 export interface MockNetworkNode {

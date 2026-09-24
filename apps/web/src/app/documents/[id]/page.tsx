@@ -25,12 +25,11 @@ export default async function Page({
   ) {
     return <DocumentReaderScreen id={decoded} initialPage={sourcePage ?? pdfPageIndex} />;
   }
-  const document = await getRepository().getDocument(
-    decoded,
-    query.version,
-    sourcePage,
-    pdfPageIndex,
-  );
+  const repository = getRepository();
+  const [document, contextNetwork] = await Promise.all([
+    repository.getDocument(decoded, query.version, sourcePage, pdfPageIndex),
+    repository.getNetwork(decoded),
+  ]);
   if (!document) notFound();
   return (
     <DocumentReaderScreen
@@ -38,6 +37,7 @@ export default async function Page({
       initialDocument={document}
       initialPage={sourcePage}
       initialPdfPage={pdfPageIndex}
+      contextNetwork={contextNetwork}
     />
   );
 }

@@ -163,6 +163,15 @@ export interface ApiReferenceCounts {
   citations_resolved: number;
 }
 
+export interface ApiOrganization {
+  slug: string;
+  name: string;
+  kind: string | null;
+  name_variants: string[];
+  description: string | null;
+  counts: ApiReferenceCounts;
+}
+
 export interface ApiCitation {
   id: string;
   source_type: "court" | "witness" | "spo" | "defence" | "exhibit";
@@ -462,6 +471,7 @@ export interface ApiSearchHit {
     | "documents"
     | "transcripts"
     | "people"
+    | "organizations"
     | "witnesses"
     | "exhibits"
     | "incidents"

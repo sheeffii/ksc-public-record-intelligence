@@ -13,6 +13,8 @@ import type {
   DocumentView,
   EvidenceRow,
   NetworkView,
+  OrganizationDossier,
+  ExhibitDossier,
   PathHop,
   PersonDossier,
   ResearchRepository,
@@ -40,6 +42,7 @@ import type {
   ApiIncident,
   ApiMediaWorkspace,
   ApiNetwork,
+  ApiOrganization,
   ApiPage,
   ApiPerson,
   ApiSearch,
@@ -89,6 +92,22 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       return witness ? map.toWitnessDossier(witness) : null;
     },
 
+    async getOrganization(slug: string): Promise<OrganizationDossier | null> {
+      const organization = await client.get<ApiOrganization>(
+        `/organizations/${encodeURIComponent(slug)}`,
+      );
+      return organization ? map.toOrganization(organization) : null;
+    },
+
+    async listOrganizations(): Promise<readonly OrganizationDossier[]> {
+      return (await page<ApiOrganization>("/organizations")).map(map.toOrganization);
+    },
+
+    async getExhibit(id: string): Promise<ExhibitDossier | null> {
+      const exhibit = await client.get<ApiExhibit>(`/exhibits/${encodeURIComponent(id)}`);
+      return exhibit ? map.toExhibit(exhibit) : null;
+    },
+
     async getIncident(slug: string) {
       const incident = await client.get<ApiIncident>(`/incidents/${encodeURIComponent(slug)}`);
       return incident ? map.toIncident(incident) : null;
@@ -128,8 +147,10 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       return (result?.hits ?? []).map(map.toSearchResult);
     },
 
-    async getNetwork(): Promise<NetworkView> {
-      const network = await client.get<ApiNetwork>("/network");
+    async getNetwork(focusRef?: string): Promise<NetworkView> {
+      const network = await client.get<ApiNetwork>("/network", {
+        ...(focusRef ? { focus_ref: focusRef } : {}),
+      });
       if (!network) return { nodes: [], edges: [] };
       const edges = network.edges
         .map(map.toNetworkEdge)

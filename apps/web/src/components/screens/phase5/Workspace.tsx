@@ -31,6 +31,7 @@ export function ToolButton({
   primary,
   className,
   ariaLabel,
+  disabled,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -39,6 +40,7 @@ export function ToolButton({
   primary?: boolean;
   className?: string;
   ariaLabel?: string;
+  disabled?: boolean;
 }) {
   const classes = cn(
     "rounded-control inline-flex h-8 min-w-11 items-center justify-center gap-1 border px-2.5 text-[11px] font-medium",
@@ -62,6 +64,7 @@ export function ToolButton({
       onClick={onClick}
       aria-pressed={pressed}
       aria-label={ariaLabel}
+      disabled={disabled}
       className={classes}
     >
       {children}

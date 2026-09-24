@@ -1,0 +1,16 @@
+import { RealExhibitScreen } from "@/components/screens/phase5";
+import { getRepository } from "@/data";
+import { notFound } from "next/navigation";
+
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const decoded = decodeURIComponent(id);
+  const repository = getRepository();
+  const exhibit = await repository.getExhibit(decoded);
+  if (!exhibit) notFound();
+  const [occurrences, network] = await Promise.all([
+    repository.search(exhibit.id),
+    repository.getNetwork(exhibit.id),
+  ]);
+  return <RealExhibitScreen exhibit={exhibit} occurrences={occurrences} network={network} />;
+}
