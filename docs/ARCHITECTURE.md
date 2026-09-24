@@ -236,6 +236,32 @@ schema does not admit an external source category, so external material cannot
 silently enter a court-record answer. Future AI use needs an explicit external
 answer category and a separately reviewed prompt/validator contract.
 
+### Structured intelligence (Phase 19, ADR-024/025)
+
+```text
+ENTITY (person · witness code · organization · exhibit)
+  ← ALIAS (speaker label | source-backed full name, with exact span)
+  ← IDENTITY RESOLUTION (identity.py: VERIFIED · REVIEW_REQUIRED · AMBIGUOUS · SEARCH_ONLY)
+  ← ENTITY OCCURRENCE (entity_occurrences: rule, run, anchor, char range)
+  → EVIDENCE-BACKED EDGE (relationships: exactly one citation | occurrence | appearance)
+SEARCH MATCH — lexical only, never stored, labelled SEARCH_MATCH
+```
+
+The worker pipeline runs in a fixed order: `reresolve`, then `build-evidence`
+(citation edges), then `build-intelligence`. `build-intelligence` itself runs
+caption aliases, then transcript-header appearances, then exhibit status events,
+then verified mentions, then typed edges. `report-phase19b` is the read-only
+reconciliation gate.
+
+The read side gives every evidence kind the same `ProvenanceRead` shape. The
+endpoints are:
+
+- `/network/edges`, a bounded, cursor-paginated edge service with type, entity,
+  evidence, document and date filters;
+- `/witnesses/{code}/appearances`;
+- `/people/{slug}/appearances`;
+- `/exhibits/{id}/status-events`.
+
 ## Cross-cutting rules enforced in code
 
 | Rule                                         | Where                                                                               |

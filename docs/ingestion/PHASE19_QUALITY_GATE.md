@@ -95,3 +95,29 @@ strict, tsc) pass. Real-data Playwright was not run in this pass.
 - 2,357 exhibit-shaped identifiers are not in the exhibit registry. They are
   not auto-created.
 - Reader character-range highlighting and real-data Playwright (19D / 19E).
+
+## Pass B — corpus intelligence and architecture (2026-09-24)
+
+Result: **PASS**. There are 17 reconciliation invariants and all are zero; the
+Phase 19A gate also passes. The full report is `PHASE19_DATA_QUALITY.md`, and
+the manifest is `manifests/phase19b-corpus-intelligence.json`.
+
+After Pass B, the verified-mention totals are 19,137 rows (16,939 verified,
+2,198 review-required). This includes 2,725 `person.full_name.exact` mentions of
+source-backed full names. The Pass A manifest has been regenerated to match.
+
+Targeted verification:
+
+- `tests/unit/ingestion` (173). Phase 19B rules are covered in
+  `test_phase19b_rules.py`: identity, headers, exhibit status, resolver helpers,
+  and their negative cases.
+- `tests/integration/test_phase19b_intelligence.py` (3): idempotent pipeline,
+  provenance checks, resolver rules against a real alias index, and API cursor,
+  provenance and endpoints.
+- Existing suites touching changed code: migrations round-trip `0014`, database
+  head, Phase 8 resolution, Phase 9 evidence, read API, 19A mentions,
+  constraints, model/contract/mapper unit tests.
+- `ruff`, `ruff format --check`, `mypy --strict`, `alembic check`.
+
+The full frontend/backend suites and browser suites were not rerun, by design
+for this pass.

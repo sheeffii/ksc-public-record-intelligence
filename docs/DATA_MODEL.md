@@ -208,6 +208,28 @@ indexes: segment text, speaker label or page text), `paragraph_number` and
 `language`. The idempotency key is (version, anchor, segment, PDF page, char
 range, entity, rule) with `NULLS NOT DISTINCT`.
 
+Phase 19B (`0014`, ADR-025):
+
+- `citations.resolution_rule`: the machine-readable rule behind every terminal
+  state (for example `identifier.zero_padded`, `transcript.hearing_date`,
+  `ambiguous.subcase_bare_filing`, `unresolved.target_not_held`).
+- `person_aliases.alias_kind` (`speaker_label` · `full_name`). A `full_name`
+  alias requires source version, PDF page, character range and rule (CHECK).
+- `witness_appearances`: the subject is exactly one of `witness_id` (code) and
+  `person_id` (publicly named). There is one row per transcript version, and the
+  header signal's exact page span is stored with session page counts, verbatim
+  examination headers and rule/run lineage. Unique key: (witness, person,
+  hearing, transcript), `NULLS NOT DISTINCT`.
+- `exhibit_status_events`: new table. It holds the history of explicit
+  court-record statements (`number_assigned` · `admitted` · `rejected` ·
+  `marked_for_identification` · `withdrawn`), with verbatim identifier, optional
+  bound exhibit, classification, statement date, exact segment span, speaker and
+  rule. `exhibits.status_event_id` points to the event establishing a
+  non-`unknown` status.
+- `relationships`: exactly one evidence anchor, `citation_id`,
+  `entity_occurrence_id` or `witness_appearance_id` (CHECK). `evidence_count` is
+  ≥ 1 and is a count, never a weight. New origin: `deterministic_occurrence`.
+
 - The table set includes the foundation through Phase 13 plus the five Phase 14
   external-source tables; `alembic check` reports no drift between
   models and the migrated schema.

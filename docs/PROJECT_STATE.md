@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 19 Pass A checkpoint)
+Last updated: 2026-09-24 (Phase 19 Pass B checkpoint)
 
 ## Milestones
 
@@ -26,7 +26,7 @@ Last updated: 2026-09-24 (Phase 19 Pass A checkpoint)
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
-| **19** | **Corpus depth and verified entity intelligence**                                                         | **IN PROGRESS** — 19A verified mentions checkpoint PASS; 19B not started                                 |
+| **19** | **Corpus depth and verified entity intelligence**                                                         | **IN PROGRESS** — 19A + 19B checkpoints PASS; 19C not started                                            |
 
 ## Roadmap
 
@@ -719,6 +719,57 @@ experience`).
 - Open: a human sampling audit against the PDFs; Reader character-range
   highlighting; real-data Playwright; the running API image needs a rebuild to
   serve `/mentions` (the web falls back to an empty list on 404).
+
+## Phase 19 Pass B checkpoint
+
+- Scope: corpus-depth analysis plus structured-intelligence architecture over
+  the unchanged known public corpus. No batch was acquired, because an
+  operator-attached browser (ADR-011) was not available. The gap-driven plan
+  `docs/ingestion/manifests/phase19-corpus-04-strata.json` is ready, runnable
+  with the new collector flag `--strata`.
+- Migration `0014` (ADR-025) adds:
+  - `citations.resolution_rule`;
+  - full-name alias provenance;
+  - header-backed `witness_appearances` (code or public person, per transcript
+    version);
+  - `exhibit_status_events` plus `exhibits.status_event_id`;
+  - the relationship evidence contract (exactly one of citation / occurrence /
+    appearance, plus `evidence_count`).
+- New worker modules: `identity.py`, `identity_projection.py`,
+  `witness_appearances.py`, `exhibit_status.py`, `typed_edges.py`,
+  `phase19b.py`, `phase19b_report.py`. New CLI commands: `build-intelligence`
+  and `report-phase19b`.
+- Resolver:
+  - annex/subcase alias defect fixed (7 citations of base filings had been
+    resolved to an annex);
+  - bare F-numbers inside subcase filings are now AMBIGUOUS (157);
+  - zero-padded identifiers (+166) and hearing-date transcript citations (+29)
+    now resolve.
+  - States: resolved 10,395 → 10,570, ambiguous 3 → 160, unresolved
+    6,742 → 6,410.
+- Data after the pass:
+  - 10 witness appearance rows over 3 hearings (W03877, W04371 and the publicly
+    named witness Nuredin Abazi);
+  - 5 TESTIFIED_AT and 596 MENTIONED_IN edges;
+  - 5 full-name aliases (the four accused from the case caption, plus 1 from a
+    witness header);
+  - 2,725 new verified full-name mentions;
+  - 23 exhibit status events. Admitted exhibits went 3 → 1: the Phase 17
+    heuristic was retired after a false positive.
+- API: `/network/edges` (cursor-paginated, filtered, one `ProvenanceRead` per
+  edge), `/witnesses/{code}/appearances`, `/people/{slug}/appearances` and
+  `/exhibits/{id}/status-events`. Batching `_nodes` cut a focused 200-edge
+  neighbourhood from ~0.9 s to ~0.16 s locally.
+- Evidence: `docs/ingestion/PHASE19_DATA_QUALITY.md`, and the manifest
+  `docs/ingestion/manifests/phase19b-corpus-intelligence.json`. The gate passes
+  with 17 invariants at 0.
+- Open:
+  - acquisition batch (operator);
+  - human sampling audit;
+  - UI consumption of appearances / status history / edges service, and Reader
+    span highlighting (19D);
+  - exhibit sub-number model;
+  - 38 surname-level counsel identities.
 
 ## Technical debt / notes
 

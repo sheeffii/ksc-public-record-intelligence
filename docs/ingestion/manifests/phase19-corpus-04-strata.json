@@ -1,0 +1,542 @@
+{
+  "schema_version": 1,
+  "bundle_id": "2026-09-25-corpus-04",
+  "case_number": "KSC-BC-2020-06",
+  "derived_from": "docs/ingestion/manifests/phase19b-corpus-intelligence.json",
+  "note": "Gap-driven Phase 19C plan. Official public KSC repository UI only, operator-attached browser (ADR-011). Quotas are upper bounds; nothing outside the public listings is navigated.",
+  "target_records": 70,
+  "strata": [
+    {
+      "key": "lead_f03699",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03699",
+      "desc": "Unheld filing F03699 cited 58x by held records"
+    },
+    {
+      "key": "lead_f00777",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00777",
+      "desc": "Unheld filing F00777 cited 55x by held records"
+    },
+    {
+      "key": "lead_f00455",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00455",
+      "desc": "Unheld filing F00455 cited 53x by held records"
+    },
+    {
+      "key": "lead_f00026",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00026",
+      "desc": "Unheld filing F00026 cited 52x by held records"
+    },
+    {
+      "key": "lead_f00789",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00789",
+      "desc": "Unheld filing F00789 cited 37x by held records"
+    },
+    {
+      "key": "lead_f01977",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01977",
+      "desc": "Unheld filing F01977 cited 36x by held records"
+    },
+    {
+      "key": "lead_f03766",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03766",
+      "desc": "Unheld filing F03766 cited 35x by held records"
+    },
+    {
+      "key": "lead_f00999",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00999",
+      "desc": "Unheld filing F00999 cited 34x by held records"
+    },
+    {
+      "key": "lead_f03747",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03747",
+      "desc": "Unheld filing F03747 cited 34x by held records"
+    },
+    {
+      "key": "lead_f03697",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03697",
+      "desc": "Unheld filing F03697 cited 30x by held records"
+    },
+    {
+      "key": "lead_f03065",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03065",
+      "desc": "Unheld filing F03065 cited 25x by held records"
+    },
+    {
+      "key": "lead_f01534",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01534",
+      "desc": "Unheld filing F01534 cited 23x by held records"
+    },
+    {
+      "key": "lead_f03176",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03176",
+      "desc": "Unheld filing F03176 cited 20x by held records"
+    },
+    {
+      "key": "lead_f00386",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00386",
+      "desc": "Unheld filing F00386 cited 19x by held records"
+    },
+    {
+      "key": "lead_f03639",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03639",
+      "desc": "Unheld filing F03639 cited 17x by held records"
+    },
+    {
+      "key": "lead_f03308",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03308",
+      "desc": "Unheld filing F03308 cited 17x by held records"
+    },
+    {
+      "key": "lead_f00801",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00801",
+      "desc": "Unheld filing F00801 cited 16x by held records"
+    },
+    {
+      "key": "lead_f01528",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01528",
+      "desc": "Unheld filing F01528 cited 16x by held records"
+    },
+    {
+      "key": "lead_f02198",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F02198",
+      "desc": "Unheld filing F02198 cited 16x by held records"
+    },
+    {
+      "key": "lead_f01603",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01603",
+      "desc": "Unheld filing F01603 cited 15x by held records"
+    },
+    {
+      "key": "lead_f00045",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00045",
+      "desc": "Unheld filing F00045 cited 14x by held records"
+    },
+    {
+      "key": "lead_f02426",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F02426",
+      "desc": "Unheld filing F02426 cited 14x by held records"
+    },
+    {
+      "key": "lead_f03737",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03737",
+      "desc": "Unheld filing F03737 cited 14x by held records"
+    },
+    {
+      "key": "lead_f00134",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00134",
+      "desc": "Unheld filing F00134 cited 13x by held records"
+    },
+    {
+      "key": "lead_f00611",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00611",
+      "desc": "Unheld filing F00611 cited 13x by held records"
+    },
+    {
+      "key": "lead_f00494",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00494",
+      "desc": "Unheld filing F00494 cited 13x by held records"
+    },
+    {
+      "key": "lead_f03708",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03708",
+      "desc": "Unheld filing F03708 cited 13x by held records"
+    },
+    {
+      "key": "lead_f00412",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00412",
+      "desc": "Unheld filing F00412 cited 13x by held records"
+    },
+    {
+      "key": "lead_f00034",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00034",
+      "desc": "Unheld filing F00034 cited 12x by held records"
+    },
+    {
+      "key": "lead_f01226",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01226",
+      "desc": "Unheld filing F01226 cited 12x by held records"
+    },
+    {
+      "key": "lead_f03702",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03702",
+      "desc": "Unheld filing F03702 cited 12x by held records"
+    },
+    {
+      "key": "lead_f01536",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01536",
+      "desc": "Unheld filing F01536 cited 11x by held records"
+    },
+    {
+      "key": "lead_f01296",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01296",
+      "desc": "Unheld filing F01296 cited 11x by held records"
+    },
+    {
+      "key": "lead_f03086",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03086",
+      "desc": "Unheld filing F03086 cited 11x by held records"
+    },
+    {
+      "key": "lead_f01594",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01594",
+      "desc": "Unheld filing F01594 cited 11x by held records"
+    },
+    {
+      "key": "lead_f00006",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00006",
+      "desc": "Unheld filing F00006 cited 10x by held records"
+    },
+    {
+      "key": "lead_f01532",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01532",
+      "desc": "Unheld filing F01532 cited 10x by held records"
+    },
+    {
+      "key": "lead_f01268",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01268",
+      "desc": "Unheld filing F01268 cited 10x by held records"
+    },
+    {
+      "key": "lead_f01110",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01110",
+      "desc": "Unheld filing F01110 cited 10x by held records"
+    },
+    {
+      "key": "lead_f00127",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00127",
+      "desc": "Unheld filing F00127 cited 9x by held records"
+    },
+    {
+      "key": "lead_f02313",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F02313",
+      "desc": "Unheld filing F02313 cited 9x by held records"
+    },
+    {
+      "key": "lead_f01679",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01679",
+      "desc": "Unheld filing F01679 cited 9x by held records"
+    },
+    {
+      "key": "lead_f01323",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F01323",
+      "desc": "Unheld filing F01323 cited 9x by held records"
+    },
+    {
+      "key": "lead_f03609",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03609",
+      "desc": "Unheld filing F03609 cited 9x by held records"
+    },
+    {
+      "key": "transcript_20240710",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "10/07/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-07-10 cited 60x by date"
+    },
+    {
+      "key": "transcript_20240715",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "15/07/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-07-15 cited 53x by date"
+    },
+    {
+      "key": "transcript_20241203",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "03/12/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-12-03 cited 47x by date"
+    },
+    {
+      "key": "transcript_20241202",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "02/12/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-12-02 cited 45x by date"
+    },
+    {
+      "key": "transcript_20240326",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "26/03/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-03-26 cited 40x by date"
+    },
+    {
+      "key": "transcript_20240703",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "03/07/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-07-03 cited 36x by date"
+    },
+    {
+      "key": "transcript_20240717",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "17/07/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-07-17 cited 34x by date"
+    },
+    {
+      "key": "transcript_20250326",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2025,
+      "date": "26/03/2025",
+      "maxPages": 12,
+      "desc": "Transcript of 2025-03-26 cited 30x by date"
+    },
+    {
+      "key": "transcript_20230714",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2023,
+      "date": "14/07/2023",
+      "maxPages": 12,
+      "desc": "Transcript of 2023-07-14 cited 28x by date"
+    },
+    {
+      "key": "transcript_20240529",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "29/05/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-05-29 cited 26x by date"
+    },
+    {
+      "key": "transcript_20240704",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "04/07/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-07-04 cited 26x by date"
+    },
+    {
+      "key": "transcript_20240222",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "22/02/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-02-22 cited 25x by date"
+    },
+    {
+      "key": "transcript_20241107",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "07/11/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-11-07 cited 25x by date"
+    },
+    {
+      "key": "transcript_20240625",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2024,
+      "date": "25/06/2024",
+      "maxPages": 12,
+      "desc": "Transcript of 2024-06-25 cited 22x by date"
+    },
+    {
+      "key": "transcript_20230712",
+      "quota": 1,
+      "record": "stl_transcript",
+      "sort": "oldest",
+      "year": 2023,
+      "date": "12/07/2023",
+      "maxPages": 12,
+      "desc": "Transcript of 2023-07-12 cited 22x by date"
+    },
+    {
+      "key": "chambers_2025",
+      "quota": 5,
+      "record": "stl_filing",
+      "sort": "newest",
+      "submitter": "ch",
+      "year": 2025,
+      "maxPages": 12,
+      "desc": "2025 Specialist Chambers decisions/orders (2025 is the thinnest year)"
+    },
+    {
+      "key": "spo_2025",
+      "quota": 3,
+      "record": "stl_filing",
+      "sort": "newest",
+      "submitter": "spo",
+      "year": 2025,
+      "maxPages": 12,
+      "desc": "2025 SPO filings (2025 is the thinnest year)"
+    },
+    {
+      "key": "defence_2025",
+      "quota": 3,
+      "record": "stl_filing",
+      "sort": "newest",
+      "submitter": "co",
+      "year": 2025,
+      "maxPages": 12,
+      "desc": "2025 Defence filings (2025 is the thinnest year)"
+    }
+  ]
+}

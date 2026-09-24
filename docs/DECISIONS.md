@@ -1165,3 +1165,55 @@ Consequences:
 Dossiers can show exact, auditable mentions separately from search. Most
 counsel labels stay review-required until an official source records a full
 public name. Exhibit status is untouched by mentions (ADR-023 still governs it).
+
+## ADR-025 — Evidence-anchored intelligence: appearances, status history, typed edges
+
+Date: 2026-09-24
+
+Status: Accepted (Phase 19B)
+
+Context:
+All 10,380 relationships were one type (`cited_in`), because provenance was
+hard-wired to a citation. Witness–hearing linkage and exhibit status had no
+source-backed model: `witness_appearances` was empty, and exhibit status came
+from a proximity heuristic that produced at least one false positive (`P01355`,
+"admits a number of facts"). The citation index also had two correctness
+defects: base-filing aliases were claimed by annexes, and bare F-numbers inside
+subcase filings were resolved into the main case.
+
+Decision:
+
+1. A relationship carries exactly one evidence anchor: a resolved citation, a
+   verified entity occurrence, or a structural witness appearance (CHECK). It
+   also carries an `evidence_count`. Existing citation reads are unchanged.
+   Occurrence- and appearance-backed edges are served through `/network/edges`
+   with a uniform `ProvenanceRead`.
+2. Witness ↔ hearing appearances come only from the transcript's own page
+   header (`Witness: W03877 (Open Session)`), one row per transcript version.
+   Nothing between header pages is bridged, and a code in body text is a
+   mention. A header that names a witness is an official public identification:
+   it yields a public person, never an invented code, and never a link to a code.
+3. Exhibit status is a history of explicit court-record statements. Only the
+   bench or the court officer can produce one, through named rules. Party
+   argument and nearby words never can. Status is derived (`admitted` only from
+   an admission event, otherwise `unknown`). `admitted_date` is not inferred
+   from a statement date. The Phase 17 proximity heuristic is retired.
+4. Full-name aliases are recorded only from an official statement with its exact
+   span. Here that is the case caption, bound to the accused by a closed-list,
+   unique-surname rule. Identity states are defined once (`identity.py`).
+   Surname-level labels stay REVIEW_REQUIRED.
+5. Citation resolution records a machine-readable `resolution_rule` for every
+   terminal state. The deterministic additions are:
+   - zero-padded official numbers;
+   - hearing-date transcript citations;
+   - base-filing-only bare aliases;
+   - AMBIGUOUS for bare F-numbers cited inside subcase filings.
+
+   No fuzzy or nearest-match resolution.
+
+Consequences:
+Every research object answers "why" with an exact source through one contract.
+Counts may fall where a guess was removed (admitted exhibits 3 → 1; 20 citation
+edges withdrawn) and rise only where a rule is deterministic. Downgrading `0014`
+drops the non-citation edges, appearances and status history; PostgreSQL keeps
+the unused `deterministic_occurrence` enum value.

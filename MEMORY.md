@@ -9,7 +9,7 @@ Live checkpoint. Repository state wins over this note.
   Phase 16 `eb01a87` and Phase 17 `0e382b3`).
 - Current milestone: **Phase 19 IN PROGRESS**. The roadmap
   `docs/roadmap/PHASE_19_CORPUS_DEPTH_AND_VERIFIED_ENTITY_INTELLIGENCE.md` is
-  registered; the Phase 19A checkpoint is recorded (19B not started). Phase 18 is COMPLETE (tag
+  registered; the Phase 19A and 19B checkpoints are recorded (19C not started). Phase 18 is COMPLETE (tag
   `phase-18-complete`). Phase
   16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
@@ -27,7 +27,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 15–18 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0013`.
+- Migration head and live database revision: `0014`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -324,15 +324,26 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 19A (verified mentions) checkpoint is recorded. Details are in
-`docs/PROJECT_STATE.md` → "Phase 19 Pass A checkpoint" and in
-`docs/ingestion/PHASE19_QUALITY_GATE.md`. Migration head is `0013`.
-`entity_occurrences` now holds 16,412 rule-lineaged rows (14,214 verified,
-2,198 review-required); the Phase 17C legacy rows were superseded. The four
-`Smith` rows and all honorific-only counsel labels stay review-required.
-Next: Phase 19B (witness ↔ hearing linkage). Start it only when explicitly
-authorized. The Pass A items still open are the human sampling audit, Reader
-highlighting (19D), and a rebuild of the API image. Do not close Phase 16.
+The Phase 19A (verified mentions) and 19B (corpus intelligence) checkpoints are
+recorded. See `docs/PROJECT_STATE.md` → "Phase 19 Pass B checkpoint" and
+`docs/ingestion/PHASE19_DATA_QUALITY.md`. Migration head is `0014`.
+
+The reconciliation order after any data change:
+
+1. `reresolve`
+2. `build-evidence`
+3. `build-intelligence`
+4. `report-phase19b` (plus `gate-phase19a`)
+
+Next is Phase 19C, the balanced acquisition batch. Start it only when explicitly
+authorized. It needs the operator-attached browser and uses
+`--strata docs/ingestion/manifests/phase19-corpus-04-strata.json`. Still open:
+
+- the human sampling audit;
+- 19D UI consumption of the new APIs and Reader span highlighting.
+
+Do not close Phase 16. The four `Smith` rows and all honorific-only counsel
+labels stay review-required.
 
 ## Non-negotiable rules
 
