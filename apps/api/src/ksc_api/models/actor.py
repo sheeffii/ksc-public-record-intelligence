@@ -134,16 +134,39 @@ class EntityOccurrence(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ),
         CheckConstraint("char_start >= 0", name="char_start_non_negative"),
         CheckConstraint("char_end >= char_start", name="char_range"),
+        CheckConstraint(
+            "mention_state IN ('verified', 'review_required', 'rejected')",
+            name="mention_state_allowed",
+        ),
+        CheckConstraint(
+            "review_required = (mention_state = 'review_required')",
+            name="review_flag_matches_state",
+        ),
+        CheckConstraint(
+            "char_anchor IS NULL OR char_anchor IN "
+            "('transcript_segment_text', 'transcript_speaker_label', 'document_page_text')",
+            name="char_anchor_allowed",
+        ),
+        CheckConstraint(
+            "rule_id IS NULL OR (rule_version IS NOT NULL AND char_anchor IS NOT NULL)",
+            name="rule_lineage_complete",
+        ),
+        # Idempotent re-projection key: (source version, anchor, char range,
+        # entity, rule). NULLs compare equal so page-anchored rows dedupe too.
         UniqueConstraint(
             "document_version_id",
+            "char_anchor",
             "transcript_segment_id",
+            "pdf_page_index",
             "char_start",
             "char_end",
             "person_id",
             "witness_id",
             "organization_id",
             "exhibit_id",
-            name="uq_entity_occurrences_source_entity",
+            "rule_id",
+            name="uq_entity_occurrences_source_rule",
+            postgresql_nulls_not_distinct=True,
         ),
     )
 
@@ -181,6 +204,21 @@ class EntityOccurrence(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     review_required: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
+    # Phase 19A lineage. `char_start`/`char_end` index into the text named by
+    # `char_anchor`: a transcript segment's text or speaker label, or a
+    # document page's text. Rows without `rule_id` are pre-19 legacy rows and
+    # are never served as verified mentions.
+    mention_state: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="verified", server_default="verified", index=True
+    )
+    rule_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    rule_version: Mapped[int | None] = mapped_column(Integer)
+    projection_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("processing_runs.id", ondelete="SET NULL")
+    )
+    char_anchor: Mapped[str | None] = mapped_column(String(32))
+    paragraph_number: Mapped[int | None] = mapped_column(Integer)
+    language: Mapped[str | None] = mapped_column(String(16))
 
 
 class Location(UUIDPrimaryKeyMixin, TimestampMixin, Base):
