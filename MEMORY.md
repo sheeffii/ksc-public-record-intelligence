@@ -6,18 +6,17 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-17-corpus-expansion-structured-data`, created from
   Phase 16 blocker-resolution commit `eb01a87` with all useful Phase 16 fixes.
-- Current milestone: **Phase 17 IN PROGRESS — PASS C COMPLETE LOCALLY (2026-09-24)** as a
-  parallel data-expansion milestone. Phase 16 remains **IN PROGRESS**; local
+- Current milestone: **Phase 17 COMPLETE (2026-09-24)** against the declared
+  known-public-corpus scope. Phase 16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
   external deployment/alerting gates are intentionally deferred until public
   deployment is desired.
 - Push state (2026-09-22): `main` fast-forwarded to `01cb693` and pushed;
   annotated tag `phase-15-complete` and the Phase 15 feature branch were pushed.
-- Phase 16 remains local at `eb01a87`; Phase 17 Pass B is commit `629a0f5` and
-  Pass C implementation is commit `970b948` and adds structured projections
-  without acquiring records. The Phase 17 branch is pushed to origin; it is not
-  merged to `main` and Phase 17 is not complete.
-- Latest completion tag: annotated `phase-15-complete` at `01cb693`, pushed.
+- Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
+  `0e382b3`, with the closeout commit tagged `phase-17-complete`. The Phase 17
+  branch and tag are pushed, and the branch is not merged to `main`.
+- Latest completion tag: annotated `phase-17-complete`.
 - Phase 15 is on `main`; its feature branch is preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
@@ -318,13 +317,13 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 17 Pass C is implemented and quality-gated on
+Phase 17 is complete and quality-gated on
 `feat/phase-17-corpus-expansion-structured-data`: 48 people, 201 protected
 witness codes, 6 organizations, 981 exhibits and 15,024 exact occurrences;
-10,395 citations resolve and 10,380 relationships are projected. Review the
-single surname-only `Smith` person projection (4 occurrences) in a later review
-pass. Do not acquire another batch, close Phase 17, begin Phase 18, or resume
-Phase 16 without explicit authorization. Do not close Phase 16; resume
+10,395 citations resolve and 10,380 relationships are projected. The four
+surname-only `Smith` occurrences remain review-required and must not be merged
+without explicit source evidence. Phase 18 is NEXT / PENDING; do not begin it
+without explicit authorization. Do not close Phase 16; resume
 its external deployment/alerting gates only when public deployment is desired.
 Existing non-blocking follow-ups remain: review quarantined `r31`; the court
 corpus and external media set are samples; performance figures are local only.

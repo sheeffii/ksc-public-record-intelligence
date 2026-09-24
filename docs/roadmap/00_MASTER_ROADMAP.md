@@ -51,13 +51,14 @@ When anything conflicts, use this order:
 
 ## Roadmap structure
 
-The original core roadmap contains **13 numbered phases**. Five additional milestones are included without changing the core numbering:
+The original core roadmap contains **13 numbered phases**. Six additional milestones are included without changing the core numbering:
 
 - **Phase 5B** — UI/UX Visual Parity Remediation. This was added after a detailed design audit found that Phase 5 was functionally complete but visually simplified on several screens.
 - **Phase 14** — External Media & Public Statements Intelligence. This is a **post-core feature** and must happen only after the core court-record platform is stable.
 - **Phase 15** — Real Data UI Completion & Demo Removal.
 - **Phase 16** — Production Readiness, Security & Lawyer Beta.
 - **Phase 17** — Historical Corpus Expansion, Coverage & Continuous Sync.
+- **Phase 18** — Next milestone; pending and not started.
 
 ### Current sequence
 
@@ -80,7 +81,8 @@ The original core roadmap contains **13 numbered phases**. Five additional miles
 | 14 | External Media & Public Statements Intelligence | **COMPLETE (2026-09-22)** — controlled real-public-source gate PASS |
 | 15 | Real Data UI Completion & Demo Removal | **COMPLETE (2026-09-22)** |
 | 16 | Production Readiness, Security & Lawyer Beta | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred |
-| 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **AUTHORIZED / NOT STARTED (2026-09-24)** — proceeding in parallel with Phase 16 deferred |
+| 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim |
+| 18 | Next milestone | **NEXT / PENDING** — not started |
 
 ## Recommended execution order from now
 
@@ -107,20 +109,20 @@ Phase 14
   ↓
 Phase 15
   ├─ Phase 16 (IN PROGRESS; external deployment/alerting deferred)
-  └─ Phase 17 (AUTHORIZED in parallel; not started)
+  └─ Phase 17 (COMPLETE 2026-09-24)
+       ↓
+     Phase 18 (NEXT / PENDING; not started)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
 
-Current checkpoint: Phase 15 is complete. Normal production routes default to
-real APIs or honest empty states, with no demo dependency; Documents and Reader
-use parsed Court data, and the real-data route gate passes across desktop and
-mobile. The current structured / verified projections contain 0 Person,
-Witness and Exhibit records; this does not establish that the underlying public
-court record contains none. Phase 16 remains **IN PROGRESS** with only external
-deployment/alerting blockers intentionally deferred; it will resume when public
-deployment is desired. Phase 17 is explicitly authorized to proceed in parallel
-as the current data-expansion priority, but implementation has not started.
+Current checkpoint: Phase 17 is complete against the explicitly declared known
+public `KSC-BC-2020-06` EN/SQ corpus indexed as of 2026-09-24. This is not a
+complete/exhaustive KSC corpus claim. All 134 accepted versions are verified,
+parsed and indexed; structured projections and citations retain fail-closed
+provenance rules. Phase 16 remains **IN PROGRESS** with only external
+deployment/alerting blockers intentionally deferred. Phase 18 is **NEXT /
+PENDING** and has not started.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

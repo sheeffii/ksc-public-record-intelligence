@@ -1,6 +1,6 @@
 # Phase 17 — Historical Corpus Expansion, Coverage & Continuous Sync
 
-**Status:** In progress — Pass A inventory/coverage checkpoint recorded 2026-09-24. Phase 17 was explicitly authorized to proceed in parallel with deferred Phase 16 external gates.
+**Status:** COMPLETE (2026-09-24) — closed against the explicitly declared known-public-corpus scope; no complete/exhaustive KSC corpus claim is made.
 
 ## Goal
 
@@ -541,21 +541,34 @@ No illustrative numbers in completion reports.
 
 Phase 17 is complete when the declared scope has reached its target and:
 
-- inventory is reproducible;
-- lawful acquisition is stable;
-- accepted artifacts are integrity-verified;
-- version/language identity is preserved;
-- parser/OCR review works at scale;
-- citation re-resolution preserves lineage;
-- search/network/timeline remain stable;
-- Phase 10–14 authoritative state is not silently mutated;
-- continuous sync is implemented;
-- reconciliation passes;
-- coverage is reported honestly;
-- backup/restore is proven at expanded scale;
-- performance remains within production limits.
+- [x] inventory is reproducible;
+- [x] lawful acquisition is stable;
+- [x] accepted artifacts are integrity-verified;
+- [x] version/language identity is preserved;
+- [x] parser/OCR review works at scale;
+- [x] citation re-resolution preserves lineage;
+- [x] search/network/timeline remain stable;
+- [x] Phase 10–14 authoritative state is not silently mutated;
+- [x] continuous sync is implemented;
+- [x] reconciliation passes;
+- [x] coverage is reported honestly;
+- [x] backup/restore is proven at expanded scale;
+- [x] performance remains within production limits.
 
 If full official coverage cannot be established, close only against an explicitly narrower declared scope and do not label it a complete corpus.
+
+## Completion Record
+
+- **Completed:** 2026-09-24
+- **Declared scope:** Known officially discovered public `KSC-BC-2020-06` records in EN/SQ indexed as of 2026-09-24; not a complete/exhaustive corpus claim.
+- **Corpus:** 135 source records, 116 documents, 134 verified/parsed/indexed versions, 79,311,530 bytes, 5,725 pages, 3,133 paragraphs and 8,547 transcript segments.
+- **Structured data:** 48 people, 201 protected code-only witnesses, 6 organizations, 981 exhibits, 16 hearings, 8,547 statements, 127 events and 10,380 relationships.
+- **Integrity:** 15,024 exact occurrences; 15,020 provenance-verified; four surname-only `Smith` occurrences remain review-required; zero provenance, protected-identity or exhibit-status violations.
+- **Citations:** 10,395 resolved, 3 ambiguous, 6,742 unresolved and 141 invalid; non-resolved states remain fail-closed.
+- **Quality evidence:** 303 backend and 239 frontend tests passed; lint, strict typecheck, migration round-trip and Alembic drift checks passed.
+- **Implementation commits:** `20c1aa6`, `629a0f5`, `970b948`, `0e382b3`.
+- **Tag:** `phase-17-complete`.
+- **Next:** Phase 18 is NEXT / PENDING. It has not started.
 
 ## Stop condition
 

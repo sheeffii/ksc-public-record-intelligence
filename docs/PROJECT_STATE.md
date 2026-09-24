@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 17 Pass C structured enrichment checkpoint)
+Last updated: 2026-09-24 (Phase 17 complete)
 
 ## Milestones
 
@@ -24,7 +24,8 @@ Last updated: 2026-09-24 (Phase 17 Pass C structured enrichment checkpoint)
 | **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
 | **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
-| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **IN PROGRESS — PASS C (2026-09-24)** — existing corpus structurally enriched and gated; no new PDFs     |
+| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                      |
+| **18** | **Next milestone**                                                                                         | **NEXT / PENDING** — not started                                                                          |
 
 ## Roadmap
 
@@ -45,8 +46,8 @@ An authorized deployment target, live alert/IAM verification and production
 smoke remain pending. The external beta protocol is documented as an external
 dependency, not an active completion blocker. Phase 16 remains **IN PROGRESS**;
 its remaining blockers are external deployment/alerting only and it will resume
-when public deployment is desired. Phase 17 is explicitly authorized to proceed
-in parallel as the current data-expansion priority, without closing Phase 16.
+when public deployment is desired. Phase 17 is complete against its explicitly
+declared known-public-corpus scope. Phase 18 is next/pending and has not started.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -589,7 +590,30 @@ check` and `head → base → head` are integration-tested.
   search results, timeline and network data. Web pagination now follows the
   API total instead of truncating large directories at 200.
 - `docs/ingestion/phase17c-structured-quality-gate.json` is PASS. No record was
-  acquired; Phase 17 remains in progress and Phase 18 has not started.
+  acquired; at this checkpoint Phase 17 remained in progress and Phase 18 had
+  not started.
+
+## Phase 17 completion audit
+
+- Completed 2026-09-24 against the declared known officially discovered public
+  `KSC-BC-2020-06` EN/SQ scope; no complete/exhaustive corpus claim is made.
+- All 11 mandatory closeout checks pass from recorded evidence: lawful/public
+  acquisition, artifact/version/language/quarantine integrity, 134/134 parsing
+  and indexing, exact provenance, protected-witness safety, fail-closed exhibit
+  status and citations, real app delivery, resumable/incremental ingestion, and
+  reconciliation.
+- Final counts: 135 source records, 116 documents, 134 PDFs, 79,311,530 bytes,
+  5,725 pages, 3,133 paragraphs and 8,547 transcript segments; 48 people, 201
+  protected code-only witnesses, 6 organizations, 981 exhibits, 16 hearings,
+  8,547 statements, 127 events and 10,380 relationships.
+- Of 15,024 exact occurrences, 15,020 are provenance-verified. The four
+  surname-only `Smith` occurrences remain review-required and unmerged. There
+  are zero provenance, protected-identity and invalid-exhibit-status violations.
+- Citation states are 10,395 resolved, 3 ambiguous, 6,742 unresolved and 141
+  invalid. Ambiguous and unresolved references remain targetless/fail-closed.
+- Recorded quality evidence: backend 303 passed, frontend 239 passed, lint and
+  strict typecheck passed, migration round-trip passed, and Alembic drift check
+  passed. Phase 18 is NEXT / PENDING and has not started.
 
 ## Technical debt / notes
 
@@ -617,8 +641,7 @@ check` and `head → base → head` are integration-tested.
 
 | Suite                                    | Count        | Last result                                              |
 | ---------------------------------------- | ------------ | -------------------------------------------------------- |
-| Backend unit (pytest)                    | 203          | pass                                                     |
-| Backend integration (pytest, live infra) | 89           | pass                                                     |
+| Backend (pytest)                         | 303          | pass                                                     |
 | Frontend (vitest)                        | 239          | pass                                                     |
 | E2E (playwright)                         | Phase 16     | 38/38 workflows; 18/18 axe routes pass desktop/mobile    |
 | Targeted frontend verification           | Phase 15     | 28/28 pass                                               |
@@ -650,9 +673,9 @@ pushed. Phase 16 branch `feat/phase-16-production-readiness-security-beta`
 starts from `01cb693` and currently ends at local blocker-resolution commit
 `eb01a87`; it has not been deployed or pushed. Phase 17 branch
 `feat/phase-17-corpus-expansion-structured-data` starts from `eb01a87`, retaining
-the useful Phase 16 fixes. Phase 17 Pass C implementation commit `970b948` is
-on that branch and the branch is pushed to origin; it is not merged and Phase
-17 is not complete.
+the useful Phase 16 fixes. Phase 17 implementation runs through `0e382b3` on
+that branch. Phase 17 was closed on 2026-09-24 without merging to `main`;
+annotated tag `phase-17-complete` marks the closeout commit.
 
 ## Verification limitations
 
