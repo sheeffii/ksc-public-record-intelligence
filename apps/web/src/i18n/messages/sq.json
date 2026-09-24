@@ -1104,5 +1104,19 @@
     "pagination": "Faqet e rezultateve të kërkimit",
     "pageOf": "Faqja {page} nga {total}",
     "networkNoFocusedRecords": "Nuk ka marrëdhënie të mbështetura në prejardhje për këtë regjistër të fokusuar."
+  },
+  "phase19": {
+    "verifiedMentions": "Përmendje të verifikuara",
+    "reviewRequiredMentions": "Përmendje që kërkojnë shqyrtim",
+    "reviewRequiredNote": "Këto etiketa burimore identifikojnë vetëm një mbiemër ose përputhen me më shumë se një person të regjistruar. Ato nuk i caktohen automatikisht këtij personi.",
+    "searchMatches": "Përputhje nga kërkimi",
+    "searchMatchesNote": "Rezultate të kërkimit leksikor për këtë emër ose identifikues. Ato nuk janë përmendje të verifikuara.",
+    "mentionTotal": "Shfaqen {shown} nga {total} përmendje të regjistruara",
+    "supersededVersion": "Version i zëvendësuar",
+    "matchClass": {
+      "VERIFIED_MENTION": "PËRMENDJE E VERIFIKUAR",
+      "REVIEW_REQUIRED": "KËRKON SHQYRTIM",
+      "SEARCH_MATCH": "PËRPUTHJE KËRKIMI"
+    }
   }
 }

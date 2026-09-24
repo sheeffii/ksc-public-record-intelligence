@@ -22,6 +22,7 @@ import type {
   DirectoryKind,
   DirectoryRow,
   DocumentView,
+  EntityMention,
   EvidenceRow,
   FindingArgumentView,
   FindingCitationView,
@@ -74,6 +75,7 @@ import type {
   ApiStatementComparison,
   ApiVerificationState,
   ApiWitness,
+  ApiEntityMention,
 } from "./types";
 
 const VERIFICATION: Record<ApiVerificationState, VerificationState | null> = {
@@ -829,5 +831,43 @@ export function toAiRunSummary(run: ApiAiRunSummary): AiRunSummaryView {
     status: run.status,
     answerWithheld: run.answer_withheld,
     createdAt: run.created_at,
+  };
+}
+
+/**
+ * A persisted deterministic mention. The citation is exact (version + page /
+ * paragraph / line where recorded); a mention is court-record presence only,
+ * so it is never labelled as testimony.
+ */
+export function toEntityMention(mention: ApiEntityMention): EntityMention {
+  const coordinate = [
+    mention.page !== null ? `p. ${mention.page}` : undefined,
+    mention.paragraph !== null ? `¶${mention.paragraph}` : undefined,
+    mention.line_from !== null
+      ? `lines ${mention.line_from}${mention.line_to && mention.line_to !== mention.line_from ? `–${mention.line_to}` : ""}`
+      : undefined,
+    mention.page === null && mention.pdf_page_index !== null
+      ? `PDF ${mention.pdf_page_index}`
+      : undefined,
+  ].filter(Boolean);
+  return {
+    id: mention.id,
+    matchClass: mention.match_class,
+    ruleId: mention.rule_id,
+    occurrenceText: mention.occurrence_text,
+    documentTitle: mention.document_title,
+    versionSuperseded: mention.version_superseded,
+    href: mention.target_path,
+    citation: {
+      sourceType: "court",
+      ref: mention.version_ref,
+      docId: documentRouteId(mention.document_ref),
+      page: mention.page ?? undefined,
+      paraFrom: mention.paragraph ?? undefined,
+      lineFrom: mention.line_from ?? undefined,
+      lineTo: mention.line_to ?? undefined,
+      resolved: true,
+      display: [mention.version_ref, ...coordinate].join(" · "),
+    },
   };
 }

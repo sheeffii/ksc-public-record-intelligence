@@ -8,9 +8,17 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const repository = getRepository();
   const exhibit = await repository.getExhibit(decoded);
   if (!exhibit) notFound();
-  const [occurrences, network] = await Promise.all([
+  const [mentions, occurrences, network] = await Promise.all([
+    repository.getEntityMentions("exhibit", exhibit.id),
     repository.search(exhibit.id),
     repository.getNetwork(exhibit.id),
   ]);
-  return <RealExhibitScreen exhibit={exhibit} occurrences={occurrences} network={network} />;
+  return (
+    <RealExhibitScreen
+      exhibit={exhibit}
+      mentions={mentions}
+      occurrences={occurrences}
+      network={network}
+    />
+  );
 }

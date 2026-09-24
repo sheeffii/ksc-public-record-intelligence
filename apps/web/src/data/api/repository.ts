@@ -11,6 +11,8 @@ import type {
   DirectoryKind,
   DirectoryRow,
   DocumentView,
+  EntityMentionKind,
+  EntityMentionsView,
   EvidenceRow,
   NetworkView,
   OrganizationDossier,
@@ -34,6 +36,7 @@ import type {
   ApiDocumentChunk,
   ApiDocumentDetail,
   ApiDocumentSummary,
+  ApiEntityMention,
   ApiEvent,
   ApiEvidencePath,
   ApiExhibit,
@@ -51,6 +54,13 @@ import type {
 } from "./types";
 
 const PAGE = { limit: 200, offset: 0 } as const;
+const MENTION_PAGE_SIZE = 50;
+const MENTION_COLLECTION: Record<EntityMentionKind, string> = {
+  person: "people",
+  witness: "witnesses",
+  organization: "organizations",
+  exhibit: "exhibits",
+};
 
 export function createApiRepository(options: ApiClientOptions): ResearchRepository {
   const client = new ApiClient(options);
@@ -145,6 +155,15 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
     async search(query: string): Promise<readonly SearchResult[]> {
       const result = await client.get<ApiSearch>("/search", { q: query });
       return (result?.hits ?? []).map(map.toSearchResult);
+    },
+
+    async getEntityMentions(kind: EntityMentionKind, key: string): Promise<EntityMentionsView> {
+      const collection = MENTION_COLLECTION[kind];
+      const page = await client.get<ApiPage<ApiEntityMention>>(
+        `/${collection}/${encodeURIComponent(key)}/mentions`,
+        { limit: MENTION_PAGE_SIZE, offset: 0 },
+      );
+      return { total: page?.total ?? 0, items: (page?.items ?? []).map(map.toEntityMention) };
     },
 
     async getNetwork(focusRef?: string): Promise<NetworkView> {

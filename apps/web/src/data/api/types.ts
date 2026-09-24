@@ -491,6 +491,32 @@ export interface ApiSearchHit {
   line_to?: number | null;
   source_url?: string | null;
   target_path?: string | null;
+  match_class?: "SEARCH_MATCH";
+}
+
+/** A persisted Phase 19A deterministic mention (`/{kind}/{key}/mentions`). */
+export interface ApiEntityMention {
+  id: string;
+  entity_kind: "person" | "witness" | "organization" | "exhibit";
+  match_class: "VERIFIED_MENTION" | "REVIEW_REQUIRED";
+  rule_id: string;
+  rule_version: number;
+  occurrence_text: string;
+  document_ref: string;
+  document_title: string;
+  version_ref: string;
+  version_superseded: boolean;
+  language: string | null;
+  char_anchor: "transcript_segment_text" | "transcript_speaker_label" | "document_page_text";
+  char_start: number;
+  char_end: number;
+  pdf_page_index: number | null;
+  page: number | null;
+  paragraph: number | null;
+  line_from: number | null;
+  line_to: number | null;
+  source_url: string | null;
+  target_path: string;
 }
 
 export interface ApiSearch {

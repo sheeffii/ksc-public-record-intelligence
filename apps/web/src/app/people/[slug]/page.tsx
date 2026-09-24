@@ -8,9 +8,17 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const decoded = decodeURIComponent(slug);
   const person = await repository.getPerson(decoded);
   if (!person) notFound();
-  const [occurrences, network] = await Promise.all([
+  const [mentions, occurrences, network] = await Promise.all([
+    repository.getEntityMentions("person", person.slug),
     repository.search(person.displayName),
     repository.getNetwork(person.slug),
   ]);
-  return <RealPersonScreen person={person} occurrences={occurrences} network={network} />;
+  return (
+    <RealPersonScreen
+      person={person}
+      mentions={mentions}
+      occurrences={occurrences}
+      network={network}
+    />
+  );
 }

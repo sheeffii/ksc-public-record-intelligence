@@ -1104,5 +1104,19 @@
     "pagination": "Search result pages",
     "pageOf": "Page {page} of {total}",
     "networkNoFocusedRecords": "No provenance-backed relationships are available for this focused record."
+  },
+  "phase19": {
+    "verifiedMentions": "Verified mentions",
+    "reviewRequiredMentions": "Mentions requiring review",
+    "reviewRequiredNote": "These source labels identify only a surname or match more than one recorded person. They are not assigned to this person automatically.",
+    "searchMatches": "Search matches",
+    "searchMatchesNote": "Lexical search results for this name or identifier. They are not verified mentions.",
+    "mentionTotal": "Showing {shown} of {total} recorded mentions",
+    "supersededVersion": "Superseded version",
+    "matchClass": {
+      "VERIFIED_MENTION": "VERIFIED MENTION",
+      "REVIEW_REQUIRED": "REVIEW REQUIRED",
+      "SEARCH_MATCH": "SEARCH MATCH"
+    }
   }
 }

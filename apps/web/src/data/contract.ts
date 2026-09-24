@@ -62,6 +62,22 @@ export interface ExhibitDossier {
 }
 export type DocumentView = MockDocument;
 export type SearchResult = MockSearchResult;
+export type EntityMentionKind = "person" | "witness" | "organization" | "exhibit";
+/** A persisted deterministic mention — never a lexical search match. */
+export interface EntityMention {
+  id: string;
+  matchClass: "VERIFIED_MENTION" | "REVIEW_REQUIRED";
+  ruleId: string;
+  occurrenceText: string;
+  documentTitle: string;
+  versionSuperseded: boolean;
+  href: string;
+  citation: Citation;
+}
+export interface EntityMentionsView {
+  total: number;
+  items: readonly EntityMention[];
+}
 export type NetworkNode = MockNetworkNode;
 export type NetworkEdge = MockNetworkEdge;
 export type PathHop = MockPathHop;
@@ -404,6 +420,7 @@ export interface ResearchRepository {
   ): Promise<DocumentView | null>;
   getFinding(key: string): Promise<FindingView | null>;
   search(query: string): Promise<readonly SearchResult[]>;
+  getEntityMentions(kind: EntityMentionKind, key: string): Promise<EntityMentionsView>;
   getNetwork(focusRef?: string): Promise<NetworkView>;
   getPath(fromNodeId?: string, toNodeId?: string, maxHops?: number): Promise<readonly PathHop[]>;
   getTimeline(): Promise<readonly TimelineItem[]>;
@@ -431,6 +448,7 @@ export const REPOSITORY_METHODS = [
   "getDocument",
   "getFinding",
   "search",
+  "getEntityMentions",
   "getNetwork",
   "getPath",
   "getTimeline",

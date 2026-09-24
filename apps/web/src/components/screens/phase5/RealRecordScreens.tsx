@@ -10,6 +10,8 @@ import {
 } from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
 import type {
+  EntityMention,
+  EntityMentionsView,
   ExhibitDossier,
   IncidentView,
   NetworkView,
@@ -32,13 +34,17 @@ const countKeys = [
   "citationsResolved",
 ] as const;
 
+const NO_MENTIONS: EntityMentionsView = { total: 0, items: [] };
+
 export function RealPersonScreen({
   person,
   occurrences = [],
+  mentions = NO_MENTIONS,
   network = { nodes: [], edges: [] },
 }: {
   person: PersonDossier;
   occurrences?: readonly SearchResult[];
+  mentions?: EntityMentionsView;
   network?: NetworkView;
 }) {
   const t = useTranslations("phase5");
@@ -103,7 +109,12 @@ export function RealPersonScreen({
             </div>
           </Panel>
         </div>
-        <ResearchTrail entityRef={person.slug} occurrences={occurrences} network={network} />
+        <ResearchTrail
+          entityRef={person.slug}
+          occurrences={occurrences}
+          mentions={mentions}
+          network={network}
+        />
         <NoteStrip tone="legal">{tb("noScore")}</NoteStrip>
       </div>
     </AppShell>
@@ -113,10 +124,12 @@ export function RealPersonScreen({
 export function RealWitnessScreen({
   dossier,
   occurrences = [],
+  mentions = NO_MENTIONS,
   network = { nodes: [], edges: [] },
 }: {
   dossier: WitnessDossier;
   occurrences?: readonly SearchResult[];
+  mentions?: EntityMentionsView;
   network?: NetworkView;
 }) {
   const t = useTranslations("phase5");
@@ -204,23 +217,63 @@ export function RealWitnessScreen({
             {witness.protected ? <ProtectionNotice /> : null}
           </div>
         </div>
-        <ResearchTrail entityRef={witness.code} occurrences={occurrences} network={network} />
+        <ResearchTrail
+          entityRef={witness.code}
+          occurrences={occurrences}
+          mentions={mentions}
+          network={network}
+        />
       </div>
     </AppShell>
+  );
+}
+
+function MentionList({ mentions }: { mentions: readonly EntityMention[] }) {
+  const t18 = useTranslations("phase18");
+  const t19 = useTranslations("phase19");
+  return (
+    <ul className="divide-border-faint divide-y">
+      {mentions.map((mention) => (
+        <li key={mention.id} className="py-2 first:pt-0 last:pb-0">
+          <Link href={mention.href} className="text-accent text-[11px] font-semibold">
+            {mention.documentTitle}
+          </Link>
+          <p className="text-fg mt-1 font-mono text-[11px] break-words">{mention.occurrenceText}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <span className="text-fg-secondary font-mono text-[10px] font-semibold">
+              {t19(`matchClass.${mention.matchClass}`)}
+            </span>
+            <CitationChip citation={mention.citation} size="sm" />
+            <span className="text-fg-tertiary font-mono text-[10px]">{mention.ruleId}</span>
+            {mention.versionSuperseded ? (
+              <span className="text-fg-tertiary text-[10px]">{t19("supersededVersion")}</span>
+            ) : null}
+            <ActionLink href={mention.href}>{t18("openExactSource")}</ActionLink>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
 function ResearchTrail({
   entityRef,
   occurrences,
+  mentions,
   network,
 }: {
   entityRef: string;
   occurrences: readonly SearchResult[];
+  mentions: EntityMentionsView;
   network: NetworkView;
 }) {
   const t = useTranslations("phase5");
   const t18 = useTranslations("phase18");
+  const t19 = useTranslations("phase19");
+  const verified = mentions.items.filter((mention) => mention.matchClass === "VERIFIED_MENTION");
+  const reviewRequired = mentions.items.filter(
+    (mention) => mention.matchClass === "REVIEW_REQUIRED",
+  );
   const sources = occurrences.filter(
     (row, index, all) =>
       (row.category === "documents" || row.category === "transcripts") &&
@@ -235,60 +288,90 @@ function ResearchTrail({
     ? network.edges.filter((edge) => edge.from === focusNode.id || edge.to === focusNode.id)
     : [];
   const nodeLabel = (id: string) => network.nodes.find((node) => node.id === id)?.label ?? "—";
-  if (!sources.length && !edges.length) return null;
+  if (!mentions.items.length && !sources.length && !edges.length) return null;
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
-      {sources.length ? (
-        <Panel title={t18("sourceOccurrences")}>
-          <ul className="divide-border-faint divide-y">
-            {sources.map((row) => (
-              <li key={row.href} className="py-2 first:pt-0 last:pb-0">
-                <Link href={row.href} className="text-accent text-[11px] font-semibold">
-                  {row.title}
-                </Link>
-                {row.context ? (
-                  <p className="text-fg-secondary mt-1 line-clamp-3 text-[11px] leading-relaxed">
-                    {row.context}
-                  </p>
-                ) : null}
-                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  {row.citation ? <CitationChip citation={row.citation} size="sm" /> : null}
-                  {row.matchKind ? (
-                    <span className="text-fg-tertiary font-mono text-[10px]">
-                      {t18(`matchKind.${row.matchKind}`)}
-                    </span>
-                  ) : null}
-                  <ActionLink href={row.href}>{t18("openExactSource")}</ActionLink>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+    <div className="space-y-3">
+      {mentions.items.length ? (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {verified.length ? (
+            <Panel title={t19("verifiedMentions")}>
+              {mentions.total > mentions.items.length ? (
+                <p className="text-fg-tertiary mb-2 text-[10px]">
+                  {t19("mentionTotal", { shown: mentions.items.length, total: mentions.total })}
+                </p>
+              ) : null}
+              <MentionList mentions={verified} />
+            </Panel>
+          ) : null}
+          {reviewRequired.length ? (
+            <Panel title={t19("reviewRequiredMentions")}>
+              <p className="text-fg-secondary mb-2 text-[11px] leading-relaxed">
+                {t19("reviewRequiredNote")}
+              </p>
+              <MentionList mentions={reviewRequired} />
+            </Panel>
+          ) : null}
+        </div>
       ) : null}
-      {edges.length ? (
-        <Panel title={t18("relationships")}>
-          <ul className="divide-border-faint divide-y">
-            {edges.map((edge) => {
-              const other = edge.from === focusNode?.id ? edge.to : edge.from;
-              return (
-                <li key={edge.id} className="space-y-1.5 py-2 first:pt-0 last:pb-0">
-                  <p className="text-fg text-[11px] font-medium">
-                    {edge.relation.replaceAll("_", " ")} · {nodeLabel(other)}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <SourceBadge type={edge.sourceType} size="sm" />
-                    <VerificationBadge state={edge.verification} size="sm" />
-                    <CitationChip citation={edge.citation} size="sm" />
-                    {edge.sourcePath ? (
-                      <ActionLink href={edge.sourcePath}>{t("openSource")}</ActionLink>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {sources.length ? (
+          <Panel title={t19("searchMatches")}>
+            <p className="text-fg-secondary mb-2 text-[11px] leading-relaxed">
+              {t19("searchMatchesNote")}
+            </p>
+            <ul className="divide-border-faint divide-y">
+              {sources.map((row) => (
+                <li key={row.href} className="py-2 first:pt-0 last:pb-0">
+                  <Link href={row.href} className="text-accent text-[11px] font-semibold">
+                    {row.title}
+                  </Link>
+                  {row.context ? (
+                    <p className="text-fg-secondary mt-1 line-clamp-3 text-[11px] leading-relaxed">
+                      {row.context}
+                    </p>
+                  ) : null}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className="text-fg-secondary font-mono text-[10px] font-semibold">
+                      {t19("matchClass.SEARCH_MATCH")}
+                    </span>
+                    {row.citation ? <CitationChip citation={row.citation} size="sm" /> : null}
+                    {row.matchKind ? (
+                      <span className="text-fg-tertiary font-mono text-[10px]">
+                        {t18(`matchKind.${row.matchKind}`)}
+                      </span>
                     ) : null}
+                    <ActionLink href={row.href}>{t18("openExactSource")}</ActionLink>
                   </div>
                 </li>
-              );
-            })}
-          </ul>
-        </Panel>
-      ) : null}
+              ))}
+            </ul>
+          </Panel>
+        ) : null}
+        {edges.length ? (
+          <Panel title={t18("relationships")}>
+            <ul className="divide-border-faint divide-y">
+              {edges.map((edge) => {
+                const other = edge.from === focusNode?.id ? edge.to : edge.from;
+                return (
+                  <li key={edge.id} className="space-y-1.5 py-2 first:pt-0 last:pb-0">
+                    <p className="text-fg text-[11px] font-medium">
+                      {edge.relation.replaceAll("_", " ")} · {nodeLabel(other)}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <SourceBadge type={edge.sourceType} size="sm" />
+                      <VerificationBadge state={edge.verification} size="sm" />
+                      <CitationChip citation={edge.citation} size="sm" />
+                      {edge.sourcePath ? (
+                        <ActionLink href={edge.sourcePath}>{t("openSource")}</ActionLink>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Panel>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -296,10 +379,12 @@ function ResearchTrail({
 export function RealExhibitScreen({
   exhibit,
   occurrences,
+  mentions = NO_MENTIONS,
   network,
 }: {
   exhibit: ExhibitDossier;
   occurrences: readonly SearchResult[];
+  mentions?: EntityMentionsView;
   network: NetworkView;
 }) {
   const t = useTranslations("phase5");
@@ -349,7 +434,12 @@ export function RealExhibitScreen({
             ) : null}
           </Panel>
         </div>
-        <ResearchTrail entityRef={exhibit.id} occurrences={occurrences} network={network} />
+        <ResearchTrail
+          entityRef={exhibit.id}
+          occurrences={occurrences}
+          mentions={mentions}
+          network={network}
+        />
       </div>
     </AppShell>
   );
@@ -358,10 +448,12 @@ export function RealExhibitScreen({
 export function RealOrganizationScreen({
   organization,
   occurrences,
+  mentions = NO_MENTIONS,
   network,
 }: {
   organization: OrganizationDossier;
   occurrences: readonly SearchResult[];
+  mentions?: EntityMentionsView;
   network: NetworkView;
 }) {
   const t15 = useTranslations("phase15");
@@ -399,7 +491,12 @@ export function RealOrganizationScreen({
             ]}
           />
         </Panel>
-        <ResearchTrail entityRef={organization.slug} occurrences={occurrences} network={network} />
+        <ResearchTrail
+          entityRef={organization.slug}
+          occurrences={occurrences}
+          mentions={mentions}
+          network={network}
+        />
       </div>
     </AppShell>
   );

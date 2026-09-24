@@ -48,6 +48,7 @@ export function createMockRepositoryAdapter(
     getDocument: async (id) => source.getDocument(id),
     getFinding: async () => null,
     search: async (query) => source.search(query),
+    getEntityMentions: async () => ({ total: 0, items: [] }),
     getNetwork: async () => source.getNetwork(),
     getPath: async () => source.getPath(),
     getTimeline: async () => source.getTimeline(),
