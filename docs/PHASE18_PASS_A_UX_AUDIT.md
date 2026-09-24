@@ -30,3 +30,14 @@ Resolved broken presentations in this pass:
   initial nodes to overlap;
 - dense tables only overflowed horizontally at mobile widths;
 - real reader context tabs could appear blank without explaining the API gap.
+
+## Pass B follow-up (2026-09-24)
+
+| Route           | Now          | Remaining gap                                                                                                  |
+| --------------- | ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Document Reader | GOOD         | Context rail lists the document's provenance-backed relationships; empty state remains when none exist.        |
+| Person Detail   | GOOD         | Coordinate-bearing source occurrences and focused relationships. Occurrences are lexical matches, labelled so. |
+| Witness Detail  | NEEDS POLISH | Exact transcript-line occurrences are listed code-only. No source-backed hearing total exists; none is shown.  |
+| Exhibit Detail  | GOOD         | New dossier with status, occurrences and exact source links.                                                   |
+| Organizations   | GOOD         | New directory and dossier over real organization records.                                                      |
+| Network         | NEEDS POLISH | Focused URLs load the exact entity neighbourhood server-side; unfocused view keeps the bounded 500-edge read.  |

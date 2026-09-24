@@ -6,17 +6,17 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-18-research-experience-visual-excellence`, created
   from the Phase 17 closeout commit `fd344fb`.
-- Current milestone: **Phase 18 IN PROGRESS — Pass A implemented and verified
-  (2026-09-24)**. Phase 18 is not complete and Phase 18B has not started. Phase
+- Current milestone: **Phase 18 IN PROGRESS — Passes A and B implemented and
+  verified (2026-09-24)**. Phase 18 is not complete and Phase 18C has not started. Phase
   16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
   external deployment/alerting gates are intentionally deferred until public
   deployment is desired.
-- Phase 18 Pass A implementation commit: `5733533`.
+- Phase 18 Pass A implementation commit: `5733533`; Pass B implementation
+  follows `c65a5f7` (see `git log`).
 - Push state (2026-09-24): Phase 18 branch
-  `feat/phase-18-research-experience-visual-excellence` is pushed through
-  checkpoint commit `2e726e5`. No Phase 18 tag exists and Phase 18 is not
-  complete. `main` remains at the pushed Phase 15 baseline `01cb693`.
+  `feat/phase-18-research-experience-visual-excellence` is pushed through the
+  Pass B checkpoint. No Phase 18 tag exists and Phase 18 is not complete. `main` remains at the pushed Phase 15 baseline `01cb693`.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. The Phase 17
   branch and tag are pushed, and the branch is not merged to `main`.
@@ -321,13 +321,14 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 18 Pass A is implemented on
-`feat/phase-18-research-experience-visual-excellence`. The audit is
-`docs/PHASE18_PASS_A_UX_AUDIT.md`; real-data desktop/tablet/Pixel 7 checks and
-the focused 36-test gate pass. Do not mark Phase 18 complete and do not begin
-Phase 18B without explicit authorization. Remaining UX work is API-bound:
-structured reader context, person/witness occurrence payloads and future
-server-side network neighbourhood pagination/clustering. Do not close Phase 16;
+Phase 18 Passes A and B are implemented on
+`feat/phase-18-research-experience-visual-excellence`. The audit (with Pass B
+follow-up) is `docs/PHASE18_PASS_A_UX_AUDIT.md`; the real-data Phase 18
+Playwright gate (`E2E_REAL_DATA=1`, 28 tests, desktop + Pixel 7) passes. Do not
+mark Phase 18 complete and do not begin Phase 18C without explicit
+authorization. Remaining gaps: dossier occurrences are lexical search matches
+(no structured mention table), no source-backed hearing totals, and unfocused
+`/network` still reads the bounded 500-edge default. Do not close Phase 16;
 resume its external deployment/alerting gates only when public deployment is
 desired. The four surname-only `Smith` occurrences remain review-required.
 

@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 18 Pass A checkpoint)
+Last updated: 2026-09-24 (Phase 18 Pass B checkpoint)
 
 ## Milestones
 
@@ -25,7 +25,7 @@ Last updated: 2026-09-24 (Phase 18 Pass A checkpoint)
 | **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
-| **18** | **Research experience and visual excellence**                                                             | **IN PROGRESS** — Pass A implemented and verified; Phase 18 not complete                                 |
+| **18** | **Research experience and visual excellence**                                                             | **IN PROGRESS** — Passes A and B implemented and verified; Phase 18 not complete                         |
 
 ## Roadmap
 
@@ -47,8 +47,8 @@ smoke remain pending. The external beta protocol is documented as an external
 dependency, not an active completion blocker. Phase 16 remains **IN PROGRESS**;
 its remaining blockers are external deployment/alerting only and it will resume
 when public deployment is desired. Phase 17 is complete against its explicitly
-declared known-public-corpus scope. Phase 18 Pass A aligns the research surfaces
-to that real-data baseline; Phase 18 remains in progress.
+declared known-public-corpus scope. Phase 18 Passes A and B align the research
+surfaces to that real-data baseline; Phase 18 remains in progress.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -645,6 +645,29 @@ experience`).
 - Focused Phase 18/frontend/data/i18n tests pass (36/36); the complete frontend
   suite also passed earlier in this pass (239/239). Next production build passed.
   Phase 18 is not complete and Phase 18B has not started.
+
+## Phase 18 Pass B checkpoint
+
+- Dossier routes added for exhibits (`/exhibits/[id]`) and organizations
+  (`/organizations`, `/organizations/[slug]`); search returns organization hits
+  and exact `target_path` links for people, witnesses and exhibits.
+- `GET /api/v1/network?focus_ref=` resolves a public route reference (slug,
+  witness code, document/exhibit ID, finding/claim/argument key) by exact match
+  only and returns that entity's provenance-backed neighbourhood; an unknown
+  reference returns an empty graph. Focused `P00003` returns 2 edges, `W00016`
+  6 edges. Focused Network URLs, dossiers and the Reader context rail use it.
+- Person, witness, exhibit and organization dossiers list source occurrences
+  from exact-identifier/lexical search over persisted chunks. Only
+  coordinate-bearing hits (page/paragraph/line) are listed, each labelled with
+  its match basis; these are lexical matches, not a structured mention table.
+- Protected witnesses stay code-only; no hearing total is shown because no
+  source-backed hearing count exists. Search dropped the non-functional
+  verification filter and paginates client-side (12 per page).
+- Quality gate: lint/format, mypy and strict `tsc` pass; backend 303 passed;
+  frontend 243 passed; Phase 18 Playwright 28/28 (desktop + Pixel 7) including
+  search→exhibit→source, person→source, protected witness→transcript line and
+  focused network→provenance; full real-data Playwright 100 passed / 98 skipped
+  (legacy demo-mode specs). Production `next build` passed in the web image.
 
 ## Technical debt / notes
 

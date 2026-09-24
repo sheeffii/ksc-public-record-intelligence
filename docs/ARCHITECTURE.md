@@ -185,6 +185,8 @@ explicit source category, extraction origin and optional typed date. Edges whose
 citation is unresolved or rejected are never returned. `GET /api/v1/network/path`
 runs a bounded breadth-first search over public source-backed edges only; each
 returned hop includes its own citation and ordering is by hop count only.
+`GET /api/v1/network?focus_ref=` returns one entity's neighbourhood; the
+reference is resolved by exact identifier match only, never by label similarity.
 
 The same database-only projection creates timeline events from persisted
 document and hearing dates. Date type and precision remain separate, and each
