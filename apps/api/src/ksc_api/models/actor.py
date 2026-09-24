@@ -49,6 +49,14 @@ class PersonAlias(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "person_aliases"
     __table_args__ = (
         UniqueConstraint("person_id", "alias", name="uq_person_aliases_person_alias"),
+        CheckConstraint("alias_kind IN ('speaker_label', 'full_name')", name="alias_kind_allowed"),
+        # A full-name alias is only recorded with the exact public source that states it.
+        CheckConstraint(
+            "alias_kind <> 'full_name' OR (source_document_version_id IS NOT NULL "
+            "AND source_char_start IS NOT NULL AND source_char_end IS NOT NULL "
+            "AND rule_id IS NOT NULL)",
+            name="full_name_has_provenance",
+        ),
     )
 
     person_id: Mapped[uuid.UUID] = mapped_column(
@@ -56,6 +64,16 @@ class PersonAlias(UUIDPrimaryKeyMixin, Base):
     )
     alias: Mapped[str] = mapped_column(String(255), nullable=False)
     language: Mapped[str | None] = mapped_column(String(16))
+    alias_kind: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="speaker_label", server_default="speaker_label"
+    )
+    source_document_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="CASCADE")
+    )
+    source_pdf_page_index: Mapped[int | None] = mapped_column(Integer)
+    source_char_start: Mapped[int | None] = mapped_column(Integer)
+    source_char_end: Mapped[int | None] = mapped_column(Integer)
+    rule_id: Mapped[str | None] = mapped_column(String(64))
 
     person: Mapped[Person] = relationship(back_populates="aliases")
 

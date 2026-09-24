@@ -91,8 +91,84 @@ class Exhibit(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         server_default=Visibility.PUBLIC.value,
     )
 
+    # The status event establishing `status`; NULL whenever status is `unknown`.
+    status_event_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("exhibit_status_events.id", ondelete="SET NULL", use_alter=True),
+    )
+
     through_witness: Mapped[Witness | None] = relationship()
     document_version: Mapped[DocumentVersion | None] = relationship()
+
+
+class ExhibitStatusEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """One explicit court-record statement about an exhibit's status.
+
+    History, not a guessed current value: several events may exist per exhibit.
+    Only court speakers (the bench or the court officer) can produce an event;
+    party argument never does. `exhibit_identifier` is recorded verbatim and
+    `exhibit_id` is set only when that identifier is already registered.
+    """
+
+    __tablename__ = "exhibit_status_events"
+    __table_args__ = (
+        CheckConstraint(
+            "event_type IN ('number_assigned', 'admitted', 'rejected', "
+            "'marked_for_identification', 'withdrawn')",
+            name="event_type_allowed",
+        ),
+        CheckConstraint(
+            "char_anchor IN ('transcript_segment_text', 'document_page_text')",
+            name="char_anchor_allowed",
+        ),
+        CheckConstraint("char_start >= 0 AND char_end > char_start", name="char_range"),
+        UniqueConstraint(
+            "document_version_id",
+            "transcript_segment_id",
+            "pdf_page_index",
+            "char_start",
+            "char_end",
+            "exhibit_identifier",
+            "event_type",
+            name="uq_exhibit_status_events_source",
+            postgresql_nulls_not_distinct=True,
+        ),
+    )
+
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("cases.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    exhibit_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("exhibits.id", ondelete="CASCADE"), index=True
+    )
+    exhibit_identifier: Mapped[str] = mapped_column(String(64), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    classification: Mapped[str | None] = mapped_column(String(32))
+    event_date: Mapped[date | None] = mapped_column(Date)
+    hearing_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("hearings.id", ondelete="SET NULL")
+    )
+    document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="CASCADE"), nullable=False
+    )
+    transcript_segment_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("transcript_segments.id", ondelete="CASCADE")
+    )
+    page_number: Mapped[int | None] = mapped_column(Integer)
+    pdf_page_index: Mapped[int | None] = mapped_column(Integer)
+    line_from: Mapped[int | None] = mapped_column(Integer)
+    line_to: Mapped[int | None] = mapped_column(Integer)
+    char_anchor: Mapped[str] = mapped_column(String(32), nullable=False)
+    char_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    char_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    occurrence_text: Mapped[str] = mapped_column(Text, nullable=False)
+    speaker: Mapped[str | None] = mapped_column(String(255))
+    language: Mapped[str | None] = mapped_column(String(16))
+    rule_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    rule_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    projection_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("processing_runs.id", ondelete="SET NULL")
+    )
 
 
 class Incident(UUIDPrimaryKeyMixin, TimestampMixin, Base):

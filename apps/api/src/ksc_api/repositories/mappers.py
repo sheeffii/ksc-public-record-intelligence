@@ -558,6 +558,9 @@ def to_graph_node(node: GraphNode, ref: str, protected: bool) -> GraphNodeRead:
 
 
 def to_relationship(edge: Relationship) -> RelationshipRead:
+    """Citation-backed edges only; occurrence/appearance edges use `EdgeRead`."""
+    if edge.citation is None:
+        raise ValueError(f"relationship {edge.id} is not citation-backed")
     return RelationshipRead(
         id=edge.id,
         from_node_id=edge.from_node_id,

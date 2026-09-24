@@ -21,6 +21,7 @@ from sqlalchemy import (
     Date,
     ForeignKey,
     Index,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -134,6 +135,12 @@ class Relationship(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base)
             name="uq_relationships_edge_citation",
         ),
         CheckConstraint("from_node_id <> to_node_id", name="no_self_loop"),
+        # "Why does this edge exist?" has exactly one exact-source answer.
+        CheckConstraint(
+            "num_nonnulls(citation_id, entity_occurrence_id, witness_appearance_id) = 1",
+            name="exactly_one_evidence",
+        ),
+        CheckConstraint("evidence_count >= 1", name="evidence_count_positive"),
         human_verification_requires_reviewer(),
     )
 
@@ -153,14 +160,26 @@ class Relationship(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base)
         index=True,
     )
     relationship_type: Mapped[RelationshipType] = mapped_column(
-        db_enum(RelationshipType, name="relationship_type"), nullable=False
+        db_enum(RelationshipType, name="relationship_type"), nullable=False, index=True
     )
-    # Provenance is mandatory. RESTRICT: a citation in use cannot be deleted.
-    citation_id: Mapped[uuid.UUID] = mapped_column(
+    # Provenance is mandatory: exactly one of a resolved citation, a persisted
+    # deterministic entity occurrence, or a structural witness appearance.
+    # RESTRICT: a citation in use cannot be deleted.
+    citation_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("citations.id", ondelete="RESTRICT"),
-        nullable=False,
         index=True,
+    )
+    entity_occurrence_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("entity_occurrences.id", ondelete="CASCADE"), index=True
+    )
+    witness_appearance_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("witness_appearances.id", ondelete="CASCADE"), index=True
+    )
+    # Number of exact source anchors behind an aggregated edge; the evidence
+    # FK above is the first of them. A count, never a weight.
+    evidence_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default="1"
     )
     note: Mapped[str | None] = mapped_column(Text)
     source_category: Mapped[str] = mapped_column(
@@ -184,4 +203,4 @@ class Relationship(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base)
         back_populates="outgoing", foreign_keys=[from_node_id]
     )
     to_node: Mapped[GraphNode] = relationship(back_populates="incoming", foreign_keys=[to_node_id])
-    citation: Mapped[Citation] = relationship()
+    citation: Mapped[Citation | None] = relationship()

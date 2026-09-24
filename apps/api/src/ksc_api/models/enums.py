@@ -248,6 +248,7 @@ class RelationshipOrigin(enum.StrEnum):
 
     SOURCE_DOCUMENTED = "source_documented"
     DETERMINISTIC_CITATION = "deterministic_citation"
+    DETERMINISTIC_OCCURRENCE = "deterministic_occurrence"
     ANALYTICAL = "analytical"
 
 

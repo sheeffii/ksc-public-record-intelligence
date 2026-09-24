@@ -46,6 +46,7 @@ PHASE14_TABLES = {
     "media_statement_comparisons",
 }
 PHASE17_TABLES = {"entity_occurrences"}
+PHASE19_TABLES = {"exhibit_status_events"}
 PHASE6_TABLES = {
     "source_records",
     "document_versions",
@@ -100,6 +101,7 @@ def test_schema_contains_phase4_foundation_and_phase6_evidence_model():
         | PHASE13_TABLES
         | PHASE14_TABLES
         | PHASE17_TABLES
+        | PHASE19_TABLES
     )
 
 
@@ -177,10 +179,14 @@ def test_protected_witness_cannot_carry_identity():
 
 
 def test_relationships_require_provenance():
+    # Exactly one exact-source evidence anchor per edge (Phase 19B, ADR-025).
     cols = Relationship.__table__.columns
-    assert cols["citation_id"].nullable is False
+    assert "ck_relationships_exactly_one_evidence" in _checks("relationships")
+    assert "ck_relationships_evidence_count_positive" in _checks("relationships")
     fk = next(iter(cols["citation_id"].foreign_keys))
     assert fk.ondelete == "RESTRICT"
+    for column in ("entity_occurrence_id", "witness_appearance_id"):
+        assert next(iter(cols[column].foreign_keys)).ondelete == "CASCADE"
     assert "ck_relationships_no_self_loop" in _checks("relationships")
 
 

@@ -390,3 +390,15 @@ class DocumentChunk(UUIDPrimaryKeyMixin, Base):
     )
 
     version: Mapped[DocumentVersion] = relationship(back_populates="chunks")
+
+
+_LANGUAGE_MARKERS = {"/sqi": "sq", "/eng": "en"}
+
+
+def version_language(official_version_ref: str, recorded: str | None) -> str | None:
+    """The official version reference's language marker (`/sqi`, `/eng`) wins
+    over recorded language metadata; without a marker the recorded value stands."""
+    for suffix, language in _LANGUAGE_MARKERS.items():
+        if official_version_ref.lower().endswith(suffix):
+            return language
+    return recorded

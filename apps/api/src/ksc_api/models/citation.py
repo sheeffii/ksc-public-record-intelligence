@@ -206,6 +206,9 @@ class Citation(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     # Audit detail for every terminal state. Ambiguous candidates are stored
     # as identifiers only; no candidate is silently selected as the target.
     resolution_detail: Mapped[str | None] = mapped_column(Text)
+    # Machine-readable rule that produced the terminal state, e.g.
+    # `identifier.exact`, `transcript.page_range`, `unresolved.target_not_held`.
+    resolution_rule: Mapped[str | None] = mapped_column(String(64), index=True)
     candidate_identifiers: Mapped[list[str] | None] = mapped_column(JSONB)
 
     target_document: Mapped[Document | None] = relationship(foreign_keys=[target_document_id])

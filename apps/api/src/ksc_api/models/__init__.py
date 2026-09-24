@@ -45,6 +45,7 @@ from ksc_api.models.document import (
     DocumentParagraph,
     DocumentSection,
     DocumentVersion,
+    version_language,
 )
 from ksc_api.models.enums import (
     INGESTION_FAILURE_STATUSES,
@@ -83,6 +84,7 @@ from ksc_api.models.evidence import (
     ClaimMention,
     Event,
     Exhibit,
+    ExhibitStatusEvent,
     Finding,
     FindingEvidenceLink,
     Incident,
@@ -155,6 +157,7 @@ __all__ = [
     "Event",
     "ExaminationType",
     "Exhibit",
+    "ExhibitStatusEvent",
     "ExternalSource",
     "Finding",
     "FindingEvidenceLink",
@@ -200,4 +203,5 @@ __all__ = [
     "WitnessAppearance",
     "WitnessIdentityStatus",
     "normalize_identifier",
+    "version_language",
 ]
