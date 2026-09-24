@@ -3,6 +3,7 @@
 import uuid
 from collections import Counter
 
+from ksc_api.models import version_language
 from ksc_ingestion.verified_mentions import (
     RULES,
     Anchor,
@@ -11,7 +12,6 @@ from ksc_ingestion.verified_mentions import (
     classify_speaker_label,
     exhibit_mentions,
     organization_mentions,
-    version_language,
     witness_code_mentions,
 )
 

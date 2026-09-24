@@ -38,8 +38,14 @@ from ksc_api.models import (
     Transcript,
     TranscriptSegment,
     Witness,
+    version_language,
 )
-from ksc_ingestion.structured_projection import _person_identity
+from ksc_ingestion.identity import (
+    NAMED_ROLES,
+    classify_label,
+    slug_role_and_key,
+    speaker_label_identity,
+)
 
 PROCESSOR = "phase19a-mentions"
 PROCESSOR_VERSION = "1"
@@ -62,12 +68,12 @@ RULES: dict[str, tuple[int, str]] = {
     "person.speaker_label.role_qualified": (1, VERIFIED),
     "person.speaker_label.honorific": (1, REVIEW_REQUIRED),
     "person.speaker_label.shared_surname": (1, REVIEW_REQUIRED),
+    "person.full_name.exact": (1, VERIFIED),
 }
 
 WITNESS_CODE = re.compile(r"(?<![0-9A-Za-z])W\d{5}(?![0-9A-Za-z]|\.\d)")
 EXHIBIT_ID = re.compile(r"(?<![0-9A-Za-z])[PD]\d{5}(?![0-9A-Za-z]|\.\d)")
 _ACRONYM = re.compile(r"^[A-ZÇË]{2,6}$")
-_ROLE_QUALIFIED = frozenset({"judge", "accused"})
 
 
 @dataclass(frozen=True)
@@ -123,6 +129,8 @@ class Registry:
     person_labels: dict[str, tuple[uuid.UUID, str, str]]
     # name key -> number of registered people sharing it (any role)
     name_keys: Counter[str] = field(default_factory=Counter)
+    # recorded full-name alias -> people it is recorded for (source-backed only)
+    full_names: dict[str, set[uuid.UUID]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -201,21 +209,40 @@ def organization_mentions(text: str, variants: Mapping[str, set[uuid.UUID]]) -> 
 
 
 def classify_speaker_label(label: str, registry: Registry) -> Mention | None:
-    """A speaker label is bound only when it is a recorded alias of exactly one
-    registered person. Role-qualified labels (Judge / Presiding Judge / The
-    Accused + name) are verified; honorific-only labels (Mr./Ms./Z./Znj. +
-    name) are surname-level and stay review-required."""
-    bound = registry.person_labels.get(label)
-    if bound is None:
+    """Bind a speaker label through the shared identity rules (`identity.py`).
+
+    Role-qualified labels verify; honorific-only and shared-surname labels are
+    review-required; unrecorded or ambiguous labels produce no row."""
+    resolution = classify_label(label, registry.person_labels, registry.name_keys)
+    if resolution is None or resolution.person_id is None:
         return None
-    person_id, role, name_key = bound
-    if registry.name_keys[name_key] > 1 and role not in _ROLE_QUALIFIED:
-        rule = "person.speaker_label.shared_surname"
-    elif role in _ROLE_QUALIFIED:
-        rule = "person.speaker_label.role_qualified"
-    else:
-        rule = "person.speaker_label.honorific"
-    return Mention("person_id", person_id, rule, 0, len(label), label)
+    return Mention("person_id", resolution.person_id, resolution.rule, 0, len(label), label)
+
+
+def full_name_mentions(text: str, full_names: Mapping[str, set[uuid.UUID]]) -> Iterator[Mention]:
+    """Exact, whole-token, case-insensitive matches of recorded full names.
+
+    A spelling recorded for more than one person is ambiguous and never bound."""
+    seen: set[tuple[int, int]] = set()
+    for name in sorted(full_names, key=len, reverse=True):
+        owners = full_names[name]
+        if len(owners) != 1:
+            continue
+        (person_id,) = owners
+        pattern = r"\s+".join(re.escape(token) for token in name.split())
+        for match in re.finditer(rf"(?<!\w){pattern}(?!\w)", text, re.IGNORECASE):
+            span = (match.start(), match.end())
+            if span in seen:
+                continue
+            seen.add(span)
+            yield Mention(
+                "person_id",
+                person_id,
+                "person.full_name.exact",
+                match.start(),
+                match.end(),
+                match.group(0),
+            )
 
 
 # ------------------------------------------------------------- registry --
@@ -248,15 +275,19 @@ def load_registry(session: Session, case: Case) -> Registry:
     people = session.execute(select(Person.id, Person.slug).where(Person.case_id == case.id)).all()
     slugs = {person_id: slug for person_id, slug in people}
     for slug in slugs.values():
-        role, _, name_key = slug.partition("-")
-        if role in {"judge", "accused", "counsel_or_participant"} and name_key:
+        role, name_key = slug_role_and_key(slug)
+        if role in NAMED_ROLES and name_key:
             name_keys[name_key] += 1
-    for person_id, alias in session.execute(
-        select(PersonAlias.person_id, PersonAlias.alias).where(
+    full_names: dict[str, set[uuid.UUID]] = {}
+    for person_id, alias, alias_kind in session.execute(
+        select(PersonAlias.person_id, PersonAlias.alias, PersonAlias.alias_kind).where(
             PersonAlias.person_id.in_(list(slugs))
         )
     ).all():
-        identity = _person_identity(alias)
+        if alias_kind == "full_name":
+            full_names.setdefault(" ".join(alias.split()), set()).add(person_id)
+            continue
+        identity = speaker_label_identity(alias)
         if identity is None or identity[0] != slugs[person_id]:
             # The alias does not deterministically reproduce this person's
             # canonical identity; it is never used as a binding.
@@ -267,22 +298,15 @@ def load_registry(session: Session, case: Case) -> Registry:
         person_labels[alias] = (person_id, identity[2], name_key)
     for alias in ambiguous_labels:
         person_labels.pop(alias, None)
-    return Registry(witnesses, exhibits, variants, person_labels, name_keys)
+    # A full name that differs only by case is the same recorded spelling.
+    folded: dict[str, set[uuid.UUID]] = {}
+    for name, owners in full_names.items():
+        folded.setdefault(name.casefold(), set()).update(owners)
+    full_names = {name: folded[name.casefold()] for name in full_names}
+    return Registry(witnesses, exhibits, variants, person_labels, name_keys, full_names)
 
 
 # -------------------------------------------------------------- anchors --
-_LANGUAGE_MARKERS = {"/sqi": "sq", "/eng": "en"}
-
-
-def version_language(official_version_ref: str, recorded: str | None) -> str | None:
-    """The official version reference's language marker wins over recorded
-    metadata; without a marker the recorded language is kept as-is."""
-    for suffix, language in _LANGUAGE_MARKERS.items():
-        if official_version_ref.lower().endswith(suffix):
-            return language
-    return recorded
-
-
 def _paragraph_spans(
     page_text: str, paragraphs: Iterable[tuple[int, str]]
 ) -> tuple[tuple[int, int, int], ...]:
@@ -384,6 +408,7 @@ def anchor_mentions(anchor: Anchor, registry: Registry) -> Iterator[Mention]:
     yield from witness_code_mentions(anchor.text, registry.witnesses)
     yield from exhibit_mentions(anchor.text, registry.exhibits)
     yield from organization_mentions(anchor.text, registry.organization_variants)
+    yield from full_name_mentions(anchor.text, registry.full_names)
 
 
 def mention_id(anchor: Anchor, mention: Mention) -> uuid.UUID:
@@ -458,7 +483,7 @@ class Phase19MentionProjector:
             for anchor in public_anchors(session, case):
                 if anchor.kind == SPEAKER_LABEL:
                     unregistered_labels += int(
-                        _person_identity(anchor.text) is not None
+                        speaker_label_identity(anchor.text) is not None
                         and anchor.text not in registry.person_labels
                     )
                 else:

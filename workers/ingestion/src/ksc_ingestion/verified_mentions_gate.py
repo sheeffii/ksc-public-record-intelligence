@@ -27,6 +27,7 @@ from ksc_api.models import (
     Exhibit,
     Person,
     Transcript,
+    version_language,
 )
 from ksc_ingestion.verified_mentions import (
     EXHIBIT_ID,
@@ -41,7 +42,6 @@ from ksc_ingestion.verified_mentions import (
     anchor_mentions,
     load_registry,
     public_anchors,
-    version_language,
 )
 
 KINDS = ("person", "witness", "organization", "exhibit")

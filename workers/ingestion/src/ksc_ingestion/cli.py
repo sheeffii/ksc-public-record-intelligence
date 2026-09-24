@@ -16,6 +16,7 @@ a challenge as a visible failure; `status` prints jobs, items and record counts.
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from datetime import date
@@ -53,6 +54,9 @@ from ksc_ingestion.findings_quality_gate import run_phase10_gate, write_phase10_
 from ksc_ingestion.parse_pipeline import Phase8Pipeline
 from ksc_ingestion.phase13_quality_gate import run_phase13_gate, write_phase13_report
 from ksc_ingestion.phase17_report import build_phase17_pass_a_report, write_phase17_pass_a_report
+from ksc_ingestion.phase19b import Phase19BPipeline
+from ksc_ingestion.phase19b_report import run_phase19b_report
+from ksc_ingestion.phase19b_report import write_report as write_phase19b_report
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor, RunOutcome
 from ksc_ingestion.probe import probe, record_probe
 from ksc_ingestion.quality_gate import report_to_table, run_gate, write_report
@@ -223,6 +227,27 @@ def cmd_project_mentions(args: argparse.Namespace) -> int:
         f"legacy_removed={result.legacy_rows_removed}"
     )
     return 0
+
+
+def cmd_build_intelligence(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    result = Phase19BPipeline(get_sessionmaker(), case_number=settings.case_id).run()
+    print(json.dumps({"run_id": str(result.run_id), **result.detail}, indent=2, default=str))
+    return 0
+
+
+def cmd_report_phase19b(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        case = session.scalar(select(Case).where(Case.case_number == settings.case_id))
+        if case is None:
+            print(f"case {settings.case_id} is not seeded", file=sys.stderr)
+            return 2
+        report = run_phase19b_report(session, case, args.generated_at)
+    if args.json:
+        write_phase19b_report(report, Path(args.json))
+    print(json.dumps({"passed": report["passed"], "checks": report["checks"]}, indent=2))
+    return 0 if report["passed"] else 1
 
 
 def cmd_gate_phase19a(args: argparse.Namespace) -> int:
@@ -664,6 +689,17 @@ def build_parser() -> argparse.ArgumentParser:
         "project-mentions", help="project Phase 19A deterministic verified entity mentions"
     )
     p_mentions.set_defaults(func=cmd_project_mentions)
+    p_intelligence = sub.add_parser(
+        "build-intelligence",
+        help="project Phase 19B aliases, appearances, exhibit status events, mentions and typed edges",
+    )
+    p_intelligence.set_defaults(func=cmd_build_intelligence)
+    p_phase19b = sub.add_parser(
+        "report-phase19b", help="Phase 19B corpus-depth analysis and reconciliation gate"
+    )
+    p_phase19b.add_argument("--generated-at", type=date.fromisoformat, default=date.today())
+    p_phase19b.add_argument("--json")
+    p_phase19b.set_defaults(func=cmd_report_phase19b)
     p_mentions_gate = sub.add_parser(
         "gate-phase19a", help="reconcile and audit Phase 19A verified mentions"
     )

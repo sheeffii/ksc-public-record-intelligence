@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import unicodedata
 import uuid
 from dataclasses import dataclass
 
@@ -30,23 +29,11 @@ from ksc_api.models import (
     WitnessIdentityStatus,
     normalize_identifier,
 )
+from ksc_ingestion.identity import speaker_label_identity
 
 _NS = uuid.UUID("8b407a92-23a8-4daf-9d36-5c577f88ac35")
 _WITNESS = re.compile(r"^W\d{5}$", re.I)
 _EXHIBIT = re.compile(r"^[PD]\d{5}$", re.I)
-
-_PERSON_PREFIXES: tuple[tuple[re.Pattern[str], str, str], ...] = (
-    (
-        re.compile(
-            r"^(?:PRESIDING JUDGE|JUDGE|GJYKAT[ËE]SI|KRYETAR(?:I|JA) I TRUPIT GJYKUES)(?: Z\.)?\s+(.+)$",
-            re.I,
-        ),
-        "judge",
-        "Judge",
-    ),
-    (re.compile(r"^(?:THE ACCUSED|I AKUZUARI)\s+(.+)$", re.I), "accused", "Accused"),
-    (re.compile(r"^(?:MR\.|MS\.|Z\.|ZNJ\.)\s*(.+)$", re.I), "counsel_or_participant", ""),
-)
 
 _ORGANIZATIONS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     (
@@ -78,49 +65,8 @@ def _id(*parts: object) -> uuid.UUID:
     return uuid.uuid5(_NS, ":".join(str(part) for part in parts))
 
 
-def _ascii_key(value: str) -> str:
-    folded = "".join(
-        character
-        for character in unicodedata.normalize("NFKD", value)
-        if not unicodedata.combining(character)
-    )
-    return re.sub(r"[^a-z0-9]+", "-", folded.lower()).strip("-")
-
-
-def _person_identity(speaker: str) -> tuple[str, str, str] | None:
-    compact = " ".join(speaker.split()).strip()
-    for pattern, role, title in _PERSON_PREFIXES:
-        match = pattern.match(compact)
-        if match:
-            name = " ".join(match.group(1).split()).strip(" .")
-            if not name or name in {"I TRUPIT GJYKUES", "COURT"}:
-                return None
-            display = f"{title} {name.title()}".strip()
-            return f"{role}-{_ascii_key(name)}", display, role
-    return None
-
-
-def _status(text: str, identifier: str) -> str:
-    escaped = re.escape(identifier)
-    if re.search(
-        rf"(?:reject(?:ed|ion)?|refus(?:ed|al)).{{0,80}}{escaped}|{escaped}.{{0,80}}(?:reject(?:ed|ion)?|refus(?:ed|al))",
-        text,
-        re.I,
-    ):
-        return "rejected"
-    if re.search(
-        rf"(?:admit(?:ted|sion)?).{{0,80}}{escaped}|{escaped}.{{0,80}}(?:admit(?:ted|sion)?)",
-        text,
-        re.I,
-    ):
-        return "admitted"
-    if re.search(
-        rf"(?:tender(?:ed|ing)?).{{0,80}}{escaped}|{escaped}.{{0,80}}(?:tender(?:ed|ing)?)",
-        text,
-        re.I,
-    ):
-        return "tendered"
-    return "unknown"
+# Speaker-label identity lives in `identity.py` (Phase 19B); kept importable here.
+_person_identity = speaker_label_identity
 
 
 @dataclass(frozen=True)
@@ -160,7 +106,6 @@ class Phase17StructuredPipeline:
                 )
                 .order_by(TranscriptSegment.id)
             ).all()
-            segment_by_id = {segment.id: (segment, transcript) for segment, transcript in segments}
             occurrences = 0
             review_count = 0
 
@@ -311,22 +256,18 @@ class Phase17StructuredPipeline:
                             Exhibit.case_id == case.id, Exhibit.official_exhibit_id == identifier
                         )
                     )
-                    context = segment_by_id.get(
-                        citation.source_transcript_segment_id, (None, None)
-                    )[0]
-                    status = _status(context.text, identifier) if context is not None else "unknown"
                     if entity is None:
+                        # Status is never inferred from nearby words; explicit
+                        # court-record events set it (exhibit_status.py).
                         entity = Exhibit(
                             id=_id("exhibit", case.id, identifier),
                             case_id=case.id,
                             official_exhibit_id=identifier,
                             title=f"Exhibit {identifier}",
-                            status=status,
+                            status="unknown",
                             visibility=Visibility.PUBLIC,
                         )
                         session.add(entity)
-                    elif entity.status == "unknown" and status != "unknown":
-                        entity.status = status
                     exhibits[identifier] = entity
                     entity_field = "exhibit_id"
                     kind, identifier_kind = EntityKind.EXHIBIT, IdentifierKind.EXHIBIT
