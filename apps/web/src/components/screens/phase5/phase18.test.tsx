@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { renderWithProviders } from "@/test/render";
 import { DirectoryScreen } from "./DirectoryScreen";
 import { RealWitnessScreen } from "./RealRecordScreens";
+import { NetworkScreen } from "./ResearchScreens";
 
 const counts = {
   documentMentions: 6,
@@ -80,5 +81,42 @@ describe("Phase 18 research presentation", () => {
     expect(screen.getAllByText("W00016").length).toBeGreaterThan(0);
     expect(screen.getByText("Exact source navigation")).toBeInTheDocument();
     expect(screen.getByText(/No private identity is inferred/i)).toBeInTheDocument();
+  });
+
+  it("bounds dense network lists to a progressive working window", () => {
+    const nodes = Array.from({ length: 150 }, (_, index) => ({
+      id: `node-${index}`,
+      label: `Record ${index}`,
+      type: "court" as const,
+      entityKind: "document",
+      x: 50,
+      y: 50,
+    }));
+    renderWithProviders(
+      <NetworkScreen
+        initialNetwork={{
+          nodes,
+          edges: [
+            {
+              id: "edge-1",
+              from: "node-0",
+              to: "node-1",
+              relation: "cited_in",
+              sourceType: "court",
+              verification: "verified",
+              citation: {
+                sourceType: "court",
+                ref: "F00001",
+                docId: "F00001",
+                resolved: true,
+                display: "F00001 · p. 1",
+              },
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getAllByText("Record 0").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Record 149")).not.toBeInTheDocument();
   });
 });

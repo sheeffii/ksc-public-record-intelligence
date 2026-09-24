@@ -415,8 +415,8 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
             />
           </FilterSection>
           <Panel title={t("allRecords")}>
-            <div className="space-y-1">
-              {listedNodes.map((n) => (
+            <div className="max-h-72 space-y-1 overflow-y-auto">
+              {listedNodes.slice(0, 100).map((n) => (
                 <button
                   key={n.id}
                   type="button"

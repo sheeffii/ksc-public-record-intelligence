@@ -324,7 +324,7 @@ Live checkpoint. Repository state wins over this note.
 Phase 18 Pass A is implemented on
 `feat/phase-18-research-experience-visual-excellence`. The audit is
 `docs/PHASE18_PASS_A_UX_AUDIT.md`; real-data desktop/tablet/Pixel 7 checks and
-the focused 35-test gate pass. Do not mark Phase 18 complete and do not begin
+the focused 36-test gate pass. Do not mark Phase 18 complete and do not begin
 Phase 18B without explicit authorization. Remaining UX work is API-bound:
 structured reader context, person/witness occurrence payloads and future
 server-side network neighbourhood pagination/clustering. Do not close Phase 16;

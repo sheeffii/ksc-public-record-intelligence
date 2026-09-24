@@ -642,7 +642,7 @@ experience`).
 - Dense tables become stacked cards below 860px. Live visual checks passed at
   1440px, 1024px and Pixel 7 widths for the high-priority routes. The local
   Docker API/web images were rebuilt from migration `0012` and are healthy.
-- Focused Phase 18/frontend/data/i18n tests pass (35/35); the complete frontend
+- Focused Phase 18/frontend/data/i18n tests pass (36/36); the complete frontend
   suite also passed earlier in this pass (239/239). Next production build passed.
   Phase 18 is not complete and Phase 18B has not started.
 
