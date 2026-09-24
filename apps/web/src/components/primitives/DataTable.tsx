@@ -133,8 +133,9 @@ export function DataTable<Row>({
                   {columns.map((col) => (
                     <td
                       key={col.key}
+                      data-label={typeof col.header === "string" ? col.header : undefined}
                       className={cn(
-                        "text-fg-body px-2",
+                        "research-table-cell text-fg-body px-2",
                         compact ? "py-0" : "py-1.5",
                         col.numeric && "tabular text-right",
                         col.identifier && "identifier",

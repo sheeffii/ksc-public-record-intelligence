@@ -22,6 +22,11 @@ export interface MockDirectoryRow {
   verification: VerificationState;
   href: string;
   protected?: boolean;
+  status?: string;
+  party?: string;
+  relatedWitness?: string;
+  counts?: ReferenceCounts;
+  relationshipCount?: number;
 }
 
 export interface MockPerson {
@@ -30,6 +35,7 @@ export interface MockPerson {
   role: string;
   aliases: string[];
   counts: ReferenceCounts;
+  relationshipCount?: number;
 }
 
 export interface MockDocument {

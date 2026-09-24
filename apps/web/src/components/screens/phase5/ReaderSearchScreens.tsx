@@ -55,6 +55,7 @@ export function DocumentReaderScreen({
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const t15 = useTranslations("phase15");
+  const t18 = useTranslations("phase18");
   const isReal = initialDocument !== undefined;
   const document = initialDocument ?? mockRepository.getDocument(id);
   const isTranscript = !isReal && id.startsWith("T-");
@@ -354,6 +355,12 @@ export function DocumentReaderScreen({
               ))}
             </div>
             <div className="space-y-3 p-3">
+              {isReal ? (
+                <EmptyState
+                  title={tb(`researchTabs.${panelTab}`)}
+                  reason={t18("readerContextUnavailable")}
+                />
+              ) : null}
               {!isReal && panelTab === "summary" ? (
                 <AiAnalysisBlock citations={[courtCitation]}>
                   {"Demo AI summary of the sample document. Analysis only — never the record."}
@@ -725,6 +732,7 @@ export function SearchScreen({
 
 function ResultRow({ row, query }: { row: MockSearchResult; query: string }) {
   const t15 = useTranslations("phase15");
+  const t18 = useTranslations("phase18");
   const parts = query.trim()
     ? row.context.split(new RegExp(`(${query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "i"))
     : [row.context];
@@ -733,9 +741,13 @@ function ResultRow({ row, query }: { row: MockSearchResult; query: string }) {
       href={row.href}
       className="border-border-faint hover:bg-surface-raised grid gap-x-3 gap-y-1 border-b px-3 py-2 text-[11px] last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto]"
     >
-      <span className="min-w-0">
-        <span className="text-fg block font-medium">{row.title}</span>
-        <span className="text-fg-secondary block">
+      <span className="min-w-0 space-y-1">
+        <span className="block">
+          <span className="section-label block">{t18("whatMatched")}</span>
+          <span className="text-fg block font-medium">{row.title}</span>
+        </span>
+        <span className="text-fg-secondary block leading-relaxed">
+          <span className="section-label mr-2">{t18("whereMatched")}</span>
           {parts.map((part, i) =>
             i % 2 === 1 ? (
               <mark key={i} className="bg-surface-high text-fg rounded px-0.5">
@@ -746,8 +758,10 @@ function ResultRow({ row, query }: { row: MockSearchResult; query: string }) {
             ),
           )}
         </span>
+        <span className="text-fg-muted block text-[10px]">{t18("matchedBy")}</span>
       </span>
       <span className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <span className="section-label">{t18("source")}</span>
         {row.category === "external" ? (
           <span className="rounded-badge border-border bg-surface-raised border px-1.5 py-0.5 text-[10px]">
             {t15("externalSource")}

@@ -32,6 +32,11 @@ import type {
 export type DirectoryKind = MockDirectory;
 export type DirectoryRow = MockDirectoryRow;
 export type PersonDossier = MockPerson;
+export interface WitnessDossier {
+  witness: Witness;
+  counts: ReferenceCounts;
+  relationshipCount: number;
+}
 export type DocumentView = MockDocument;
 export type SearchResult = MockSearchResult;
 export type NetworkNode = MockNetworkNode;
@@ -363,7 +368,7 @@ export interface ArgumentLabView {
 export interface ResearchRepository {
   getDirectory(kind: DirectoryKind): Promise<readonly DirectoryRow[]>;
   getPerson(slug: string): Promise<PersonDossier | null>;
-  getWitness(code: string): Promise<Witness | null>;
+  getWitness(code: string): Promise<WitnessDossier | null>;
   getIncident(slug: string): Promise<IncidentView | null>;
   getDocument(
     id: string,

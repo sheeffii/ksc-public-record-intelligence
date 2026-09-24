@@ -42,8 +42,8 @@ describe.each(Object.entries(adapters))("%s repository", (_name, repo) => {
     const protectedRow = witnesses.find((row) => row.protected);
     expect(protectedRow).toBeDefined();
     const witness = await repo.getWitness(protectedRow!.id);
-    expect(witness?.protected).toBe(true);
-    expect(witness && "public" in witness).toBe(false);
+    expect(witness?.witness.protected).toBe(true);
+    expect(witness && "public" in witness.witness).toBe(false);
 
     const { nodes, edges } = await repo.getNetwork();
     expect(edges.every((edge) => edge.citation.resolved)).toBe(true);

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 export default async function Page({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const witness = await getRepository().getWitness(decodeURIComponent(code));
-  if (!witness) notFound();
-  return <RealWitnessScreen witness={witness} />;
+  const dossier = await getRepository().getWitness(decodeURIComponent(code));
+  if (!dossier) notFound();
+  return <RealWitnessScreen dossier={dossier} />;
 }

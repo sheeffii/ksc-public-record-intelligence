@@ -62,7 +62,7 @@ export function ActionLink({
     <Link
       href={href}
       className={cn(
-        "rounded-control inline-flex h-8 items-center justify-center border px-3 text-[11px] font-semibold",
+        "rounded-control inline-flex min-h-11 items-center justify-center border px-3 py-2 text-[11px] font-semibold sm:h-8 sm:min-h-0 sm:py-0",
         primary
           ? "border-accent bg-accent hover:bg-accent-bright text-bg-deep"
           : "border-border bg-surface-raised text-fg hover:bg-surface-high",

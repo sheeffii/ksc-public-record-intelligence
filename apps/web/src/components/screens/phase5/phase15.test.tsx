@@ -41,7 +41,11 @@ describe("Phase 15 real-data production surfaces", () => {
     unmount();
     renderWithProviders(
       <RealWitnessScreen
-        witness={{ code: "W00001", protected: true, protectiveMeasures: ["pseudonym"] }}
+        dossier={{
+          witness: { code: "W00001", protected: true, protectiveMeasures: ["pseudonym"] },
+          counts,
+          relationshipCount: 0,
+        }}
       />,
     );
     expect(screen.getAllByText("W00001").length).toBeGreaterThan(0);

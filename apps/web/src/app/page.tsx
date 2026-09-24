@@ -9,22 +9,15 @@ import { getRepository, resolveApiBaseUrl, resolveDataSource } from "@/data";
 import { PRIMARY_NAV } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-const STAT_KEYS = [
-  "documents",
-  "people",
-  "witnesses",
-  "exhibits",
-  "findings",
-  "incidents",
-  "network",
-] as const;
-
 type IngestionSummary = {
   source_records: number;
   versions: number;
   versions_parsed: number;
   items_failed: number;
   quarantine_open: number;
+  pages_parsed: number;
+  transcript_segments_parsed: number;
+  citations_resolved: number;
 };
 
 async function getIngestionSummary(): Promise<IngestionSummary | null> {
@@ -49,42 +42,53 @@ async function getIngestionSummary(): Promise<IngestionSummary | null> {
 const getHomeData = unstable_cache(
   async () => {
     const repository = getRepository();
-    const [documents, people, witnesses, exhibits, findings, incidents, network, ingestion] =
-      await Promise.all([
-        repository.getDirectory("documents"),
-        repository.getDirectory("people"),
-        repository.getDirectory("witnesses"),
-        repository.getDirectory("exhibits"),
-        repository.getDirectory("findings"),
-        repository.getDirectory("incidents"),
-        repository.getNetwork(),
-        getIngestionSummary(),
-      ]);
-    return { documents, people, witnesses, exhibits, findings, incidents, network, ingestion };
+    const [documents, people, witnesses, exhibits, findings, ingestion] = await Promise.all([
+      repository.getDirectory("documents"),
+      repository.getDirectory("people"),
+      repository.getDirectory("witnesses"),
+      repository.getDirectory("exhibits"),
+      repository.getDirectory("findings"),
+      getIngestionSummary(),
+    ]);
+    return { documents, people, witnesses, exhibits, findings, ingestion };
   },
   ["production-home-data"],
   { revalidate: 30 },
 );
 
 export default async function HomePage() {
-  const [t, tNav, tFooter, tb, t15] = await Promise.all([
+  const [t, tNav, tFooter, tb, t15, t18] = await Promise.all([
     getTranslations("home"),
     getTranslations("nav"),
     getTranslations("footer"),
     getTranslations("phase5b"),
     getTranslations("phase15"),
+    getTranslations("phase18"),
   ]);
-  const { documents, people, witnesses, exhibits, findings, incidents, network, ingestion } =
-    await getHomeData();
-  const counts = {
-    documents: documents.length,
-    people: people.length,
-    witnesses: witnesses.length,
-    exhibits: exhibits.length,
-    findings: findings.length,
-    incidents: incidents.length,
-    network: network.edges.length,
-  };
+  const { documents, people, witnesses, exhibits, findings, ingestion } = await getHomeData();
+  const corpusStats = [
+    { key: "documents", label: tNav("documents"), value: documents.length, href: "/documents" },
+    { key: "pages", label: t18("parsedPages"), value: ingestion?.pages_parsed, href: "/documents" },
+    {
+      key: "segments",
+      label: t18("transcriptSegments"),
+      value: ingestion?.transcript_segments_parsed,
+      href: "/search",
+    },
+    { key: "people", label: tNav("people"), value: people.length, href: "/people" },
+    { key: "witnesses", label: tNav("witnesses"), value: witnesses.length, href: "/witnesses" },
+    { key: "exhibits", label: tNav("exhibits"), value: exhibits.length, href: "/exhibits" },
+    {
+      key: "citations",
+      label: t18("resolvedCitations"),
+      value: ingestion?.citations_resolved,
+      href: "/search",
+    },
+  ] as const;
+  const recentDocuments = [...documents]
+    .filter((row) => row.date !== "—")
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
 
   return (
     <AppShell footer={tFooter("sourceNote")}>
@@ -124,51 +128,53 @@ export default async function HomePage() {
         <p className="text-fg-secondary text-[11.5px]">{t15("sourceBacked")}</p>
         <div>
           <div className="mb-2 flex items-baseline justify-between gap-3">
-            <h2 className="section-label">{t("explore")}</h2>
+            <h2 className="section-label">{t18("corpusOverview")}</h2>
             <p className="text-fg-muted text-[10.5px]">{t15("sourceBacked")}</p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-            {STAT_KEYS.map((key) => {
-              const item = PRIMARY_NAV.find((nav) => nav.key === key);
+            {corpusStats.map((stat) => {
               return (
                 <Link
-                  key={key}
-                  href={item?.href ?? "/"}
+                  key={stat.key}
+                  href={stat.href}
                   className="rounded-card border-border bg-surface hover:bg-surface-raised flex flex-col gap-1 border px-3 py-2.5"
                 >
-                  <span className="text-fg tabular text-[22px] font-bold">{counts[key]}</span>
-                  <span className="text-fg-muted text-[10.5px]">{tNav(key)}</span>
+                  <span className="text-fg tabular text-[22px] font-bold">{stat.value ?? "—"}</span>
+                  <span className="text-fg-muted text-[10.5px]">{stat.label}</span>
                 </Link>
               );
             })}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {PRIMARY_NAV.map((item) => (
-            <Panel
-              key={item.key}
-              as="div"
-              className={cn(
-                "hover:bg-surface-raised",
-                item.isAi && "border-ai-border border-dashed",
-              )}
-            >
-              <Link href={item.href} className="flex h-full flex-col gap-1">
-                <span
-                  className={cn("text-[14px] font-semibold", item.isAi ? "text-ai" : "text-fg")}
-                >
-                  {tNav(item.key)}
-                </span>
-                <span className="text-fg-muted font-mono text-[10.5px]">{item.href}</span>
-              </Link>
-            </Panel>
-          ))}
+        <div>
+          <h2 className="section-label mb-2">{t18("researchPaths")}</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {PRIMARY_NAV.map((item) => (
+              <Panel
+                key={item.key}
+                as="div"
+                className={cn(
+                  "hover:bg-surface-raised",
+                  item.isAi && "border-ai-border border-dashed",
+                )}
+              >
+                <Link href={item.href} className="flex h-full flex-col gap-1">
+                  <span
+                    className={cn("text-[14px] font-semibold", item.isAi ? "text-ai" : "text-fg")}
+                  >
+                    {tNav(item.key)}
+                  </span>
+                  <span className="text-fg-muted font-mono text-[10.5px]">{item.href}</span>
+                </Link>
+              </Panel>
+            ))}
+          </div>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-3">
-          <Panel title={tb("recentAdded")}>
-            {documents.slice(0, 5).map((row) => (
+          <Panel title={t18("recentDocuments")}>
+            {recentDocuments.map((row) => (
               <Link
                 key={row.id}
                 href={row.href}

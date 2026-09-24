@@ -9,7 +9,19 @@ export function createMockRepositoryAdapter(
   return {
     getDirectory: async (kind) => source.getDirectory(kind),
     getPerson: async (slug) => source.getPerson(slug),
-    getWitness: async (code) => source.getWitness(code),
+    getWitness: async (code) => ({
+      witness: source.getWitness(code),
+      counts: {
+        documentMentions: 0,
+        transcriptMentions: 0,
+        exhibitRefs: 0,
+        findings: 0,
+        witnessesWhoReferred: 0,
+        incidents: 0,
+        citationsResolved: 0,
+      },
+      relationshipCount: 0,
+    }),
     getIncident: async (slug) => {
       const row = source.getDirectory("incidents").find((item) => item.id === slug);
       if (!row) return null;

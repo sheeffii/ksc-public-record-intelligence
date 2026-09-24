@@ -70,6 +70,7 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const footer = useTranslations("footer");
+  const t18 = useTranslations("phase18");
   const realData = initialNetwork !== undefined;
   const { nodes, edges } = initialNetwork ?? mockRepository.getNetwork();
   const [selectedNode, setSelectedNode] = useState(nodes[0]!);
@@ -113,13 +114,18 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
   const typeFilteredNodes = nodes.filter(
     (node) => entityFilter === "all" || node.entityKind === entityFilter,
   );
+  const connectedNodes = typeFilteredNodes.filter(
+    (node) => node.id === selectedNode.id || neighbourIds.has(node.id),
+  );
   const visibleNodes = (
     isolated
-      ? typeFilteredNodes.filter((n) => neighbourIds.has(n.id))
+      ? connectedNodes
       : expanded
-        ? typeFilteredNodes
+        ? connectedNodes.length > 1
+          ? connectedNodes
+          : typeFilteredNodes
         : typeFilteredNodes.slice(0, 3)
-  ).slice(0, depth === "1" ? 3 : depth === "2" ? 5 : nodes.length);
+  ).slice(0, depth === "1" ? 3 : depth === "2" ? 12 : 75);
   const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
   const visibleEdges = edges.filter(
     (e) =>
@@ -136,6 +142,11 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
     n.label.toLowerCase().includes(query.trim().toLowerCase()),
   );
   const degree = (id: string) => edges.filter((e) => e.from === id || e.to === id).length;
+  function selectNode(node: MockNetworkNode) {
+    setSelectedNode(node);
+    const adjacent = edges.find((edge) => edge.from === node.id || edge.to === node.id);
+    if (adjacent) setSelectedEdge(adjacent);
+  }
   const nodeLabel = (id: string) => nodes.find((node) => node.id === id)?.label ?? id;
   const relationshipLabel = (value: string) => value.replaceAll("_", " ");
 
@@ -162,7 +173,16 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
   }
   const position = (node: MockNetworkNode, index: number) =>
     layout === "force"
-      ? { x: node.x, y: node.y }
+      ? node.id === selectedNode.id
+        ? { x: 50, y: 50 }
+        : {
+            x:
+              50 +
+              34 * Math.cos(((index - 1) / Math.max(visibleNodes.length - 1, 1)) * Math.PI * 2),
+            y:
+              50 +
+              34 * Math.sin(((index - 1) / Math.max(visibleNodes.length - 1, 1)) * Math.PI * 2),
+          }
       : {
           x: 50 + 34 * Math.cos((index / Math.max(visibleNodes.length, 1)) * Math.PI * 2),
           y: 50 + 34 * Math.sin((index / Math.max(visibleNodes.length, 1)) * Math.PI * 2),
@@ -178,9 +198,8 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
           <KeyValue
             rows={[
               { key: "type", label: tb("typeBadges"), value: selectedNode.type },
-              { key: "edges", label: tb("counts"), value: degree(selectedNode.id) },
-              { key: "docs", label: t("documents"), value: 2 },
-              { key: "findings", label: t("courtFindings"), value: 1 },
+              { key: "edges", label: t18("relationships"), value: degree(selectedNode.id) },
+              { key: "visible", label: tb("counts"), value: visibleEdges.length },
             ]}
           />
         </div>
@@ -223,7 +242,7 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
       </Panel>
       <Panel title={t("graphTextAlternative")}>
         <ul className="space-y-1 text-[10px]">
-          {edges.map((e) => (
+          {visibleEdges.slice(0, 100).map((e) => (
             <li key={e.id}>
               <button
                 type="button"
@@ -401,7 +420,7 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
                 <button
                   key={n.id}
                   type="button"
-                  onClick={() => setSelectedNode(n)}
+                  onClick={() => selectNode(n)}
                   className="hover:bg-surface-raised rounded-control flex w-full items-center gap-2 px-2 py-1 text-left"
                 >
                   <NodeGlyph type={n.type} />
@@ -473,7 +492,7 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
                 <button
                   key={node.id}
                   type="button"
-                  onClick={() => setSelectedNode(node)}
+                  onClick={() => selectNode(node)}
                   onDoubleClick={() => setIsolated(true)}
                   style={{ left: `${p.x}%`, top: `${p.y}%` }}
                   className={`absolute z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border px-3 py-2 text-[10px] ${node.id === selectedNode.id ? "border-accent bg-surface-high text-fg" : "border-border bg-surface text-fg"}`}
@@ -510,6 +529,9 @@ export function NetworkScreen({ initialNetwork }: { initialNetwork?: NetworkView
           </svg>
           <p className="governance-text bg-bg-deep/80 absolute bottom-4 left-4 max-w-xs rounded px-3 py-2">
             {footer("network")}
+          </p>
+          <p className="text-fg-secondary bg-bg-deep/90 absolute right-4 bottom-4 max-w-xs rounded px-3 py-2 text-[10px]">
+            {t18("networkInitialLimit")}
           </p>
         </div>
         <div
@@ -826,6 +848,9 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
   const timelineRange = itemYears.length
     ? `${Math.min(...itemYears)} — ${Math.max(...itemYears)}`
     : "—";
+  const orderedItems = [...items]
+    .filter((item) => visible.has(LANE_FOR[item.dateType]))
+    .sort((a, b) => a.date.localeCompare(b.date));
   return (
     <AppShell footer={t("sequenceNote")}>
       <ScreenHeader
@@ -872,7 +897,9 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
       <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_314px]">
         <div className="min-w-0 space-y-3">
           {realData ? <NoteStrip>{tb("realDataNotice")}</NoteStrip> : <DemoNotice />}
-          <div className="border-border-subtle bg-surface rounded-card hidden overflow-x-auto border md:block">
+          <div
+            className={`border-border-subtle bg-surface rounded-card overflow-x-auto border ${realData ? "hidden" : "hidden md:block"}`}
+          >
             <div className="grid grid-cols-[140px_minmax(0,1fr)]">
               <div className="border-border-faint border-r border-b p-2 text-[10px]">
                 {tb("layers")}
@@ -949,22 +976,23 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
               })}
             </div>
           </div>
-          <ol className="space-y-2 md:hidden">
-            {items.map((item) => (
+          <ol className={realData ? "space-y-2" : "space-y-2 md:hidden"}>
+            {orderedItems.map((item) => (
               <li key={item.id}>
                 <button
                   type="button"
                   onClick={() => setSelected(item)}
-                  className="border-border-subtle bg-surface rounded-card w-full border p-2 text-left text-[11px]"
+                  className="border-border-subtle bg-surface hover:bg-surface-raised rounded-card grid w-full gap-2 border p-3 text-left text-[11px] sm:grid-cols-[110px_minmax(0,1fr)_auto] sm:items-center"
                 >
                   <span
                     className={`rounded-badge mr-2 px-1.5 py-0.5 text-[10px] date-${item.dateType}`}
                   >
                     {dateLabel[item.dateType]}
                   </span>
-                  {item.label}
-                  <span className="text-fg-muted block text-[10px]">
-                    {tb(`lanes.${LANE_FOR[item.dateType]}`)} · {item.date}
+                  <span className="text-fg font-medium">{item.label}</span>
+                  <span className="text-fg-muted tabular block text-[10px] sm:text-right">
+                    {item.date}
+                    {item.dateTo ? ` — ${item.dateTo}` : ""} · {item.datePrecision}
                   </span>
                 </button>
               </li>

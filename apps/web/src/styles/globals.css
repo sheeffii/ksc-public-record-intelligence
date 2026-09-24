@@ -164,6 +164,54 @@
   --scrim: rgba(15, 23, 42, 0.45);
 }
 
+/* PAGE_SPECS global mobile rule: dense research tables become readable cards
+   instead of shrinking into horizontal spreadsheets. */
+@media (max-width: 859px) {
+  table:has(.research-table-cell) {
+    display: block;
+  }
+
+  table:has(.research-table-cell) thead {
+    display: none;
+  }
+
+  table:has(.research-table-cell) tbody,
+  table:has(.research-table-cell) tr,
+  table:has(.research-table-cell) .research-table-cell {
+    display: block;
+    width: 100%;
+  }
+
+  table:has(.research-table-cell) tr {
+    height: auto;
+    min-height: 44px;
+    margin: 8px;
+    width: calc(100% - 16px);
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  table:has(.research-table-cell) .research-table-cell {
+    min-height: 32px;
+    padding: 8px 12px;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  table:has(.research-table-cell) .research-table-cell[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+}
+
 /* -------------------------------------------------- Tailwind theme mapping */
 @theme inline {
   --color-bg: var(--bg);

@@ -51,6 +51,7 @@ export function DirectoryScreen({
   const tTable = useTranslations("table");
   const tFooter = useTranslations("footer");
   const t15 = useTranslations("phase15");
+  const t18 = useTranslations("phase18");
   const [query, setQuery] = useState("");
   const [density, setDensity] = useState<Density>("compact");
   const [sortBy, setSortBy] = useState(kind === "findings" ? "id" : "title");
@@ -106,22 +107,22 @@ export function DirectoryScreen({
     return `data:text/csv;charset=utf-8,${encodeURIComponent([head.join(","), ...lines].join("\n"))}`;
   }, [rows]);
 
-  const columns: readonly Column<MockDirectoryRow>[] = [
+  const identityColumns: readonly Column<MockDirectoryRow>[] = [
     {
       key: "id",
-      header: kind === "exhibits" ? tb("exhibitColumns.id") : "ID",
+      header: tb("exhibitColumns.id"),
       identifier: true,
-      minWidth: 120,
+      minWidth: 100,
       sortable: true,
       cell: (row) => <span className="text-accent">{row.id}</span>,
     },
     {
       key: "title",
       header: screenTitle,
-      minWidth: 200,
+      minWidth: 170,
       sortable: true,
       cell: (row) => (
-        <span className="text-fg font-medium">
+        <span className="text-fg line-clamp-2 font-medium">
           {kind === "findings" ? (
             <span className="text-court mr-2 text-[9px] font-bold tracking-wide uppercase">
               {t("courtFinding")}
@@ -134,7 +135,7 @@ export function DirectoryScreen({
     {
       key: "description",
       header: tb("exhibitColumns.description"),
-      minWidth: 240,
+      minWidth: 180,
       cell: (row) => row.description,
     },
     {
@@ -158,6 +159,82 @@ export function DirectoryScreen({
       cell: (row) => <VerificationBadge state={row.verification} size="sm" />,
     },
   ];
+  const countColumn = (
+    key: string,
+    header: string,
+    value: (row: MockDirectoryRow) => number | undefined,
+  ): Column<MockDirectoryRow> => ({
+    key,
+    header,
+    numeric: true,
+    minWidth: 90,
+    cell: (row) => <span className="tabular">{value(row) ?? 0}</span>,
+  });
+  const columns: readonly Column<MockDirectoryRow>[] =
+    kind === "people"
+      ? [
+          ...identityColumns.slice(0, 2),
+          { ...identityColumns[2]!, header: t18("role") },
+          countColumn("documents", t18("documents"), (row) => row.counts?.documentMentions),
+          countColumn(
+            "transcripts",
+            t18("transcriptOccurrences"),
+            (row) => row.counts?.transcriptMentions,
+          ),
+          countColumn("relationships", t18("relationshipCount"), (row) => row.relationshipCount),
+        ]
+      : kind === "witnesses"
+        ? [
+            ...identityColumns.slice(0, 2),
+            countColumn(
+              "transcripts",
+              t18("testimonyOccurrences"),
+              (row) => row.counts?.transcriptMentions,
+            ),
+            countColumn("documents", t18("relatedFilings"), (row) => row.counts?.documentMentions),
+            countColumn("relationships", t18("relationshipCount"), (row) => row.relationshipCount),
+          ]
+        : kind === "exhibits"
+          ? [
+              ...identityColumns.slice(0, 3),
+              {
+                key: "status",
+                header: t18("status"),
+                minWidth: 120,
+                cell: (row) => (
+                  <span className="rounded-badge border-border bg-surface-raised text-fg-secondary inline-flex border px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase">
+                    {row.status?.toUpperCase() ?? t18("unknown")}
+                  </span>
+                ),
+              },
+              {
+                key: "witness",
+                header: t18("throughWitness"),
+                minWidth: 110,
+                cell: (row) => (
+                  <span className="identifier text-witness">{row.relatedWitness ?? "—"}</span>
+                ),
+              },
+              countColumn(
+                "documents",
+                t18("documentOccurrences"),
+                (row) => row.counts?.documentMentions,
+              ),
+            ]
+          : kind === "findings"
+            ? [
+                ...identityColumns.slice(0, 2),
+                {
+                  ...identityColumns[2]!,
+                  header: t18("findingSummary"),
+                  cell: (row) => (
+                    <span className="line-clamp-3 leading-relaxed">{row.description}</span>
+                  ),
+                },
+                identityColumns[4]!,
+                identityColumns[5]!,
+              ]
+            : identityColumns;
 
   return (
     <AppShell footer={tFooter("referenceCounts")}>
@@ -321,14 +398,14 @@ export function DirectoryScreen({
           <Panel title={tb("detail")}>
             {selected ? (
               <>
-                <SourceBadge
-                  type={
-                    kind === "exhibits" ? "exhibit" : kind === "witnesses" ? "witness" : "court"
-                  }
-                />
-                <h2 className="identifier text-fg mt-2 text-[14px] font-semibold">
-                  {selected.title}
-                </h2>
+                {kind !== "people" && kind !== "documents" && kind !== "incidents" ? (
+                  <SourceBadge
+                    type={
+                      kind === "exhibits" ? "exhibit" : kind === "witnesses" ? "witness" : "court"
+                    }
+                  />
+                ) : null}
+                <h2 className="text-fg mt-2 text-[14px] font-semibold">{selected.title}</h2>
                 <p className="text-fg-secondary mt-1 text-[11px]">{selected.description}</p>
                 <div className="mt-3">
                   <KeyValue
@@ -348,6 +425,25 @@ export function DirectoryScreen({
                         label: t("sourcesUsed"),
                         value: <span className="tabular">{selected.references}</span>,
                       },
+                      ...(selected.status
+                        ? [
+                            {
+                              key: "status",
+                              label: t18("status"),
+                              value: selected.status,
+                            },
+                            {
+                              key: "party",
+                              label: t18("tenderedBy"),
+                              value: selected.party ?? "—",
+                            },
+                            {
+                              key: "witness",
+                              label: t18("throughWitness"),
+                              value: selected.relatedWitness ?? "—",
+                            },
+                          ]
+                        : []),
                       {
                         key: "ver",
                         label: tb("verification"),
@@ -358,17 +454,17 @@ export function DirectoryScreen({
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <ActionLink href={selected.href} primary>
-                    {selected.protected ? t("open") : tb("openFullDocument")}
+                    {kind === "documents" || kind === "exhibits"
+                      ? tb("openFullDocument")
+                      : t("open")}
                   </ActionLink>
                 </div>
               </>
             ) : null}
           </Panel>
-          <Panel title={tb("preview")}>
-            <p className="text-fg-body font-serif text-[12px] leading-relaxed">
-              {selected?.protected ? t("protectedOnly") : selected?.description}
-            </p>
-          </Panel>
+          {selected?.status?.toUpperCase() === "UNKNOWN" ? (
+            <NoteStrip>{t18("unknownStatus")}</NoteStrip>
+          ) : null}
           <Panel title={tb("linkedRecords")}>
             <p className="text-fg-secondary text-[11px]">{t15("linkedRecordsUnavailable")}</p>
           </Panel>

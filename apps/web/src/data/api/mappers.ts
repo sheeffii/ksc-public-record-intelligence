@@ -37,6 +37,7 @@ import type {
   NetworkEdge,
   NetworkNode,
   PersonDossier,
+  WitnessDossier,
   SearchResult,
   TimelineItem,
   StatementComparisonView,
@@ -310,6 +311,8 @@ export function personRow(person: ApiPerson): DirectoryRow {
     references: references(person.counts),
     verification: "unreviewed",
     href: `/people/${person.slug}`,
+    counts: toCounts(person.counts),
+    relationshipCount: person.counts.relationships,
   };
 }
 
@@ -325,6 +328,8 @@ export function witnessRow(witness: ApiWitness): DirectoryRow {
     verification: "unreviewed",
     href: `/witnesses/${witness.code}`,
     ...(mapped.protected ? { protected: true } : {}),
+    counts: toCounts(witness.counts),
+    relationshipCount: witness.counts.relationships,
   };
 }
 
@@ -333,13 +338,18 @@ export function exhibitRow(exhibit: ApiExhibit): DirectoryRow {
     id: exhibit.official_exhibit_id,
     title: exhibit.title,
     kind: "exhibits",
-    description: exhibit.official_exhibit_id,
+    description: exhibit.description ?? exhibit.title,
     date: exhibit.admitted_date ?? exhibit.document_date ?? NO_DATE,
     references: references(exhibit.counts),
     verification: "unreviewed",
     href: exhibit.document_version_ref
       ? `/documents/${documentRouteId(exhibit.document_version_ref)}`
       : "/exhibits",
+    status: exhibit.status,
+    party: exhibit.tendered_by ?? undefined,
+    relatedWitness: exhibit.through_witness_code ?? undefined,
+    counts: toCounts(exhibit.counts),
+    relationshipCount: exhibit.counts.relationships,
   };
 }
 
@@ -500,6 +510,15 @@ export function toPerson(person: ApiPerson): PersonDossier {
     role: person.public_role ?? "",
     aliases: person.aliases,
     counts: toCounts(person.counts),
+    relationshipCount: person.counts.relationships,
+  };
+}
+
+export function toWitnessDossier(witness: ApiWitness): WitnessDossier {
+  return {
+    witness: toWitness(witness),
+    counts: toCounts(witness.counts),
+    relationshipCount: witness.counts.relationships,
   };
 }
 

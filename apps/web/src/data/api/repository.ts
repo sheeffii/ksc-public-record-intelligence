@@ -6,7 +6,7 @@
  * empty until Phase 9 / Phase 11).
  */
 
-import type { AnswerBlock, Witness } from "@ksc/shared";
+import type { AnswerBlock } from "@ksc/shared";
 import type {
   DirectoryKind,
   DirectoryRow,
@@ -18,6 +18,7 @@ import type {
   ResearchRepository,
   SearchResult,
   TimelineItem,
+  WitnessDossier,
 } from "../contract";
 import { ApiClient, type ApiClientOptions } from "./client";
 import * as map from "./mappers";
@@ -83,9 +84,9 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       return person ? map.toPerson(person) : null;
     },
 
-    async getWitness(code: string): Promise<Witness | null> {
+    async getWitness(code: string): Promise<WitnessDossier | null> {
       const witness = await client.get<ApiWitness>(`/witnesses/${encodeURIComponent(code)}`);
-      return witness ? map.toWitness(witness) : null;
+      return witness ? map.toWitnessDossier(witness) : null;
     },
 
     async getIncident(slug: string) {
