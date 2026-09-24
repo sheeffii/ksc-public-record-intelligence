@@ -60,6 +60,8 @@ from ksc_ingestion.sources import NotOfficialSourceError
 from ksc_ingestion.storage import InMemoryObjectStore, MinioObjectStore, ObjectStore
 from ksc_ingestion.structured_projection import Phase17StructuredPipeline
 from ksc_ingestion.structured_quality_gate import run_phase17c_gate, write_phase17c_report
+from ksc_ingestion.verified_mentions import Phase19MentionProjector
+from ksc_ingestion.verified_mentions_gate import run_phase19a_gate, write_phase19a_report
 
 log = logging.getLogger(__name__)
 
@@ -206,6 +208,38 @@ def cmd_gate_phase17c(args: argparse.Namespace) -> int:
         f"people={report.people} witnesses={report.witnesses} organizations={report.organizations} "
         f"exhibits={report.exhibits} occurrences={report.occurrences} "
         f"review_required={report.review_required} passed={str(report.passed).lower()}"
+    )
+    return 0 if report.passed else 1
+
+
+def cmd_project_mentions(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    result = Phase19MentionProjector(get_sessionmaker(), case_number=settings.case_id).run()
+    states = " ".join(f"{key}={value}" for key, value in result.by_kind_state.items())
+    print(
+        f"run={result.run_id} rows={result.rows} {states} "
+        f"unregistered_witness_codes={result.unregistered_witness_codes} "
+        f"unregistered_exhibit_ids={result.unregistered_exhibit_ids} "
+        f"legacy_removed={result.legacy_rows_removed}"
+    )
+    return 0
+
+
+def cmd_gate_phase19a(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        case = session.scalar(select(Case).where(Case.case_number == settings.case_id))
+        if case is None:
+            print(f"case {settings.case_id} is not seeded", file=sys.stderr)
+            return 2
+        report = run_phase19a_gate(session, case, args.generated_at)
+    if args.json:
+        write_phase19a_report(report, Path(args.json))
+    print(
+        f"rows={report.total_rows} verified={report.total_verified} "
+        f"review_required={report.total_review_required} "
+        f"provenance_violations={report.provenance_violations} "
+        f"dedup_conflicts={report.dedup_conflicts} passed={str(report.passed).lower()}"
     )
     return 0 if report.passed else 1
 
@@ -626,6 +660,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_structured_gate.add_argument("--generated-at", type=date.fromisoformat, default=date.today())
     p_structured_gate.add_argument("--json")
     p_structured_gate.set_defaults(func=cmd_gate_phase17c)
+    p_mentions = sub.add_parser(
+        "project-mentions", help="project Phase 19A deterministic verified entity mentions"
+    )
+    p_mentions.set_defaults(func=cmd_project_mentions)
+    p_mentions_gate = sub.add_parser(
+        "gate-phase19a", help="reconcile and audit Phase 19A verified mentions"
+    )
+    p_mentions_gate.add_argument("--generated-at", type=date.fromisoformat, default=date.today())
+    p_mentions_gate.add_argument("--json")
+    p_mentions_gate.set_defaults(func=cmd_gate_phase19a)
 
     p_queue = sub.add_parser(
         "queue-artifacts", help="enqueue missing bytes for already-known public versions"
