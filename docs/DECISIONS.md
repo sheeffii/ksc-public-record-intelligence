@@ -1083,3 +1083,39 @@ Relevant files:
 `apps/api/src/ksc_api/models/media.py`, migration `0010`,
 `workers/ingestion/src/ksc_ingestion/external_media.py`,
 `docs/ingestion/manifests/phase14-external-media.json`, and `/media`.
+
+---
+
+## ADR-023 — Structured entities require exact occurrence provenance
+
+Date: 2026-09-24
+
+Status: Accepted
+
+Context:
+The expanded public corpus contained parsed named speakers and thousands of
+syntactically classified witness/exhibit references, while actor, organization
+and exhibit tables remained empty because no approved projector connected the
+parsed material to those models.
+
+Decision:
+
+1. Every deterministic person, witness, organization or exhibit projection is
+   backed by an `entity_occurrences` row preserving original text and exact held
+   source coordinates.
+2. People are projected only from explicit named speaker labels. Canonical
+   merging is role-scoped and diacritic-normalized; collision-prone surname-only
+   identities remain review-required.
+3. A protected witness code never gains a person link or public name. Exact
+   `W#####` references may resolve to the code-only witness row.
+4. Exact parsed `P#####`/`D#####` references establish an exhibit identifier,
+   but disposition defaults to `unknown` and changes only on explicit language
+   in the same public passage.
+5. Deterministic witness/exhibit identifiers participate in the persisted
+   resolver and citation graph. Ambiguous matches remain targetless.
+
+Consequences:
+Structured directories, search, reader citations and the graph can use the
+existing real corpus without an AI/entity-inference step. The occurrence layer
+makes projection decisions auditable and rebuildable while keeping protected
+identity and uncertainty fail-closed.

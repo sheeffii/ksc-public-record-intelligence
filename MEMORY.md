@@ -6,21 +6,22 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-17-corpus-expansion-structured-data`, created from
   Phase 16 blocker-resolution commit `eb01a87` with all useful Phase 16 fixes.
-- Current milestone: **Phase 17 AUTHORIZED / NOT STARTED (2026-09-24)** as a
+- Current milestone: **Phase 17 IN PROGRESS — PASS C COMPLETE LOCALLY (2026-09-24)** as a
   parallel data-expansion milestone. Phase 16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
   external deployment/alerting gates are intentionally deferred until public
   deployment is desired.
 - Push state (2026-09-22): `main` fast-forwarded to `01cb693` and pushed;
   annotated tag `phase-15-complete` and the Phase 15 feature branch were pushed.
-- Phase 16 remains local at `eb01a87`; the Phase 17 branch is local. No push or
-  merge was performed for this handoff because the repository workflow did not
-  require one.
+- Phase 16 remains local at `eb01a87`; Phase 17 Pass B is commit `629a0f5` and
+  Pass C implementation is commit `970b948` and adds structured projections
+  without acquiring records. The Phase 17 branch is pushed to origin; it is not
+  merged to `main` and Phase 17 is not complete.
 - Latest completion tag: annotated `phase-15-complete` at `01cb693`, pushed.
 - Phase 15 is on `main`; its feature branch is preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0010`.
+- Migration head and live database revision: `0012`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -317,9 +318,13 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 17 is explicitly authorized to proceed in parallel, but implementation has
-not started. Resume from its declared-scope planning on
-`feat/phase-17-corpus-expansion-structured-data`. Do not close Phase 16; resume
+Phase 17 Pass C is implemented and quality-gated on
+`feat/phase-17-corpus-expansion-structured-data`: 48 people, 201 protected
+witness codes, 6 organizations, 981 exhibits and 15,024 exact occurrences;
+10,395 citations resolve and 10,380 relationships are projected. Review the
+single surname-only `Smith` person projection (4 occurrences) in a later review
+pass. Do not acquire another batch, close Phase 17, begin Phase 18, or resume
+Phase 16 without explicit authorization. Do not close Phase 16; resume
 its external deployment/alerting gates only when public deployment is desired.
 Existing non-blocking follow-ups remain: review quarantined `r31`; the court
 corpus and external media set are samples; performance figures are local only.

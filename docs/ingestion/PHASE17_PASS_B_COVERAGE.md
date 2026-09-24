@@ -73,3 +73,65 @@ nothing was inferred or persisted for them.
 The accepted bundle quality gate passed 73/73 records, covering 60 logical
 documents and 73 versions. Phase 17 remains in progress; this pass does not
 start another acquisition batch or claim exhaustive coverage.
+
+## Pass C structured enrichment
+
+Pass C used only the 134 already-held official versions. It acquired no record
+and did not change the PDF, byte, page, paragraph or transcript totals above.
+
+The zero actor/exhibit result was a pipeline gap: Phase 8 extracted witness and
+exhibit reference syntax, and Phase 6/API/web models existed, but ingestion had
+no person, witness, organization or exhibit projector; the resolver could not
+assign its extracted witness/exhibit references to those targets; there was no
+exact occurrence table; and organizations had no read endpoint. It was not
+evidence that the public corpus contained no such entities.
+
+Migration `0012` and the deterministic Phase 17C projector add exact public
+source occurrences. People come only from named transcript speaker labels;
+protected witnesses remain code-only; organizations require exact configured
+public-name occurrences; and exhibits require an exact parsed `P#####` or
+`D#####` identifier. Exhibit disposition remains `unknown` unless the same
+public passage explicitly establishes admitted, tendered or rejected status.
+
+| Structured projection | Pass B | Pass C |
+| --------------------- | -----: | -----: |
+| People                |      0 |     48 |
+| Witnesses             |      0 |    201 |
+| Organizations         |      0 |      6 |
+| Exhibits              |      0 |    981 |
+| Hearings              |     16 |     16 |
+| Statements            |  8,547 |  8,547 |
+| Events                |    127 |    127 |
+| Relationships         |    291 | 10,380 |
+
+The 15,024 persisted occurrences retain original occurrence text, version and,
+where applicable, transcript segment, PDF/printed page, line and character
+coordinates. Of these, 15,020 pass deterministic provenance review. Four
+occurrences belong to the single `Smith` counsel/participant projection and are
+review-required because that surname could collide with the separately scoped
+judge identity. No protected identity is stored. Exhibit status is explicit
+`admitted` for 3 identifiers and `unknown` for 978; no status was inferred from
+a filename.
+
+Citation re-resolution ran once after the new exact identifier mappings:
+
+| Citation state | Before |  After |   Delta |
+| -------------- | -----: | -----: | ------: |
+| Resolved       |    306 | 10,395 | +10,089 |
+| Ambiguous      |      3 |      3 |       0 |
+| Unresolved     | 16,831 |  6,742 | -10,089 |
+| Invalid        |    141 |    141 |       0 |
+
+Only exact witness/exhibit identifier matches changed. Ambiguous references
+remain targetless and no fuzzy match was introduced. People, witnesses and
+exhibits reach their existing real API/web directories and homepage counts;
+organizations are available through `/api/v1/organizations`; structured labels
+are discoverable through search; exact witness/exhibit citations feed the
+reader/source links and network; timeline and findings remain source-stable.
+The web repository now follows API pagination so the homepage/directories do
+not truncate counts at 200.
+
+The machine-readable gate is
+`docs/ingestion/phase17c-structured-quality-gate.json`: PASS with zero
+provenance, protected-identity or exhibit-status violations. Phase 17 remains
+in progress. Pass C does not begin Phase 18 or claim complete corpus coverage.

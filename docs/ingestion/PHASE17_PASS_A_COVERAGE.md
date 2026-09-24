@@ -21,18 +21,18 @@ ksc-ingest report-phase17a --generated-at 2026-09-24 \
 
 ## Current corpus
 
-| Measure | Actual count |
-| --- | ---: |
-| Officially discovered source records | 62 |
-| Logical documents | 56 |
-| Artifact versions | 61 |
-| Fetched PDFs | 61 |
-| Parsed versions | 61 |
-| Indexed versions | 61 |
-| Pages | 2,832 |
-| Numbered paragraphs | 2,019 |
-| Transcript segments | 1,363 |
-| Citations | 15,730 |
+| Measure                                               |           Actual count |
+| ----------------------------------------------------- | ---------------------: |
+| Officially discovered source records                  |                     62 |
+| Logical documents                                     |                     56 |
+| Artifact versions                                     |                     61 |
+| Fetched PDFs                                          |                     61 |
+| Parsed versions                                       |                     61 |
+| Indexed versions                                      |                     61 |
+| Pages                                                 |                  2,832 |
+| Numbered paragraphs                                   |                  2,019 |
+| Transcript segments                                   |                  1,363 |
+| Citations                                             |                 15,730 |
 | Resolved / ambiguous / unresolved / invalid citations | 188 / 3 / 15,420 / 119 |
 
 The 62nd source record is a real official metadata record that remains
@@ -49,16 +49,16 @@ notice/notification 3, reply 3, indictment 2, order 2, other 1.
 
 ## Structured-data audit
 
-| Projection | Model | Real rows | Source-backed | Pipeline | API / UI | Missing foundation |
-| --- | --- | ---: | ---: | --- | --- | --- |
-| People | `persons` | 0 | 0 | none | API + people UI | reviewed exact-source projection; ambiguous names must remain unresolved |
-| Public witness codes | `witnesses` | 0 | 0 | none | API + witness UI | reviewed code-only projection; never infer a protected identity |
-| Organizations | `organizations` | 0 | 0 | none | none | projection and read surface |
-| Exhibits | `exhibits` | 0 | 0 | none | API + exhibits UI | official exhibit-identity/status projection; a filing annex is not an exhibit |
-| Hearings | `hearings`, `transcripts` | 3 | 3 | capture normalization | transcript/event APIs; reader/timeline | direct hearing-list API |
-| Statements | `transcript_segments` | 1,363 | 1,363 | transcript parser | transcript API; reader | no semantic classification; exact fragments remain available |
-| Events | `events` | 54 | 54 | deterministic projection | events API; timeline | none for current projection |
-| Relationships | `relationships` | 178 | 178 | resolved-citation projection | network/path/relationship APIs; network UI | none for current projection |
+| Projection           | Model                     | Real rows | Source-backed | Pipeline                     | API / UI                                   | Missing foundation                                                            |
+| -------------------- | ------------------------- | --------: | ------------: | ---------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------- |
+| People               | `persons`                 |         0 |             0 | none                         | API + people UI                            | reviewed exact-source projection; ambiguous names must remain unresolved      |
+| Public witness codes | `witnesses`               |         0 |             0 | none                         | API + witness UI                           | reviewed code-only projection; never infer a protected identity               |
+| Organizations        | `organizations`           |         0 |             0 | none                         | none                                       | projection and read surface                                                   |
+| Exhibits             | `exhibits`                |         0 |             0 | none                         | API + exhibits UI                          | official exhibit-identity/status projection; a filing annex is not an exhibit |
+| Hearings             | `hearings`, `transcripts` |         3 |             3 | capture normalization        | transcript/event APIs; reader/timeline     | direct hearing-list API                                                       |
+| Statements           | `transcript_segments`     |     1,363 |         1,363 | transcript parser            | transcript API; reader                     | no semantic classification; exact fragments remain available                  |
+| Events               | `events`                  |        54 |            54 | deterministic projection     | events API; timeline                       | none for current projection                                                   |
+| Relationships        | `relationships`           |       178 |           178 | resolved-citation projection | network/path/relationship APIs; network UI | none for current projection                                                   |
 
 The zero entity counts do not mean that the underlying case contains no people,
 witnesses, organizations, or exhibits. They mean that no reviewed structured

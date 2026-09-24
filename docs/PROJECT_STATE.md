@@ -3,28 +3,28 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 17 Pass B official expansion checkpoint)
+Last updated: 2026-09-24 (Phase 17 Pass C structured enrichment checkpoint)
 
 ## Milestones
 
-| Phase  | Scope                                                                                                     | Status                                                                                                         |
-| ------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 1–3    | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                                     |
-| **4**  | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                                                   |
-| **5**  | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B)                      |
-| **6**  | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                                                   |
-| **5B** | **UI/UX visual parity remediation against `docs/design/Design.html`**                                     | ✅ **Complete (2026-09-20)**                                                                                   |
-| **7**  | **KSC public record discovery + controlled document ingestion (first real KSC data)**                     | ✅ **Complete (2026-09-20)** — 22 real public records, quality gate 22/22, idempotent (ADR-011, ADR-012)       |
-| **8**  | **Parsing, exact citations, resolution index, search**                                                    | ✅ **Complete (2026-09-20)** — controlled-corpus quality gate PASS (ADR-013)                                   |
-| **9**  | **Real evidence network and timeline**                                                                    | ✅ **Complete (2026-09-21)** — controlled-corpus quality gate PASS (ADR-014)                                   |
-| **10** | **Judgment, findings and evidence matrix**                                                                | ✅ **Complete (2026-09-21)** — real Court-decision quality gate PASS (ADR-015)                                 |
-| **11** | **Citation-first AI / RAG**                                                                               | ✅ **Complete (2026-09-21)** — real-corpus AI quality gate PASS (ADR-016)                                      |
-| **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                                  |
-| **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                          |
-| **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                               |
-| **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                                 |
-| **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred                  |
-| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **IN PROGRESS — PASS B (2026-09-24)** — 73-record official historical expansion ingested, reconciled and gated |
+| Phase  | Scope                                                                                                     | Status                                                                                                   |
+| ------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 1–3    | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                               |
+| **4**  | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                                             |
+| **5**  | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B)                |
+| **6**  | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                                             |
+| **5B** | **UI/UX visual parity remediation against `docs/design/Design.html`**                                     | ✅ **Complete (2026-09-20)**                                                                             |
+| **7**  | **KSC public record discovery + controlled document ingestion (first real KSC data)**                     | ✅ **Complete (2026-09-20)** — 22 real public records, quality gate 22/22, idempotent (ADR-011, ADR-012) |
+| **8**  | **Parsing, exact citations, resolution index, search**                                                    | ✅ **Complete (2026-09-20)** — controlled-corpus quality gate PASS (ADR-013)                             |
+| **9**  | **Real evidence network and timeline**                                                                    | ✅ **Complete (2026-09-21)** — controlled-corpus quality gate PASS (ADR-014)                             |
+| **10** | **Judgment, findings and evidence matrix**                                                                | ✅ **Complete (2026-09-21)** — real Court-decision quality gate PASS (ADR-015)                           |
+| **11** | **Citation-first AI / RAG**                                                                               | ✅ **Complete (2026-09-21)** — real-corpus AI quality gate PASS (ADR-016)                                |
+| **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                            |
+| **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
+| **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
+| **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
+| **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
+| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | **IN PROGRESS — PASS C (2026-09-24)** — existing corpus structurally enriched and gated; no new PDFs     |
 
 ## Roadmap
 
@@ -570,6 +570,27 @@ check` and `head → base → head` are integration-tested.
   `phase17-corpus-03.json` manifest and `phase17-pass-b-coverage.json` report.
   Phase 17 remains in progress; no further batch or later phase has started.
 
+## Phase 17 Pass C checkpoint
+
+- Root cause of zero People/Witness/Organization/Exhibit rows was the absence
+  of a reviewed projector and occurrence-provenance layer. APIs/UI already
+  supported three categories; organizations lacked a read endpoint, and the
+  resolver could extract but not target witness/exhibit identifiers.
+- Migration `0012` adds exact entity occurrences and explicit exhibit status.
+  Existing-corpus projection now contains 48 people, 201 protected code-only
+  witnesses, 6 organizations and 981 exhibits backed by 15,024 occurrences.
+  Four occurrences on one surname-only person are review-required; there are
+  zero provenance, protected-identity or exhibit-status violations.
+- Hearings/statements/events remain 16/8,547/127. Exact citation-backed
+  relationships are now 10,380. The single safe re-resolution changed citation
+  states from 306/3/16,831/141 to 10,395/3/6,742/141
+  (resolved/ambiguous/unresolved/invalid).
+- Real API checks returned all four structured directories, organizations,
+  search results, timeline and network data. Web pagination now follows the
+  API total instead of truncating large directories at 200.
+- `docs/ingestion/phase17c-structured-quality-gate.json` is PASS. No record was
+  acquired; Phase 17 remains in progress and Phase 18 has not started.
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -629,8 +650,9 @@ pushed. Phase 16 branch `feat/phase-16-production-readiness-security-beta`
 starts from `01cb693` and currently ends at local blocker-resolution commit
 `eb01a87`; it has not been deployed or pushed. Phase 17 branch
 `feat/phase-17-corpus-expansion-structured-data` starts from `eb01a87`, retaining
-the useful Phase 16 fixes. Phase 17 Pass B is implemented on that branch; it is
-not merged and Phase 17 is not complete.
+the useful Phase 16 fixes. Phase 17 Pass C implementation commit `970b948` is
+on that branch and the branch is pushed to origin; it is not merged and Phase
+17 is not complete.
 
 ## Verification limitations
 

@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-09-24",
+  "case_number": "KSC-BC-2020-06",
+  "people": 48,
+  "witnesses": 201,
+  "organizations": 6,
+  "exhibits": 981,
+  "hearings": 16,
+  "statements": 8547,
+  "events": 127,
+  "relationships": 10380,
+  "occurrences": 15024,
+  "provenance_verified": 15020,
+  "review_required": 4,
+  "provenance_violations": 0,
+  "protected_identity_violations": 0,
+  "invalid_exhibit_statuses": 0,
+  "citations_resolved": 10395,
+  "citations_ambiguous": 3,
+  "citations_unresolved": 6742,
+  "citations_invalid": 141,
+  "passed": true
+}

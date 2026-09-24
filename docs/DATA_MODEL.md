@@ -194,6 +194,12 @@ provenance, not proof, and never implies admission or reliance.
 
 ## Invariants tested
 
+Phase 17C adds `entity_occurrences`: exactly one person, witness, organization
+or exhibit target plus the held document version, optional transcript segment,
+original occurrence text and exact page/line/character coordinates. The row
+also carries deterministic extraction origin and review-required state. Exhibit
+`status` is explicit and defaults to `unknown`; filenames never establish it.
+
 - The table set includes the foundation through Phase 13 plus the five Phase 14
   external-source tables; `alembic check` reports no drift between
   models and the migrated schema.
