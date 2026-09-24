@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import io
 import re
-from dataclasses import dataclass, field
+from collections import Counter
+from dataclasses import dataclass, field, replace
 
 from pypdf import PdfReader
 
@@ -409,6 +410,23 @@ def parse_pdf(data: bytes, *, transcript: bool) -> ParsedPdf:
                 redaction_extents=redactions or None,
             )
         )
+
+    # A printed page number that repeats within one version is not a coordinate
+    # (e.g. a reclassification stamp "1 of 8" on every page). Fail closed: those
+    # pages keep their exact PDF index, lose the printed number, and need review.
+    repeated = {
+        number
+        for number, count in Counter(
+            page.page_number for page in pages if page.page_number is not None
+        ).items()
+        if count > 1
+    }
+    if repeated:
+        pages = [
+            replace(page, page_number=None) if page.page_number in repeated else page
+            for page in pages
+        ]
+        reasons.append(f"printed page numbers repeat within the version: {sorted(repeated)}")
 
     if transcript:
         segments, transcript_reasons = _transcript_segments(pages)

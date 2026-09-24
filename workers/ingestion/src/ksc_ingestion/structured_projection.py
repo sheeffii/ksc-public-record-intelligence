@@ -157,6 +157,8 @@ class Phase17StructuredPipeline:
                         occurrence_text=segment.speaker,
                         extraction_origin="phase17c",
                         review_required=ambiguous,
+                        # Keep the Phase 19A state/flag CHECK consistent.
+                        mention_state="review_required" if ambiguous else "verified",
                     )
                 )
                 occurrences += 1

@@ -72,3 +72,26 @@ def test_transcript_parser_uses_only_printed_lines_and_withholds_closed_session_
     closed = parsed.transcript_segments[3]
     assert closed.closed_session is True
     assert closed.text == ""
+
+
+def test_repeated_printed_page_numbers_fail_closed_to_pdf_index() -> None:
+    # A reclassification stamp can print "1 of 8" on every page; a repeated
+    # printed number is not a coordinate, so the parser withholds it.
+    import io
+
+    from pypdf import PdfReader, PdfWriter
+
+    writer = PdfWriter()
+    for body in ("1. First paragraph.", "2. Second paragraph."):
+        writer.add_page(
+            PdfReader(io.BytesIO(make_pdf(["KSC-DEMO-0000/F00001/1 of 8", body]))).pages[0]
+        )
+    buffer = io.BytesIO()
+    writer.write(buffer)
+
+    parsed = parse_pdf(buffer.getvalue(), transcript=False)
+
+    assert [page.pdf_page_index for page in parsed.pages] == [0, 1]
+    assert [page.page_number for page in parsed.pages] == [None, None]
+    assert parsed.requires_review is True
+    assert any("repeat" in reason for reason in parsed.review_reasons)

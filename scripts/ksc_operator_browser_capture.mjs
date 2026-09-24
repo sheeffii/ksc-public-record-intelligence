@@ -713,8 +713,22 @@ const STRATA = [
 ];
 const SQI_QUOTA = 6;
 const STRATUM_KEYS = new Set([
-  "key", "quota", "record", "sort", "desc", "filingNumber", "year", "date", "startPage",
-  "maxPages", "submitter", "level", "filingType", "language", "perAccused",
+  "key",
+  "quota",
+  "record",
+  "sort",
+  "desc",
+  "filingNumber",
+  "year",
+  "date",
+  "startPage",
+  "maxPages",
+  "submitter",
+  "level",
+  "filingType",
+  "language",
+  "perAccused",
+  "skipAnnexes",
 ]);
 
 // A gap-driven plan (Phase 19B) replaces the built-in strata. Only listing
@@ -755,7 +769,15 @@ function listingUrl(args, stratum, pageNo) {
   if (stratum.submitter) u.searchParams.set("icc_filters[filing_submitter]", stratum.submitter);
   if (stratum.level) u.searchParams.set("icc_filters[filing_court_level]", stratum.level);
   if (stratum.filingType) u.searchParams.append("icc_filters[filing_type][]", stratum.filingType);
-  if (stratum.filingNumber) u.searchParams.set("icc_filters[filing_number]", stratum.filingNumber);
+  // The public form matches digits only ("03667"); "F03667" returns nothing.
+  if (stratum.filingNumber) {
+    u.searchParams.set("icc_filters[filing_number]", stratum.filingNumber.replace(/^F/i, ""));
+  }
+  // A hearing date narrows the listing with the form's own date range (dd/mm/yyyy).
+  if (stratum.date) {
+    u.searchParams.set("icc_filters[date_range_from]", stratum.date);
+    u.searchParams.set("icc_filters[date_range_to]", stratum.date);
+  }
   if (pageNo > 1) u.searchParams.set("page", String(pageNo));
   return u.toString();
 }
@@ -986,6 +1008,7 @@ async function collect(context, page, args) {
         if (!/pdf/i.test(item.format ?? "")) continue;
         if (stratum.year && !item.date?.endsWith(String(stratum.year))) continue;
         if (stratum.date && item.date !== stratum.date) continue;
+        if (stratum.skipAnnexes && /^annex\b/i.test(item.title ?? "")) continue;
         // Scope: English and Albanian only (the project's languages; the
         // importer's classification parser is EN/SQ).
         if (!/\((eng|sqi)\)/i.test(item.language ?? "")) continue;
