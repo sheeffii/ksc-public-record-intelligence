@@ -6,8 +6,8 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-18-research-experience-visual-excellence`, created
   from the Phase 17 closeout commit `fd344fb`.
-- Current milestone: **Phase 18 IN PROGRESS — Passes A and B implemented and
-  verified (2026-09-24)**. Phase 18 is not complete and Phase 18C has not started. Phase
+- Current milestone: **Phase 18 COMPLETE (2026-09-24)**, tag
+  `phase-18-complete`; no later phase is defined or started. Phase
   16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
   external deployment/alerting gates are intentionally deferred until public
@@ -15,12 +15,12 @@ Live checkpoint. Repository state wins over this note.
 - Phase 18 Pass A implementation commit: `5733533`; Pass B implementation
   follows `c65a5f7` (see `git log`).
 - Push state (2026-09-24): Phase 18 branch
-  `feat/phase-18-research-experience-visual-excellence` is pushed through the
-  Pass B checkpoint. No Phase 18 tag exists and Phase 18 is not complete. `main` remains at the pushed Phase 15 baseline `01cb693`.
+  `feat/phase-18-research-experience-visual-excellence` and tag
+  `phase-18-complete` are pushed; the branch is not merged to `main`. `main` remains at the pushed Phase 15 baseline `01cb693`.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. The Phase 17
   branch and tag are pushed, and the branch is not merged to `main`.
-- Latest completion tag: annotated `phase-17-complete`.
+- Latest completion tag: annotated `phase-18-complete`.
 - Phase 15 is on `main`; its feature branch is preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
@@ -321,12 +321,9 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 18 Passes A and B are implemented on
-`feat/phase-18-research-experience-visual-excellence`. The audit (with Pass B
-follow-up) is `docs/PHASE18_PASS_A_UX_AUDIT.md`; the real-data Phase 18
-Playwright gate (`E2E_REAL_DATA=1`, 28 tests, desktop + Pixel 7) passes. Do not
-mark Phase 18 complete and do not begin Phase 18C without explicit
-authorization. Remaining gaps: dossier occurrences are lexical search matches
+Phase 18 is complete (completion record in `docs/PROJECT_STATE.md`). No
+Phase 18 roadmap file existed; any next milestone needs a new roadmap file and
+explicit authorization. Do not merge to `main` unless asked. Known limitations: dossier occurrences are lexical search matches
 (no structured mention table), no source-backed hearing totals, and unfocused
 `/network` still reads the bounded 500-edge default. Do not close Phase 16;
 resume its external deployment/alerting gates only when public deployment is

@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 18 Pass B checkpoint)
+Last updated: 2026-09-24 (Phase 18 complete)
 
 ## Milestones
 
@@ -25,7 +25,7 @@ Last updated: 2026-09-24 (Phase 18 Pass B checkpoint)
 | **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
-| **18** | **Research experience and visual excellence**                                                             | **IN PROGRESS** — Passes A and B implemented and verified; Phase 18 not complete                         |
+| **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
 
 ## Roadmap
 
@@ -47,8 +47,8 @@ smoke remain pending. The external beta protocol is documented as an external
 dependency, not an active completion blocker. Phase 16 remains **IN PROGRESS**;
 its remaining blockers are external deployment/alerting only and it will resume
 when public deployment is desired. Phase 17 is complete against its explicitly
-declared known-public-corpus scope. Phase 18 Passes A and B align the research
-surfaces to that real-data baseline; Phase 18 remains in progress.
+declared known-public-corpus scope. Phase 18 is complete: Passes A and B align
+the research surfaces to that real-data baseline.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -668,6 +668,28 @@ experience`).
   search→exhibit→source, person→source, protected witness→transcript line and
   focused network→provenance; full real-data Playwright 100 passed / 98 skipped
   (legacy demo-mode specs). Production `next build` passed in the web image.
+
+## Phase 18 completion record
+
+- Status: **COMPLETE (2026-09-24)**; tag `phase-18-complete` on the closeout
+  commit. Implementation: `5733533`, `c65a5f7`, `443e0c6`, `b400f70`.
+- Acceptance contract: no `docs/roadmap/PHASE_18_*.md` exists; the 16 criteria
+  of the closeout brief were used. All pass: homepage, people, witnesses,
+  organizations, exhibits, reader, findings, network, timeline, search,
+  cross-entity flows, evidence path, information presentation, design parity
+  (acceptance level, per Pass A audit), mobile, data/safety.
+- Closeout checks against the live stack: directories page to their full API
+  totals (201 witnesses, 981 exhibits, 48 people); `UNKNOWN` exhibit status is
+  shown verbatim; the network non-inference notice renders on focused network;
+  unknown `focus_ref` returns an empty graph.
+- Known limitations (not Phase 18 requirements): no dedicated verified
+  person/witness mention table — dossier occurrences are coordinate-bearing
+  search matches labelled with their match type; no witness hearing totals;
+  unfocused `/network` starts from the bounded 500-edge default; the four
+  surname-only `Smith` occurrences remain review-required.
+- Quality evidence: see the Pass B checkpoint above (backend 303, frontend 243,
+  Phase 18 Playwright 28/28, full real-data Playwright 100 passed / 98 skipped,
+  lint/format/mypy/tsc, production build).
 
 ## Technical debt / notes
 

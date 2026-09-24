@@ -58,7 +58,7 @@ The original core roadmap contains **13 numbered phases**. Six additional milest
 - **Phase 15** — Real Data UI Completion & Demo Removal.
 - **Phase 16** — Production Readiness, Security & Lawyer Beta.
 - **Phase 17** — Historical Corpus Expansion, Coverage & Continuous Sync.
-- **Phase 18** — Next milestone; pending and not started.
+- **Phase 18** — Research Experience & Visual Excellence. No separate phase file exists; its acceptance contract was the 16-criterion closeout brief recorded in `docs/PROJECT_STATE.md`.
 
 ### Current sequence
 
@@ -82,7 +82,7 @@ The original core roadmap contains **13 numbered phases**. Six additional milest
 | 15 | Real Data UI Completion & Demo Removal | **COMPLETE (2026-09-22)** |
 | 16 | Production Readiness, Security & Lawyer Beta | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred |
 | 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim |
-| 18 | Next milestone | **NEXT / PENDING** — not started |
+| 18 | Research Experience & Visual Excellence | **COMPLETE (2026-09-24)** — tag `phase-18-complete` |
 
 ## Recommended execution order from now
 
@@ -111,7 +111,7 @@ Phase 15
   ├─ Phase 16 (IN PROGRESS; external deployment/alerting deferred)
   └─ Phase 17 (COMPLETE 2026-09-24)
        ↓
-     Phase 18 (NEXT / PENDING; not started)
+     Phase 18 (COMPLETE 2026-09-24)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -121,8 +121,8 @@ public `KSC-BC-2020-06` EN/SQ corpus indexed as of 2026-09-24. This is not a
 complete/exhaustive KSC corpus claim. All 134 accepted versions are verified,
 parsed and indexed; structured projections and citations retain fail-closed
 provenance rules. Phase 16 remains **IN PROGRESS** with only external
-deployment/alerting blockers intentionally deferred. Phase 18 is **NEXT /
-PENDING** and has not started.
+deployment/alerting blockers intentionally deferred. Phase 18 is **COMPLETE
+(2026-09-24)**; no later phase has been defined or started.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 
