@@ -200,6 +200,14 @@ original occurrence text and exact page/line/character coordinates. The row
 also carries deterministic extraction origin and review-required state. Exhibit
 `status` is explicit and defaults to `unknown`; filenames never establish it.
 
+Phase 19A (`0013`, ADR-024) adds mention lineage to `entity_occurrences`:
+`rule_id`/`rule_version`, `projection_run_id` → `processing_runs`,
+`mention_state` (`verified` · `review_required` · `rejected`, kept consistent
+with `review_required` by CHECK), `char_anchor` (the text the character range
+indexes: segment text, speaker label or page text), `paragraph_number` and
+`language`. The idempotency key is (version, anchor, segment, PDF page, char
+range, entity, rule) with `NULLS NOT DISTINCT`.
+
 - The table set includes the foundation through Phase 13 plus the five Phase 14
   external-source tables; `alembic check` reports no drift between
   models and the migrated schema.

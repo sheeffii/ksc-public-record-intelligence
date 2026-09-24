@@ -1119,3 +1119,49 @@ Structured directories, search, reader citations and the graph can use the
 existing real corpus without an AI/entity-inference step. The occurrence layer
 makes projection decisions auditable and rebuildable while keeping protected
 identity and uncertainty fail-closed.
+
+## ADR-024 — Verified mentions are rule-lineaged `entity_occurrences` rows
+
+Date: 2026-09-24
+
+Status: Accepted (Phase 19A)
+
+Context:
+Dossiers listed "occurrences" from lexical search on a name or code, and the
+Phase 17C rows had no rule lineage, a single boolean for review state, and
+character offsets whose base text was not recorded (speaker-label offsets were
+stored as if they indexed segment text; citation-derived rows fell back to 0).
+
+Decision:
+
+1. `entity_occurrences` is extended (migration `0013`), not duplicated. Each
+   Phase 19A row carries `rule_id`, `rule_version`, `projection_run_id`
+   (`processing_runs`), `mention_state` (`verified` · `review_required` ·
+   `rejected`), `char_anchor`, `paragraph_number` and `language`.
+2. `char_start`/`char_end` index into the text named by `char_anchor`:
+   `transcript_segment_text`, `transcript_speaker_label` or
+   `document_page_text`. The row is written only when that slice reproduces
+   `occurrence_text` exactly. Transcript versions are projected from segments
+   only, so a passage is never counted twice.
+3. Rules only bind to entities already in the registry and never create one.
+   Witness codes (`W#####`) and exhibit identifiers (`P#####`/`D#####`) are
+   exact and case-sensitive. Organization names are case-insensitive whole-token
+   matches against recorded variants, acronyms are case-sensitive, and a variant
+   shared by two bodies is `review_required`. Person mentions come from speaker
+   labels that are a recorded alias of exactly one person: role-qualified labels
+   (Judge / Presiding Judge / The Accused) are `verified`. Honorific + surname
+   labels are `review_required` because no full public name is recorded, and so
+   is a shared surname (the four `Smith` rows).
+4. Paragraph numbers are attached only when the paragraph's exact token sequence
+   occurs exactly once on that page. The official version reference's language
+   marker (`/sqi`, `/eng`) takes precedence over recorded language metadata, and
+   conflicts are counted in the gate.
+5. The API serves only rule-lineaged rows, as `VERIFIED_MENTION` or
+   `REVIEW_REQUIRED`. Lexical hits carry `match_class: SEARCH_MATCH`. Reference
+   counts use verified rows only. Legacy Phase 17C rows are superseded by the
+   projector.
+
+Consequences:
+Dossiers can show exact, auditable mentions separately from search. Most
+counsel labels stay review-required until an official source records a full
+public name. Exhibit status is untouched by mentions (ADR-023 still governs it).

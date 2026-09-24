@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 19 registered)
+Last updated: 2026-09-24 (Phase 19 Pass A checkpoint)
 
 ## Milestones
 
@@ -26,7 +26,7 @@ Last updated: 2026-09-24 (Phase 19 registered)
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
-| **19** | **Corpus depth and verified entity intelligence**                                                         | **IN PROGRESS** — roadmap registered; 19A not started                                                    |
+| **19** | **Corpus depth and verified entity intelligence**                                                         | **IN PROGRESS** — 19A verified mentions checkpoint PASS; 19B not started                                 |
 
 ## Roadmap
 
@@ -691,6 +691,34 @@ experience`).
 - Quality evidence: see the Pass B checkpoint above (backend 303, frontend 243,
   Phase 18 Playwright 28/28, full real-data Playwright 100 passed / 98 skipped,
   lint/format/mypy/tsc, production build).
+
+## Phase 19 Pass A checkpoint
+
+- Scope: verified entity mentions over the unchanged known public corpus. No
+  acquisition. Migration `0013` extends `entity_occurrences` with rule lineage,
+  mention state, char anchor, paragraph and language (ADR-024).
+- Projector `ksc-ingest project-mentions` (processor `phase19a-mentions` v1)
+  and gate `ksc-ingest gate-phase19a`. Evidence:
+  `docs/ingestion/PHASE19_QUALITY_GATE.md` and
+  `docs/ingestion/manifests/phase19a-verified-mentions-quality.json`.
+- Live counts: 16,412 rows, of which 14,214 are verified and 2,198
+  review-required. People: 2,602 verified and 2,198 review-required
+  (2,194 honorific labels, 4 `Smith`), with 14,194 search-only hits.
+  Witnesses: 5,175 verified, 0 search-only. Organizations: 543. Exhibits: 5,894
+  (2,357 exhibit-shaped identifiers are not in the registry and are not
+  auto-created).
+- Gate PASS: 0 provenance, protected-identity, dedup and review-state
+  violations. The re-projection is identical. The automated 100-per-kind
+  re-derivation reproduces every row. There are 13 version-language metadata
+  conflicts; these are reported, and the version marker is used.
+- API: `GET /api/v1/{people|organizations|witnesses|exhibits}/{key}/mentions`
+  (paginated, `state` filter) returns `VERIFIED_MENTION` / `REVIEW_REQUIRED`;
+  search hits carry `match_class: SEARCH_MATCH`; reference counts use verified
+  rows only. Dossiers show Verified mentions, Mentions requiring review and
+  labelled Search matches as separate panels.
+- Open: a human sampling audit against the PDFs; Reader character-range
+  highlighting; real-data Playwright; the running API image needs a rebuild to
+  serve `/mentions` (the web falls back to an empty list on 404).
 
 ## Technical debt / notes
 

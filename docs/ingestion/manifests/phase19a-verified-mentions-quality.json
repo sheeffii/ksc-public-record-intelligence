@@ -1,0 +1,95 @@
+{
+  "by_anchor": {
+    "document_page_text": 11236,
+    "transcript_segment_text": 376,
+    "transcript_speaker_label": 4800
+  },
+  "by_language": {
+    "en": 13961,
+    "sq": 2451
+  },
+  "by_rule": {
+    "exhibit.identifier.exact": 5894,
+    "organization.acronym.exact": 225,
+    "organization.name.exact": 318,
+    "person.speaker_label.honorific": 2194,
+    "person.speaker_label.role_qualified": 2602,
+    "person.speaker_label.shared_surname": 4,
+    "witness.code.exact": 5175
+  },
+  "case_number": "KSC-BC-2020-06",
+  "dedup_conflicts": 0,
+  "exhibit_status_counts": {
+    "admitted": 3,
+    "unknown": 978
+  },
+  "generated_at": "2026-09-24",
+  "kinds": {
+    "exhibit": {
+      "rejected": 0,
+      "review_required": 0,
+      "sample_precision": 1.0,
+      "sample_reproduced": 100,
+      "sampled": 100,
+      "search_only": null,
+      "unregistered_identifiers": 2357,
+      "verified": 5894
+    },
+    "organization": {
+      "rejected": 0,
+      "review_required": 0,
+      "sample_precision": 1.0,
+      "sample_reproduced": 100,
+      "sampled": 100,
+      "search_only": null,
+      "unregistered_identifiers": null,
+      "verified": 543
+    },
+    "person": {
+      "rejected": 0,
+      "review_required": 2198,
+      "sample_precision": 1.0,
+      "sample_reproduced": 100,
+      "sampled": 100,
+      "search_only": 14194,
+      "unregistered_identifiers": null,
+      "verified": 2602
+    },
+    "witness": {
+      "rejected": 0,
+      "review_required": 0,
+      "sample_precision": 1.0,
+      "sample_reproduced": 100,
+      "sampled": 100,
+      "search_only": 0,
+      "unregistered_identifiers": 0,
+      "verified": 5175
+    }
+  },
+  "language_metadata_conflicts": 13,
+  "legacy_rows": 0,
+  "passed": true,
+  "precision_threshold": 1.0,
+  "processor": "phase19a-mentions",
+  "projection_run_id": "3a669fd5-10a3-4fd4-a0f3-e632442e7280",
+  "protected_identity_violations": 0,
+  "provenance_violations": 0,
+  "review_state_violations": 0,
+  "rule_versions": {
+    "exhibit.identifier.exact": 1,
+    "organization.acronym.exact": 1,
+    "organization.name.exact": 1,
+    "organization.variant.shared": 1,
+    "person.speaker_label.honorific": 1,
+    "person.speaker_label.role_qualified": 1,
+    "person.speaker_label.shared_surname": 1,
+    "witness.code.exact": 1
+  },
+  "sample_seed": 19,
+  "smith_review_required": 4,
+  "total_review_required": 2198,
+  "total_rows": 16412,
+  "total_verified": 14214,
+  "verified_with_line": 2978,
+  "verified_with_paragraph": 439
+}

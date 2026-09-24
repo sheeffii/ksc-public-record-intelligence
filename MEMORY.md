@@ -9,7 +9,7 @@ Live checkpoint. Repository state wins over this note.
   Phase 16 `eb01a87` and Phase 17 `0e382b3`).
 - Current milestone: **Phase 19 IN PROGRESS**. The roadmap
   `docs/roadmap/PHASE_19_CORPUS_DEPTH_AND_VERIFIED_ENTITY_INTELLIGENCE.md` is
-  registered, and Phase 19A has not started. Phase 18 is COMPLETE (tag
+  registered; the Phase 19A checkpoint is recorded (19B not started). Phase 18 is COMPLETE (tag
   `phase-18-complete`). Phase
   16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
@@ -27,7 +27,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 15–18 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0012`.
+- Migration head and live database revision: `0013`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -324,15 +324,15 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Next: Phase 19A (verified mention model hardening and deterministic
-extractors, building on `entity_occurrences` from migration `0012`: person
-4,800 rows, 4 review-required; witness 5,204; exhibit 4,885; organization 135;
-`witness_appearances` has 2 rows). Start it only when explicitly authorized.
-Phase 18 known limitations: dossier occurrences are lexical search matches
-(no structured mention table), no source-backed hearing totals, and unfocused
-`/network` still reads the bounded 500-edge default. Do not close Phase 16;
-resume its external deployment/alerting gates only when public deployment is
-desired. The four surname-only `Smith` occurrences remain review-required.
+Phase 19A (verified mentions) checkpoint is recorded. Details are in
+`docs/PROJECT_STATE.md` → "Phase 19 Pass A checkpoint" and in
+`docs/ingestion/PHASE19_QUALITY_GATE.md`. Migration head is `0013`.
+`entity_occurrences` now holds 16,412 rule-lineaged rows (14,214 verified,
+2,198 review-required); the Phase 17C legacy rows were superseded. The four
+`Smith` rows and all honorific-only counsel labels stay review-required.
+Next: Phase 19B (witness ↔ hearing linkage). Start it only when explicitly
+authorized. The Pass A items still open are the human sampling audit, Reader
+highlighting (19D), and a rebuild of the API image. Do not close Phase 16.
 
 ## Non-negotiable rules
 
