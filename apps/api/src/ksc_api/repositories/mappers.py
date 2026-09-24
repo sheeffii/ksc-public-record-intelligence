@@ -194,7 +194,7 @@ def _citation_target_path(citation: Citation) -> str | None:
     if citation.target_witness is not None:
         return f"/witnesses/{quote(citation.target_witness.code, safe='')}"
     if citation.target_exhibit is not None:
-        return "/exhibits"
+        return f"/exhibits/{quote(citation.target_exhibit.official_exhibit_id, safe='')}"
     if citation.target_transcript is not None:
         transcript = citation.target_transcript
         version = transcript.document_version

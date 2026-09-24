@@ -252,6 +252,7 @@ def read_citation(citation_id: uuid.UUID, repo: Repo) -> CitationRead:
 def read_network(
     repo: Repo,
     limit: Annotated[int, Query(ge=1, le=2000)] = 500,
+    focus_ref: Annotated[str | None, Query(max_length=255)] = None,
     source_category: str | None = None,
     verification_state: VerificationState | None = None,
     relationship_type: RelationshipType | None = None,
@@ -261,6 +262,7 @@ def read_network(
 ) -> NetworkRead:
     return repo.network(
         limit=limit,
+        focus_ref=focus_ref,
         source_category=source_category,
         verification_state=verification_state,
         relationship_type=relationship_type,

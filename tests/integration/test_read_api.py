@@ -151,6 +151,12 @@ def test_network_withholds_rejected_and_unresolved_edges(demo_client):
     rels = demo_client.get(f"{V1}/relationships?node_id={person_node['id']}").json()
     assert rels["total"] == 2
 
+    focused = demo_client.get(f"{V1}/network", params={"focus_ref": person_node["ref"]}).json()
+    assert len(focused["edges"]) == 2
+    assert all(
+        person_node["id"] in {edge["from_node_id"], edge["to_node_id"]} for edge in focused["edges"]
+    )
+
 
 def test_evidence_path_uses_only_cited_edges_and_invents_no_hops(demo_client):
     network = demo_client.get(f"{V1}/network").json()

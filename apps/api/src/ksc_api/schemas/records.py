@@ -412,6 +412,7 @@ SearchCategory = Literal[
     "documents",
     "transcripts",
     "people",
+    "organizations",
     "witnesses",
     "exhibits",
     "incidents",

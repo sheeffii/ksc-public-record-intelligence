@@ -1016,6 +1016,7 @@ class RecordRepository:
         self,
         *,
         limit: int = 500,
+        focus_ref: str | None = None,
         source_category: str | None = None,
         verification_state: VerificationState | None = None,
         relationship_type: RelationshipType | None = None,
@@ -1024,6 +1025,17 @@ class RecordRepository:
         date_to: date | None = None,
     ) -> NetworkRead:
         stmt = self._public_edges_stmt()
+        focus_node_ids: list[uuid.UUID] = []
+        if focus_ref:
+            focus_node_ids = self._focus_node_ids(focus_ref)
+            if not focus_node_ids:
+                return NetworkRead(nodes=[], edges=[])
+            stmt = stmt.where(
+                or_(
+                    Relationship.from_node_id.in_(focus_node_ids),
+                    Relationship.to_node_id.in_(focus_node_ids),
+                )
+            )
         if source_category:
             stmt = stmt.where(Relationship.source_category == source_category)
         if verification_state:
@@ -1048,8 +1060,89 @@ class RecordRepository:
             .limit(limit)
         ).all()
         node_ids = {e.from_node_id for e in edges} | {e.to_node_id for e in edges}
+        node_ids.update(focus_node_ids)
         nodes = self._nodes(node_ids)
         return NetworkRead(nodes=nodes, edges=[mappers.to_relationship(e) for e in edges])
+
+    def _focus_node_ids(self, ref: str) -> list[uuid.UUID]:
+        """Resolve a public route-facing reference to graph node ids.
+
+        This is exact matching only. It powers bounded dossier neighbourhoods
+        without treating label similarity or graph proximity as evidence.
+        """
+        document_refs = {ref, f"{self.case.case_number}/{ref}"}
+        entity_ids: list[uuid.UUID] = []
+        lookups: tuple[tuple[EntityKind, Any], ...] = (
+            (
+                EntityKind.PERSON,
+                select(Person.id).where(Person.case_id == self.case.id, Person.slug == ref),
+            ),
+            (
+                EntityKind.WITNESS,
+                select(Witness.id).where(Witness.case_id == self.case.id, Witness.code == ref),
+            ),
+            (
+                EntityKind.ORGANIZATION,
+                select(Organization.id).where(
+                    Organization.case_id == self.case.id, Organization.slug == ref
+                ),
+            ),
+            (
+                EntityKind.LOCATION,
+                select(Location.id).where(Location.case_id == self.case.id, Location.slug == ref),
+            ),
+            (
+                EntityKind.DOCUMENT,
+                select(Document.id).where(
+                    Document.case_id == self.case.id,
+                    public_visibility(Document.visibility),
+                    or_(Document.official_ref.in_(document_refs), Document.filing_number == ref),
+                ),
+            ),
+            (
+                EntityKind.EXHIBIT,
+                select(Exhibit.id).where(
+                    Exhibit.case_id == self.case.id,
+                    public_visibility(Exhibit.visibility),
+                    Exhibit.official_exhibit_id == ref,
+                ),
+            ),
+            (
+                EntityKind.INCIDENT,
+                select(Incident.id).where(Incident.case_id == self.case.id, Incident.slug == ref),
+            ),
+            (
+                EntityKind.FINDING,
+                select(Finding.id).where(
+                    Finding.case_id == self.case.id, Finding.finding_key == ref
+                ),
+            ),
+            (
+                EntityKind.CLAIM,
+                select(Claim.id).where(Claim.case_id == self.case.id, Claim.claim_key == ref),
+            ),
+            (
+                EntityKind.ARGUMENT,
+                select(Argument.id).where(
+                    Argument.case_id == self.case.id, Argument.argument_key == ref
+                ),
+            ),
+        )
+        for kind, entity_stmt in lookups:
+            ids = list(self.session.scalars(entity_stmt).all())
+            if not ids:
+                continue
+            fk = getattr(GraphNode, _NODE_FK[kind])
+            entity_ids.extend(
+                self.session.scalars(
+                    select(GraphNode.id).where(
+                        GraphNode.case_id == self.case.id,
+                        GraphNode.entity_kind == kind,
+                        fk.in_(ids),
+                    )
+                ).all()
+            )
+        return entity_ids
 
     def evidence_path(
         self, *, from_node_id: uuid.UUID, to_node_id: uuid.UUID, max_hops: int
@@ -1374,6 +1467,26 @@ class RecordRepository:
                         title=person.display_name,
                         context=person.public_role,
                         match_kind="title",
+                        target_path=f"/people/{quote(person.slug, safe='')}",
+                    )
+                )
+            for organization in self.session.scalars(
+                select(Organization)
+                .where(
+                    Organization.case_id == self.case.id,
+                    _ilike_any(query, Organization.name, Organization.slug),
+                )
+                .order_by(Organization.name)
+                .limit(per_category)
+            ):
+                add(
+                    SearchHit(
+                        category="organizations",
+                        ref=organization.slug,
+                        title=organization.name,
+                        context=organization.kind,
+                        match_kind="title",
+                        target_path=f"/organizations/{quote(organization.slug, safe='')}",
                     )
                 )
             for witness in self.session.scalars(
@@ -1390,6 +1503,7 @@ class RecordRepository:
                         context=None,
                         protected=witness.is_protected,
                         match_kind="exact_identifier",
+                        target_path=f"/witnesses/{quote(witness.code, safe='')}",
                     )
                 )
             for exhibit in self.session.scalars(
@@ -1409,6 +1523,7 @@ class RecordRepository:
                         title=exhibit.title,
                         context=exhibit.official_exhibit_id,
                         match_kind="title",
+                        target_path=f"/exhibits/{quote(exhibit.official_exhibit_id, safe='')}",
                     )
                 )
             for incident in self.session.scalars(
