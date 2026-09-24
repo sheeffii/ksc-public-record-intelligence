@@ -51,7 +51,7 @@ When anything conflicts, use this order:
 
 ## Roadmap structure
 
-The original core roadmap contains **13 numbered phases**. Six additional milestones are included without changing the core numbering:
+The original core roadmap contains **13 numbered phases**. Seven additional milestones are included without changing the core numbering:
 
 - **Phase 5B** — UI/UX Visual Parity Remediation. This was added after a detailed design audit found that Phase 5 was functionally complete but visually simplified on several screens.
 - **Phase 14** — External Media & Public Statements Intelligence. This is a **post-core feature** and must happen only after the core court-record platform is stable.
@@ -59,6 +59,7 @@ The original core roadmap contains **13 numbered phases**. Six additional milest
 - **Phase 16** — Production Readiness, Security & Lawyer Beta.
 - **Phase 17** — Historical Corpus Expansion, Coverage & Continuous Sync.
 - **Phase 18** — Research Experience & Visual Excellence. No separate phase file exists; its acceptance contract was the 16-criterion closeout brief recorded in `docs/PROJECT_STATE.md`.
+- **Phase 19** — Corpus Depth & Verified Entity Intelligence (`PHASE_19_CORPUS_DEPTH_AND_VERIFIED_ENTITY_INTELLIGENCE.md`).
 
 ### Current sequence
 
@@ -83,6 +84,7 @@ The original core roadmap contains **13 numbered phases**. Six additional milest
 | 16 | Production Readiness, Security & Lawyer Beta | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred |
 | 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim |
 | 18 | Research Experience & Visual Excellence | **COMPLETE (2026-09-24)** — tag `phase-18-complete` |
+| 19 | Corpus Depth & Verified Entity Intelligence | **IN PROGRESS** — roadmap registered 2026-09-24; 19A not started |
 
 ## Recommended execution order from now
 
@@ -112,6 +114,8 @@ Phase 15
   └─ Phase 17 (COMPLETE 2026-09-24)
        ↓
      Phase 18 (COMPLETE 2026-09-24)
+       ↓
+     Phase 19 (IN PROGRESS; 19A not started)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -122,7 +126,8 @@ complete/exhaustive KSC corpus claim. All 134 accepted versions are verified,
 parsed and indexed; structured projections and citations retain fail-closed
 provenance rules. Phase 16 remains **IN PROGRESS** with only external
 deployment/alerting blockers intentionally deferred. Phase 18 is **COMPLETE
-(2026-09-24)**; no later phase has been defined or started.
+(2026-09-24)**. Phase 19 is **IN PROGRESS**: its roadmap is registered and
+Phase 19A has not started.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

@@ -4,10 +4,13 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `main`. It contains all work through Phase 18 (Phases 15–18,
-  including Phase 16 `eb01a87` and Phase 17 `0e382b3`).
-- Current milestone: **Phase 18 COMPLETE (2026-09-24)**, tag
-  `phase-18-complete`; no later phase is defined or started. Phase
+- Current branch: `feat/phase-19-corpus-depth-verified-intelligence`, created
+  from `main` at `e38bbd4`. `main` contains all work through Phase 18 (including
+  Phase 16 `eb01a87` and Phase 17 `0e382b3`).
+- Current milestone: **Phase 19 IN PROGRESS**. The roadmap
+  `docs/roadmap/PHASE_19_CORPUS_DEPTH_AND_VERIFIED_ENTITY_INTELLIGENCE.md` is
+  registered, and Phase 19A has not started. Phase 18 is COMPLETE (tag
+  `phase-18-complete`). Phase
   16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
   external deployment/alerting gates are intentionally deferred until public
@@ -321,9 +324,11 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 18 is complete (completion record in `docs/PROJECT_STATE.md`). No
-Phase 18 roadmap file existed; any next milestone needs a new roadmap file and
-explicit authorization; start it on a new branch from `main`. Known limitations: dossier occurrences are lexical search matches
+Next: Phase 19A (verified mention model hardening and deterministic
+extractors, building on `entity_occurrences` from migration `0012`: person
+4,800 rows, 4 review-required; witness 5,204; exhibit 4,885; organization 135;
+`witness_appearances` has 2 rows). Start it only when explicitly authorized.
+Phase 18 known limitations: dossier occurrences are lexical search matches
 (no structured mention table), no source-backed hearing totals, and unfocused
 `/network` still reads the bounded 500-edge default. Do not close Phase 16;
 resume its external deployment/alerting gates only when public deployment is

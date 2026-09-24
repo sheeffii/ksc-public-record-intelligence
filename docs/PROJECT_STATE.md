@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-24 (Phase 18 complete)
+Last updated: 2026-09-24 (Phase 19 registered)
 
 ## Milestones
 
@@ -26,6 +26,7 @@ Last updated: 2026-09-24 (Phase 18 complete)
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
+| **19** | **Corpus depth and verified entity intelligence**                                                         | **IN PROGRESS** — roadmap registered; 19A not started                                                    |
 
 ## Roadmap
 
