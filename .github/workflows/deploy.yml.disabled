@@ -1,0 +1,76 @@
+# CI disabled for now (2026-09-24). To restore: rename to deploy.yml and uncomment.
+# name: Deploy immutable release
+# 
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       environment:
+#         description: Protected GitHub environment and target runner
+#         type: choice
+#         options: [staging, production]
+#         required: true
+# 
+# permissions:
+#   contents: read
+#   packages: write
+# 
+# jobs:
+#   publish:
+#     runs-on: ubuntu-latest
+#     outputs:
+#       image_tag: ${{ steps.release.outputs.image_tag }}
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: docker/setup-buildx-action@v3
+#       - uses: docker/login-action@v3
+#         with:
+#           registry: ghcr.io
+#           username: ${{ github.actor }}
+#           password: ${{ secrets.GITHUB_TOKEN }}
+#       - id: release
+#         run: echo "image_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+#       - uses: docker/build-push-action@v6
+#         with:
+#           context: .
+#           file: apps/api/Dockerfile
+#           push: true
+#           tags: ghcr.io/${{ github.repository }}/api:${{ github.sha }}
+#           build-args: GIT_SHA=${{ github.sha }}
+#       - uses: docker/build-push-action@v6
+#         with:
+#           context: .
+#           file: apps/web/Dockerfile
+#           push: true
+#           tags: ghcr.io/${{ github.repository }}/web:${{ github.sha }}
+#           build-args: |
+#             NEXT_PUBLIC_API_URL=${{ vars.CANONICAL_URL }}
+#             NEXT_PUBLIC_DATA_SOURCE=api
+#       - uses: docker/build-push-action@v6
+#         with:
+#           context: .
+#           file: workers/ingestion/Dockerfile
+#           push: true
+#           tags: ghcr.io/${{ github.repository }}/worker:${{ github.sha }}
+# 
+#   deploy:
+#     needs: publish
+#     environment: ${{ inputs.environment }}
+#     runs-on: [self-hosted, ksc-pri, "${{ inputs.environment }}"]
+#     steps:
+#       - uses: actions/checkout@v4
+#       - name: Validate, migrate, deploy and smoke
+#         env:
+#           DEPLOY_ENV_FILE: /etc/ksc-pri/${{ inputs.environment }}.env
+#           IMAGE_TAG: ${{ needs.publish.outputs.image_tag }}
+#         run: |
+#           test -r "$DEPLOY_ENV_FILE"
+#           export IMAGE_TAG
+#           docker compose --env-file "$DEPLOY_ENV_FILE" -f compose.production.yml config --quiet
+#           docker compose --env-file "$DEPLOY_ENV_FILE" -f compose.production.yml pull
+#           docker compose --env-file "$DEPLOY_ENV_FILE" -f compose.production.yml --profile operations run --rm migrate
+#           docker compose --env-file "$DEPLOY_ENV_FILE" -f compose.production.yml up -d --wait
+#           . "$DEPLOY_ENV_FILE"
+#           test "$(curl -fsS -o /dev/null -w '%{http_code}' "$CANONICAL_URL/ready")" = "200"
+#           curl -fsS "$CANONICAL_URL/version" | grep -F "$IMAGE_TAG"
+#           curl -fsS "$CANONICAL_URL/" >/dev/null
+#           curl -fsS "$CANONICAL_URL/documents" >/dev/null

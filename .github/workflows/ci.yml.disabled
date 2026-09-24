@@ -1,0 +1,89 @@
+# CI disabled for now (2026-09-24). To restore: rename to ci.yml and uncomment.
+# name: CI
+# 
+# on:
+#   push:
+#     branches: [main]
+#   pull_request:
+# 
+# concurrency:
+#   group: ci-${{ github.ref }}
+#   cancel-in-progress: true
+# 
+# jobs:
+#   frontend:
+#     name: Frontend — lint, typecheck, test, build
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: pnpm/action-setup@v4
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 22
+#           cache: pnpm
+#       - run: pnpm install --frozen-lockfile
+#       - run: pnpm format:check
+#       - run: pnpm lint
+#       - run: pnpm typecheck
+#       - run: pnpm test
+#       - run: pnpm build
+#         env:
+#           NEXT_TELEMETRY_DISABLED: 1
+# 
+#   backend:
+#     name: Backend — lint, typecheck, test
+#     runs-on: ubuntu-latest
+#     services:
+#       postgres:
+#         image: pgvector/pgvector:pg16
+#         env:
+#           POSTGRES_USER: ksc
+#           POSTGRES_PASSWORD: ksc_dev_password
+#           POSTGRES_DB: ksc
+#         ports: ["5432:5432"]
+#         options: >-
+#           --health-cmd "pg_isready -U ksc -d ksc"
+#           --health-interval 5s
+#           --health-timeout 5s
+#           --health-retries 10
+#       redis:
+#         image: redis:7-alpine
+#         ports: ["6379:6379"]
+#         options: >-
+#           --health-cmd "redis-cli ping"
+#           --health-interval 5s
+#           --health-timeout 3s
+#           --health-retries 10
+#     env:
+#       DATABASE_URL: postgresql+psycopg://ksc:ksc_dev_password@localhost:5432/ksc
+#       REDIS_URL: redis://localhost:6379/0
+#       MINIO_ENDPOINT: localhost:9000
+#       MINIO_ACCESS_KEY: ksc_minio
+#       MINIO_SECRET_KEY: ksc_minio_dev_password
+#       MINIO_BUCKET_DOCUMENTS: ksc-documents
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: "3.12"
+#           cache: pip
+#           cache-dependency-path: apps/api/pyproject.toml
+#       - name: Start MinIO
+#         run: |
+#           docker run -d --name minio -p 9000:9000 \
+#             -e MINIO_ROOT_USER=ksc_minio -e MINIO_ROOT_PASSWORD=ksc_minio_dev_password \
+#             quay.io/minio/minio:latest server /data
+#           for i in $(seq 1 30); do
+#             curl -fsS http://localhost:9000/minio/health/live && break || sleep 1
+#           done
+#           docker run --rm --network host \
+#             -e MINIO_ROOT_USER=ksc_minio -e MINIO_ROOT_PASSWORD=ksc_minio_dev_password \
+#             --entrypoint /bin/sh quay.io/minio/mc:latest -c \
+#             'mc alias set local http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" && mc mb --ignore-existing local/ksc-documents'
+#       - run: python -m pip install --upgrade pip && pip install -e "apps/api[dev]"
+#       - run: ruff check .
+#       - run: ruff format --check .
+#       - run: mypy
+#       - run: pytest
+#       - name: Migration drift check
+#         run: alembic -c apps/api/alembic.ini upgrade head && alembic -c apps/api/alembic.ini check
