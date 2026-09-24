@@ -13,8 +13,10 @@ Live checkpoint. Repository state wins over this note.
   external deployment/alerting gates are intentionally deferred until public
   deployment is desired.
 - Phase 18 Pass A implementation commit: `5733533`.
-- Push state (2026-09-22): `main` fast-forwarded to `01cb693` and pushed;
-  annotated tag `phase-15-complete` and the Phase 15 feature branch were pushed.
+- Push state (2026-09-24): Phase 18 branch
+  `feat/phase-18-research-experience-visual-excellence` is pushed through
+  checkpoint commit `2e726e5`. No Phase 18 tag exists and Phase 18 is not
+  complete. `main` remains at the pushed Phase 15 baseline `01cb693`.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. The Phase 17
   branch and tag are pushed, and the branch is not merged to `main`.
