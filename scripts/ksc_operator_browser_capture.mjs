@@ -26,7 +26,7 @@
  *
  *   pnpm exec node scripts/ksc_operator_browser_capture.mjs --print-chrome-command
  *   pnpm exec node scripts/ksc_operator_browser_capture.mjs --probe --attach
- *   pnpm exec node scripts/ksc_operator_browser_capture.mjs --attach \
+ *   pnpm exec node scripts/ksc_operator_browser_capture.mjs --attach [--strata plan.json] \
  *     --case KSC-BC-2020-06 --target-new 3 --output ~/Downloads/ksc-bc-2020-06-phase13-corpus-02
  */
 
@@ -65,6 +65,7 @@ function parseArgs(argv) {
     maxListingPages: 6,
     attach: null,
     printChromeCommand: false,
+    strata: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -81,6 +82,7 @@ function parseArgs(argv) {
     else if (a === "--captured-by") args.capturedBy = next();
     else if (a === "--max-listing-pages") args.maxListingPages = Number(next());
     else if (a === "--probe") args.probe = true;
+    else if (a === "--strata") args.strata = resolve(next());
     else if (a === "--attach") {
       args.attach = argv[i + 1] && !argv[i + 1].startsWith("--") ? next() : "http://127.0.0.1:9222";
     } else if (a === "--print-chrome-command") args.printChromeCommand = true;
@@ -710,6 +712,34 @@ const STRATA = [
   },
 ];
 const SQI_QUOTA = 6;
+const STRATUM_KEYS = new Set([
+  "key", "quota", "record", "sort", "desc", "filingNumber", "year", "date", "startPage",
+  "maxPages", "submitter", "level", "filingType", "language", "perAccused",
+]);
+
+// A gap-driven plan (Phase 19B) replaces the built-in strata. Only listing
+// filters of the public search form are accepted; nothing else is navigable.
+function loadStrata(path) {
+  if (!path) return STRATA;
+  const plan = JSON.parse(readFileSync(path, "utf8"));
+  const strata = Array.isArray(plan) ? plan : plan.strata;
+  if (!Array.isArray(strata) || !strata.length) throw new Error(`no strata in ${path}`);
+  for (const stratum of strata) {
+    for (const key of Object.keys(stratum)) {
+      if (!STRATUM_KEYS.has(key)) throw new Error(`unsupported stratum field ${key}`);
+    }
+    if (!["stl_filing", "stl_transcript"].includes(stratum.record)) {
+      throw new Error(`stratum ${stratum.key}: record must be stl_filing or stl_transcript`);
+    }
+    if (!(Number.isInteger(stratum.quota) && stratum.quota > 0)) {
+      throw new Error(`stratum ${stratum.key}: quota must be a positive integer`);
+    }
+    if (stratum.date && !/^\d{2}\/\d{2}\/\d{4}$/.test(stratum.date)) {
+      throw new Error(`stratum ${stratum.key}: date must be dd/mm/yyyy as listed`);
+    }
+  }
+  return strata;
+}
 const ACCUSED = [/Tha[cçҫ]i/i, /Veseli/i, /Selimi/i, /Krasniqi/i];
 
 function listingUrl(args, stratum, pageNo) {
@@ -936,7 +966,8 @@ async function collect(context, page, args) {
     return rec;
   }
 
-  for (const stratum of STRATA) {
+  const strata = loadStrata(args.strata);
+  for (const stratum of strata) {
     if (stopReached()) break;
     let taken = 0;
     const perAccused = new Map();
@@ -954,6 +985,7 @@ async function collect(context, page, args) {
         if (!item.href || item.case_number !== args.case) continue;
         if (!/pdf/i.test(item.format ?? "")) continue;
         if (stratum.year && !item.date?.endsWith(String(stratum.year))) continue;
+        if (stratum.date && item.date !== stratum.date) continue;
         // Scope: English and Albanian only (the project's languages; the
         // importer's classification parser is EN/SQ).
         if (!/\((eng|sqi)\)/i.test(item.language ?? "")) continue;
@@ -1054,7 +1086,7 @@ function captureNotes(args, selected, summary) {
     "## Selection",
     "",
     "Records were taken from these public listings, in order, with per-listing quotas:",
-    ...STRATA.map((s) => `- ${s.desc} (quota ${s.quota})`),
+    ...loadStrata(args.strata).map((s) => `- ${s.desc} (quota ${s.quota})`),
     `- Albanian translations linked from selected English detail pages (quota ${SQI_QUOTA})`,
     "",
     "Records already represented in the configured corpus/inventory were skipped by repository doc_id and by",
