@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -27,6 +27,7 @@ from ksc_api.models import (
     DocumentParagraph,
     DocumentVersion,
     EntityKind,
+    Hearing,
     IdentifierKind,
     RecordIdentifier,
     ResolutionMethod,
@@ -87,6 +88,8 @@ class Resolution:
     exhibit_id: uuid.UUID | None = None
     witness_id: uuid.UUID | None = None
     target_pdf_page_index: int | None = None
+    # Machine-readable HOW: the named rule that produced this terminal state.
+    rule: str = ""
 
 
 def canonical_identifier(raw: str) -> str:
@@ -187,8 +190,13 @@ def extract_citations(text: str) -> list[ExtractedCitation]:
 
 
 def _identifier_aliases(document: Document) -> set[str]:
-    aliases = {document.official_ref, document.official_ref.split("/", 1)[-1]}
-    if document.filing_number:
+    tail = document.official_ref.split("/", 1)[-1]
+    aliases = {document.official_ref, tail}
+    # A bare filing number names the base filing only. Annexes (F00002/A01)
+    # and subcase filings (IA042/F00002) carry it too but are not that filing.
+    if document.filing_number and canonical_identifier(tail) == canonical_identifier(
+        document.filing_number
+    ):
         aliases.add(document.filing_number)
     return {canonical_identifier(alias) for alias in aliases}
 
@@ -368,6 +376,80 @@ def _version_for_document_coordinate(
     return pool
 
 
+_SUBCASE_SOURCE_RE = re.compile(r"/((?:IA|PL)\d{3})/", re.IGNORECASE)
+_BARE_FILING_RE = re.compile(r"^F\d{5}(?:/|$)", re.IGNORECASE)
+_UNPADDED_RE = re.compile(r"^([WP])(\d{4})$", re.IGNORECASE)
+_BASE_FILING_RE = re.compile(r"^((?:(?:IA|PL)\d{3}/)?F\d{5})", re.IGNORECASE)
+
+
+def _hearing_date(value: int) -> date | None:
+    """`T.20240429` cites a transcript by hearing date, never by page."""
+    text = str(value)
+    if len(text) != 8:
+        return None
+    try:
+        parsed = date(int(text[:4]), int(text[4:6]), int(text[6:]))
+    except ValueError:
+        return None
+    # The case record begins in 2020; a future date cannot be a held hearing.
+    return parsed if date(2020, 1, 1) <= parsed <= datetime.now(UTC).date() else None
+
+
+def _unresolved_rule(session: Session, case: Case, identifier: str) -> str:
+    """Distinguish a held filing cited in an unheld version from an unheld target."""
+    bare = canonical_identifier(identifier).removeprefix(f"{case.case_number.upper()}/")
+    base = _BASE_FILING_RE.match(bare)
+    if base is not None and base.group(1) != bare:
+        rows = _candidate_rows(session, case, base.group(1))
+        if any(row.entity_kind == EntityKind.DOCUMENT for row in rows):
+            return "unresolved.version_not_held"
+    return "unresolved.target_not_held"
+
+
+def _resolve_by_hearing_date(
+    session: Session, case: Case, hearing_day: date, source_version_ref: str
+) -> Resolution:
+    rows = session.execute(
+        select(Transcript, DocumentVersion)
+        .join(Hearing, Hearing.id == Transcript.hearing_id)
+        .join(DocumentVersion, DocumentVersion.id == Transcript.document_version_id)
+        .where(Hearing.case_id == case.id, Hearing.hearing_date == hearing_day)
+    ).all()
+    if not rows:
+        return Resolution(
+            ResolutionState.UNRESOLVED,
+            ResolutionMethod.PATTERN,
+            UNRESOLVED_DISPLAY,
+            "no held transcript for the cited hearing date",
+            rule="unresolved.transcript_date_not_held",
+        )
+    source_is_sqi = source_version_ref.upper().endswith("/SQI")
+    matched = [
+        (transcript, version)
+        for transcript, version in rows
+        if version.official_version_ref.upper().endswith("/SQI") == source_is_sqi
+    ]
+    if len(matched) != 1:
+        return Resolution(
+            ResolutionState.AMBIGUOUS,
+            ResolutionMethod.PATTERN,
+            UNRESOLVED_DISPLAY,
+            "hearing date maps to several held transcript versions",
+            sorted(version.official_version_ref for _, version in rows),
+            rule="ambiguous.transcript_date",
+        )
+    transcript, version = matched[0]
+    return Resolution(
+        ResolutionState.RESOLVED,
+        ResolutionMethod.PATTERN,
+        f"{transcript.official_ref or version.official_version_ref} · {hearing_day.isoformat()}",
+        "unique held transcript for the cited hearing date in the citing language",
+        document_version_id=version.id,
+        transcript_id=transcript.id,
+        rule="transcript.hearing_date",
+    )
+
+
 def resolve_extracted(
     session: Session,
     case: Case,
@@ -383,6 +465,7 @@ def resolve_extracted(
             ResolutionMethod.PATTERN,
             UNRESOLVED_DISPLAY,
             f"reference names different case {case_match.group(1)}",
+            rule="invalid.other_case",
         )
     if extracted.target_line_from is not None:
         if (
@@ -396,9 +479,21 @@ def resolve_extracted(
                 ResolutionMethod.PATTERN,
                 UNRESOLVED_DISPLAY,
                 "transcript line range is outside the printed 1-25 line grid",
+                rule="invalid.transcript_line_grid",
             )
 
     if identifier.startswith("T.") and extracted.target_page is not None:
+        if extracted.target_page >= 10_000_000:
+            hearing_day = _hearing_date(extracted.target_page)
+            if hearing_day is not None:
+                return _resolve_by_hearing_date(session, case, hearing_day, source_version_ref)
+            return Resolution(
+                ResolutionState.UNRESOLVED,
+                ResolutionMethod.PATTERN,
+                UNRESOLVED_DISPLAY,
+                "transcript reference is neither a printed page nor a valid hearing date",
+                rule="unresolved.malformed_transcript_reference",
+            )
         transcripts = list(
             session.scalars(
                 select(Transcript).where(
@@ -414,6 +509,7 @@ def resolve_extracted(
                 ResolutionMethod.PATTERN,
                 UNRESOLVED_DISPLAY,
                 "no held transcript contains the printed page",
+                rule="unresolved.transcript_page_not_held",
             )
         if len(transcripts) > 1:
             refs = sorted(t.official_ref or str(t.id) for t in transcripts)
@@ -423,6 +519,7 @@ def resolve_extracted(
                 UNRESOLVED_DISPLAY,
                 "printed transcript page occurs in more than one held transcript",
                 refs,
+                rule="ambiguous.transcript_page",
             )
         transcript = transcripts[0]
         segment = None
@@ -448,6 +545,7 @@ def resolve_extracted(
                     ResolutionMethod.PATTERN,
                     UNRESOLVED_DISPLAY,
                     "held transcript does not contain the requested line range",
+                    rule="invalid.transcript_line_missing",
                 )
         display = f"{transcript.official_ref} · p. {extracted.target_page}"
         if extracted.target_line_from is not None:
@@ -461,15 +559,40 @@ def resolve_extracted(
             transcript_id=transcript.id,
             transcript_segment_id=segment.id if segment is not None else None,
             target_pdf_page_index=(segment.pdf_page_index if segment is not None else None),
+            rule="transcript.page_line" if segment is not None else "transcript.page_range",
         )
 
+    subcase = _SUBCASE_SOURCE_RE.search(source_version_ref)
+    if subcase is not None and _BARE_FILING_RE.match(identifier):
+        # Inside an appeal/other subcase filing a bare F-number may name the
+        # subcase's own record or the main case's; the text does not say which.
+        base = canonical_identifier(identifier)
+        return Resolution(
+            ResolutionState.AMBIGUOUS,
+            ResolutionMethod.EXACT_ID,
+            UNRESOLVED_DISPLAY,
+            "bare filing number cited inside a subcase filing; main case vs subcase not stated",
+            [
+                f"{case.case_number}/{base}",
+                f"{case.case_number}/{subcase.group(1).upper()}/{base}",
+            ],
+            rule="ambiguous.subcase_bare_filing",
+        )
+    rule = "identifier.exact"
     rows = _preferred_rows(_candidate_rows(session, case, identifier), identifier)
+    unpadded = _UNPADDED_RE.match(identifier)
+    if not rows and unpadded is not None:
+        # P1070 / W4018 are the same official numbers as P01070 / W04018.
+        padded = f"{unpadded.group(1).upper()}0{unpadded.group(2)}"
+        rows = _preferred_rows(_candidate_rows(session, case, padded), padded)
+        rule = "identifier.zero_padded"
     if not rows:
         return Resolution(
             ResolutionState.UNRESOLVED,
             ResolutionMethod.EXACT_ID,
             UNRESOLVED_DISPLAY,
             "identifier is syntactically valid but is not in the controlled held corpus",
+            rule=_unresolved_rule(session, case, identifier),
         )
     if len(rows) > 1:
         refs = sorted(row.identifier for row in rows)
@@ -479,6 +602,7 @@ def resolve_extracted(
             UNRESOLVED_DISPLAY,
             "identifier maps to multiple held records",
             refs,
+            rule="ambiguous.identifier",
         )
     row = rows[0]
     document_id = row.document_id
@@ -499,6 +623,7 @@ def resolve_extracted(
                 ResolutionMethod.EXACT_ID,
                 UNRESOLVED_DISPLAY,
                 "held document has no parsed target at the requested coordinate",
+                rule="invalid.coordinate_missing",
             )
         if len(versions) > 1:
             refs = sorted(version.official_version_ref for version in versions)
@@ -508,6 +633,7 @@ def resolve_extracted(
                 UNRESOLVED_DISPLAY,
                 "coordinate exists in multiple held versions",
                 refs,
+                rule="ambiguous.coordinate_versions",
             )
         version_id = versions[0].id
     page_row = None
@@ -524,6 +650,7 @@ def resolve_extracted(
                 ResolutionMethod.EXACT_ID,
                 UNRESOLVED_DISPLAY,
                 "held version has no requested printed page",
+                rule="invalid.page_missing",
             )
     ref = row.identifier
     display = ref
@@ -544,6 +671,7 @@ def resolve_extracted(
         exhibit_id=row.exhibit_id,
         witness_id=row.witness_id,
         target_pdf_page_index=page_row.pdf_page_index if page_row is not None else None,
+        rule=rule,
     )
 
 
@@ -552,6 +680,7 @@ def apply_resolution(citation: Citation, resolution: Resolution) -> None:
     citation.resolution_method = resolution.method
     citation.display = resolution.display
     citation.resolution_detail = resolution.detail
+    citation.resolution_rule = resolution.rule or None
     citation.candidate_identifiers = resolution.candidate_identifiers
     citation.target_document_id = resolution.document_id
     citation.target_document_version_id = resolution.document_version_id
