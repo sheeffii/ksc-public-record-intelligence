@@ -29,6 +29,7 @@ from ksc_api.schemas.records import (
     FindingSummary,
     IncidentRead,
     NetworkRead,
+    OrganizationRead,
     PersonRead,
     RelationshipRead,
     SearchRead,
@@ -127,6 +128,18 @@ def list_people(
 @router.get("/people/{slug}", response_model=PersonRead)
 def read_person(slug: str, repo: Repo) -> PersonRead:
     return _or_404(repo.get_person(slug), "person")
+
+
+@router.get("/organizations", response_model=Page[OrganizationRead])
+def list_organizations(
+    repo: Repo, limit: Limit = DEFAULT_PAGE_SIZE, offset: Offset = 0, q: str | None = None
+) -> Page[OrganizationRead]:
+    return repo.list_organizations(limit=limit, offset=offset, q=q)
+
+
+@router.get("/organizations/{slug}", response_model=OrganizationRead)
+def read_organization(slug: str, repo: Repo) -> OrganizationRead:
+    return _or_404(repo.get_organization(slug), "organization")
 
 
 # ------------------------------------------------------------- witnesses --

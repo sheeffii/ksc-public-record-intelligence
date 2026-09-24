@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -121,6 +121,66 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         JSONB, nullable=False, default=list, server_default="[]"
     )
     description: Mapped[str | None] = mapped_column(Text)
+
+
+class EntityOccurrence(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """An exact public-source occurrence behind an actor/exhibit projection."""
+
+    __tablename__ = "entity_occurrences"
+    __table_args__ = (
+        CheckConstraint(
+            "num_nonnulls(person_id, witness_id, organization_id, exhibit_id) = 1",
+            name="exactly_one_entity",
+        ),
+        CheckConstraint("char_start >= 0", name="char_start_non_negative"),
+        CheckConstraint("char_end >= char_start", name="char_range"),
+        UniqueConstraint(
+            "document_version_id",
+            "transcript_segment_id",
+            "char_start",
+            "char_end",
+            "person_id",
+            "witness_id",
+            "organization_id",
+            "exhibit_id",
+            name="uq_entity_occurrences_source_entity",
+        ),
+    )
+
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("cases.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    person_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("persons.id", ondelete="CASCADE"), index=True
+    )
+    witness_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("witnesses.id", ondelete="CASCADE"), index=True
+    )
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    exhibit_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("exhibits.id", ondelete="CASCADE"), index=True
+    )
+    document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="CASCADE"), nullable=False
+    )
+    transcript_segment_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("transcript_segments.id", ondelete="CASCADE")
+    )
+    page_number: Mapped[int | None] = mapped_column(Integer)
+    pdf_page_index: Mapped[int | None] = mapped_column(Integer)
+    line_from: Mapped[int | None] = mapped_column(Integer)
+    line_to: Mapped[int | None] = mapped_column(Integer)
+    char_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    char_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    occurrence_text: Mapped[str] = mapped_column(Text, nullable=False)
+    extraction_origin: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="deterministic", server_default="deterministic"
+    )
+    review_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
 
 
 class Location(UUIDPrimaryKeyMixin, TimestampMixin, Base):

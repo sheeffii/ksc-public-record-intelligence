@@ -84,6 +84,8 @@ class Resolution:
     document_version_id: uuid.UUID | None = None
     transcript_id: uuid.UUID | None = None
     transcript_segment_id: uuid.UUID | None = None
+    exhibit_id: uuid.UUID | None = None
+    witness_id: uuid.UUID | None = None
     target_pdf_page_index: int | None = None
 
 
@@ -539,6 +541,8 @@ def resolve_extracted(
         document_id=document_id,
         document_version_id=version_id,
         transcript_id=row.transcript_id,
+        exhibit_id=row.exhibit_id,
+        witness_id=row.witness_id,
         target_pdf_page_index=page_row.pdf_page_index if page_row is not None else None,
     )
 
@@ -553,6 +557,8 @@ def apply_resolution(citation: Citation, resolution: Resolution) -> None:
     citation.target_document_version_id = resolution.document_version_id
     citation.target_transcript_id = resolution.transcript_id
     citation.target_transcript_segment_id = resolution.transcript_segment_id
+    citation.target_exhibit_id = resolution.exhibit_id
+    citation.target_witness_id = resolution.witness_id
     citation.target_pdf_page_index = resolution.target_pdf_page_index
     if resolution.state == ResolutionState.RESOLVED:
         citation.resolution_confidence = Decimal("1.00")

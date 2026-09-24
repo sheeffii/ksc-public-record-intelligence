@@ -267,6 +267,7 @@ export interface ApiExhibit {
   official_exhibit_id: string;
   title: string;
   description: string | null;
+  status: string;
   tendered_by: ApiParty | null;
   through_witness_code: string | null;
   admitted_date: string | null;

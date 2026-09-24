@@ -71,6 +71,9 @@ class Exhibit(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     official_exhibit_id: Mapped[str] = mapped_column(String(64), nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="unknown", server_default="unknown"
+    )
     tendered_by: Mapped[Party | None] = mapped_column(db_enum(Party, name="party"))
     through_witness_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("witnesses.id", ondelete="SET NULL")

@@ -89,12 +89,16 @@ def test_person_exhibit_incident_details(demo_client):
     assert witness["counts"]["incidents"] == 1
     assert witness["counts"]["citations_resolved"] == 1
     exhibit = demo_client.get(f"{V1}/exhibits/P-DEMO-001").json()
+    assert exhibit["status"] == "unknown"
     assert exhibit["through_witness_code"] == "W-DEMO-002"
     assert exhibit["document_version_ref"] == "F-DEMO-002"
     incident = demo_client.get(f"{V1}/incidents/demo-incident-001").json()
     assert incident["location"] == "Demo Village"
     assert incident["date_precision"] == "range"
     assert demo_client.get(f"{V1}/people/nobody").status_code == 404
+    organization = demo_client.get(f"{V1}/organizations/demo-unit").json()
+    assert organization["name"] == "Demo Unit"
+    assert organization["name_variants"] == ["Demo Unit", "Njësia Demo"]
 
 
 def test_finding_detail_exposes_structured_matrix_and_source_audit(demo_client):

@@ -139,6 +139,15 @@ class PersonRead(ReadModel):
     counts: ReferenceCounts
 
 
+class OrganizationRead(ReadModel):
+    slug: str
+    name: str
+    kind: str | None
+    name_variants: list[str]
+    description: str | None
+    counts: ReferenceCounts
+
+
 class WitnessPublic(ReadModel):
     display_name: str
     called_by: Party | None
@@ -167,6 +176,7 @@ class ExhibitRead(ReadModel):
     official_exhibit_id: str
     title: str
     description: str | None
+    status: str
     tendered_by: Party | None
     through_witness_code: str | None
     admitted_date: date | None

@@ -58,6 +58,8 @@ from ksc_ingestion.probe import probe, record_probe
 from ksc_ingestion.quality_gate import report_to_table, run_gate, write_report
 from ksc_ingestion.sources import NotOfficialSourceError
 from ksc_ingestion.storage import InMemoryObjectStore, MinioObjectStore, ObjectStore
+from ksc_ingestion.structured_projection import Phase17StructuredPipeline
+from ksc_ingestion.structured_quality_gate import run_phase17c_gate, write_phase17c_report
 
 log = logging.getLogger(__name__)
 
@@ -177,6 +179,35 @@ def cmd_phase17_report(args: argparse.Namespace) -> int:
         f"indexed={report.counts.indexed_versions} out={args.out}"
     )
     return 0
+
+
+def cmd_build_structured(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    result = Phase17StructuredPipeline(get_sessionmaker(), case_number=settings.case_id).run()
+    print(
+        f"people={result.people} witnesses={result.witnesses} "
+        f"organizations={result.organizations} exhibits={result.exhibits} "
+        f"occurrences={result.occurrences} review_required={result.review_required}"
+    )
+    return 0
+
+
+def cmd_gate_phase17c(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with get_sessionmaker()() as session:
+        case = session.scalar(select(Case).where(Case.case_number == settings.case_id))
+        if case is None:
+            print(f"case {settings.case_id} is not seeded", file=sys.stderr)
+            return 2
+        report = run_phase17c_gate(session, case, args.generated_at)
+    if args.json:
+        write_phase17c_report(report, Path(args.json))
+    print(
+        f"people={report.people} witnesses={report.witnesses} organizations={report.organizations} "
+        f"exhibits={report.exhibits} occurrences={report.occurrences} "
+        f"review_required={report.review_required} passed={str(report.passed).lower()}"
+    )
+    return 0 if report.passed else 1
 
 
 def cmd_queue_artifacts(args: argparse.Namespace) -> int:
@@ -585,6 +616,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_phase17_report.add_argument("--generated-at", type=date.fromisoformat, default=date.today())
     p_phase17_report.add_argument("--out", required=True)
     p_phase17_report.set_defaults(func=cmd_phase17_report)
+    p_structured = sub.add_parser(
+        "build-structured", help="build deterministic Phase 17 actor and exhibit projections"
+    )
+    p_structured.set_defaults(func=cmd_build_structured)
+    p_structured_gate = sub.add_parser(
+        "gate-phase17c", help="audit structured projections and exact provenance"
+    )
+    p_structured_gate.add_argument("--generated-at", type=date.fromisoformat, default=date.today())
+    p_structured_gate.add_argument("--json")
+    p_structured_gate.set_defaults(func=cmd_gate_phase17c)
 
     p_queue = sub.add_parser(
         "queue-artifacts", help="enqueue missing bytes for already-known public versions"

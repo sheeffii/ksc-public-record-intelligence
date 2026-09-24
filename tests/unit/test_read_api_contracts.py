@@ -32,6 +32,8 @@ def test_read_routes_are_registered_under_v1(client):
         "/api/v1/document-versions/{version_ref}/paragraphs",
         "/api/v1/people",
         "/api/v1/people/{slug}",
+        "/api/v1/organizations",
+        "/api/v1/organizations/{slug}",
         "/api/v1/witnesses",
         "/api/v1/witnesses/{code}",
         "/api/v1/exhibits",

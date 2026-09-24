@@ -40,6 +40,7 @@ from ksc_api.models import (
     DocumentSection,
     DocumentVersion,
     EntityKind,
+    EntityOccurrence,
     Event,
     Exhibit,
     Finding,
@@ -96,6 +97,7 @@ from ksc_api.schemas.records import (
     JudgmentSectionRead,
     JudgmentStructureRead,
     NetworkRead,
+    OrganizationRead,
     PersonRead,
     ReferenceCounts,
     RelationshipRead,
@@ -192,6 +194,42 @@ class RecordRepository:
                 ).all()
             }
 
+        occurrence_fk_name = {
+            EntityKind.PERSON: "person_id",
+            EntityKind.WITNESS: "witness_id",
+            EntityKind.ORGANIZATION: "organization_id",
+            EntityKind.EXHIBIT: "exhibit_id",
+        }.get(kind)
+        occurrence_documents: dict[uuid.UUID, int] = {}
+        occurrence_transcripts: dict[uuid.UUID, int] = {}
+        if occurrence_fk_name is not None:
+            occurrence_fk = getattr(EntityOccurrence, occurrence_fk_name)
+            occurrence_documents = {
+                row[0]: int(row[1])
+                for row in self.session.execute(
+                    select(
+                        occurrence_fk,
+                        func.count(func.distinct(EntityOccurrence.document_version_id)),
+                    )
+                    .where(occurrence_fk.in_(id_list))
+                    .group_by(occurrence_fk)
+                ).all()
+            }
+            occurrence_transcripts = {
+                row[0]: int(row[1])
+                for row in self.session.execute(
+                    select(
+                        occurrence_fk,
+                        func.count(func.distinct(EntityOccurrence.transcript_segment_id)),
+                    )
+                    .where(
+                        occurrence_fk.in_(id_list),
+                        EntityOccurrence.transcript_segment_id.is_not(None),
+                    )
+                    .group_by(occurrence_fk)
+                ).all()
+            }
+
         citation_counts: dict[uuid.UUID, int] = {}
         citation_fk = _CITATION_FK.get(kind)
         if citation_fk is not None:
@@ -211,9 +249,11 @@ class RecordRepository:
         return {
             entity_id: ReferenceCounts(
                 relationships=totals.get(entity_id, 0),
-                document_mentions=_n(entity_id, EntityKind.DOCUMENT),
+                document_mentions=max(
+                    _n(entity_id, EntityKind.DOCUMENT), occurrence_documents.get(entity_id, 0)
+                ),
                 transcript_mentions=_n(entity_id, EntityKind.HEARING)
-                + segment_counts.get(entity_id, 0),
+                + max(segment_counts.get(entity_id, 0), occurrence_transcripts.get(entity_id, 0)),
                 exhibit_refs=_n(entity_id, EntityKind.EXHIBIT),
                 findings=_n(entity_id, EntityKind.FINDING),
                 witnesses_who_referred=_n(entity_id, EntityKind.WITNESS),
@@ -418,6 +458,42 @@ class RecordRepository:
             return None
         counts = self._counts(EntityKind.PERSON, [person.id]).get(person.id, mappers.ZERO_COUNTS)
         return mappers.to_person(person, counts)
+
+    # ------------------------------------------------------ organizations --
+    def list_organizations(
+        self, *, limit: int, offset: int, q: str | None = None
+    ) -> Page[OrganizationRead]:
+        stmt = (
+            select(Organization)
+            .where(Organization.case_id == self.case.id)
+            .order_by(Organization.name)
+        )
+        if q:
+            stmt = stmt.where(_ilike_any(q, Organization.name, Organization.slug))
+        rows, total = self._paginate(stmt, limit, offset)
+        counts = self._counts(EntityKind.ORGANIZATION, [row.id for row in rows])
+        return Page(
+            items=[
+                mappers.to_organization(row, counts.get(row.id, mappers.ZERO_COUNTS))
+                for row in rows
+            ],
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
+
+    def get_organization(self, slug: str) -> OrganizationRead | None:
+        organization = self.session.scalar(
+            select(Organization).where(
+                Organization.case_id == self.case.id, Organization.slug == slug
+            )
+        )
+        if organization is None:
+            return None
+        counts = self._counts(EntityKind.ORGANIZATION, [organization.id]).get(
+            organization.id, mappers.ZERO_COUNTS
+        )
+        return mappers.to_organization(organization, counts)
 
     # ---------------------------------------------------------- witnesses --
     def list_witnesses(self, *, limit: int, offset: int) -> Page[WitnessRead]:

@@ -280,6 +280,7 @@ export const exhibit: ApiExhibit = {
   official_exhibit_id: "P-DEMO-001",
   title: "Demo exhibit (synthetic document)",
   description: null,
+  status: "unknown",
   tendered_by: "spo",
   through_witness_code: "W-DEMO-002",
   admitted_date: "2023-06-01",

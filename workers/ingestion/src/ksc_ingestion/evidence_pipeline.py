@@ -23,6 +23,7 @@ from ksc_api.models import (
     DocumentVersion,
     EntityKind,
     Event,
+    Exhibit,
     GraphNode,
     Hearing,
     Party,
@@ -32,6 +33,7 @@ from ksc_api.models import (
     ResolutionState,
     SourceRecord,
     Transcript,
+    Witness,
 )
 
 _NS = uuid.UUID("8d01c04f-6f4d-4f81-8eef-1d6160634a9f")
@@ -71,6 +73,18 @@ class Phase9Pipeline:
                     Event.case_id == case.id, Event.extraction_origin == "source_metadata"
                 )
             )
+            session.flush()
+            existing_edge_keys: set[tuple[uuid.UUID, uuid.UUID, RelationshipType, uuid.UUID]] = {
+                (from_id, to_id, relationship_type, citation_id)
+                for from_id, to_id, relationship_type, citation_id in session.execute(
+                    select(
+                        Relationship.from_node_id,
+                        Relationship.to_node_id,
+                        Relationship.relationship_type,
+                        Relationship.citation_id,
+                    ).where(Relationship.case_id == case.id)
+                ).all()
+            }
 
             node_cache: dict[uuid.UUID, GraphNode] = {}
 
@@ -94,6 +108,51 @@ class Phase9Pipeline:
                 node_cache[document.id] = existing
                 return existing
 
+            def target_node(citation: Citation) -> GraphNode | None:
+                target_document = self._target_document(session, citation)
+                if target_document is not None:
+                    if target_document.visibility not in PUBLIC_VISIBILITIES:
+                        return None
+                    return node(target_document)
+                entity: Exhibit | Witness | None
+                kind: EntityKind
+                column: str
+                label: str
+                if citation.target_exhibit_id is not None:
+                    entity = session.get(Exhibit, citation.target_exhibit_id)
+                    if entity is None or entity.visibility not in PUBLIC_VISIBILITIES:
+                        return None
+                    kind, column, label = (
+                        EntityKind.EXHIBIT,
+                        "exhibit_id",
+                        entity.official_exhibit_id,
+                    )
+                elif citation.target_witness_id is not None:
+                    entity = session.get(Witness, citation.target_witness_id)
+                    if entity is None:
+                        return None
+                    kind, column, label = EntityKind.WITNESS, "witness_id", entity.code
+                else:
+                    return None
+                cached = node_cache.get(entity.id)
+                if cached is not None:
+                    return cached
+                existing = session.scalar(
+                    select(GraphNode).where(getattr(GraphNode, column) == entity.id)
+                )
+                if existing is None:
+                    existing = GraphNode(
+                        id=_id(f"{kind.value}-node", entity.id),
+                        case_id=case.id,
+                        entity_kind=kind,
+                        label=label,
+                        **{column: entity.id},
+                    )
+                    session.add(existing)
+                    session.flush()
+                node_cache[entity.id] = existing
+                return existing
+
             citations = session.scalars(
                 select(Citation)
                 .where(
@@ -110,25 +169,32 @@ class Phase9Pipeline:
                 source_doc = (
                     session.get(Document, source_version.document_id) if source_version else None
                 )
+                if source_doc is None:
+                    continue
+                if source_doc.visibility not in PUBLIC_VISIBILITIES:
+                    continue
                 target_doc = self._target_document(session, citation)
-                if source_doc is None or target_doc is None:
-                    continue
-                if (
-                    source_doc.visibility not in PUBLIC_VISIBILITIES
-                    or target_doc.visibility not in PUBLIC_VISIBILITIES
-                ):
-                    continue
-                if source_doc.id == target_doc.id:
+                if target_doc is not None and source_doc.id == target_doc.id:
                     skipped += 1
                     continue
                 source_node = node(source_doc)
-                target_node = node(target_doc)
+                cited_node = target_node(citation)
+                if cited_node is None:
+                    continue
+                edge_key = (
+                    cited_node.id,
+                    source_node.id,
+                    RelationshipType.CITED_IN,
+                    citation.id,
+                )
+                if edge_key in existing_edge_keys:
+                    continue
                 category = self._source_category(source_doc)
                 session.add(
                     Relationship(
                         id=_id("citation-edge", citation.id),
                         case_id=case.id,
-                        from_node_id=target_node.id,
+                        from_node_id=cited_node.id,
                         to_node_id=source_node.id,
                         relationship_type=RelationshipType.CITED_IN,
                         citation_id=citation.id,
@@ -143,6 +209,7 @@ class Phase9Pipeline:
                         note="The source record contains this exact resolved citation.",
                     )
                 )
+                existing_edge_keys.add(edge_key)
                 edges += 1
 
             events = 0

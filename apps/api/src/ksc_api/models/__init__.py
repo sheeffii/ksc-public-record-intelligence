@@ -5,7 +5,14 @@ relationship targets once every module is imported. Everything is registered
 on `Base.metadata` by importing this package (Alembic relies on that).
 """
 
-from ksc_api.models.actor import Location, Organization, Person, PersonAlias, Witness
+from ksc_api.models.actor import (
+    EntityOccurrence,
+    Location,
+    Organization,
+    Person,
+    PersonAlias,
+    Witness,
+)
 from ksc_api.models.ai import (
     AiOutput,
     AiOutputCitation,
@@ -144,6 +151,7 @@ __all__ = [
     "DocumentVersion",
     "DocumentVersionType",
     "EntityKind",
+    "EntityOccurrence",
     "Event",
     "ExaminationType",
     "Exhibit",

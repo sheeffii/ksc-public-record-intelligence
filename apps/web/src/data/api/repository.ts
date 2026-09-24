@@ -52,8 +52,15 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
   const client = new ApiClient(options);
 
   async function page<T>(path: string): Promise<T[]> {
-    const result = await client.get<ApiPage<T>>(path, PAGE);
-    return result?.items ?? [];
+    const items: T[] = [];
+    let offset = 0;
+    for (;;) {
+      const result = await client.get<ApiPage<T>>(path, { ...PAGE, offset });
+      if (!result) return items;
+      items.push(...result.items);
+      offset += result.items.length;
+      if (result.items.length === 0 || offset >= result.total) return items;
+    }
   }
 
   const directories: Record<DirectoryKind, () => Promise<DirectoryRow[]>> = {

@@ -45,6 +45,7 @@ PHASE14_TABLES = {
     "court_media_links",
     "media_statement_comparisons",
 }
+PHASE17_TABLES = {"entity_occurrences"}
 PHASE6_TABLES = {
     "source_records",
     "document_versions",
@@ -98,7 +99,14 @@ def test_schema_contains_phase4_foundation_and_phase6_evidence_model():
         | PHASE12_TABLES
         | PHASE13_TABLES
         | PHASE14_TABLES
+        | PHASE17_TABLES
     )
+
+
+def test_structured_occurrences_require_one_entity_and_exact_coordinates():
+    checks = _checks("entity_occurrences")
+    assert "ck_entity_occurrences_exactly_one_entity" in checks
+    assert "ck_entity_occurrences_char_range" in checks
 
 
 def test_external_media_is_public_only_and_court_status_is_provenance_guarded():

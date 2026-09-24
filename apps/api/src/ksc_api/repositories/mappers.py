@@ -24,6 +24,7 @@ from ksc_api.models import (
     GraphNode,
     Hearing,
     Incident,
+    Organization,
     Party,
     Person,
     Relationship,
@@ -55,6 +56,7 @@ from ksc_api.schemas.records import (
     HumanNoteRead,
     IncidentRead,
     JudgmentStructureRead,
+    OrganizationRead,
     PersonRead,
     ReferenceCounts,
     RelationshipRead,
@@ -189,6 +191,10 @@ def _citation_source_path(citation: Citation) -> str | None:
 def _citation_target_path(citation: Citation) -> str | None:
     if not citation.is_resolved:
         return None
+    if citation.target_witness is not None:
+        return f"/witnesses/{quote(citation.target_witness.code, safe='')}"
+    if citation.target_exhibit is not None:
+        return "/exhibits"
     if citation.target_transcript is not None:
         transcript = citation.target_transcript
         version = transcript.document_version
@@ -306,6 +312,17 @@ def to_person(person: Person, counts: ReferenceCounts) -> PersonRead:
     )
 
 
+def to_organization(organization: Organization, counts: ReferenceCounts) -> OrganizationRead:
+    return OrganizationRead(
+        slug=organization.slug,
+        name=organization.name,
+        kind=organization.kind,
+        name_variants=list(organization.name_variants),
+        description=organization.description,
+        counts=counts,
+    )
+
+
 def to_witness(witness: Witness, counts: ReferenceCounts) -> WitnessRead:
     """Fails closed: only an explicitly PUBLIC witness with a stored public
     name gets a `public` block."""
@@ -328,6 +345,7 @@ def to_exhibit(exhibit: Exhibit, counts: ReferenceCounts) -> ExhibitRead:
         official_exhibit_id=exhibit.official_exhibit_id,
         title=exhibit.title,
         description=exhibit.description,
+        status=exhibit.status,
         tendered_by=exhibit.tendered_by,
         through_witness_code=(
             exhibit.through_witness.code if exhibit.through_witness is not None else None
