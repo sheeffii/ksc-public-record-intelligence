@@ -95,3 +95,19 @@ def test_repeated_printed_page_numbers_fail_closed_to_pdf_index() -> None:
     assert [page.page_number for page in parsed.pages] == [None, None]
     assert parsed.requires_review is True
     assert any("repeat" in reason for reason in parsed.review_reasons)
+
+
+def test_blank_private_session_line_grid_is_not_a_review_reason() -> None:
+    # A private-session page prints its full line grid with no text.
+    grid = parse_pdf(
+        make_pdf(["KSC-OFFICIAL", "Page 113", *[f" {n}" for n in range(1, 26)]]),
+        transcript=True,
+    )
+    assert grid.transcript_segments == [] and grid.requires_review is False
+    # A page with no line grid at all still needs review.
+    empty = parse_pdf(make_pdf(["KSC-OFFICIAL", "Page 113", "no lines here"]), transcript=True)
+    assert empty.requires_review is True
+    assert any("no transcript lines" in reason for reason in empty.review_reasons)
+    # A broken grid (missing line 2) is not recognised as a blank page.
+    broken = parse_pdf(make_pdf(["KSC-OFFICIAL", "Page 113", " 1", " 3", " 4"]), transcript=True)
+    assert broken.requires_review is True

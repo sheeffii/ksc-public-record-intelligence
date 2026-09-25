@@ -16,13 +16,14 @@ from dataclasses import dataclass, field, replace
 from pypdf import PdfReader
 
 PARSER_NAME = "ksc-native-pdf"
-PARSER_VERSION = "2"
+PARSER_VERSION = "3"
 
 _FILING_PAGE_RE = re.compile(
     r"(?m)^\s*KSC-(?:[A-Z]+-\d{4}-\d{2}|DEMO-\d{4})/.+?/(\d+)\s+of\s+(\d+)\b"
 )
 _TRANSCRIPT_PAGE_RE = re.compile(r"(?im)\b(Page|Faqe)\s+([0-9][0-9 ]*)\s*$")
 _LINE_RE = re.compile(r"^\s*(\d{1,2})\s+(\S.*)$")
+_BARE_LINE_RE = re.compile(r"^\s*(\d{1,2})\s*$")
 _PARAGRAPH_RE = re.compile(r"^\s*(\d{1,4})\.\s+(\S.*)$")
 _REDACTION_RE = re.compile(r"\[(?:PUBLIC\s+)?REDACTED(?:\s+CONTENT)?\]", re.IGNORECASE)
 _SECTION_RE = re.compile(r"^\s*((?:[IVXLCDM]+|[A-Z])\.)\s+([A-Z][A-Z0-9 ,&()'\u2019:/\-]{2,})\s*$")
@@ -173,6 +174,17 @@ def _examination_type(text: str) -> str:
     return "unknown"
 
 
+def _blank_line_grid(text: str) -> bool:
+    """True when the page's numbered lines are exactly 1..N, all empty."""
+
+    numbers = [
+        int(match.group(1))
+        for match in (_BARE_LINE_RE.match(line) for line in text.splitlines())
+        if match is not None
+    ]
+    return bool(numbers) and numbers == list(range(1, len(numbers) + 1))
+
+
 def _transcript_segments(
     pages: list[ParsedPage],
 ) -> tuple[list[ParsedTranscriptSegment], list[str]]:
@@ -193,7 +205,10 @@ def _transcript_segments(
             if match is not None:
                 numbered.append((int(match.group(1)), match.group(2).rstrip()))
         if not numbered:
-            reasons.append(f"pdf page {page.pdf_page_index}: no transcript lines")
+            # A private-session page prints its full line grid (1..N) with no
+            # text: structurally complete, nothing to segment, nothing to review.
+            if not _blank_line_grid(page.text):
+                reasons.append(f"pdf page {page.pdf_page_index}: no transcript lines")
             continue
         if len({line for line, _ in numbered}) != len(numbered):
             reasons.append(f"pdf page {page.pdf_page_index}: duplicate transcript line number")

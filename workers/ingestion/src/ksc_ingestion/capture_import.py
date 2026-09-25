@@ -60,8 +60,17 @@ PUBLIC_STATUSES: dict[str, str] = {
 # Sub-file series inside a case file: IA (interlocutory appeal) and PL
 # (protection of legality) share the `<series><nnn>-F<nnnnn>` convention.
 _DOC_ID_RE = re.compile(r"^(?:(?P<ia>(?:IA|PL)\d{3})-)?(?P<filing>F\d{5})(?P<suffix>[A-Z0-9]*)$")
-_SUFFIX_TOKENS = ("COR", "RED2", "RED")
-_ANNEX_RE = re.compile(r"^(?:ANNEX|SHTOJC[ËE])\s+(\d+)\b", re.IGNORECASE)
+# Longest token first: `COR2` (a further correction) must not split as `COR`+`2`.
+# `CONF` marks a confidential version; it is accepted only with the court's
+# page-1 reclassification-as-public stamp (see derive_references).
+_SUFFIX_TOKENS = ("COR2", "COR", "RED2", "RED", "CONF")
+# The published annex title, optionally prefixed by the repository's own
+# "Public Redacted Version of" wording ("Public Redacted Version of ANNEX 2 to …").
+_ANNEX_RE = re.compile(
+    r"^(?:public\s+redacted\s+version\s+of\s+)?(?:ANNEX|SHTOJC[ËE])\s+(\d+)\b", re.IGNORECASE
+)
+# The published title of a corrected translation ends with " - COR".
+_TITLE_COR_RE = re.compile(r"\s-\s*COR\s*$")
 _HEADER_REF_RE = re.compile(rf"{CASE_NUMBER_PATTERN}(?:/[A-Za-z0-9]+)*")
 # The classification line KSC filings print on page 1 (English / Albanian
 # wording). Matched on a space-stripped copy because text layers split words
@@ -504,6 +513,18 @@ def derive_references(r: SourceRecordEntry, header: HeaderInfo) -> References:
         ):
             version_ref, source = best, "pdf_header"
             note = f"header reference {best!r} extends published id {r.document_id!r}"
+        elif (
+            lang != _ORIGINAL_LANGUAGE
+            and best == f"{candidate_lang}/COR"
+            and _TITLE_COR_RE.search(r.title)
+        ):
+            # A corrected translation: the header and the published title both
+            # carry the COR marker the published id omits.
+            version_ref, source = best, "pdf_header"
+            note = (
+                f"header reference {best!r} marks a corrected translation of published id "
+                f"{r.document_id!r}; the published title ends in 'COR'"
+            )
         else:
             return References(
                 document_ref,
@@ -517,8 +538,23 @@ def derive_references(r: SourceRecordEntry, header: HeaderInfo) -> References:
                 f"pdf header {best!r} contradicts published id {r.document_id!r}",
             )
 
+    if "CONF" in suffix_tokens and not header.reclassification_note:
+        return References(
+            document_ref,
+            None,
+            None,
+            None,
+            candidate_lang,
+            source,
+            header_refs,
+            "ambiguous",
+            f"confidential version {r.document_id!r} without the court's reclassification stamp",
+        )
     if lang != _ORIGINAL_LANGUAGE:
         vtype = "translation"
+    elif "CONF" in suffix_tokens:
+        # A confidential (redacted) version the court reclassified as public.
+        vtype = "reclassified"
     elif r.public_status.startswith("public_redacted") or any(
         t.startswith("RED") for t in suffix_tokens
     ):

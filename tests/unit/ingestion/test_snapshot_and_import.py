@@ -190,6 +190,53 @@ def test_reclassified_only_when_the_court_stamp_is_present() -> None:
     assert plain.version_type == "original"
 
 
+def test_phase19c_reviewed_reference_forms() -> None:
+    # Prefixed annex title; the header extends the bare published id.
+    annex = derive_references(
+        _entry(
+            document_id="F01534",
+            record_type="Filing Annex",
+            title="Public Redacted Version of ANNEX 2 to Decision on a Motion",
+        ),
+        _header({f"{DEMO_CASE}/F01534/A02/RED": 224}),
+    )
+    assert annex.status == "ok" and annex.document_ref == f"{DEMO_CASE}/F01534/A02"
+    assert annex.version_ref == f"{DEMO_CASE}/F01534/A02/RED" and annex.ref_source == "pdf_header"
+    # A further correction is its own token, confirmed by the header.
+    cor2 = derive_references(
+        _entry(document_id="F03176COR2RED"), _header({f"{DEMO_CASE}/F03176/COR2/RED": 33})
+    )
+    assert cor2.version_ref == f"{DEMO_CASE}/F03176/COR2/RED"
+    assert cor2.ref_source == "published_id_confirmed_by_pdf_header"
+    assert cor2.version_type == "public_redacted" and cor2.version_label == "COR2/RED"
+    # CONF is accepted only with the court's reclassification stamp.
+    conf_refs = {f"{DEMO_CASE}/F02426/CONF/RED": 8}
+    stamped = derive_references(
+        _entry(document_id="F02426CONFRED"),
+        _header(conf_refs, "Reclassified as Public pursuant to instruction contained in CRSPD546"),
+    )
+    assert stamped.status == "ok" and stamped.version_ref == f"{DEMO_CASE}/F02426/CONF/RED"
+    assert stamped.version_type == "reclassified"
+    unstamped = derive_references(_entry(document_id="F02426CONFRED"), _header(conf_refs))
+    assert unstamped.status == "ambiguous" and unstamped.version_ref is None
+    # A corrected translation needs both the header and the title's COR marker.
+    sq = SourceLanguage(code="sqi", name="Albanian")
+    cor_refs = {f"{DEMO_CASE}/F00026/RED/sqi/COR": 239}
+    corrected = derive_references(
+        _entry(document_id="F00026RED", language=sq, title="Version i redaktuar publik - COR"),
+        _header(cor_refs),
+    )
+    assert corrected.status == "ok" and corrected.version_ref == f"{DEMO_CASE}/F00026/RED/sqi/COR"
+    assert (
+        corrected.version_type == "translation" and corrected.document_ref == f"{DEMO_CASE}/F00026"
+    )
+    untitled = derive_references(
+        _entry(document_id="F00026RED", language=sq, title="Version i redaktuar publik"),
+        _header(cor_refs),
+    )
+    assert untitled.status == "ambiguous" and "contradicts" in (untitled.note or "")
+
+
 def test_transcripts_use_a_derived_key_and_need_a_hearing_date() -> None:
     t = derive_references(
         _entry(
