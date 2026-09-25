@@ -1,7 +1,7 @@
 # Phase 21 — Design Parity & Research UX
 
 **Status:** IN PROGRESS
-**Current checkpoint:** 21A COMPLETE — stop before 21B
+**Current checkpoint:** 21B IN PROGRESS — implementation checkpoint
 **Started:** 2026-09-25
 **Branch:** `feat/phase-21-design-parity-research-ux`
 
@@ -96,10 +96,31 @@ design are never production data.
   and 260 frontend tests).
 - Phase 21 remains **IN PROGRESS**. No tag was created and 21B was not started.
 
-## 21B — Not started
+## 21B — In progress (2026-09-25)
 
 People / Witnesses; Findings; Network / Timeline; Appeal / AI / External
 Sources; Reader and remaining workflow parity.
+
+Implementation checkpoint:
+
+- implementation commit: `70ad8cf`;
+- remaining real route/artboard mappings audited against the rendered
+  `Design.html` frames;
+- People, Witnesses and Findings use the dense research explorer pattern;
+- Person and Witness dossiers use bounded, source-first research trails;
+- the real Timeline uses the approved lane/inspector composition;
+- Appeal source material is compactly compared while missing material and
+  neutral review boundaries remain explicit;
+- AI session history is bounded within the workspace;
+- Network, Reader, External Sources and Evidence Path were checked against
+  their approved patterns and kept source-safe;
+- responsive viewport captures cover the major Pass B routes at 1440px,
+  1024px and Pixel 7 with no document-level horizontal overflow;
+- audit: `docs/design/PHASE21B_DESIGN_PARITY_AUDIT.md`.
+
+Acceptance is not yet recorded. The focused full-route interaction/axe gate and
+the one-time repository regression suite are deferred to the next authorized
+step. Do not start 21C.
 
 ## 21C — Not started
 

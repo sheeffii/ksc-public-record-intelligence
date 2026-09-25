@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-25 (Phase 21 IN PROGRESS; 21A complete)
+Last updated: 2026-09-25 (Phase 21 IN PROGRESS; 21B implementation checkpoint)
 
 ## Milestones
 
@@ -28,7 +28,7 @@ Last updated: 2026-09-25 (Phase 21 IN PROGRESS; 21A complete)
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
 | **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
-| **21** | **Design parity and research UX**                                                                         | **IN PROGRESS (2026-09-25)** — 21A complete; stop before 21B                                             |
+| **21** | **Design parity and research UX**                                                                         | **IN PROGRESS (2026-09-25)** — 21B implementation checkpoint                                             |
 
 ## Roadmap
 
@@ -58,8 +58,8 @@ and audited. The 20B checkpoint adds transcript-segment anchors with
 validated line geometry, printed page-header context, page-scoped Reader reads
 and the three-layer source-native Reader. Phase 20 is complete: the 20C
 source-fidelity audit passed and the tag is `phase-20-complete`. Phase 21 has
-started on `feat/phase-21-design-parity-research-ux`; 21A is complete. Phase 21
-remains in progress, and 21B has not been authorized.
+started on `feat/phase-21-design-parity-research-ux`; 21A is complete and the
+21B implementation checkpoint is recorded. Phase 21 remains in progress.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Phase 21A checkpoint (2026-09-25)
@@ -82,7 +82,30 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
   checks at desktop and Pixel 7 sizes.
 - Implementation commit `253085c`; audit/test commit `0a3092c`.
 - `make lint`, `make typecheck` and `make test` pass (353 backend and 260
-  frontend tests). Phase 21 is not complete; 21B has not started.
+  frontend tests). Phase 21 was not complete at this checkpoint; 21B was
+  subsequently authorized.
+
+## Phase 21B implementation checkpoint (2026-09-25)
+
+- Audited the remaining real research workflows against the rendered Person,
+  Witness, Finding, Network, Timeline, Incident, Appeal, AI, Reader and Evidence
+  Path artboards.
+- Unified People, Witnesses and Findings with the dense explorer/inspector
+  system and bounded Person/Witness dossier trails to the most useful verified,
+  review-required, search-match and relationship rows.
+- Replaced the unbounded real timeline list with the seven-lane overview and
+  selected-card inspector; mobile retains a chronological list.
+- Tightened Appeal comparison density, AI session navigation and real Evidence
+  Path language. Network, External Sources and the Phase 20 Reader already
+  matched the approved structural pattern and retained their source contracts.
+- Captured the changed workflow matrix at 1440px, 1024px and Pixel 7; no
+  document-level horizontal overflow was found.
+- Focused frontend lint/typecheck and 31 relevant component tests pass. The
+  production web build passes. Per the session instruction, the broader route
+  flow/axe gate and full repository suite are deferred.
+- Audit: `docs/design/PHASE21B_DESIGN_PARITY_AUDIT.md`.
+- Implementation commit: `70ad8cf`.
+- Phase 21B is not yet accepted complete; 21C has not started.
 
 ## Completed features (Phase 4)
 

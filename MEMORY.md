@@ -6,7 +6,8 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-21-design-parity-research-ux`, created from clean
   `main` at Phase 20 closeout `1473ce6`.
-- Current milestone: **Phase 21 IN PROGRESS (2026-09-25)**; **21A COMPLETE**.
+- Current milestone: **Phase 21 IN PROGRESS (2026-09-25)**; **21B IMPLEMENTATION
+  CHECKPOINT**.
   Phase 20 is complete at tag `phase-20-complete`. Phase
   19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
   are pushed. Phase 18 is COMPLETE (tag `phase-18-complete`). Phase
@@ -32,7 +33,8 @@ Live checkpoint. Repository state wins over this note.
   Search, command-search, Evidence Explorer, Document Reader, Mobile and System
   artboards in `Design.html` were rendered and reviewed. The 21A implementation
   is `253085c`; the parity audit and focused browser suite are `0a3092c`. Phase
-  21 remains in progress; 21B is not authorized.
+  21 remains in progress; the 21B implementation checkpoint is recorded and
+  its acceptance gate remains for the next step.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
@@ -377,7 +379,8 @@ The Reader never substitutes a version or draws an anchor on another version.
 The audit spec `tests/e2e/phase20c.spec.ts` runs against the production build
 (`docker compose up -d --build api web`, then `E2E_REAL_DATA=1 pnpm e2e`).
 
-Next: Phase 21A is complete. Do not start 21B, merge to `main`, tag Phase 21 or
+Next: finish the deferred Phase 21B focused flow/accessibility and one-time
+repository acceptance gates. Do not start 21C, merge to `main`, tag Phase 21 or
 resume Phase 16 without an explicit instruction.
 
 Final state:
@@ -417,8 +420,8 @@ Do not close Phase 16.
 ## Phase 21A checkpoint
 
 Phase 21 remains IN PROGRESS. 21A is complete on
-`feat/phase-21-design-parity-research-ux`; stop before 21B pending explicit
-authorization.
+`feat/phase-21-design-parity-research-ux`; 21B was subsequently authorized and
+its implementation checkpoint is recorded below.
 
 - The shared shell, navigation and case stripe align with the approved system
   artboard while retaining every supported real route.
@@ -439,6 +442,28 @@ authorization.
 - Commits: implementation `253085c`; audit/test `0a3092c`.
 - Known differences are documented and carried into the later, unauthorized
   checkpoints. No schema, ingestion or source-native Reader contract changed.
+
+## Phase 21B implementation checkpoint
+
+- Remaining real workflows were compared with the actual Person, Witness,
+  Finding, Network, Timeline, Incident, Appeal, AI, Reader and Evidence Path
+  artboards at 1440px, 1024px and Pixel 7.
+- People, Witnesses and Findings now share the dense explorer/inspector system.
+  Person/Witness dossiers expose bounded source-first trails instead of
+  rendering thousands of rows into one page.
+- The real Timeline now uses seven date-type lanes and a selected-card
+  inspector on desktop, with the chronological list retained for mobile.
+- Appeal sources use the compact comparison composition; AI session history is
+  bounded; Evidence Path contains no real-mode demo wording.
+- No document-level horizontal overflow was found. Protected-witness,
+  citation, exhibit, external-source and Phase 20 Reader safeguards are intact.
+- Focused lint/typecheck, production web build and 31 relevant component tests
+  pass. Full flow/axe and repository-wide regression gates were explicitly
+  deferred to the next step.
+- Audit: `docs/design/PHASE21B_DESIGN_PARITY_AUDIT.md`.
+- Implementation commit: `70ad8cf`.
+- Do not mark 21B complete or start 21C until the deferred acceptance gate is
+  run.
 
 ## Non-negotiable rules
 
