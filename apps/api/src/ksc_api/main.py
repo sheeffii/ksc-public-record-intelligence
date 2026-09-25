@@ -46,7 +46,7 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origin_list,
         allow_credentials=False,
         allow_methods=["GET", "HEAD", "OPTIONS", "POST", "PATCH"],
-        allow_headers=["Accept", "Authorization", "Content-Type", "X-Request-ID"],
+        allow_headers=["Accept", "Authorization", "Content-Type", "Range", "X-Request-ID"],
     )
     app.include_router(system.router)
     app.include_router(records.router)
@@ -106,7 +106,7 @@ def create_app() -> FastAPI:
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-        response.headers["Cache-Control"] = "no-store"
+        response.headers.setdefault("Cache-Control", "no-store")
         if settings.app_env in {"staging", "production"}:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response

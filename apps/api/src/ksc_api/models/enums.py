@@ -81,6 +81,17 @@ class TextExtractionMethod(enum.StrEnum):
     MANUAL = "manual"
 
 
+class SourcePrecision(enum.StrEnum):
+    """Honest navigation precision; never upgraded from a text guess."""
+
+    EXACT_GEOMETRY = "exact_geometry"
+    OCR_GEOMETRY = "ocr_geometry"
+    PAGE_AND_LINE = "page_and_line"
+    PAGE_ONLY = "page_only"
+    TEXT_ONLY = "text_only"
+    UNAVAILABLE = "unavailable"
+
+
 class ExaminationType(enum.StrEnum):
     DIRECT = "direct"
     CROSS = "cross"

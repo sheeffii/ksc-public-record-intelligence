@@ -1165,5 +1165,17 @@
       "overview": "No entity is focused. This is one bounded page of evidence edges; search for a node or open the network from a dossier to focus it."
     },
     "exactSourceOutside": "The exact source text is on this page but outside the parsed paragraphs shown here (for example a running header, heading or footnote). Verbatim source text:"
+  },
+  "phase20": {
+    "originalPdf": "Original PDF",
+    "parsedText": "Parsed text",
+    "fitPage": "Fit page",
+    "fitWidth": "Fit width",
+    "officialCourtSource": "Official court source",
+    "pdfPage": "PDF page {page} of {total}",
+    "precision": "Source precision: {precision}",
+    "honestFallback": "No exact PDF rectangle is available. Navigation uses the honest {precision} fallback; no highlight was manufactured.",
+    "pdfUnavailable": "The original PDF could not be rendered",
+    "pdfCoordinateUnavailable": "The original PDF is held, but this parsed coordinate does not resolve to a PDF page"
   }
 }

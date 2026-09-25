@@ -71,6 +71,7 @@ from ksc_api.models.enums import (
     RelationshipType,
     ResolutionMethod,
     ResolutionState,
+    SourcePrecision,
     SourceSystem,
     TextExtractionMethod,
     VerificationState,
@@ -108,6 +109,7 @@ from ksc_api.models.operations import (
     SourceRecordSnapshot,
 )
 from ksc_api.models.research import ResearchNote, ResearchNoteCitation
+from ksc_api.models.source import PageTextGeometry, SourceAnchor, SourceRegion, SourceSpan
 from ksc_api.models.source_record import SourceRecord
 
 __all__ = [
@@ -175,6 +177,7 @@ __all__ = [
     "MediaStatement",
     "MediaStatementComparison",
     "Organization",
+    "PageTextGeometry",
     "Party",
     "Person",
     "PersonAlias",
@@ -190,8 +193,12 @@ __all__ = [
     "ResearchNoteCitation",
     "ResolutionMethod",
     "ResolutionState",
+    "SourceAnchor",
+    "SourcePrecision",
     "SourceRecord",
     "SourceRecordSnapshot",
+    "SourceRegion",
+    "SourceSpan",
     "SourceSystem",
     "StatementComparison",
     "TextExtractionMethod",

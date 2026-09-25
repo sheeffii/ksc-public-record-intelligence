@@ -223,6 +223,28 @@ export interface ApiDocumentVersion {
   supersedes_version_ref: string | null;
 }
 
+export interface ApiSourceAnchor {
+  id: string;
+  official_version_ref: string;
+  pdf_page_index: number | null;
+  page_number: number | null;
+  paragraph_number: number | null;
+  line_from: number | null;
+  line_to: number | null;
+  exact_text: string | null;
+  extraction_method: string;
+  extractor_version: string;
+  processing_run_id: string | null;
+  precision:
+    "exact_geometry" | "ocr_geometry" | "page_and_line" | "page_only" | "text_only" | "unavailable";
+  state: string;
+  failure_reason: string | null;
+  page_width: number | null;
+  page_height: number | null;
+  page_rotation: number | null;
+  regions: { x: number; y: number; width: number; height: number; coordinate_space: string }[];
+}
+
 export interface ApiDocumentSummary {
   official_ref: string;
   filing_number: string | null;

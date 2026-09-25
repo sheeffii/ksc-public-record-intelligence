@@ -1165,5 +1165,17 @@
       "overview": "Asnjë entitet nuk është në fokus. Kjo është një faqe e kufizuar e lidhjeve me prova; kërkoni një nyje ose hapni rrjetin nga një dosje për ta fokusuar."
     },
     "exactSourceOutside": "Teksti i saktë burimor gjendet në këtë faqe, por jashtë paragrafëve të analizuar që shfaqen këtu (për shembull një kokë faqeje, titull ose shënim në fund të faqes). Teksti burimor fjalë për fjalë:"
+  },
+  "phase20": {
+    "originalPdf": "PDF-ja origjinale",
+    "parsedText": "Teksti i analizuar",
+    "fitPage": "Përshtat faqen",
+    "fitWidth": "Përshtat gjerësinë",
+    "officialCourtSource": "Burimi zyrtar i gjykatës",
+    "pdfPage": "Faqja PDF {page} nga {total}",
+    "precision": "Saktësia e burimit: {precision}",
+    "honestFallback": "Nuk ka drejtkëndësh të saktë PDF. Lundrimi përdor alternativën e ndershme {precision}; nuk u krijua asnjë theksim.",
+    "pdfUnavailable": "PDF-ja origjinale nuk mund të shfaqej",
+    "pdfCoordinateUnavailable": "PDF-ja origjinale ruhet, por kjo koordinatë e analizuar nuk lidhet me një faqe PDF"
   }
 }

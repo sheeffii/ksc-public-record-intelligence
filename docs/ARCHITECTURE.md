@@ -267,9 +267,28 @@ The web maps it once (`toProvenance`) and renders it once (`ProvenanceSource`)
 for mentions, appearances, status events, typed edges and path hops. Dossiers,
 the Reader context panel and the Network screen read `/network/edges` rather
 than the citation-only `/network`. Network filters and the cursor are URL
-state, never a whole-graph load. Reader links carry the verbatim slice
-(`hl`). The Reader marks it whole-token inside the targeted paragraph, or
-states that it lies outside the rendered paragraphs (`lib/exact-source.ts`).
+state, never a whole-graph load. Legacy Reader links carry the verbatim slice
+(`hl`) for the derivative parsed-text view. Phase 20A links carry a
+`SourceAnchor` ID; the Reader opens its exact stored PDF version/page and draws
+only persisted `SourceRegion` rectangles. Parsed text is marked only inside the
+targeted paragraph, or states that it lies outside the rendered paragraphs
+(`lib/exact-source.ts`).
+
+### Source-native Reader (Phase 20A, ADR-027)
+
+The worker reads already-held immutable PDF bytes and extracts embedded-text
+word boxes into version/page-bound `page_text_geometry`. The canonical
+coordinate space is top-left PDF points with page dimensions and rotation
+stored on `document_pages`. Native-empty pages are explicitly `ocr_required`.
+
+`SourceSpan` holds one exact version coordinate, extraction/run lineage and its precision;
+`SourceAnchor` binds a research object to that span, and `SourceRegion` holds
+validated rectangles. Relationship anchors reuse their citation/occurrence
+span. The public artifact endpoint resolves a public version reference to its
+server-side hash-addressed storage key, validates object identity, and streams
+bounded byte ranges with an immutable SHA-256 ETag; storage keys are never route
+inputs. The locally bundled PDF.js worker lazily renders only the selected page,
+while parsed text and research context remain secondary views.
 
 ## Cross-cutting rules enforced in code
 

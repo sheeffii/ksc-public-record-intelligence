@@ -60,6 +60,7 @@ from ksc_ingestion.phase19b_report import write_report as write_phase19b_report
 from ksc_ingestion.pipeline import CaseNotSeededError, Ingestor, RunOutcome
 from ksc_ingestion.probe import probe, record_probe
 from ksc_ingestion.quality_gate import report_to_table, run_gate, write_report
+from ksc_ingestion.source_geometry import SourceGeometryProjector
 from ksc_ingestion.sources import NotOfficialSourceError
 from ksc_ingestion.storage import InMemoryObjectStore, MinioObjectStore, ObjectStore
 from ksc_ingestion.structured_projection import Phase17StructuredPipeline
@@ -225,6 +226,29 @@ def cmd_project_mentions(args: argparse.Namespace) -> int:
         f"unregistered_witness_codes={result.unregistered_witness_codes} "
         f"unregistered_exhibit_ids={result.unregistered_exhibit_ids} "
         f"legacy_removed={result.legacy_rows_removed}"
+    )
+    return 0
+
+
+def cmd_project_source_geometry(args: argparse.Namespace) -> int:
+    """Extract geometry from held bytes and project reusable source anchors."""
+    settings = get_settings()
+    store = MinioObjectStore(settings)
+    result = SourceGeometryProjector(get_sessionmaker(), store, case_number=settings.case_id).run()
+    print(
+        json.dumps(
+            {
+                "run_id": str(result.run_id),
+                "versions": result.versions,
+                "native_pages": result.native_pages,
+                "ocr_required_pages": result.ocr_required_pages,
+                "geometry_words": result.geometry_words,
+                "anchors": result.anchors,
+                "precision": result.precision,
+                "by_object_type": result.by_object_type,
+            },
+            indent=2,
+        )
     )
     return 0
 
@@ -689,6 +713,11 @@ def build_parser() -> argparse.ArgumentParser:
         "project-mentions", help="project Phase 19A deterministic verified entity mentions"
     )
     p_mentions.set_defaults(func=cmd_project_mentions)
+    p_source_geometry = sub.add_parser(
+        "project-source-geometry",
+        help="extract native geometry from held PDFs and project SourceAnchors",
+    )
+    p_source_geometry.set_defaults(func=cmd_project_source_geometry)
     p_intelligence = sub.add_parser(
         "build-intelligence",
         help="project Phase 19B aliases, appearances, exhibit status events, mentions and typed edges",

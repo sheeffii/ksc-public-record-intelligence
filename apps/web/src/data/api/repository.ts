@@ -53,6 +53,7 @@ import type {
   ApiPage,
   ApiPerson,
   ApiSearch,
+  ApiSourceAnchor,
   ApiStatementComparison,
   ApiWitness,
   ApiWitnessAppearance,
@@ -71,6 +72,7 @@ const MENTION_COLLECTION: Record<EntityMentionKind, string> = {
 
 export function createApiRepository(options: ApiClientOptions): ResearchRepository {
   const client = new ApiClient(options);
+  const publicApiBase = options.baseUrl.replace(/\/+$/, "");
 
   async function page<T>(path: string): Promise<T[]> {
     const items: T[] = [];
@@ -149,7 +151,11 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
             )
           )?.items ?? [])
         : [];
-      return map.toDocument(document, chunks, version);
+      const mapped = map.toDocument(document, chunks, version);
+      if (version?.artifact_status === "fetched") {
+        mapped.artifactUrl = `${publicApiBase}/api/v1/document-versions/${version.official_version_ref}/artifact`;
+      }
+      return mapped;
     },
 
     async getFinding(key: string) {
@@ -157,6 +163,32 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
         `/findings/${encodeURIComponent(key)}/matrix`,
       );
       return finding ? map.toFinding(finding) : null;
+    },
+
+    async getSourceAnchor(id: string) {
+      const anchor = await client.get<ApiSourceAnchor>(`/source-anchors/${encodeURIComponent(id)}`);
+      return anchor
+        ? {
+            id: anchor.id,
+            officialVersionRef: anchor.official_version_ref,
+            pdfPageIndex: anchor.pdf_page_index ?? undefined,
+            pageNumber: anchor.page_number ?? undefined,
+            paragraphNumber: anchor.paragraph_number ?? undefined,
+            lineFrom: anchor.line_from ?? undefined,
+            lineTo: anchor.line_to ?? undefined,
+            exactText: anchor.exact_text ?? undefined,
+            extractionMethod: anchor.extraction_method,
+            extractorVersion: anchor.extractor_version,
+            processingRunId: anchor.processing_run_id ?? undefined,
+            precision: anchor.precision,
+            state: anchor.state,
+            failureReason: anchor.failure_reason ?? undefined,
+            pageWidth: anchor.page_width ?? undefined,
+            pageHeight: anchor.page_height ?? undefined,
+            pageRotation: anchor.page_rotation ?? undefined,
+            regions: anchor.regions,
+          }
+        : null;
     },
 
     async search(query: string): Promise<readonly SearchResult[]> {

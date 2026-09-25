@@ -61,6 +61,33 @@ export interface ExhibitDossier {
   relationshipCount: number;
 }
 export type DocumentView = MockDocument;
+export interface SourceRegionView {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+export interface SourceAnchorView {
+  id: string;
+  officialVersionRef: string;
+  pdfPageIndex?: number;
+  pageNumber?: number;
+  paragraphNumber?: number;
+  lineFrom?: number;
+  lineTo?: number;
+  exactText?: string;
+  extractionMethod: string;
+  extractorVersion: string;
+  processingRunId?: string;
+  precision:
+    "exact_geometry" | "ocr_geometry" | "page_and_line" | "page_only" | "text_only" | "unavailable";
+  state: string;
+  failureReason?: string;
+  pageWidth?: number;
+  pageHeight?: number;
+  pageRotation?: number;
+  regions: readonly SourceRegionView[];
+}
 export type SearchResult = MockSearchResult;
 export type EntityMentionKind = "person" | "witness" | "organization" | "exhibit";
 /** A persisted deterministic mention — never a lexical search match. */
@@ -491,6 +518,7 @@ export interface ResearchRepository {
     page?: number,
     pdfPageIndex?: number,
   ): Promise<DocumentView | null>;
+  getSourceAnchor(id: string): Promise<SourceAnchorView | null>;
   getFinding(key: string): Promise<FindingView | null>;
   search(query: string): Promise<readonly SearchResult[]>;
   getEntityMentions(kind: EntityMentionKind, key: string): Promise<EntityMentionsView>;

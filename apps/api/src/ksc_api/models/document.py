@@ -31,6 +31,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -242,6 +243,15 @@ class DocumentPage(UUIDPrimaryKeyMixin, Base):
         ),
         CheckConstraint("pdf_page_index >= 0", name="pdf_page_index_non_negative"),
         CheckConstraint("page_number IS NULL OR page_number >= 1", name="page_number_positive"),
+        CheckConstraint("width_points IS NULL OR width_points > 0", name="width_points_positive"),
+        CheckConstraint(
+            "height_points IS NULL OR height_points > 0", name="height_points_positive"
+        ),
+        CheckConstraint("rotation IS NULL OR rotation IN (0, 90, 180, 270)", name="rotation_valid"),
+        CheckConstraint(
+            "geometry_state IN ('native', 'ocr', 'ocr_required', 'unavailable')",
+            name="geometry_state_allowed",
+        ),
     )
 
     document_version_id: Mapped[uuid.UUID] = mapped_column(
@@ -262,6 +272,19 @@ class DocumentPage(UUIDPrimaryKeyMixin, Base):
     # Extents of redaction on the page as published, e.g. [{"kind": "name", "extent": "2 lines"}].
     # Describes the public artifact; never a reconstruction.
     redaction_extents: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    width_points: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    height_points: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    rotation: Mapped[int | None] = mapped_column(Integer)
+    geometry_text: Mapped[str | None] = mapped_column(Text)
+    geometry_extraction_method: Mapped[str | None] = mapped_column(String(32))
+    geometry_state: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="unavailable", server_default="unavailable"
+    )
+    geometry_extractor: Mapped[str | None] = mapped_column(String(64))
+    geometry_extractor_version: Mapped[str | None] = mapped_column(String(32))
+    geometry_processing_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("processing_runs.id", ondelete="SET NULL")
+    )
 
     version: Mapped[DocumentVersion] = relationship(back_populates="pages")
 

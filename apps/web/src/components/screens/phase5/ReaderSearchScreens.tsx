@@ -4,7 +4,7 @@ import type { SourceType } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActiveFilters,
   FilterOption,
@@ -34,6 +34,8 @@ import {
 import { ActionLink, DemoNotice, ScreenHeader, TabStrip } from "./ScreenChrome";
 import { KeyValue, NoteStrip, SectionCard, Segmented, ToolButton, Toolbar } from "./Workspace";
 import type { NetworkView } from "@/data";
+import type { SourceAnchorView } from "@/data";
+import { OriginalPdfPage, type PdfFit } from "@/components/source/OriginalPdfPage";
 
 // ------------------------------------------------------------ reader ------
 
@@ -52,6 +54,7 @@ export function DocumentReaderScreen({
   initialPara,
   highlight,
   contextNetwork,
+  sourceAnchor,
 }: {
   id: string;
   initialDocument?: MockDocument;
@@ -62,6 +65,7 @@ export function DocumentReaderScreen({
   /** Verbatim persisted source slice to mark (see `lib/exact-source`). */
   highlight?: string;
   contextNetwork?: NetworkView;
+  sourceAnchor?: SourceAnchorView;
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
@@ -90,6 +94,18 @@ export function DocumentReaderScreen({
     [isReal, highlight],
   );
   const t19 = useTranslations("phase19");
+  const t20 = useTranslations("phase20");
+  const [sourceView, setSourceView] = useState<"original" | "parsed">(
+    document.artifactUrl ? "original" : "parsed",
+  );
+  const [pdfFit, setPdfFit] = useState<PdfFit>("width");
+  const [pdfZoom, setPdfZoom] = useState(1);
+  const [pdfRenderedScale, setPdfRenderedScale] = useState(1);
+  const [pdfPages, setPdfPages] = useState<number>();
+  const [pdfError, setPdfError] = useState<string>();
+  const onPdfPages = useCallback((count: number) => setPdfPages(count), []);
+  const onPdfScale = useCallback((scale: number) => setPdfRenderedScale(scale), []);
+  const onPdfError = useCallback((message: string) => setPdfError(message), []);
   useEffect(() => {
     const target =
       window.document.querySelector("[data-exact-source]") ??
@@ -110,6 +126,10 @@ export function DocumentReaderScreen({
           : p.page === undefined || (p.page <= page && (p.pageTo ?? p.page) >= page))) &&
       (!inDoc || p.text.toLowerCase().includes(inDoc.toLowerCase())),
   );
+  const sourcePdfIndex =
+    coordinateKind === "pdfPage"
+      ? page
+      : paragraphs.find((paragraph) => paragraph.pdfPageIndex !== undefined)?.pdfPageIndex;
   const panelTabs = ["summary", "mentions", "people", "exhibits", "findings", "citations"] as const;
   const contextNode = contextNetwork?.nodes.find(
     (node) => node.ref === id || node.ref?.endsWith(`/${id}`),
@@ -189,6 +209,55 @@ export function DocumentReaderScreen({
             <ToolButton onClick={() => navigator.clipboard?.writeText(document.citation.display)}>
               {t("copyCitation")}
             </ToolButton>
+            {isReal && document.artifactUrl ? (
+              <>
+                <ToolButton
+                  onClick={() => setSourceView("original")}
+                  pressed={sourceView === "original"}
+                >
+                  {t20("originalPdf")}
+                </ToolButton>
+                <ToolButton
+                  onClick={() => setSourceView("parsed")}
+                  pressed={sourceView === "parsed"}
+                >
+                  {t20("parsedText")}
+                </ToolButton>
+                <ToolButton
+                  onClick={() => {
+                    setPdfFit("custom");
+                    setPdfZoom(Math.max(0.5, pdfRenderedScale - 0.1));
+                  }}
+                >
+                  {t("zoomOut")}
+                </ToolButton>
+                <ToolButton
+                  onClick={() => {
+                    setPdfFit("custom");
+                    setPdfZoom(Math.min(3, pdfRenderedScale + 0.1));
+                  }}
+                >
+                  {t("zoomIn")}
+                </ToolButton>
+                <ToolButton onClick={() => setPdfFit("page")} pressed={pdfFit === "page"}>
+                  {t20("fitPage")}
+                </ToolButton>
+                <ToolButton onClick={() => setPdfFit("width")} pressed={pdfFit === "width"}>
+                  {t20("fitWidth")}
+                </ToolButton>
+                <ToolButton
+                  onClick={() => {
+                    setPdfFit("custom");
+                    setPdfZoom(1);
+                  }}
+                >
+                  {t("reset")}
+                </ToolButton>
+                <span className="tabular text-fg-secondary px-1 text-[11px]">
+                  {Math.round(pdfRenderedScale * 100)}%
+                </span>
+              </>
+            ) : null}
             <ToolButton href={`/network?focus=${document.id}`}>{t("viewNetwork")}</ToolButton>
             <ToolButton
               onClick={() => setSidebarOpen((v) => !v)}
@@ -305,116 +374,173 @@ export function DocumentReaderScreen({
               </Panel>
             ) : null}
           </aside>
-          <div className="bg-surface-alt flex min-w-0 justify-center overflow-x-auto p-3 md:p-6">
-            <article className="shadow-page bg-surface text-fg-body min-h-[760px] w-full max-w-[600px] px-6 py-8 md:px-[60px] md:py-[52px]">
-              {!isReal ? (
-                <div className="border-court bg-surface-raised text-fg rounded-card mb-4 border-l-2 px-3 py-2 text-[11px]">
-                  {tb("citedBanner", { ref: "F-DEMO-01" })} ·{" "}
-                  <Link href="/findings/F-DEMO-01" className="text-accent font-semibold">
-                    {t("courtFindings")} →
-                  </Link>
-                </div>
-              ) : null}
-              <p className="identifier text-fg-muted mb-4 text-[10px]">
-                {document.id} · {coordinateKind === "pdfPage" ? t15("pdfIndex") : t("page")} {page}
-              </p>
-              {isReal ? (
-                <div className="mb-4">
-                  <CitationChip
-                    citation={{
-                      ...document.citation,
-                      page: coordinateKind === "page" ? page : undefined,
-                      display: `${document.citation.ref} · ${coordinateKind === "pdfPage" ? `PDF ${page}` : `p. ${page}`}`,
-                    }}
-                  />
-                </div>
-              ) : null}
-              {isTranscript ? (
-                <TranscriptPage />
-              ) : !isReal && page === 2 ? (
-                <GapNotice
-                  kind="redaction"
-                  reference={`${document.id}/RED`}
-                  extent="p. 2, 2 lines"
-                  reason={tb("redactedPage")}
-                />
-              ) : (
-                paragraphs.map((paragraph, index) => (
-                  <p
-                    key={`${paragraph.pdfPageIndex ?? page}-${paragraph.number ?? index}`}
-                    id={paragraph.number ? `para-${paragraph.number}` : `chunk-${index}`}
-                    className="group relative mb-4 scroll-mt-24 pl-10 font-serif text-[13.5px] leading-[1.75] max-md:pl-8 max-md:text-[11.5px] max-md:leading-[1.85] md:text-[14px]"
-                  >
-                    {paragraph.number ? (
-                      <a
-                        href={`#para-${paragraph.number}`}
-                        className="tabular text-fg-muted group-hover:text-accent absolute top-0.5 left-0 text-[10px]"
-                      >
-                        ¶{paragraph.number}
-                      </a>
-                    ) : (
-                      <span className="tabular text-fg-muted absolute top-0.5 left-0 text-[9px]">
-                        PDF {paragraph.pdfPageIndex ?? page}
+          <div className="bg-surface-alt min-w-0 overflow-x-auto p-3 md:p-6">
+            <div className="mx-auto flex w-full max-w-[960px] flex-col gap-3">
+              {isReal && sourceView === "original" ? (
+                document.artifactUrl && sourcePdfIndex !== undefined ? (
+                  <section aria-label={t20("originalPdf")} className="min-w-0">
+                    <OriginalPdfPage
+                      url={document.artifactUrl}
+                      pageIndex={sourcePdfIndex}
+                      fit={pdfFit}
+                      zoom={pdfZoom}
+                      anchor={sourceAnchor}
+                      onPageCount={onPdfPages}
+                      onScale={onPdfScale}
+                      onError={onPdfError}
+                    />
+                    <div className="border-border bg-surface rounded-card mt-2 flex flex-wrap items-center gap-2 border p-2 text-[11px]">
+                      <span className="identifier">{document.versionRef}</span>
+                      <span className="text-fg-secondary">
+                        {t20("pdfPage", { page: sourcePdfIndex + 1, total: pdfPages ?? "—" })}
                       </span>
-                    )}
-                    {splitExactSource(
-                      paragraph.text,
-                      initialPara === undefined || paragraph.number === initialPara
-                        ? exactPattern
-                        : null,
-                    ).map((part, partIndex) =>
-                      part.exact ? (
-                        <mark
-                          key={partIndex}
-                          data-exact-source
-                          className="bg-surface-high text-fg ring-accent rounded px-0.5 ring-1"
+                      {sourceAnchor ? (
+                        <span className="text-fg-secondary">
+                          {t20("precision", { precision: sourceAnchor.precision })}
+                        </span>
+                      ) : null}
+                      {document.sourceUrl ? (
+                        <a
+                          className="text-accent ml-auto"
+                          href={document.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
                         >
-                          {part.text}
-                        </mark>
+                          {t20("officialCourtSource")}
+                        </a>
+                      ) : null}
+                    </div>
+                    {sourceAnchor &&
+                    sourceAnchor.precision !== "exact_geometry" &&
+                    sourceAnchor.precision !== "ocr_geometry" ? (
+                      <div className="border-border bg-surface-raised rounded-card mt-2 border p-3 text-[11px]">
+                        {t20("honestFallback", { precision: sourceAnchor.precision })}
+                      </div>
+                    ) : null}
+                    {pdfError ? (
+                      <EmptyState title={t20("pdfUnavailable")} reason={pdfError} />
+                    ) : null}
+                  </section>
+                ) : (
+                  <EmptyState
+                    title={t20("pdfCoordinateUnavailable")}
+                    reason={document.versionRef ?? document.id}
+                  />
+                )
+              ) : null}
+              <article
+                className={`${isReal && sourceView === "original" ? "hidden" : "block"} shadow-page bg-surface text-fg-body min-h-[760px] w-full max-w-[600px] self-center px-6 py-8 md:px-[60px] md:py-[52px]`}
+              >
+                {!isReal ? (
+                  <div className="border-court bg-surface-raised text-fg rounded-card mb-4 border-l-2 px-3 py-2 text-[11px]">
+                    {tb("citedBanner", { ref: "F-DEMO-01" })} ·{" "}
+                    <Link href="/findings/F-DEMO-01" className="text-accent font-semibold">
+                      {t("courtFindings")} →
+                    </Link>
+                  </div>
+                ) : null}
+                <p className="identifier text-fg-muted mb-4 text-[10px]">
+                  {document.id} · {coordinateKind === "pdfPage" ? t15("pdfIndex") : t("page")}{" "}
+                  {page}
+                </p>
+                {isReal ? (
+                  <div className="mb-4">
+                    <CitationChip
+                      citation={{
+                        ...document.citation,
+                        page: coordinateKind === "page" ? page : undefined,
+                        display: `${document.citation.ref} · ${coordinateKind === "pdfPage" ? `PDF ${page}` : `p. ${page}`}`,
+                      }}
+                    />
+                  </div>
+                ) : null}
+                {isTranscript ? (
+                  <TranscriptPage />
+                ) : !isReal && page === 2 ? (
+                  <GapNotice
+                    kind="redaction"
+                    reference={`${document.id}/RED`}
+                    extent="p. 2, 2 lines"
+                    reason={tb("redactedPage")}
+                  />
+                ) : (
+                  paragraphs.map((paragraph, index) => (
+                    <p
+                      key={`${paragraph.pdfPageIndex ?? page}-${paragraph.number ?? index}`}
+                      id={paragraph.number ? `para-${paragraph.number}` : `chunk-${index}`}
+                      className="group relative mb-4 scroll-mt-24 pl-10 font-serif text-[13.5px] leading-[1.75] max-md:pl-8 max-md:text-[11.5px] max-md:leading-[1.85] md:text-[14px]"
+                    >
+                      {paragraph.number ? (
+                        <a
+                          href={`#para-${paragraph.number}`}
+                          className="tabular text-fg-muted group-hover:text-accent absolute top-0.5 left-0 text-[10px]"
+                        >
+                          ¶{paragraph.number}
+                        </a>
                       ) : (
-                        part.text
-                      ),
-                    )}
-                  </p>
-                ))
-              )}
-              {highlight &&
-              exactPattern &&
-              !paragraphs.some(
-                (paragraph) =>
-                  (initialPara === undefined || paragraph.number === initialPara) &&
-                  splitExactSource(paragraph.text, exactPattern).some((part) => part.exact),
-              ) ? (
-                // The exact span lies outside the rendered paragraphs (running
-                // header, heading or footnote). Say so; never mark a guess.
-                <div
-                  data-exact-source-outside
-                  className="border-border-subtle bg-surface-raised rounded-card mb-4 border p-3"
-                >
-                  <p className="text-fg-secondary text-[11px]">{t19("exactSourceOutside")}</p>
-                  <p className="text-fg mt-1 font-mono text-[11px] break-words">{highlight}</p>
-                </div>
-              ) : null}
-              {isReal && paragraphs.length === 0 ? (
-                <EmptyState
-                  title={
-                    document.parseRequiresReview
-                      ? t15("parsedReviewRequired")
-                      : t15("noParsedCoordinate")
-                  }
-                  reason={`${document.versionRef ?? document.id} · page ${page}`}
-                />
-              ) : null}
-              {!isReal ? (
-                <section className="border-border-faint mt-8 border-t pt-3">
-                  <h3 className="section-label mb-1">{tb("footnotes")}</h3>
-                  <p className="text-fg-secondary text-[10.5px] leading-relaxed">
-                    1. Demo footnote; cites <CitationChip citation={transcriptCitation} size="sm" />
-                    .
-                  </p>
-                </section>
-              ) : null}
-            </article>
+                        <span className="tabular text-fg-muted absolute top-0.5 left-0 text-[9px]">
+                          PDF {paragraph.pdfPageIndex ?? page}
+                        </span>
+                      )}
+                      {splitExactSource(
+                        paragraph.text,
+                        initialPara === undefined || paragraph.number === initialPara
+                          ? exactPattern
+                          : null,
+                      ).map((part, partIndex) =>
+                        part.exact ? (
+                          <mark
+                            key={partIndex}
+                            data-exact-source
+                            className="bg-surface-high text-fg ring-accent rounded px-0.5 ring-1"
+                          >
+                            {part.text}
+                          </mark>
+                        ) : (
+                          part.text
+                        ),
+                      )}
+                    </p>
+                  ))
+                )}
+                {highlight &&
+                exactPattern &&
+                !paragraphs.some(
+                  (paragraph) =>
+                    (initialPara === undefined || paragraph.number === initialPara) &&
+                    splitExactSource(paragraph.text, exactPattern).some((part) => part.exact),
+                ) ? (
+                  // The exact span lies outside the rendered paragraphs (running
+                  // header, heading or footnote). Say so; never mark a guess.
+                  <div
+                    data-exact-source-outside
+                    className="border-border-subtle bg-surface-raised rounded-card mb-4 border p-3"
+                  >
+                    <p className="text-fg-secondary text-[11px]">{t19("exactSourceOutside")}</p>
+                    <p className="text-fg mt-1 font-mono text-[11px] break-words">{highlight}</p>
+                  </div>
+                ) : null}
+                {isReal && paragraphs.length === 0 ? (
+                  <EmptyState
+                    title={
+                      document.parseRequiresReview
+                        ? t15("parsedReviewRequired")
+                        : t15("noParsedCoordinate")
+                    }
+                    reason={`${document.versionRef ?? document.id} · page ${page}`}
+                  />
+                ) : null}
+                {!isReal ? (
+                  <section className="border-border-faint mt-8 border-t pt-3">
+                    <h3 className="section-label mb-1">{tb("footnotes")}</h3>
+                    <p className="text-fg-secondary text-[10.5px] leading-relaxed">
+                      1. Demo footnote; cites{" "}
+                      <CitationChip citation={transcriptCitation} size="sm" />.
+                    </p>
+                  </section>
+                ) : null}
+              </article>
+            </div>
           </div>
           <aside
             className={`border-border bg-surface-alt border-t lg:block lg:border-t-0 lg:border-l ${panelOpen ? "block" : "hidden"}`}

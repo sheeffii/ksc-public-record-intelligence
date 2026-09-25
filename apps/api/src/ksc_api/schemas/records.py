@@ -21,6 +21,8 @@ from ksc_api.models.enums import (
     Party,
     RelationshipOrigin,
     RelationshipType,
+    SourcePrecision,
+    TextExtractionMethod,
     VerificationState,
     Visibility,
 )
@@ -104,6 +106,51 @@ class DocumentPageRead(ReadModel):
     running_head: str | None
     has_redactions: bool
     redaction_extents: list[dict[str, Any]] | None
+    width_points: float | None
+    height_points: float | None
+    rotation: int | None
+    geometry_state: str
+    geometry_extraction_method: str | None
+    geometry_extractor: str | None
+    geometry_extractor_version: str | None
+    geometry_processing_run_id: uuid.UUID | None
+
+
+class SourceRegionRead(ReadModel):
+    x: float
+    y: float
+    width: float
+    height: float
+    coordinate_space: str
+
+
+class SourceAnchorRead(ReadModel):
+    id: uuid.UUID
+    object_type: str
+    object_id: uuid.UUID
+    anchor_role: str
+    verification_state: str
+    document_version_id: uuid.UUID
+    official_version_ref: str
+    pdf_page_index: int | None
+    page_number: int | None
+    paragraph_number: int | None
+    line_from: int | None
+    line_to: int | None
+    exact_text: str | None
+    text_basis: str | None
+    char_start: int | None
+    char_end: int | None
+    extraction_method: TextExtractionMethod
+    extractor_version: str
+    processing_run_id: uuid.UUID | None
+    precision: SourcePrecision
+    state: str
+    failure_reason: str | None
+    page_width: float | None
+    page_height: float | None
+    page_rotation: int | None
+    regions: list[SourceRegionRead]
 
 
 class DocumentChunkRead(ReadModel):
@@ -560,6 +607,7 @@ class EntityMentionRead(ReadModel):
     line_to: int | None
     source_url: str | None
     target_path: str
+    source_anchor_id: uuid.UUID | None = None
 
 
 class SearchRead(ReadModel):

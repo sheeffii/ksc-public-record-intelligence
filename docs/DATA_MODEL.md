@@ -194,6 +194,22 @@ provenance, not proof, and never implies admission or reliance.
 
 ## Invariants tested
 
+Phase 20A (`0015`, ADR-027) adds source-native geometry and anchors:
+
+- `document_pages` stores version-specific dimensions, rotation, geometry
+  extraction method/state and extractor plus processing-run lineage.
+- `page_text_geometry` is a derived word-level layer keyed by exact version and
+  PDF page. Its character ranges explicitly name `page_geometry_text` as their
+  basis. Rectangles are positive, in-bounds top-left PDF points; native and OCR
+  extraction methods remain distinct.
+- `source_spans` stores exact text/coordinate provenance plus one explicit
+  precision state. `source_regions` exists only for validated geometry.
+- `source_anchors` binds entity occurrences, citations, relationship evidence
+  and findings to reusable spans. It contains no untyped score or guessed
+  rectangle.
+- Related versions cannot share geometry through the schema: every geometry
+  row and span carries the exact `document_version_id`.
+
 Phase 17C adds `entity_occurrences`: exactly one person, witness, organization
 or exhibit target plus the held document version, optional transcript segment,
 original occurrence text and exact page/line/character coordinates. The row

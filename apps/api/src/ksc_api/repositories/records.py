@@ -58,7 +58,9 @@ from ksc_api.models import (
     RelationshipType,
     ResearchNote,
     ResolutionState,
+    SourceAnchor,
     SourceRecord,
+    SourceSpan,
     Transcript,
     TranscriptSegment,
     VerificationState,
@@ -106,7 +108,9 @@ from ksc_api.schemas.records import (
     RelationshipRead,
     SearchHit,
     SearchRead,
+    SourceAnchorRead,
     SourceAuditIssueRead,
+    SourceRegionRead,
     TranscriptRead,
     WitnessRead,
 )
@@ -437,6 +441,63 @@ class RecordRepository(IntelligenceReadsMixin):
             )
         )
 
+    def public_version(self, version_ref: str) -> DocumentVersion | None:
+        """Resolve one exact public version; artifact routes never accept storage keys."""
+        return self._public_version(version_ref)
+
+    def get_source_anchor(self, anchor_id: uuid.UUID) -> SourceAnchorRead | None:
+        row = self.session.execute(
+            select(SourceAnchor, SourceSpan, DocumentVersion, DocumentPage)
+            .join(SourceSpan, SourceSpan.id == SourceAnchor.source_span_id)
+            .join(DocumentVersion, DocumentVersion.id == SourceSpan.document_version_id)
+            .join(Document, Document.id == DocumentVersion.document_id)
+            .outerjoin(
+                DocumentPage,
+                and_(
+                    DocumentPage.document_version_id == SourceSpan.document_version_id,
+                    DocumentPage.pdf_page_index == SourceSpan.pdf_page_index,
+                ),
+            )
+            .where(
+                SourceAnchor.id == anchor_id,
+                Document.case_id == self.case.id,
+                public_visibility(Document.visibility),
+                public_visibility(DocumentVersion.visibility),
+            )
+        ).one_or_none()
+        if row is None:
+            return None
+        anchor, span, version, page = row
+        self.session.refresh(span, ["regions"])
+        return SourceAnchorRead(
+            id=anchor.id,
+            object_type=anchor.object_type,
+            object_id=anchor.object_id,
+            anchor_role=anchor.anchor_role,
+            verification_state=anchor.source_verification_state,
+            document_version_id=span.document_version_id,
+            official_version_ref=version.official_version_ref,
+            pdf_page_index=span.pdf_page_index,
+            page_number=span.page_number,
+            paragraph_number=span.paragraph_number,
+            line_from=span.line_from,
+            line_to=span.line_to,
+            exact_text=span.exact_text,
+            text_basis=span.text_basis,
+            char_start=span.char_start,
+            char_end=span.char_end,
+            extraction_method=span.extraction_method,
+            extractor_version=span.extractor_version,
+            processing_run_id=span.processing_run_id,
+            precision=span.precision,
+            state=span.state,
+            failure_reason=span.failure_reason,
+            page_width=float(page.width_points) if page and page.width_points else None,
+            page_height=float(page.height_points) if page and page.height_points else None,
+            page_rotation=page.rotation if page else None,
+            regions=[SourceRegionRead.model_validate(region) for region in span.regions],
+        )
+
     # ------------------------------------------------------------- people --
     def list_persons(self, *, limit: int, offset: int, q: str | None = None) -> Page[PersonRead]:
         stmt = (
@@ -594,6 +655,7 @@ class RecordRepository(IntelligenceReadsMixin):
                 EntityOccurrence,
                 DocumentVersion,
                 Document,
+                SourceAnchor.id.label("source_anchor_id"),
                 select(successor.id)
                 .where(successor.supersedes_version_id == DocumentVersion.id)
                 .exists()
@@ -601,6 +663,14 @@ class RecordRepository(IntelligenceReadsMixin):
             )
             .join(DocumentVersion, DocumentVersion.id == EntityOccurrence.document_version_id)
             .join(Document, Document.id == DocumentVersion.document_id)
+            .outerjoin(
+                SourceAnchor,
+                and_(
+                    SourceAnchor.object_type == "entity_occurrence",
+                    SourceAnchor.object_id == EntityOccurrence.id,
+                    SourceAnchor.anchor_role == "mention",
+                ),
+            )
             .where(
                 getattr(EntityOccurrence, f"{kind}_id") == entity_id,
                 EntityOccurrence.rule_id.is_not(None),
@@ -653,9 +723,11 @@ class RecordRepository(IntelligenceReadsMixin):
                     paragraph=row.paragraph_number,
                     page=row.page_number,
                     line=row.line_from,
-                ),
+                )
+                + (f"&anchor={source_anchor_id}" if source_anchor_id else ""),
+                source_anchor_id=source_anchor_id,
             )
-            for row, version, document, superseded in self.session.execute(
+            for row, version, document, source_anchor_id, superseded in self.session.execute(
                 stmt.limit(limit).offset(offset)
             ).all()
         ]

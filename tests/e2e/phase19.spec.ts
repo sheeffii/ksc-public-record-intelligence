@@ -15,6 +15,7 @@ test.describe("Phase 19 verified intelligence consumption", () => {
     await expect(source).toHaveAttribute("href", /\/documents\/transcript\?.*page=\d+.*hl=/);
     await source.click();
     await expect(page).toHaveURL(/\/documents\/transcript\?/);
+    await page.getByRole("button", { name: "Parsed text" }).click();
     // The appearance signal is the page's running header, outside the rendered
     // segments: the Reader states that and shows the verbatim header text.
     await expect(
@@ -22,15 +23,27 @@ test.describe("Phase 19 verified intelligence consumption", () => {
     ).toContainText("W03877");
   });
 
-  test("verified mention opens the Reader with the exact span marked", async ({ page }) => {
+  test("verified mention opens its anchored original PDF or honest fallback", async ({ page }) => {
     await page.goto("/people/accused-krasniqi");
     const verified = page.locator("section").filter({ hasText: "Verified mentions" }).first();
     await expect(verified.getByText("VERIFIED MENTION").first()).toBeVisible();
     const inParagraph = verified.locator('a[href*="para="][href*="hl="]').first();
-    const para = /[?&]para=(\d+)/.exec((await inParagraph.getAttribute("href")) ?? "")?.[1];
     await inParagraph.click();
-    await expect(page).toHaveURL(/\/documents\/.*hl=/);
-    const mark = page.locator(`#para-${para} mark[data-exact-source]`).first();
+    await expect(page).toHaveURL(/\/documents\/.*anchor=/);
+    await expect(page.getByRole("button", { name: "Original PDF" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByLabel(/PDF page/)).toBeVisible();
+    await expect(
+      page
+        .locator("[data-source-region]")
+        .first()
+        .or(page.getByText(/No exact PDF rectangle is available/)),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Parsed text" }).click();
+    const mark = page.locator("mark[data-exact-source]").first();
     await expect(mark).toBeVisible();
     await expect(mark).toHaveText(/Jakup\s+(Krasniqi|KRASNIQI)/);
   });

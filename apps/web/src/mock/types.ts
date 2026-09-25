@@ -73,6 +73,7 @@ export interface MockDocument {
   parserVersion?: string;
   parseRequiresReview?: boolean;
   extractionMethod?: string;
+  artifactUrl?: string;
 }
 
 export interface MockSearchResult {

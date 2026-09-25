@@ -1,5 +1,5 @@
 import { DocumentReaderScreen } from "@/components/screens/phase5";
-import { getRepository, resolveDataSource } from "@/data";
+import { getRepository, resolveApiBaseUrl, resolveDataSource } from "@/data";
 import { MAX_HIGHLIGHT_LENGTH } from "@/lib/exact-source";
 import { notFound } from "next/navigation";
 
@@ -15,6 +15,7 @@ export default async function Page({
     pdfPage?: string;
     para?: string;
     hl?: string;
+    anchor?: string;
   }>;
 }) {
   const { id } = await params;
@@ -31,20 +32,34 @@ export default async function Page({
     return <DocumentReaderScreen id={decoded} initialPage={sourcePage ?? pdfPageIndex} />;
   }
   const repository = getRepository();
+  const anchor = query.anchor ? await repository.getSourceAnchor(query.anchor) : null;
   const [document, contextNetwork] = await Promise.all([
-    repository.getDocument(decoded, query.version, sourcePage, pdfPageIndex),
+    repository.getDocument(
+      decoded,
+      anchor?.officialVersionRef ?? query.version,
+      anchor?.pageNumber ?? sourcePage,
+      anchor?.pdfPageIndex ?? pdfPageIndex,
+    ),
     repository.getNetwork(decoded),
   ]);
   if (!document) notFound();
+  if (document.versionRef && document.artifactStatus === "fetched") {
+    const publicApi = resolveApiBaseUrl(
+      { NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL },
+      false,
+    ).replace(/\/+$/, "");
+    document.artifactUrl = `${publicApi}/api/v1/document-versions/${document.versionRef}/artifact`;
+  }
   return (
     <DocumentReaderScreen
       id={decoded}
       initialDocument={document}
-      initialPage={sourcePage}
-      initialPdfPage={pdfPageIndex}
-      initialPara={para}
-      highlight={highlight}
+      initialPage={anchor?.pageNumber ?? sourcePage}
+      initialPdfPage={anchor?.pdfPageIndex ?? pdfPageIndex}
+      initialPara={anchor?.paragraphNumber ?? para}
+      highlight={anchor?.exactText ?? highlight}
       contextNetwork={contextNetwork}
+      sourceAnchor={anchor ?? undefined}
     />
   );
 }

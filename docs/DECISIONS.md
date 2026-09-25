@@ -1288,3 +1288,50 @@ Addendum (2026-09-25, operator-approved cleanup):
   edges with it. Any other reference keeps it.
 - 118 base exhibits that existed only through truncated sub-number references
   were withdrawn with approval (`invalid.sub_number_base_binding`).
+
+## ADR-027 — Version-bound source geometry and reusable SourceAnchor
+
+Date: 2026-09-25
+
+Status: Accepted (Phase 20A)
+
+Context:
+The Reader displayed parsed HTML and could navigate by PDF index, printed page,
+paragraph, transcript line and derivative character offsets. It did not render
+the held PDF, persist page dimensions or text boxes, or prove a visual
+highlight. The same text may occur more than once, and related EN/SQ/redacted/
+corrected artifacts do not share a coordinate system.
+
+Decision:
+
+1. `document_pages` owns version-specific dimensions, rotation, geometry text,
+   extractor and processing-run lineage and a state (`native`, `ocr`, `ocr_required`,
+   `unavailable`). `page_text_geometry` stores validated native/OCR word boxes
+   in top-left PDF points under the exact `(document_version_id,
+pdf_page_index)` foreign key. Out-of-MediaBox boxes are omitted, never
+   clamped.
+2. A `SourceSpan` records one exact version coordinate, verbatim text basis,
+   extraction method and honest precision: `EXACT_GEOMETRY`, `OCR_GEOMETRY`,
+   `PAGE_AND_LINE`, `PAGE_ONLY`, `TEXT_ONLY` or `UNAVAILABLE`. Zero or more
+   `SourceRegion` rows carry only validated boxes. A `SourceAnchor` binds a
+   typed research object to a reusable span; relationship anchors reuse their
+   persisted evidence span.
+3. Native geometry comes only from the embedded PDF text layer. Exact geometry
+   requires one deterministic token-sequence match. Missing or repeated text
+   falls back without a rectangle. Native-empty pages are `ocr_required`; OCR
+   geometry remains structurally supported and must identify itself as OCR,
+   but no OCR text is fabricated when an engine has not run.
+4. The PDF endpoint resolves an exact public version in the database, validates
+   its hash-addressed key, size and media type, and streams its immutable bytes
+   with byte ranges and immutable SHA-256 validators. It never accepts a storage
+   key. The Reader uses locally bundled PDF.js 5 (`pdfjs-dist`, Apache-2.0), with
+   its worker emitted by the application build rather than loaded from a CDN.
+   It renders one original page at a time and overlays only persisted regions.
+   Parsed text is a labelled secondary view linked by the same anchor.
+
+Consequences:
+Geometry cannot leak between related versions. Coverage may be lower than text
+search coverage, especially for duplicate text, image-only pages and invalid
+out-of-page source marks; those cases remain useful through explicit weaker
+precision. Word geometry increases derived storage but allows bounded page
+queries and exact highlights without retaining millions of glyph rows.

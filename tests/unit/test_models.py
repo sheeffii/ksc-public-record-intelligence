@@ -47,6 +47,7 @@ PHASE14_TABLES = {
 }
 PHASE17_TABLES = {"entity_occurrences"}
 PHASE19_TABLES = {"exhibit_status_events"}
+PHASE20_TABLES = {"page_text_geometry", "source_spans", "source_regions", "source_anchors"}
 PHASE6_TABLES = {
     "source_records",
     "document_versions",
@@ -102,6 +103,7 @@ def test_schema_contains_phase4_foundation_and_phase6_evidence_model():
         | PHASE14_TABLES
         | PHASE17_TABLES
         | PHASE19_TABLES
+        | PHASE20_TABLES
     )
 
 

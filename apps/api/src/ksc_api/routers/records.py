@@ -4,10 +4,14 @@ scopes to the configured case and fails closed on visibility."""
 from __future__ import annotations
 
 import uuid
+from collections.abc import Iterator
 from datetime import date
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from minio import Minio
+from minio.error import S3Error
+from starlette.responses import StreamingResponse
 
 from ksc_api.models import EntityKind, Party, RelationshipType, VerificationState
 from ksc_api.repositories import RecordRepository, get_repository
@@ -36,6 +40,7 @@ from ksc_api.schemas.records import (
     PersonRead,
     RelationshipRead,
     SearchRead,
+    SourceAnchorRead,
     TranscriptRead,
     WitnessAppearanceRead,
     WitnessRead,
@@ -119,6 +124,103 @@ def list_document_paragraphs(
         repo.list_document_paragraphs(version_ref, limit=limit, offset=offset),
         "document version",
     )
+
+
+def _byte_range(value: str | None, size: int) -> tuple[int, int] | None:
+    if value is None:
+        return None
+    if not value.startswith("bytes=") or "," in value:
+        raise ValueError("only one byte range is supported")
+    start_text, separator, end_text = value[6:].partition("-")
+    if not separator:
+        raise ValueError("invalid byte range")
+    if not start_text:
+        length = int(end_text)
+        if length <= 0:
+            raise ValueError("invalid byte range")
+        return max(0, size - length), size - 1
+    start = int(start_text)
+    end = min(int(end_text), size - 1) if end_text else size - 1
+    if start < 0 or start >= size or end < start:
+        raise ValueError("invalid byte range")
+    return start, end
+
+
+@router.get("/document-versions/{version_ref:path}/artifact")
+@router.head("/document-versions/{version_ref:path}/artifact", include_in_schema=False)
+def read_document_artifact(version_ref: str, request: Request, repo: Repo) -> Response:
+    """Range-serve only the exact stored bytes of one public version."""
+    version = repo.public_version(version_ref)
+    if (
+        version is None
+        or version.artifact_status.value != "fetched"
+        or version.storage_key is None
+        or version.sha256 is None
+        or version.byte_size is None
+        or version.byte_size <= 0
+        or version.mime_type != "application/pdf"
+        or not version.storage_key.endswith(f"/{version.sha256}.pdf")
+    ):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="public PDF artifact not found")
+    from ksc_api.config import get_settings
+
+    settings = get_settings()
+    client = Minio(
+        settings.minio_endpoint,
+        access_key=settings.minio_access_key,
+        secret_key=settings.minio_secret_key,
+        secure=settings.minio_secure,
+    )
+    try:
+        stored = client.stat_object(settings.minio_bucket_documents, version.storage_key)
+        if stored.size != version.byte_size or stored.content_type != "application/pdf":
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, detail="stored PDF identity does not match its record"
+            )
+        selected = _byte_range(request.headers.get("range"), version.byte_size)
+    except S3Error as exc:
+        if exc.code in {"NoSuchKey", "NoSuchObject", "NotFound"}:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND, detail="public PDF artifact not found"
+            ) from exc
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail="PDF storage unavailable") from exc
+    except (ValueError, TypeError):
+        return Response(status_code=416, headers={"Content-Range": f"bytes */{version.byte_size}"})
+    start, end = selected or (0, version.byte_size - 1)
+    length = end - start + 1
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Length": str(length),
+        "Content-Disposition": "inline",
+        "ETag": f'"{version.sha256}"',
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Expose-Headers": "Accept-Ranges, Content-Range, Content-Length, ETag",
+    }
+    response_status = 206 if selected is not None else 200
+    if selected is not None:
+        headers["Content-Range"] = f"bytes {start}-{end}/{version.byte_size}"
+    if request.method == "HEAD":
+        return Response(status_code=response_status, media_type="application/pdf", headers=headers)
+
+    stream = client.get_object(
+        settings.minio_bucket_documents, version.storage_key, offset=start, length=length
+    )
+
+    def body() -> Iterator[bytes]:
+        try:
+            yield from stream.stream(64 * 1024)
+        finally:
+            stream.close()
+            stream.release_conn()
+
+    return StreamingResponse(
+        body(), status_code=response_status, media_type="application/pdf", headers=headers
+    )
+
+
+@router.get("/source-anchors/{anchor_id}", response_model=SourceAnchorRead)
+def read_source_anchor(anchor_id: uuid.UUID, repo: Repo) -> SourceAnchorRead:
+    return _or_404(repo.get_source_anchor(anchor_id), "source anchor")
 
 
 # ---------------------------------------------------------------- people --

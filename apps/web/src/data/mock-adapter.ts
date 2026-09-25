@@ -46,6 +46,7 @@ export function createMockRepositoryAdapter(
       };
     },
     getDocument: async (id) => source.getDocument(id),
+    getSourceAnchor: async () => null,
     getFinding: async () => null,
     search: async (query) => source.search(query),
     getEntityMentions: async () => ({ total: 0, items: [] }),
