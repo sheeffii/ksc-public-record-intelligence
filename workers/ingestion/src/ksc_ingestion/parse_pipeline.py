@@ -24,6 +24,8 @@ from ksc_api.models import (
     DocumentSection,
     DocumentVersion,
     ProcessingRun,
+    Relationship,
+    RelationshipOrigin,
     TextExtractionMethod,
     Transcript,
     TranscriptSegment,
@@ -576,9 +578,11 @@ class Phase8Pipeline:
     def _retire_stale_citations(session: Session, stale: list[Citation]) -> list[uuid.UUID]:
         """Retire machine-extracted citations the current parser no longer produces.
 
-        Only unreviewed rows with no downstream reference of any kind are
-        removed, each with an audit record; curated, human-reviewed or
-        referenced rows are kept for review rather than silently rewritten.
+        Only unreviewed rows are removed, each with an audit record. The one
+        reference that may go with them is their own derived projection: an
+        unreviewed, deterministic-citation edge, which `build-evidence` rebuilds
+        from citations anyway. Any other reference (curated, human-reviewed,
+        finding, appeal, AI, note, media) keeps the row for review.
         """
 
         retired: list[uuid.UUID] = []
@@ -586,7 +590,8 @@ class Phase8Pipeline:
             column
             for table in Citation.metadata.sorted_tables
             for column in table.columns
-            if any(fk.target_fullname == "citations.id" for fk in column.foreign_keys)
+            if column.table.name != "relationships"
+            and any(fk.target_fullname == "citations.id" for fk in column.foreign_keys)
         ]
         for citation in stale:
             if citation.verification_state is not VerificationState.UNREVIEWED:
@@ -594,6 +599,15 @@ class Phase8Pipeline:
             if any(
                 session.scalar(select(exists().where(column == citation.id)))
                 for column in referencing
+            ):
+                continue
+            edges = session.scalars(
+                select(Relationship).where(Relationship.citation_id == citation.id)
+            ).all()
+            if any(
+                edge.extraction_origin is not RelationshipOrigin.DETERMINISTIC_CITATION
+                or edge.verification_state is not VerificationState.UNREVIEWED
+                for edge in edges
             ):
                 continue
             session.add(
@@ -604,16 +618,21 @@ class Phase8Pipeline:
                     entity_id=str(citation.id),
                     detail={
                         "reason": "no longer extracted by the current parser/resolver; "
-                        "unreviewed and unreferenced",
+                        "unreviewed and referenced only by its own derived edges",
                         "raw_text": citation.raw_text,
+                        "normalized_text": citation.normalized_text,
                         "source_document_version_id": str(citation.source_document_version_id),
                         "source_pdf_page_index": citation.source_pdf_page_index,
                         "source_char_start": citation.source_char_start,
                         "source_char_end": citation.source_char_end,
                         "resolution_state": citation.resolution_state.value,
+                        "derived_edges_removed": [str(edge.id) for edge in edges],
                     },
                 )
             )
+            for edge in edges:
+                session.delete(edge)
+            session.flush()
             session.delete(citation)
             retired.append(citation.id)
         return retired

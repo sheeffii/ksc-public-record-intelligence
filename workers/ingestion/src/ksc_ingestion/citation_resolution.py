@@ -46,7 +46,11 @@ _FILING_REF_RE = re.compile(
     r"\bF\d{5}(?:CORRED|RED2?|(?:/(?:COR|RED2?|sqi|A\d{2}))+)?\b", re.IGNORECASE
 )
 _WITNESS_RE = re.compile(r"\bW\d{4,5}\b", re.IGNORECASE)
-_EXHIBIT_RE = re.compile(r"\bP\d{4,5}\b", re.IGNORECASE)
+# An exhibit number keeps its sub-number: "P01136.1" is its own exhibit, never
+# P01136. A base number is taken only when no ".<digit>" follows it, so a
+# sub-number reference is never truncated to its base ("P00761.7_ET" → P00761.7).
+_EXHIBIT_RE = re.compile(r"\bP\d{4,5}(?:\.\d{1,3}(?!\d)|\b(?!\.\d))", re.IGNORECASE)
+_EXHIBIT_PART_RE = re.compile(r"^P\d{4,5}\.\d{1,3}$", re.IGNORECASE)
 _TRANSCRIPT_RE = re.compile(
     r"\b(?:Transcript(?:\s+page)?|T\.)\s*([0-9]+(?:[ ,][0-9]{3})*)"
     r"(?:\s*[:,]\s*(?:lines?|ll?\.)?\s*(\d{1,2})(?:\s*[-\u2013]\s*(\d{1,2}))?)?",
@@ -407,7 +411,8 @@ def _version_for_document_coordinate(
 
 _SUBCASE_SOURCE_RE = re.compile(r"/((?:IA|PL)\d{3})/", re.IGNORECASE)
 _BARE_FILING_RE = re.compile(r"^F\d{5}(?:/|$)", re.IGNORECASE)
-_UNPADDED_RE = re.compile(r"^([WP])(\d{4})$", re.IGNORECASE)
+# The sub-number travels with the padded number: P1136.1 → P01136.1, never P01136.
+_UNPADDED_RE = re.compile(r"^([WP])(\d{4})((?:\.\d{1,3})?)$", re.IGNORECASE)
 _BASE_FILING_RE = re.compile(r"^((?:(?:IA|PL)\d{3}/)?F\d{5})", re.IGNORECASE)
 
 
@@ -427,6 +432,9 @@ def _hearing_date(value: int) -> date | None:
 def _unresolved_rule(session: Session, case: Case, identifier: str) -> str:
     """Distinguish a held filing cited in an unheld version from an unheld target."""
     bare = canonical_identifier(identifier).removeprefix(f"{case.case_number.upper()}/")
+    if _EXHIBIT_PART_RE.match(bare):
+        # No registry row for this exact sub-number; the base exhibit is not it.
+        return "unresolved.exhibit_part_not_registered"
     base = _BASE_FILING_RE.match(bare)
     if base is not None and base.group(1) != bare:
         rows = _candidate_rows(session, case, base.group(1))
@@ -621,7 +629,7 @@ def resolve_extracted(
     unpadded = _UNPADDED_RE.match(identifier)
     if not rows and unpadded is not None:
         # P1070 / W4018 are the same official numbers as P01070 / W04018.
-        padded = f"{unpadded.group(1).upper()}0{unpadded.group(2)}"
+        padded = f"{unpadded.group(1).upper()}0{unpadded.group(2)}{unpadded.group(3)}"
         rows = _preferred_rows(_candidate_rows(session, case, padded), padded)
         rule = "identifier.zero_padded"
     if not rows:

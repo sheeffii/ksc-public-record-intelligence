@@ -171,3 +171,115 @@ def test_stale_citations_are_retired_only_when_unreviewed_and_unreferenced(
         )
     )
     assert audit is not None and audit.detail["raw_text"] == "F99999"
+
+
+def test_exhibit_sub_numbers_resolve_exactly_or_stay_unresolved(
+    session: Session, case: Case
+) -> None:
+    from ksc_api.models import EntityKind, Exhibit, IdentifierKind, RecordIdentifier
+
+    def register(official: str) -> Exhibit:
+        exhibit = Exhibit(
+            case_id=case.id,
+            official_exhibit_id=official,
+            title=f"Exhibit {official}",
+            status="unknown",
+            visibility="public",
+        )
+        session.add(exhibit)
+        session.flush()
+        session.add(
+            RecordIdentifier(
+                case_id=case.id,
+                identifier=official,
+                normalized_identifier=official,
+                identifier_kind=IdentifierKind.EXHIBIT,
+                entity_kind=EntityKind.EXHIBIT,
+                is_primary=True,
+                exhibit_id=exhibit.id,
+            )
+        )
+        session.flush()
+        return exhibit
+
+    base, part = register("P09099"), register("P09136.2")
+    register("P09136")
+
+    def resolve(identifier: str):
+        citation = ExtractedCitation(
+            raw_text=identifier,
+            normalized_identifier=identifier,
+            citation_type=CitationType.EXHIBIT,
+        )
+        return resolve_extracted(session, case, citation, source_version_ref="F-DEMO-001/RED")
+
+    assert resolve("P09099").exhibit_id == base.id
+    # No prefix fallback: the base exists, the exact sub-number does not.
+    missing = resolve("P09099.1")
+    assert missing.state is ResolutionState.UNRESOLVED and missing.exhibit_id is None
+    assert missing.rule == "unresolved.exhibit_part_not_registered"
+    # An exact sub-number resolves to itself, never to its registered base.
+    exact = resolve("P09136.2")
+    assert exact.state is ResolutionState.RESOLVED and exact.exhibit_id == part.id
+    padded = resolve("P9136.2")
+    assert padded.exhibit_id == part.id and padded.rule == "identifier.zero_padded"
+    for other in ("P09136.1", "P09136.3", "P09136.4"):
+        assert resolve(other).state is ResolutionState.UNRESOLVED
+
+
+def test_stale_citation_retires_with_its_derived_edge_only(session: Session, case: Case) -> None:
+    from ksc_api.models import (
+        AuditLog,
+        Citation,
+        GraphNode,
+        Relationship,
+        RelationshipOrigin,
+        RelationshipType,
+        VerificationState,
+    )
+    from ksc_ingestion.parse_pipeline import Phase8Pipeline
+
+    nodes = session.scalars(select(GraphNode).where(GraphNode.case_id == case.id).limit(2)).all()
+    assert len(nodes) == 2
+
+    def stale_with_edge(origin: RelationshipOrigin) -> tuple[Citation, Relationship]:
+        citation = Citation(
+            case_id=case.id,
+            raw_text="P09099",
+            normalized_text="P09099",
+            citation_type=CitationType.EXHIBIT,
+            resolution_state=ResolutionState.UNRESOLVED,
+            display="UNRESOLVED",
+        )
+        session.add(citation)
+        session.flush()
+        edge = Relationship(
+            case_id=case.id,
+            from_node_id=nodes[0].id,
+            to_node_id=nodes[1].id,
+            relationship_type=RelationshipType.CITED_IN,
+            citation_id=citation.id,
+            verification_state=VerificationState.UNREVIEWED,
+            source_category="court",
+            extraction_origin=origin,
+        )
+        session.add(edge)
+        session.flush()
+        return citation, edge
+
+    derived, derived_edge = stale_with_edge(RelationshipOrigin.DETERMINISTIC_CITATION)
+    curated, curated_edge = stale_with_edge(RelationshipOrigin.SOURCE_DOCUMENTED)
+    retired = Phase8Pipeline._retire_stale_citations(session, [derived, curated])
+    session.flush()
+
+    # Only the citation whose sole reference is its own derived edge goes.
+    assert retired == [derived.id]
+    assert session.get(Relationship, derived_edge.id) is None
+    assert session.get(Citation, curated.id) is not None
+    assert session.get(Relationship, curated_edge.id) is not None
+    audit = session.scalar(
+        select(AuditLog).where(
+            AuditLog.action == "citation.retired", AuditLog.entity_id == str(derived.id)
+        )
+    )
+    assert audit is not None and audit.detail["derived_edges_removed"] == [str(derived_edge.id)]

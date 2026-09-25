@@ -73,3 +73,25 @@ def test_identifier_after_another_courts_case_number_records_that_case() -> None
         # A semicolon starts a new citation: not bound to the preceding case.
         "P00005": None,
     }
+
+
+def test_exhibit_sub_numbers_keep_their_identity() -> None:
+    # Phase 19C: "P00099.1" is its own exhibit, never the base P00099.
+    text = (
+        "P00099, P00099.1; P01136, P01136.1, P01136.2, P01136.3 and P01136.4; "
+        "P00761.7_ET:p.21; P00099_ET; P1136.2; P00099.1234."
+    )
+    identifiers = [c.normalized_identifier for c in extract_citations(text)]
+    assert identifiers == [
+        "P00099",
+        "P00099.1",
+        "P01136",
+        "P01136.1",
+        "P01136.2",
+        "P01136.3",
+        "P01136.4",
+        "P00761.7",
+        "P1136.2",
+    ]
+    # A sub-number is never truncated to its base, and no base appears twice.
+    assert identifiers.count("P00099") == 1 and "P00761" not in identifiers
