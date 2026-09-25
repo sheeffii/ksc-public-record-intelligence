@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-25 (Phase 20 setup; 20A NEXT)
+Last updated: 2026-09-25 (Phase 20A complete; 20B not started)
 
 ## Milestones
 
@@ -27,7 +27,7 @@ Last updated: 2026-09-25 (Phase 20 setup; 20A NEXT)
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
-| **20** | **Source-native intelligent PDF and transcript Reader**                                                   | **IN PROGRESS (2026-09-25)** — roadmap prepared; 20A NEXT; no implementation started                    |
+| **20** | **Source-native intelligent PDF and transcript Reader**                                                   | **IN PROGRESS (2026-09-25)** — 20A complete; stop before 20B                                             |
 
 ## Roadmap
 
@@ -50,9 +50,10 @@ dependency, not an active completion blocker. Phase 16 remains **IN PROGRESS**;
 its remaining blockers are external deployment/alerting only and it will resume
 when public deployment is desired. Phase 17 is complete against its explicitly
 declared known-public-corpus scope. Phase 18 is complete: Passes A and B align
-the research surfaces to that real-data baseline. Phase 19 is complete. Phase 20
-is registered and remains at its setup checkpoint; 20A is next and no Reader
-implementation has started.
+the research surfaces to that real-data baseline. Phase 19 is complete. Phase
+20A is complete: exact-version PDF delivery, native geometry, reusable
+SourceAnchor/SourceSpan and the source-first original PDF Reader are implemented
+and audited. Phase 20 remains in progress; 20B has not started.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -850,20 +851,33 @@ experience`).
   `PHASE19_QUALITY_GATE.md` → "Pass C", `manifests/phase19c-review.json`,
   ADR-026.
 
-## Phase 20 setup checkpoint (2026-09-25)
+## Phase 20A checkpoint (2026-09-25)
 
 - Branch renamed in place to
   `feat/phase-20-source-native-intelligent-reader` from the Phase 19 closeout
   `8661630`; no second branch was created.
 - Execution contract:
   `docs/roadmap/PHASE_20_SOURCE_NATIVE_INTELLIGENT_PDF_AND_TRANSCRIPT_READER.md`.
-- Status: **IN PROGRESS** for milestone tracking; **20A NEXT**. No application,
-  schema, ingestion or test change is part of this setup checkpoint.
-- Planned passes: 20A source geometry / SourceAnchor / original PDF viewer; 20B
-  transcript-native Reader / synchronization / research overlays; 20C deep
-  source-fidelity audit and closeout.
-- No additional record acquisition, Phase 16 work or Phase 20A implementation
-  has started.
+- Status: **IN PROGRESS** for milestone tracking; **20A COMPLETE**; stop before
+  20B pending explicit authorization.
+- Implementation commit: `70596a4`.
+- Migration `0015` adds version/page-specific word geometry, page dimensions,
+  rotation, extraction/run lineage, reusable `SourceSpan`, `SourceRegion` and
+  typed `SourceAnchor` records.
+- Final idempotent run `a7774d5a-d206-43b2-b162-65e5146a9626`: 201/201
+  versions, 9,439 native pages, 8 `ocr_required` pages, 2,551,752 word boxes and
+  58,855 anchors. Precision: 8,465 exact geometry · 11,002 page-and-line ·
+  39,375 page-only · 13 text-only; zero OCR geometry and zero unavailable.
+- The exact stored PDF is range-streamed by immutable version identity. The
+  source-first Reader uses a bundled PDF.js worker, renders one selected page,
+  provides page/zoom/fit/reset controls and draws only persisted exact regions.
+- Full-table integrity checks are zero. Real-data Playwright passed 6/6 on
+  desktop and Pixel 7, including a 716-page filing, a 172-page transcript,
+  zoom/fit/resize alignment and page-only no-highlight fallback.
+- Evidence: `docs/ingestion/PHASE20A_SOURCE_GEOMETRY_REPORT.md` and
+  `docs/ingestion/manifests/phase20a-source-geometry.json`.
+- No records were acquired, no original artifact changed, Phase 19 was not
+  redone, and Phase 16 was not resumed.
 
 ## Technical debt / notes
 

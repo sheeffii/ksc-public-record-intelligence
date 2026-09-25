@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "phase": "20A",
+  "generated_on": "2026-09-25",
+  "case_number": "KSC-BC-2020-06",
+  "status": "PASS",
+  "processing_run": {
+    "id": "a7774d5a-d206-43b2-b162-65e5146a9626",
+    "processor": "phase20a-source-geometry",
+    "processor_version": "1",
+    "status": "completed",
+    "selected": 201,
+    "processed": 201,
+    "failed": 0,
+    "dependencies": {
+      "pdfminer.six": "20260107",
+      "pypdf": "6.19.0",
+      "pdfjs-dist": "5.7.284"
+    }
+  },
+  "geometry": {
+    "versions_with_native_geometry": 201,
+    "corpus_pages": 9447,
+    "native_pages": 9439,
+    "ocr_required_pages": 8,
+    "ocr_geometry_pages": 0,
+    "word_rows": 2551752,
+    "missing_dimensions_or_rotation": 0
+  },
+  "anchors": {
+    "total": 58855,
+    "spans": 46752,
+    "regions": 9471,
+    "precision": {
+      "exact_geometry": 8465,
+      "ocr_geometry": 0,
+      "page_and_line": 11002,
+      "page_only": 39375,
+      "text_only": 13,
+      "unavailable": 0
+    },
+    "object_type": {
+      "entity_occurrence": 26693,
+      "citation": 20037,
+      "relationship": 12124,
+      "finding": 1
+    },
+    "entity_subtype": {
+      "person": 13970,
+      "witness": 5552,
+      "organization": 951,
+      "exhibit": 6220
+    }
+  },
+  "ocr_required": {
+    "official_version_ref": "KSC-BC-2020-06/T/2024-04-29",
+    "pdf_page_indexes": [37, 44, 59, 67, 72, 73, 80, 89]
+  },
+  "integrity": {
+    "geometry_out_of_bounds": 0,
+    "regions_out_of_bounds": 0,
+    "exact_without_region": 0,
+    "fallback_with_region": 0,
+    "page_lineage_not_completed": 0,
+    "span_lineage_not_completed": 0
+  },
+  "performance": {
+    "range_bytes": 65536,
+    "five_sample_median_ms": {
+      "short_F03752": 27.248,
+      "large_F03667_COR_RED": 25.842,
+      "long_transcript_T_2026_02_13_sqi": 28.777
+    },
+    "representative_browser_test_seconds": {
+      "desktop": 9.4,
+      "pixel_7": 8.4
+    },
+    "mounted_pdf_canvases_per_reader": 1
+  },
+  "verification": {
+    "migration_geometry_range_tests": 11,
+    "backend_pytest": 342,
+    "frontend_vitest": 256,
+    "phase20a_playwright_desktop_and_pixel7": 6,
+    "ruff": "pass",
+    "mypy_strict": "pass",
+    "eslint": "pass",
+    "prettier": "pass",
+    "typescript_strict": "pass",
+    "next_production_build": "pass"
+  },
+  "known_gaps": [
+    "Eight native-empty pages are ocr_required; no OCR engine or OCR geometry was run.",
+    "Transcript-native Reader and PDF-to-transcript synchronization are deferred to authorized Phase 20B work."
+  ]
+}

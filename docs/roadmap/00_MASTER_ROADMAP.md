@@ -86,7 +86,7 @@ The original core roadmap contains **13 numbered phases**. Eight additional mile
 | 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim |
 | 18 | Research Experience & Visual Excellence | **COMPLETE (2026-09-24)** — tag `phase-18-complete` |
 | 19 | Corpus Depth & Verified Entity Intelligence | **COMPLETE (2026-09-25)** — tag `phase-19-complete` |
-| 20 | Source-Native Intelligent PDF & Transcript Reader | **IN PROGRESS (2026-09-25)** — 20A NEXT; setup only |
+| 20 | Source-Native Intelligent PDF & Transcript Reader | **IN PROGRESS (2026-09-25)** — 20A complete; stop before 20B |
 
 ## Recommended execution order from now
 
@@ -119,7 +119,7 @@ Phase 15
        ↓
      Phase 19 (COMPLETE 2026-09-25)
        ↓
-     Phase 20 (IN PROGRESS; 20A NEXT)
+     Phase 20 (IN PROGRESS; 20A complete, 20B not started)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -133,9 +133,9 @@ deployment/alerting blockers intentionally deferred. Phase 18 is **COMPLETE
 (2026-09-24)**. Phase 19 is **COMPLETE (2026-09-25)**, tag `phase-19-complete`:
 verified mentions, header-backed appearances, exhibit status history, typed
 evidence edges and fail-closed citations over the known public corpus. Phase 20
-is **IN PROGRESS (2026-09-25)** at its setup checkpoint; 20A (source geometry,
-SourceAnchor architecture and original PDF viewer) is NEXT and implementation
-has not started.
+is **IN PROGRESS (2026-09-25)** with 20A complete; 20B (transcript-native Reader,
+deterministic PDF synchronization and research overlays) has not started. Stop
+pending explicit authorization.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

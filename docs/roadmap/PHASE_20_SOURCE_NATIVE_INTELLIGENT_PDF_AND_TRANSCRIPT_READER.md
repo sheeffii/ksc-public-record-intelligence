@@ -1,7 +1,7 @@
 # Phase 20 — Source-Native Intelligent PDF & Transcript Reader
 
-**Status:** IN PROGRESS (2026-09-25) — 20A NEXT. Setup only; no Phase 20
-implementation has started.
+**Status:** IN PROGRESS (2026-09-25) — 20A COMPLETE. Stop before 20B pending
+explicit authorization.
 
 ## Goal
 
@@ -72,7 +72,7 @@ and consumers; it must not assume that character offsets share one text base.
 
 | Pass | Scope | Entry / stop rule |
 |---|---|---|
-| **20A** | Source geometry, SourceAnchor architecture and original PDF viewer | NEXT. Stop after schema/extraction/viewer gates and checkpoint docs. |
+| **20A** | Source geometry, SourceAnchor architecture and original PDF viewer | COMPLETE (2026-09-25). Checkpoint recorded; stopped before 20B. |
 | **20B** | Transcript-native Reader, deterministic PDF synchronization and research overlays | Start only after 20A is accepted. Stop after integration/mobile gates and checkpoint docs. |
 | **20C** | Deep source-fidelity audit, performance/accessibility verification and closeout | Start only after 20B is accepted. Do not begin another phase after closeout. |
 
@@ -202,16 +202,16 @@ was extracted?**
 
 ### 20A exit criteria
 
-- [ ] Original stored PDFs are safely served and rendered with version identity,
+- [x] Original stored PDFs are safely served and rendered with version identity,
   official-source link, page controls and zoom/fit controls.
-- [ ] Version-specific page geometry and extractor lineage are persisted with
+- [x] Version-specific page geometry and extractor lineage are persisted with
   migration round-trip, bounds and idempotency tests.
-- [ ] One reusable SourceSpan/SourceAnchor contract covers the required object
+- [x] One reusable SourceSpan/SourceAnchor contract covers the required object
   classes and preserves existing provenance/verification semantics.
-- [ ] Geometry-backed highlights survive zoom, rotation and resize; every
+- [x] Geometry-backed highlights survive zoom, rotation and resize; every
   non-exact case uses an explicit fallback.
-- [ ] Native-text and representative OCR paths are labelled and audited.
-- [ ] 20A focused gates and a real-source sampling checkpoint are recorded.
+- [x] Native-text and representative OCR paths are labelled and audited.
+- [x] 20A focused gates and a real-source sampling checkpoint are recorded.
 
 ## 20B — Transcript-native Reader, synchronization and research overlays
 
@@ -398,10 +398,13 @@ Phase 20 does **not**:
 
 ## Completion Record
 
-- **Status:** IN PROGRESS (setup only).
+- **Status:** IN PROGRESS (20A complete; Phase 20 not complete).
 - **Started:** 2026-09-25.
-- **Current checkpoint:** 20A NEXT.
-- **Implementation:** Not started.
+- **Current checkpoint:** 20A COMPLETE; 20B NOT STARTED.
+- **Implementation:** Migration `0015`, native geometry projection, reusable
+  SourceAnchor API, immutable ranged PDF delivery and source-first original PDF
+  Reader (`70596a4`). Evidence: `docs/ingestion/PHASE20A_SOURCE_GEOMETRY_REPORT.md` and
+  `docs/ingestion/manifests/phase20a-source-geometry.json`.
 - **Tag:** Not created.
 
 ## Stop condition

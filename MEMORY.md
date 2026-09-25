@@ -7,8 +7,8 @@ Live checkpoint. Repository state wins over this note.
 - Current branch: `feat/phase-20-source-native-intelligent-reader`, renamed in
   place from `feat/phase-20` at Phase 19 closeout `8661630`. `main` and
   `origin/main` contain Phase 19 through `8661630`.
-- Current milestone: **Phase 20 IN PROGRESS (setup only, 2026-09-25)**; **20A
-  NEXT**. The roadmap exists, but no Phase 20 implementation has started. Phase
+- Current milestone: **Phase 20 IN PROGRESS (2026-09-25)**; **20A COMPLETE**;
+  **20B NOT STARTED**. Phase
   19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
   are pushed. Phase 18 is COMPLETE (tag `phase-18-complete`). Phase
   16 remains **IN PROGRESS**; local
@@ -17,6 +17,9 @@ Live checkpoint. Repository state wins over this note.
   deployment is desired.
 - Phase 18 Pass A implementation commit: `5733533`; Pass B implementation
   follows `c65a5f7` (see `git log`).
+- Phase 20A implementation commit: `70596a4`; checkpoint evidence is
+  `docs/ingestion/PHASE20A_SOURCE_GEOMETRY_REPORT.md` and
+  `docs/ingestion/manifests/phase20a-source-geometry.json`.
 - Push state before Phase 20 setup (2026-09-25): `main` and `origin/main` are
   synchronized at the Phase 19 closeout `8661630`; `phase-19-complete` and the
   Phase 19 feature branch are pushed.
@@ -27,7 +30,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0014`.
+- Migration head and live database revision: `0015`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -322,18 +325,30 @@ Live checkpoint. Repository state wins over this note.
   verified court relationship. Future platform connectors or external-AI use
   require a new explicit milestone and terms/privacy review.
 
-## Next
+## Phase 20A result and next
 
-Phase 20 is IN PROGRESS at the setup-only checkpoint (2026-09-25). Its execution
-contract is
-`docs/roadmap/PHASE_20_SOURCE_NATIVE_INTELLIGENT_PDF_AND_TRANSCRIPT_READER.md`.
-20A — source geometry, SourceAnchor architecture and the original PDF viewer —
-is NEXT. Do not implement 20A during the setup checkpoint, acquire more records,
-revisit Phase 19 or resume Phase 16.
+Phase 20 remains IN PROGRESS. 20A is complete on
+`feat/phase-20-source-native-intelligent-reader`; stop before 20B pending
+explicit authorization.
 
-The Phase 20 setup branch is
-`feat/phase-20-source-native-intelligent-reader`. Commit and push the setup docs,
-then stop before implementation.
+- Migration `0015`; final run `a7774d5a-d206-43b2-b162-65e5146a9626`.
+- 201 versions · 9,439 native pages · 8 `ocr_required` pages · 2,551,752 word
+  boxes · 58,855 SourceAnchors (8,465 exact geometry, 0 OCR geometry, 11,002
+  page-and-line, 39,375 page-only, 13 text-only, 0 unavailable).
+- Exact original PDFs are range-streamed by immutable version identity. The
+  source-first Reader renders one selected PDF.js page with version/source
+  metadata, page/zoom/fit/reset controls, exact persisted overlays and honest
+  no-rectangle fallbacks; parsed text stays secondary.
+- Geometry/region/version/run integrity violations: 0. Real-data Phase 20A
+  Playwright: 6/6 desktop + Pixel 7; Phase 19 regression: 8/8.
+- Report: `docs/ingestion/PHASE20A_SOURCE_GEOMETRY_REPORT.md`; manifest:
+  `docs/ingestion/manifests/phase20a-source-geometry.json`.
+- Known gap: the eight native-empty pages remain explicitly `ocr_required`; no
+  OCR engine ran and no OCR geometry is claimed.
+
+Next only after authorization: 20B transcript-native Reader, deterministic
+PDF↔transcript synchronization and source-backed research overlays. Do not
+acquire records, revisit Phase 19 or resume Phase 16 as part of that decision.
 
 Final state:
 
@@ -345,7 +360,8 @@ Final state:
 - Citations: 11,072 resolved / 183 ambiguous / 8,256 unresolved (2,038
   exhibit parts) / 526 invalid.
 - 130 exhibits withdrawn with approval: 12 other-case, 118 sub-number base.
-- Migration head `0014`, parser `ksc-native-pdf/3`, exhibit mention rule v3.
+- Migration head `0015`, parser `ksc-native-pdf/3`, geometry extractor
+  `ksc-native-pdf-geometry/1`, exhibit mention rule v3.
 
 The reconciliation order after new records:
 
