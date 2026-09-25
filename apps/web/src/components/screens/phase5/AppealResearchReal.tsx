@@ -98,26 +98,28 @@ export function RealAppealScreen({
                 </div>
                 <p className="text-fg-secondary mt-3 text-[11px]">{issue.courtTreatmentNote}</p>
               </SectionCard>
-              {issue.sources.map((source) => (
-                <RecordBlock
-                  key={source.id}
-                  sourceType={source.source.citation.sourceType}
-                  title={t(`role.${source.role}`)}
-                >
-                  <p className="font-serif text-[12px] leading-relaxed whitespace-pre-line">
-                    {source.excerpt}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <SourceLink source={source.source} />
-                    <VerificationBadge state={source.verification} size="sm" />
-                  </div>
-                  {source.note ? (
-                    <p className="text-fg-muted mt-2 text-[10px]">{source.note}</p>
-                  ) : null}
-                </RecordBlock>
-              ))}
+              <div className="grid gap-3 lg:grid-cols-2">
+                {issue.sources.map((source) => (
+                  <RecordBlock
+                    key={source.id}
+                    sourceType={source.source.citation.sourceType}
+                    title={t(`role.${source.role}`)}
+                  >
+                    <p className="line-clamp-8 font-serif text-[12px] leading-relaxed whitespace-pre-line">
+                      {source.excerpt}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <SourceLink source={source.source} />
+                      <VerificationBadge state={source.verification} size="sm" />
+                    </div>
+                    {source.note ? (
+                      <p className="text-fg-muted mt-2 text-[10px]">{source.note}</p>
+                    ) : null}
+                  </RecordBlock>
+                ))}
+              </div>
               <SectionCard title={t("missingMaterial")}>
-                <div className="space-y-2">
+                <div className="grid gap-2 md:grid-cols-2">
                   {issue.missingMaterial.map((item) => (
                     <GapNotice
                       key={item.reference}

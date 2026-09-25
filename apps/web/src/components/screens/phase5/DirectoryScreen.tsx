@@ -114,7 +114,7 @@ export function DirectoryScreen({
   const identityColumns: readonly Column<MockDirectoryRow>[] = [
     {
       key: "id",
-      header: tb("exhibitColumns.id"),
+      header: kind === "exhibits" ? tb("exhibitColumns.id") : t21("identifier"),
       identifier: true,
       minWidth: 100,
       sortable: true,
@@ -240,7 +240,15 @@ export function DirectoryScreen({
               ]
             : identityColumns;
 
-  if (kind === "documents" || kind === "exhibits") {
+  const usesResearchExplorer = [
+    "documents",
+    "exhibits",
+    "people",
+    "witnesses",
+    "findings",
+  ].includes(kind);
+
+  if (usesResearchExplorer) {
     return (
       <AppShell footer={tFooter("referenceCounts")}>
         <div className="border-border-subtle bg-bg-deep flex min-h-[52px] flex-wrap items-center gap-2 border-b px-4 py-2">
@@ -249,6 +257,13 @@ export function DirectoryScreen({
               <h1 className="text-fg text-[19px] font-bold tracking-[-0.02em]">{screenTitle}</h1>
               <span className="text-fg-secondary tabular text-[10.5px]">
                 {t21("corpusCount", { count: all.length })}
+              </span>
+              <span className="sr-only">
+                {tb("rowsShown", {
+                  from: rows.length ? (current - 1) * pageSize + 1 : 0,
+                  to: Math.min(current * pageSize, rows.length),
+                  total: rows.length,
+                })}
               </span>
             </div>
           </div>
@@ -291,6 +306,19 @@ export function DirectoryScreen({
               ))}
             </select>
           </label>
+          {kind === "witnesses" ? (
+            <label className="border-border bg-surface-raised text-fg-secondary rounded-control inline-flex h-8 items-center gap-2 border px-2 text-[10.5px]">
+              <input
+                type="checkbox"
+                checked={protectedOnly}
+                onChange={(event) => {
+                  setProtectedOnly(event.target.checked);
+                  setPage(1);
+                }}
+              />
+              {tb("protectedOnly")}
+            </label>
+          ) : null}
           <DensityToggle value={density} onChange={setDensity} />
           <a
             href={csv}
@@ -344,7 +372,15 @@ export function DirectoryScreen({
                   setPage(1);
                 }}
                 selectedId={selected?.id}
-                selectedAccentClass={kind === "exhibits" ? "border-l-doc" : "border-l-accent"}
+                selectedAccentClass={
+                  kind === "exhibits"
+                    ? "border-l-doc"
+                    : kind === "witnesses"
+                      ? "border-l-witness"
+                      : kind === "findings"
+                        ? "border-l-court"
+                        : "border-l-accent"
+                }
                 onSelect={(row) => {
                   setSelectedId(row.id);
                   setMobileInspectorOpen(true);
@@ -387,7 +423,13 @@ export function DirectoryScreen({
                   <p
                     className={cn(
                       "identifier mt-1 text-[16px]",
-                      kind === "exhibits" ? "text-doc" : "text-accent",
+                      kind === "exhibits"
+                        ? "text-doc"
+                        : kind === "witnesses"
+                          ? "text-witness"
+                          : kind === "findings"
+                            ? "text-court"
+                            : "text-accent",
                     )}
                   >
                     {selected.id}
@@ -407,6 +449,8 @@ export function DirectoryScreen({
               <div className="space-y-5 p-4">
                 <div>
                   {kind === "exhibits" ? <SourceBadge type="exhibit" /> : null}
+                  {kind === "witnesses" ? <SourceBadge type="witness" /> : null}
+                  {kind === "findings" ? <SourceBadge type="court" /> : null}
                   <h2 className="text-fg mt-2 text-[14px] leading-snug font-semibold">
                     {selected.title}
                   </h2>
@@ -458,6 +502,35 @@ export function DirectoryScreen({
                         label: kind === "exhibits" ? t18("documentOccurrences") : t("sourcesUsed"),
                         value: <span className="tabular">{selected.references}</span>,
                       },
+                      ...(selected.counts
+                        ? [
+                            {
+                              key: "documents",
+                              label: t18("documentOccurrences"),
+                              value: (
+                                <span className="tabular">
+                                  {selected.counts.documentMentions ?? 0}
+                                </span>
+                              ),
+                            },
+                            {
+                              key: "transcripts",
+                              label: t18("testimonyOccurrences"),
+                              value: (
+                                <span className="tabular">
+                                  {selected.counts.transcriptMentions ?? 0}
+                                </span>
+                              ),
+                            },
+                            {
+                              key: "relationships",
+                              label: t18("openRelationships"),
+                              value: (
+                                <span className="tabular">{selected.relationshipCount ?? 0}</span>
+                              ),
+                            },
+                          ]
+                        : []),
                       {
                         key: "ver",
                         label: tb("verification"),

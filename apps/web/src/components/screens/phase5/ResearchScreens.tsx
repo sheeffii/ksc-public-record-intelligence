@@ -964,6 +964,7 @@ const LANE_FOR: Record<DateType, (typeof LANES)[number]> = {
 export function TimelineScreen({ initialItems }: { initialItems?: readonly TimelineItem[] }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
+  const ts = useTranslations("screens");
   const realData = initialItems !== undefined;
   const items = initialItems ?? mockRepository.getTimeline();
   const [visible, setVisible] = useState<Set<(typeof LANES)[number]>>(new Set(LANES));
@@ -979,11 +980,19 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
     testimony: t("testimonyDate"),
     decision: t("decision"),
   };
-  const era = (item: MockTimelineItem) =>
-    item.dateType === "event" ? "historical" : "proceedings";
   const itemYears = items
     .map((item) => Number(item.date.slice(0, 4)))
     .filter((year) => Number.isFinite(year));
+  const itemTimes = items
+    .map((item) => Date.parse(item.date))
+    .filter((time) => Number.isFinite(time));
+  const minTime = itemTimes.length ? Math.min(...itemTimes) : 0;
+  const maxTime = itemTimes.length ? Math.max(...itemTimes) : minTime + 1;
+  const timelinePosition = (item: MockTimelineItem) => {
+    const time = Date.parse(item.date);
+    if (!Number.isFinite(time) || maxTime === minTime) return 50;
+    return 4 + ((time - minTime) / (maxTime - minTime)) * 88;
+  };
   const timelineRange = itemYears.length
     ? `${Math.min(...itemYears)} — ${Math.max(...itemYears)}`
     : "—";
@@ -995,7 +1004,7 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
       <ScreenHeader
         realData={realData}
         eyebrow={t("allRecords")}
-        title={t("dateTypes")}
+        title={ts("timeline")}
         description={tb("dateMergeNote")}
       />
       <Toolbar>
@@ -1036,9 +1045,7 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
       <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_314px]">
         <div className="min-w-0 space-y-3">
           {realData ? <NoteStrip>{tb("realDataNotice")}</NoteStrip> : <DemoNotice />}
-          <div
-            className={`border-border-subtle bg-surface rounded-card overflow-x-auto border ${realData ? "hidden" : "hidden md:block"}`}
-          >
+          <div className="border-border-subtle bg-surface rounded-card hidden overflow-x-auto border md:block">
             <div className="grid grid-cols-[140px_minmax(0,1fr)]">
               <div className="border-border-faint border-r border-b p-2 text-[10px]">
                 {tb("layers")}
@@ -1060,11 +1067,15 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
               </div>
               {LANES.map((lane) => {
                 const laneItems = items.filter((i) => LANE_FOR[i.dateType] === lane);
+                const overviewItems = laneItems.filter(
+                  (_, index) => index % Math.max(1, Math.ceil(laneItems.length / 7)) === 0,
+                );
                 const on = visible.has(lane);
                 return (
                   <div key={lane} className="contents">
                     <button
                       type="button"
+                      aria-label={tb(`lanes.${lane}`)}
                       onClick={() =>
                         setVisible((v) => {
                           const n = new Set(v);
@@ -1076,7 +1087,10 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
                       aria-pressed={on}
                       className={`border-border-faint border-r border-b p-2 text-left text-[11px] ${on ? "text-fg" : "text-fg-muted line-through"}`}
                     >
-                      {tb(`lanes.${lane}`)}
+                      <span>{tb(`lanes.${lane}`)}</span>
+                      <span className="text-fg-muted tabular ml-1 text-[9px]">
+                        {laneItems.length}
+                      </span>
                     </button>
                     <div
                       className="border-border-faint relative min-h-11 border-b"
@@ -1093,16 +1107,15 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
                         </span>
                       ) : null}
                       {on
-                        ? laneItems.map((item, i) => (
+                        ? overviewItems.map((item) => (
                             <button
                               key={item.id}
                               type="button"
                               onClick={() => setSelected(item)}
                               aria-pressed={selected?.id === item.id}
-                              className={`rounded-badge absolute top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] date-${item.dateType} bg-surface`}
+                              className={`rounded-badge bg-surface absolute top-1/2 max-w-36 -translate-x-1/2 -translate-y-1/2 truncate px-1.5 py-0.5 text-[10px] date-${item.dateType}`}
                               style={{
-                                left:
-                                  era(item) === "historical" ? `${10 + i * 12}%` : `${55 + i * 8}%`,
+                                left: `${timelinePosition(item)}%`,
                               }}
                             >
                               {item.label}
@@ -1115,7 +1128,7 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
               })}
             </div>
           </div>
-          <ol className={realData ? "space-y-2" : "space-y-2 md:hidden"}>
+          <ol className="space-y-2 md:hidden">
             {orderedItems.map((item) => (
               <li key={item.id}>
                 <button

@@ -66,15 +66,24 @@ export function RealPersonScreen({
         eyebrow={t15("verifiedPublicRecord")}
         title={person.displayName}
         description={t15("sourceBacked")}
-        actions={<SourceBadge type="court" />}
+        actions={
+          <div className="flex gap-2">
+            <ActionLink href={`/network?focus=${encodeURIComponent(person.slug)}`}>
+              {t("viewNetwork")}
+            </ActionLink>
+            <ActionLink href={`/search?q=${encodeURIComponent(person.displayName)}`}>
+              {t("search")}
+            </ActionLink>
+          </div>
+        }
       />
-      <div className="mx-auto w-full max-w-[1100px] space-y-3 p-3 md:p-4">
+      <div className="mx-auto w-full max-w-[1440px] space-y-3 p-3 md:p-4">
         <StatStrip
           label={t15("referenceCounts")}
           disclaimer={tr("disclaimer")}
           items={countKeys.map((key) => ({ key, label: tr(key), value: person.counts[key] }))}
         />
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
           <Panel title={t18("recordActivity")}>
             <div className="grid gap-2 lg:grid-cols-2">
               <RecordActivity
@@ -100,12 +109,22 @@ export function RealPersonScreen({
             </div>
           </Panel>
           <Panel title={t("metadata")}>
-            <KeyValue
-              rows={[
-                { key: "role", label: t15("role"), value: person.role || "—" },
-                { key: "aliases", label: t15("aliases"), value: person.aliases.join(" · ") || "—" },
-              ]}
-            />
+            <KeyValue rows={[{ key: "role", label: t15("role"), value: person.role || "—" }]} />
+            <p className="section-label mt-3 mb-1">{t15("aliases")}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {person.aliases.length ? (
+                person.aliases.slice(0, 6).map((alias) => (
+                  <span
+                    key={alias}
+                    className="rounded-chip border-border bg-surface-raised text-fg-secondary border px-2 py-1 text-[10px]"
+                  >
+                    {alias}
+                  </span>
+                ))
+              ) : (
+                <span className="text-fg-muted text-[11px]">—</span>
+              )}
+            </div>
             <div className="mt-3 flex gap-2">
               <ActionLink href={`/search?q=${encodeURIComponent(person.displayName)}`}>
                 {t("search")}
@@ -158,13 +177,13 @@ export function RealWitnessScreen({
         description={witness.protected ? t15("protectedWitnessBoundary") : t15("sourceBacked")}
         actions={<SourceBadge type="witness" />}
       />
-      <div className="mx-auto w-full max-w-[1100px] space-y-3 p-3 md:p-4">
+      <div className="mx-auto w-full max-w-[1440px] space-y-3 p-3 md:p-4">
         <StatStrip
           label={t15("referenceCounts")}
           disclaimer={tr("disclaimer")}
           items={countKeys.map((key) => ({ key, label: tr(key), value: counts[key] }))}
         />
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-3">
             <Panel title={t18("recordActivity")}>
               <div className="grid gap-2 lg:grid-cols-2">
@@ -383,22 +402,28 @@ function ResearchTrail({
   const t = useTranslations("phase5");
   const t18 = useTranslations("phase18");
   const t19 = useTranslations("phase19");
-  const verified = mentions.items.filter((mention) => mention.matchClass === "VERIFIED_MENTION");
-  const reviewRequired = mentions.items.filter(
-    (mention) => mention.matchClass === "REVIEW_REQUIRED",
-  );
-  const sources = occurrences.filter(
-    (row, index, all) =>
-      (row.category === "documents" || row.category === "transcripts") &&
-      // Only coordinate-bearing hits are exact occurrences; title-only matches stay in Search.
-      (row.citation?.page !== undefined ||
-        row.citation?.paraFrom !== undefined ||
-        row.citation?.lineFrom !== undefined) &&
-      all.findIndex((candidate) => candidate.href === row.href) === index,
-  );
+  const verified = mentions.items
+    .filter((mention) => mention.matchClass === "VERIFIED_MENTION")
+    .slice(0, 8);
+  const reviewRequired = mentions.items
+    .filter((mention) => mention.matchClass === "REVIEW_REQUIRED")
+    .slice(0, 6);
+  const sources = occurrences
+    .filter(
+      (row, index, all) =>
+        (row.category === "documents" || row.category === "transcripts") &&
+        // Only coordinate-bearing hits are exact occurrences; title-only matches stay in Search.
+        (row.citation?.page !== undefined ||
+          row.citation?.paraFrom !== undefined ||
+          row.citation?.lineFrom !== undefined) &&
+        all.findIndex((candidate) => candidate.href === row.href) === index,
+    )
+    .slice(0, 6);
   const focusNode = network.nodes.find((node) => node.ref === entityRef);
   const edges = focusNode
-    ? network.edges.filter((edge) => edge.from === focusNode.id || edge.to === focusNode.id)
+    ? network.edges
+        .filter((edge) => edge.from === focusNode.id || edge.to === focusNode.id)
+        .slice(0, 8)
     : [];
   const nodeLabel = (id: string) => network.nodes.find((node) => node.id === id)?.label ?? "—";
   if (!mentions.items.length && !sources.length && !edges.length) return null;
@@ -410,7 +435,7 @@ function ResearchTrail({
             <Panel title={t19("verifiedMentions")}>
               {mentions.total > mentions.items.length ? (
                 <p className="text-fg-tertiary mb-2 text-[10px]">
-                  {t19("mentionTotal", { shown: mentions.items.length, total: mentions.total })}
+                  {t19("mentionTotal", { shown: verified.length, total: mentions.total })}
                 </p>
               ) : null}
               <MentionList mentions={verified} />

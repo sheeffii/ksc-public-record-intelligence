@@ -148,7 +148,7 @@ export function AiResearchReal({
       <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 lg:grid-cols-[214px_minmax(0,1fr)] xl:grid-cols-[214px_minmax(0,1fr)_292px]">
         <aside className="min-w-0 space-y-3">
           <Panel title={t("sessions")}>
-            <ul className="space-y-2 text-[11px]">
+            <ul className="max-h-[calc(100dvh-310px)] space-y-2 overflow-y-auto pr-1 text-[11px]">
               {sessions.map((session) => (
                 <li key={session.id}>
                   <Link href={`/ai/${session.id}`} className="text-accent line-clamp-2">
