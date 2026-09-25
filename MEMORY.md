@@ -4,11 +4,10 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-20-source-native-intelligent-reader`, renamed in
-  place from `feat/phase-20` at Phase 19 closeout `8661630`. `main` and
-  `origin/main` contain Phase 19 through `8661630`.
-- Current milestone: **Phase 20 COMPLETE (2026-09-25)**, tag
-  `phase-20-complete` (not merged to `main`). No later phase started. Phase
+- Current branch: `feat/phase-21-design-parity-research-ux`, created from clean
+  `main` at Phase 20 closeout `1473ce6`.
+- Current milestone: **Phase 21 IN PROGRESS (2026-09-25)**; **21A COMPLETE**.
+  Phase 20 is complete at tag `phase-20-complete`. Phase
   19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
   are pushed. Phase 18 is COMPLETE (tag `phase-18-complete`). Phase
   16 remains **IN PROGRESS**; local
@@ -28,6 +27,12 @@ Live checkpoint. Repository state wins over this note.
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. Both are
   contained in `main`.
 - Latest completion tag: annotated `phase-20-complete`.
+- Phase 21 is registered in
+  `docs/roadmap/PHASE_21_DESIGN_PARITY_AND_RESEARCH_UX.md`. The actual Home,
+  Search, command-search, Evidence Explorer, Document Reader, Mobile and System
+  artboards in `Design.html` were rendered and reviewed. The 21A implementation
+  is `253085c`; the parity audit and focused browser suite are `0a3092c`. Phase
+  21 remains in progress; 21B is not authorized.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
@@ -372,8 +377,8 @@ The Reader never substitutes a version or draws an anchor on another version.
 The audit spec `tests/e2e/phase20c.spec.ts` runs against the production build
 (`docker compose up -d --build api web`, then `E2E_REAL_DATA=1 pnpm e2e`).
 
-Next: no phase is authorized. Merging to `main`, Phase 21, or resuming Phase 16
-each need an explicit instruction.
+Next: Phase 21A is complete. Do not start 21B, merge to `main`, tag Phase 21 or
+resume Phase 16 without an explicit instruction.
 
 Final state:
 
@@ -408,6 +413,32 @@ Known limitations at close (non-blocking, fail closed):
 - no Albanian party filings in the held corpus.
 
 Do not close Phase 16.
+
+## Phase 21A checkpoint
+
+Phase 21 remains IN PROGRESS. 21A is complete on
+`feat/phase-21-design-parity-research-ux`; stop before 21B pending explicit
+authorization.
+
+- The shared shell, navigation and case stripe align with the approved system
+  artboard while retaining every supported real route.
+- Home uses the approved research-entry hierarchy with real corpus counts,
+  recent records and ingestion state.
+- Search and command search use real API results, explicit `SEARCH MATCH`
+  semantics, keyboard navigation and exact Phase 20 source actions.
+- Documents and Exhibits use the dense explorer/selection/inspector pattern;
+  exhibit status remains fail-closed and `UNKNOWN` where unsupported.
+- The parity audit is `docs/design/PHASE21A_DESIGN_PARITY_AUDIT.md`. The capture
+  matrix covers 1440px, 1024px and Pixel 7; no document-level horizontal
+  overflow was found.
+- Phase 21A browser verification: 9 passed and 1 intentionally skipped
+  duplicate capture. Phase 19 witness/exhibit regression: 4 passed. Changed
+  desktop/mobile routes pass automated accessibility checks.
+- Full gates pass: lint/format, mypy/TypeScript, 353 backend tests and 260
+  frontend tests.
+- Commits: implementation `253085c`; audit/test `0a3092c`.
+- Known differences are documented and carried into the later, unauthorized
+  checkpoints. No schema, ingestion or source-native Reader contract changed.
 
 ## Non-negotiable rules
 

@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-25 (Phase 20 COMPLETE; tag `phase-20-complete`)
+Last updated: 2026-09-25 (Phase 21 IN PROGRESS; 21A complete)
 
 ## Milestones
 
@@ -28,6 +28,7 @@ Last updated: 2026-09-25 (Phase 20 COMPLETE; tag `phase-20-complete`)
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
 | **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
+| **21** | **Design parity and research UX**                                                                         | **IN PROGRESS (2026-09-25)** — 21A complete; stop before 21B                                             |
 
 ## Roadmap
 
@@ -56,9 +57,32 @@ SourceAnchor/SourceSpan and the source-first original PDF Reader are implemented
 and audited. The 20B checkpoint adds transcript-segment anchors with
 validated line geometry, printed page-header context, page-scoped Reader reads
 and the three-layer source-native Reader. Phase 20 is complete: the 20C
-source-fidelity audit passed and the tag is `phase-20-complete`. No later phase
-has started.
+source-fidelity audit passed and the tag is `phase-20-complete`. Phase 21 has
+started on `feat/phase-21-design-parity-research-ux`; 21A is complete. Phase 21
+remains in progress, and 21B has not been authorized.
 Repository code, migrations, tests and Git state win over stale roadmap text.
+
+## Phase 21A checkpoint (2026-09-25)
+
+- Branch `feat/phase-21-design-parity-research-ux` created from clean `main` at
+  Phase 20 closeout `1473ce6`.
+- The actual `docs/design/Design.html` artboards for Home, Global Search,
+  command search, Evidence Explorer, Document Reader, Mobile and System were
+  rendered and reviewed alongside the written design contracts.
+- Rebuilt the shared shell/navigation, real-data homepage, Search and command
+  search, and Documents/Exhibits explorer surfaces toward the approved design
+  while preserving the existing data model and ingestion state.
+- The comparison audit is
+  `docs/design/PHASE21A_DESIGN_PARITY_AUDIT.md`; captures cover Home, Search,
+  Documents and Evidence at 1440px, 1024px and Pixel 7 with no document-level
+  horizontal overflow.
+- Real-data browser flows for command search, exact-source document navigation
+  and exhibit dossiers passed on desktop and mobile. Phase 19 witness and
+  exhibit regressions passed. Changed routes passed automated accessibility
+  checks at desktop and Pixel 7 sizes.
+- Implementation commit `253085c`; audit/test commit `0a3092c`.
+- `make lint`, `make typecheck` and `make test` pass (353 backend and 260
+  frontend tests). Phase 21 is not complete; 21B has not started.
 
 ## Completed features (Phase 4)
 

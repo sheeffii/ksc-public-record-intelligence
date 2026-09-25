@@ -61,6 +61,7 @@ The original core roadmap contains **13 numbered phases**. Eight additional mile
 - **Phase 18** — Research Experience & Visual Excellence. No separate phase file exists; its acceptance contract was the 16-criterion closeout brief recorded in `docs/PROJECT_STATE.md`.
 - **Phase 19** — Corpus Depth & Verified Entity Intelligence (`PHASE_19_CORPUS_DEPTH_AND_VERIFIED_ENTITY_INTELLIGENCE.md`).
 - **Phase 20** — Source-Native Intelligent PDF & Transcript Reader (`PHASE_20_SOURCE_NATIVE_INTELLIGENT_PDF_AND_TRANSCRIPT_READER.md`).
+- **Phase 21** — Design Parity & Research UX (`PHASE_21_DESIGN_PARITY_AND_RESEARCH_UX.md`).
 
 ### Current sequence
 
@@ -86,7 +87,8 @@ The original core roadmap contains **13 numbered phases**. Eight additional mile
 | 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim |
 | 18 | Research Experience & Visual Excellence | **COMPLETE (2026-09-24)** — tag `phase-18-complete` |
 | 19 | Corpus Depth & Verified Entity Intelligence | **COMPLETE (2026-09-25)** — tag `phase-19-complete` |
-| 20 | Source-Native Intelligent PDF & Transcript Reader | **IN PROGRESS (2026-09-25)** — 20A complete; stop before 20B |
+| 20 | Source-Native Intelligent PDF & Transcript Reader | **COMPLETE (2026-09-25)** — tag `phase-20-complete` |
+| 21 | Design Parity & Research UX | **IN PROGRESS (2026-09-25)** — 21A complete; stop before 21B |
 
 ## Recommended execution order from now
 
@@ -120,6 +122,8 @@ Phase 15
      Phase 19 (COMPLETE 2026-09-25)
        ↓
      Phase 20 (COMPLETE 2026-09-25)
+       ↓
+     Phase 21 (IN PROGRESS — 21A complete; stop before 21B)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -137,8 +141,8 @@ is **COMPLETE (2026-09-25)**, tag `phase-20-complete`. The source-native Reader
 renders the exact stored PDF, and highlights come only from version-bound
 validated geometry: 74,013 real SourceAnchors, 22,645 of them exact. The
 transcript-native Reader syncs two ways with the PDF. The 20C source-fidelity
-audit passed. No later phase has been started; stop pending explicit
-authorization.
+audit passed. Phase 21 is **IN PROGRESS (2026-09-25)** with 21A complete; 21B
+and later Phase 21 checkpoints remain unauthorized.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 
