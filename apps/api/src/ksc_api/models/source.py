@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     ForeignKey,
     ForeignKeyConstraint,
@@ -106,7 +107,7 @@ class SourceSpan(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     page_number: Mapped[int | None] = mapped_column(Integer)
     paragraph_number: Mapped[int | None] = mapped_column(Integer)
     transcript_segment_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("transcript_segments.id", ondelete="CASCADE")
+        UUID(as_uuid=True), ForeignKey("transcript_segments.id", ondelete="CASCADE"), index=True
     )
     line_from: Mapped[int | None] = mapped_column(Integer)
     line_to: Mapped[int | None] = mapped_column(Integer)
@@ -170,7 +171,8 @@ class SourceAnchor(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "object_type", "object_id", "anchor_role", name="uq_source_anchors_object_role"
         ),
         CheckConstraint(
-            "object_type IN ('entity_occurrence','citation','relationship','finding')",
+            "object_type IN "
+            "('entity_occurrence','citation','relationship','finding','transcript_segment')",
             name="object_type_allowed",
         ),
     )
@@ -186,3 +188,52 @@ class SourceAnchor(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # only place a human verification state/reviewer can be changed.
     source_verification_state: Mapped[str] = mapped_column(String(32), nullable=False)
     span: Mapped[SourceSpan] = relationship(back_populates="anchors")
+
+
+class TranscriptPageContext(UUIDPrimaryKeyMixin, Base):
+    """The printed witness/session/examination header of one transcript page.
+
+    Projected from the page's own running header (rule
+    ``witness.transcript_page_header``); ``header_char_*`` index into that
+    page's ``document_pages.text``. It states whose evidence the page belongs
+    to — it never identifies an individual speaker label such as "THE WITNESS".
+    """
+
+    __tablename__ = "transcript_page_contexts"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["document_version_id", "pdf_page_index"],
+            ["document_pages.document_version_id", "document_pages.pdf_page_index"],
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "document_version_id", "pdf_page_index", name="uq_transcript_page_contexts_page"
+        ),
+        CheckConstraint("pdf_page_index >= 0", name="pdf_page_index_non_negative"),
+        CheckConstraint(
+            "header_char_start >= 0 AND header_char_end > header_char_start",
+            name="header_char_range",
+        ),
+        CheckConstraint(
+            "session_state IN ('open','private','closed')", name="session_state_allowed"
+        ),
+    )
+
+    document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="CASCADE"), nullable=False
+    )
+    pdf_page_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    page_number: Mapped[int | None] = mapped_column(Integer)
+    header_text: Mapped[str] = mapped_column(Text, nullable=False)
+    header_char_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    header_char_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    # A protected witness code, or a name the official header itself prints.
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    subject_is_code: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    session_state: Mapped[str] = mapped_column(String(16), nullable=False)
+    examination: Mapped[str | None] = mapped_column(String(255))
+    rule_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    rule_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    processing_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("processing_runs.id", ondelete="SET NULL")
+    )

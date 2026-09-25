@@ -65,6 +65,7 @@ from ksc_ingestion.sources import NotOfficialSourceError
 from ksc_ingestion.storage import InMemoryObjectStore, MinioObjectStore, ObjectStore
 from ksc_ingestion.structured_projection import Phase17StructuredPipeline
 from ksc_ingestion.structured_quality_gate import run_phase17c_gate, write_phase17c_report
+from ksc_ingestion.transcript_sync import TranscriptSyncProjector
 from ksc_ingestion.verified_mentions import Phase19MentionProjector
 from ksc_ingestion.verified_mentions_gate import run_phase19a_gate, write_phase19a_report
 
@@ -246,6 +247,26 @@ def cmd_project_source_geometry(args: argparse.Namespace) -> int:
                 "anchors": result.anchors,
                 "precision": result.precision,
                 "by_object_type": result.by_object_type,
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def cmd_project_transcript_sync(args: argparse.Namespace) -> int:
+    """Project transcript-segment anchors and printed page-header context."""
+    settings = get_settings()
+    result = TranscriptSyncProjector(get_sessionmaker(), case_number=settings.case_id).run()
+    print(
+        json.dumps(
+            {
+                "run_id": str(result.run_id),
+                "versions": result.versions,
+                "segments": result.segments,
+                "precision": result.precision,
+                "reasons": result.reasons,
+                "page_contexts": result.page_contexts,
             },
             indent=2,
         )
@@ -718,6 +739,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="extract native geometry from held PDFs and project SourceAnchors",
     )
     p_source_geometry.set_defaults(func=cmd_project_source_geometry)
+    p_transcript_sync = sub.add_parser(
+        "project-transcript-sync",
+        help="project transcript-segment SourceAnchors and printed page-header context",
+    )
+    p_transcript_sync.set_defaults(func=cmd_project_transcript_sync)
     p_intelligence = sub.add_parser(
         "build-intelligence",
         help="project Phase 19B aliases, appearances, exhibit status events, mentions and typed edges",

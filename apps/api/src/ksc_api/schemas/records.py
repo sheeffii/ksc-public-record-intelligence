@@ -150,6 +150,8 @@ class SourceAnchorRead(ReadModel):
     page_width: float | None
     page_height: float | None
     page_rotation: int | None
+    # Set when the span is a transcript coordinate: the exact segment it names.
+    transcript_segment_id: uuid.UUID | None = None
     regions: list[SourceRegionRead]
 
 
@@ -613,3 +615,172 @@ class EntityMentionRead(ReadModel):
 class SearchRead(ReadModel):
     query: str
     hits: list[SearchHit]
+
+
+# ------------------------------------------------------ Phase 20B Reader --
+# Overlay data states. `SEARCH_MATCH` is never a persisted research object and
+# is kept distinct from `VERIFIED` everywhere it is served.
+OverlayState = Literal[
+    "VERIFIED", "SEARCH_MATCH", "REVIEW_REQUIRED", "AMBIGUOUS", "UNKNOWN", "UNRESOLVED"
+]
+OverlayKind = Literal[
+    "person", "witness", "organization", "exhibit", "citation", "relationship", "finding"
+]
+
+
+class ReaderAnchorRead(ReadModel):
+    """The persisted SourceAnchor behind one Reader row, with its honest precision."""
+
+    id: uuid.UUID
+    precision: SourcePrecision
+    failure_reason: str | None
+    pdf_page_index: int | None
+    line_from: int | None
+    line_to: int | None
+    regions: list[SourceRegionRead]
+
+
+class TranscriptPageContextRead(ReadModel):
+    """A transcript page's own printed witness/session/examination header."""
+
+    pdf_page_index: int
+    page_number: int | None
+    header_text: str
+    # A protected witness code, or a name the official header itself prints.
+    subject: str
+    subject_is_code: bool
+    session_state: str
+    examination: str | None
+    rule: str
+
+
+class ReaderSegmentRead(ReadModel):
+    id: uuid.UUID
+    sequence: int
+    pdf_page_index: int | None
+    page_number: int | None
+    line_from: int | None
+    line_to: int | None
+    # Verbatim printed speaker label; no role is inferred from it.
+    speaker: str | None
+    # Code only, and only where the parsed segment itself links a witness.
+    witness_code: str | None
+    closed_session: bool
+    # Absent for closed/private session.
+    text: str | None
+    anchor: ReaderAnchorRead | None
+
+
+class ReaderSegmentPage(ReadModel):
+    items: list[ReaderSegmentRead]
+    total: int
+    limit: int
+    offset: int
+    # True when a speaker/header/text filter hides surrounding source lines.
+    filtered: bool
+
+
+class TranscriptSpeakerRead(ReadModel):
+    label: str
+    segments: int
+
+
+class TranscriptSubjectRead(ReadModel):
+    subject: str
+    subject_is_code: bool
+    pages: int
+    first_pdf_page_index: int
+    first_page_number: int | None
+
+
+class TranscriptExaminationRead(ReadModel):
+    examination: str
+    subject: str
+    subject_is_code: bool
+    pages: int
+    first_pdf_page_index: int
+    first_page_number: int | None
+
+
+class TranscriptOutlineRead(ReadModel):
+    official_version_ref: str
+    document_ref: str
+    language: str | None
+    hearing_date: date
+    session_label: str | None
+    hearing_type: str | None
+    page_from: int | None
+    page_to: int | None
+    segment_count: int
+    closed_session_segments: int
+    precision: dict[str, int]
+    speakers: list[TranscriptSpeakerRead]
+    subjects: list[TranscriptSubjectRead]
+    examinations: list[TranscriptExaminationRead]
+    pages: list[TranscriptPageContextRead]
+
+
+class PageOverlayRead(ReadModel):
+    """One source-backed research object anchored on the current page."""
+
+    anchor_id: uuid.UUID
+    object_id: uuid.UUID
+    kind: OverlayKind
+    label: str
+    state: OverlayState
+    protected: bool = False
+    precision: SourcePrecision
+    failure_reason: str | None
+    line_from: int | None
+    line_to: int | None
+    transcript_segment_id: uuid.UUID | None
+    exact_text: str | None
+    regions: list[SourceRegionRead]
+    # Dossier / cited source / finding route; absent when nothing resolves.
+    target_path: str | None
+    rule: str | None = None
+    exhibit_status: str | None = None
+    resolution_state: str | None = None
+    verification_state: str | None = None
+    relationship_type: RelationshipType | None = None
+    evidence_count: int | None = None
+    from_label: str | None = None
+    to_label: str | None = None
+    provenance: ProvenanceRead | None = None
+
+
+class PageContextRead(ReadModel):
+    official_version_ref: str
+    pdf_page_index: int
+    page_number: int | None
+    geometry_state: str
+    page_width: float | None
+    page_height: float | None
+    page_rotation: int | None
+    transcript_header: TranscriptPageContextRead | None
+    overlays: list[PageOverlayRead]
+    # Exact per-kind counts on the page, before the per-kind limit.
+    totals: dict[str, int]
+    truncated: bool
+
+
+class LocalSearchHitRead(ReadModel):
+    match_type: Literal["SEARCH_MATCH"] = "SEARCH_MATCH"
+    pdf_page_index: int | None
+    page_number: int | None
+    line_from: int | None
+    line_to: int | None
+    transcript_segment_id: uuid.UUID | None
+    speaker: str | None
+    excerpt: str
+    occurrences: int
+    # Precision of the *containing* coordinate (segment line range or page);
+    # a search match never claims an exact PDF region.
+    precision: SourcePrecision
+
+
+class LocalSearchRead(ReadModel):
+    query: str
+    items: list[LocalSearchHitRead]
+    total: int
+    truncated: bool

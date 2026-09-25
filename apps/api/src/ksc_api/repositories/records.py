@@ -77,6 +77,7 @@ from ksc_api.repositories.filters import (
     public_visibility,
 )
 from ksc_api.repositories.intelligence import IntelligenceReadsMixin
+from ksc_api.repositories.reader import ReaderReadsMixin
 from ksc_api.schemas.citation import CitationRead, IdentifierMatch, ResolveResult
 from ksc_api.schemas.common import Page
 from ksc_api.schemas.records import (
@@ -136,7 +137,7 @@ class CaseNotConfiguredError(LookupError):
     """The configured case number has no row. Seed first."""
 
 
-class RecordRepository(IntelligenceReadsMixin):
+class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
     def __init__(self, session: Session, case: Case) -> None:
         self.session = session
         self.case = case
@@ -495,6 +496,7 @@ class RecordRepository(IntelligenceReadsMixin):
             page_width=float(page.width_points) if page and page.width_points else None,
             page_height=float(page.height_points) if page and page.height_points else None,
             page_rotation=page.rotation if page else None,
+            transcript_segment_id=span.transcript_segment_id,
             regions=[SourceRegionRead.model_validate(region) for region in span.regions],
         )
 

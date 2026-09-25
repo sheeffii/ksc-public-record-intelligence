@@ -270,21 +270,9 @@ class IntelligenceReadsMixin:
         )
 
     # --------------------------------------------------- network edges --
-    def network_edges(
-        self,
-        *,
-        limit: int,
-        cursor: str | None = None,
-        focus_ref: str | None = None,
-        relationship_type: RelationshipType | None = None,
-        entity_kind: EntityKind | None = None,
-        evidence_kind: EvidenceKind | None = None,
-        document_ref: str | None = None,
-        date_from: date | None = None,
-        date_to: date | None = None,
-    ) -> EdgePageRead:
-        """Bounded, cursor-paginated edges of every evidence kind; never the whole graph."""
-        limit = max(1, min(limit, MAX_EDGE_PAGE))
+    def _typed_edges_stmt(self) -> tuple[Any, Any, Any]:
+        """Public, non-rejected edges whose evidence is a resolved citation, a
+        verified rule-lineaged mention or a header-backed appearance."""
         from_node, to_node = aliased(GraphNode), aliased(GraphNode)
         from_doc, to_doc = aliased(Document), aliased(Document)
         from_ex, to_ex = aliased(Exhibit), aliased(Exhibit)
@@ -326,6 +314,24 @@ class IntelligenceReadsMixin:
                 ),
             )
         )
+        return stmt, from_node, to_node
+
+    def network_edges(
+        self,
+        *,
+        limit: int,
+        cursor: str | None = None,
+        focus_ref: str | None = None,
+        relationship_type: RelationshipType | None = None,
+        entity_kind: EntityKind | None = None,
+        evidence_kind: EvidenceKind | None = None,
+        document_ref: str | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> EdgePageRead:
+        """Bounded, cursor-paginated edges of every evidence kind; never the whole graph."""
+        limit = max(1, min(limit, MAX_EDGE_PAGE))
+        stmt, from_node, to_node = self._typed_edges_stmt()
         if focus_ref:
             focus = self._focus_node_ids(focus_ref)
             if not focus:

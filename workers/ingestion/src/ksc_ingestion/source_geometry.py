@@ -409,8 +409,12 @@ class SourceGeometryProjector:
             tuple[tuple[uuid.UUID, int | None], DocumentPage | None, list[PageTextGeometry]] | None
         ) = None
         with self.sessions() as session:
-            session.execute(delete(SourceAnchor))
-            session.execute(delete(SourceSpan))
+            # Phase 20B transcript-segment anchors own their spans and are
+            # re-projected by `transcript_sync`; leave them in place.
+            owned = select(SourceAnchor.source_span_id).where(
+                SourceAnchor.object_type != "transcript_segment"
+            )
+            session.execute(delete(SourceSpan).where(SourceSpan.id.in_(owned)))
             session.flush()
 
             occurrences = session.scalars(

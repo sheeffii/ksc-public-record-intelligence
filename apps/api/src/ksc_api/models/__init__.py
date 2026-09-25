@@ -109,7 +109,13 @@ from ksc_api.models.operations import (
     SourceRecordSnapshot,
 )
 from ksc_api.models.research import ResearchNote, ResearchNoteCitation
-from ksc_api.models.source import PageTextGeometry, SourceAnchor, SourceRegion, SourceSpan
+from ksc_api.models.source import (
+    PageTextGeometry,
+    SourceAnchor,
+    SourceRegion,
+    SourceSpan,
+    TranscriptPageContext,
+)
 from ksc_api.models.source_record import SourceRecord
 
 __all__ = [
@@ -203,6 +209,7 @@ __all__ = [
     "StatementComparison",
     "TextExtractionMethod",
     "Transcript",
+    "TranscriptPageContext",
     "TranscriptSegment",
     "VerificationState",
     "Visibility",

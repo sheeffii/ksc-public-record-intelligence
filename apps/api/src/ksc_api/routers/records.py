@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from datetime import date
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response, status
 from minio import Minio
 from minio.error import S3Error
 from starlette.responses import StreamingResponse
@@ -35,12 +35,16 @@ from ksc_api.schemas.records import (
     FindingDetail,
     FindingSummary,
     IncidentRead,
+    LocalSearchRead,
     NetworkRead,
     OrganizationRead,
+    PageContextRead,
     PersonRead,
+    ReaderSegmentPage,
     RelationshipRead,
     SearchRead,
     SourceAnchorRead,
+    TranscriptOutlineRead,
     TranscriptRead,
     WitnessAppearanceRead,
     WitnessRead,
@@ -216,6 +220,76 @@ def read_document_artifact(version_ref: str, request: Request, repo: Repo) -> Re
     return StreamingResponse(
         body(), status_code=response_status, media_type="application/pdf", headers=headers
     )
+
+
+# ------------------------------------------------ Phase 20B Reader reads --
+@router.get(
+    "/document-versions/{version_ref:path}/transcript", response_model=TranscriptOutlineRead
+)
+def read_transcript_outline(version_ref: str, repo: Repo) -> TranscriptOutlineRead:
+    """Hearing/session, printed page-header subjects/examinations and speakers
+    of one exact transcript version. Bounded by that version's own pages."""
+    return _or_404(repo.transcript_outline(version_ref), "transcript version")
+
+
+@router.get(
+    "/document-versions/{version_ref:path}/transcript/segments", response_model=ReaderSegmentPage
+)
+def list_transcript_segments(
+    version_ref: str,
+    repo: Repo,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+    offset: Offset = 0,
+    pdf_page_index: Annotated[int | None, Query(ge=0)] = None,
+    page: Annotated[int | None, Query(ge=1)] = None,
+    line: Annotated[int | None, Query(ge=1)] = None,
+    segment: uuid.UUID | None = None,
+    speaker: Annotated[str | None, Query(max_length=255)] = None,
+    subject: Annotated[str | None, Query(max_length=255)] = None,
+    examination: Annotated[str | None, Query(max_length=255)] = None,
+    q: Annotated[str | None, Query(min_length=2, max_length=200)] = None,
+) -> ReaderSegmentPage:
+    return _or_404(
+        repo.transcript_segments(
+            version_ref,
+            limit=limit,
+            offset=offset,
+            pdf_page_index=pdf_page_index,
+            page=page,
+            line=line,
+            segment_id=segment,
+            speaker=speaker,
+            subject=subject,
+            examination=examination,
+            q=q,
+        ),
+        "transcript version",
+    )
+
+
+@router.get(
+    "/document-versions/{version_ref:path}/pages/{pdf_page_index}/context",
+    response_model=PageContextRead,
+)
+def read_page_context(
+    version_ref: str,
+    pdf_page_index: Annotated[int, Path(ge=0)],
+    repo: Repo,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+) -> PageContextRead:
+    """Source-anchored research objects on one PDF page of one exact version."""
+    return _or_404(repo.page_context(version_ref, pdf_page_index, limit=limit), "document page")
+
+
+@router.get("/document-versions/{version_ref:path}/source-search", response_model=LocalSearchRead)
+def search_version_source(
+    version_ref: str,
+    repo: Repo,
+    q: Annotated[str, Query(max_length=200)] = "",
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> LocalSearchRead:
+    """Lexical matches inside one version. Every hit is a SEARCH_MATCH."""
+    return _or_404(repo.local_search(version_ref, q, limit=limit), "document version")
 
 
 @router.get("/source-anchors/{anchor_id}", response_model=SourceAnchorRead)
