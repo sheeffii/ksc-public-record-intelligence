@@ -7,9 +7,8 @@ Live checkpoint. Repository state wins over this note.
 - Current branch: `feat/phase-19-corpus-depth-verified-intelligence`, created
   from `main` at `e38bbd4`. `main` contains all work through Phase 18 (including
   Phase 16 `eb01a87` and Phase 17 `0e382b3`).
-- Current milestone: **Phase 19 IN PROGRESS**. The roadmap
-  `docs/roadmap/PHASE_19_CORPUS_DEPTH_AND_VERIFIED_ENTITY_INTELLIGENCE.md` is
-  registered; the Phase 19A, 19B and 19C (final review) checkpoints are recorded; closeout is blocked (see Next). Phase 18 is COMPLETE (tag
+- Current milestone: **Phase 19 COMPLETE (2026-09-25)**, local annotated tag
+  `phase-19-complete`; not pushed. Phase 20 has not started. Phase 18 is COMPLETE (tag
   `phase-18-complete`). Phase
   16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
@@ -324,54 +323,42 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-The Phase 19A, 19B, 19B-acquisition and 19C final-review checkpoints are
-recorded (19C: 2026-09-25, uncommitted at session end unless `git log` says
-otherwise).
+Phase 19 is COMPLETE (2026-09-25). The closeout commit carries the local
+annotated tag `phase-19-complete`. The branch
+`feat/phase-19-corpus-depth-verified-intelligence` and the tag are **not
+pushed**; push only when the operator says "push". Do not start Phase 20
+without explicit authorisation.
 
-- Batch `2026-09-25-corpus-04`: all 67 records are now in (63 at acquisition,
-  plus 4 accepted by the 19C review). The raw capture is in
-  `data/operator/2026-09-25-corpus-04-raw` and the re-derived bundle in
-  `data/captures/2026-09-25-corpus-04` (both git-ignored).
-- Migration head is `0014`. The parser is `ksc-native-pdf/3`. The exhibit
-  mention rule is v2.
+Final state:
+
+- 202 source records / 176 documents / 201 versions.
+- 902 exhibits (2 admitted, 0 sub-number rows) / 31 status events.
+- 22,320 verified / 4,373 review-required mentions; 26 appearances over
+  18 hearings.
+- CITED_IN 11,054 · MENTIONED_IN 1,042 · TESTIFIED_AT 21.
+- Citations: 11,072 resolved / 183 ambiguous / 8,256 unresolved (2,038
+  exhibit parts) / 526 invalid.
+- 130 exhibits withdrawn with approval: 12 other-case, 118 sub-number base.
+- Migration head `0014`, parser `ksc-native-pdf/3`, exhibit mention rule v3.
 
 The reconciliation order after new records:
 
 1. `parse`
-2. `reresolve`
+2. `reresolve` (also retires stale unreviewed citations)
 3. `build-structured`
 4. `reresolve`
 5. `build-evidence`
 6. `build-intelligence`
-7. `report-phase19b` (plus `gate-phase19a`)
+7. `report-phase19b` plus `gate-phase19a`
 
-The operator-approved integrity cleanup is done (2026-09-25):
+Known limitations at close (non-blocking, fail closed):
 
-- the 12 other-case exhibits were withdrawn, each with an `audit_log` row;
-- the other-case guard accepts binding punctuation (the exhibit rule is v3;
-  `invalid.other_case` 453);
-- re-resolution retires stale, unreviewed, unreferenced citations with an audit
-  row (1 retired).
-
-The gates pass. Counts: exhibits 1,020, verified 22,320 / review-required
-4,373, CITED_IN 13,089, citations 13,107 / 183 / 6,221 / 526.
-
-Phase 19 closeout awaits one operator decision.
-
-- **Exhibit sub-numbers.** 2,035 resolved exhibit citations and CITED_IN edges
-  bind a sub-numbered reference ("P00099.1") to its base exhibit, because the
-  extractor keeps the base prefix. 118 exhibit registry rows exist only from
-  such references.
-  - **Option A (fix now).** Make `_EXHIBIT_RE` capture or refuse the
-    sub-number. That re-resolves about 2,035 citations and leaves 118 rows
-    needing an approved withdrawal.
-  - **Option B.** Record it as a known gap for a source-backed exhibit-part
-    model, then close.
-- **After the decision.** Close out: Completion Record, tag
-  `phase-19-complete`. Push only on explicit instruction.
-- **Known gaps:**
-  - 3 parse-review versions (source defects / image pages);
-  - "P189" in "admitted as P1277 and P189" is not captured.
+- 3 parse-review versions;
+- "P189" is not captured;
+- unregistered exhibit sub-numbers stay unresolved (a source-backed
+  exhibit-part model is future work);
+- 43 surname-level counsel identities;
+- no Albanian party filings in the held corpus.
 
 Do not close Phase 16.
 

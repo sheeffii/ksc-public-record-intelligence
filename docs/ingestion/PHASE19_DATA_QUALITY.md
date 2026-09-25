@@ -533,15 +533,68 @@ P189". P189 is not captured.
 - CITED_IN = 13,100 machine-resolved citations − 12 self-citations + 1 curated
   edge.
 
-### Open
+### Exhibit sub-number fix (2026-09-25)
 
-- **Decision required: exhibit sub-numbers.** 2,035 of 5,351 resolved exhibit
-  citations, and the same number of CITED_IN edges, bind a sub-numbered
-  reference ("P00099.1") to the base exhibit P00099. The citation extractor
-  keeps the base prefix, while the mention and status rules leave sub-numbers
-  unbound. 118 exhibit registry rows are supported only by such references.
-  A fix re-resolves about 2,035 citations and leaves those 118 rows
-  unsupported.
-- **Known gaps.**
-  - 3 parse-review versions (source defects / image pages).
-  - "P189" in "admitted as P1277 and P189" is not captured.
+The citation extractor had cut "P00099.1" down to its base P00099. It now keeps
+the sub-number:
+
+- a sub-number resolves only to an exact registry row, never to its base;
+- zero-padding keeps it (P1136.1 → P01136.1);
+- an unregistered sub-number stays UNRESOLVED
+  (`unresolved.exhibit_part_not_registered`);
+- no sub-number rows are invented.
+
+Re-resolution retired the 2,038 truncated rows, together with their 2,035
+derived CITED_IN edges, each with an audit row. The same spans are now
+extracted with their exact sub-numbers.
+
+| Measure                                           | Before                     | After                      |
+| ------------------------------------------------- | -------------------------- | -------------------------- |
+| Exhibit citations resolved / unresolved / invalid | 5,351 / 76 / 179           | 3,316 / 2,111 / 179        |
+| All citations res / amb / unres / invalid         | 13,107 / 183 / 6,221 / 526 | 11,072 / 183 / 8,256 / 526 |
+| CITED_IN / MENTIONED_IN / TESTIFIED_AT            | 13,089 / 1,042 / 21        | 11,054 / 1,042 / 21        |
+| Exhibits / sub-number rows                        | 1,020 / 0                  | 1,020 / 0                  |
+
+These did not change: verified exhibit mentions (6,220), status events (31,
+of which 18 bound) and admitted exhibits (2).
+
+118 exhibit rows now have no remaining case-local evidence. They are listed,
+with the selection SQL, in `manifests/phase19c-review.json` →
+`exhibit_sub_number_fix`, and await approval.
+
+### Withdrawal and final state (Phase 19 close)
+
+- **Withdrawal.** The 118 base exhibits were re-verified immediately before
+  deletion: all 118 still had 0 exact citations, mentions, status events,
+  media links and relationships, and no description or status data. They were
+  withdrawn with one audit row each (`invalid.sub_number_base_binding`,
+  reviewer: operator).
+- **Reconciliation.** It then retired nothing and changed no citation state.
+  None of the 130 withdrawn rows reappeared.
+- **Integrity checks, all 0:**
+  - sub-number citations resolved to a base;
+  - resolved exhibit citations to a non-exact identifier;
+  - exhibits or witness codes without case-local evidence;
+  - edges without exactly one evidence basis;
+  - edges on non-resolved citations or unverified occurrences;
+  - orphan graph nodes or identifiers;
+  - targets on non-resolved citations.
+
+| Final (Phase 19 close)                 | Count                                    |
+| -------------------------------------- | ---------------------------------------- |
+| Exhibits (admitted / sub-number rows)  | 902 (2 / 0)                              |
+| Verified / review-required mentions    | 22,320 / 4,373                           |
+| Appearances / hearings / status events | 26 / 18 / 31                             |
+| CITED_IN / MENTIONED_IN / TESTIFIED_AT | 11,054 / 1,042 / 21                      |
+| Citations res / amb / unres / invalid  | 11,072 / 183 / 8,256 / 526               |
+| Unresolved exhibit-part citations      | 2,038                                    |
+| Withdrawn exhibits                     | 130 (12 other-case, 118 sub-number base) |
+
+### Known limitations at close
+
+All of these are non-blocking and fail closed:
+
+- 3 parse-review versions;
+- "P189" is not captured;
+- exhibit sub-number citations stay unresolved without an exact registry row;
+- the remaining unresolved and ambiguous citations stay fail-closed.

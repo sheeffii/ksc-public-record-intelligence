@@ -1,6 +1,7 @@
 # Phase 19 quality gate
 
-Phase 19 is **IN PROGRESS**. This file records each pass's checkpoint evidence.
+Phase 19 is **COMPLETE** (2026-09-25, tag `phase-19-complete`). This file records
+each pass's checkpoint evidence.
 Machine-readable manifests live in `docs/ingestion/manifests/`.
 
 ## Pass A — verified entity mentions (2026-09-24)
@@ -130,8 +131,7 @@ refreshed `manifests/phase19b-corpus-intelligence.json` and
 `manifests/phase19a-verified-mentions-quality.json`. Full narrative:
 `PHASE19_DATA_QUALITY.md` → "Phase 19C".
 
-Result: **gates PASS; closeout BLOCKED** on 12 misbound exhibit registry rows
-(see Open).
+Result: **PASS; Phase 19 closed** after the operator-approved integrity cleanup.
 
 ### Gates
 
@@ -189,8 +189,16 @@ Result: **gates PASS; closeout BLOCKED** on 12 misbound exhibit registry rows
   ingestion-pipeline / constraints / read-API integration suites. Ruff and
   mypy are clean.
 
-### Open
+### Exhibit sub-number fix and closeout
 
-- **Decision required: exhibit sub-numbers.** 2,035 resolved exhibit
-  citations and CITED_IN edges bind "P00099.1" to base P00099. 118 registry
-  rows exist only from such references.
+- **The fix.** Citations keep the exhibit sub-number ("P01136.1" is not
+  P01136). 2,038 truncated rows were retired together with their 2,035 derived
+  CITED_IN edges, and 118 orphaned base exhibits were withdrawn with approval.
+- **Final gates.** `report-phase19b` PASS (all checks 0) and `gate-phase19a`
+  PASS (0 provenance violations). The full-table integrity checks are all 0.
+- **Targeted tests.** 248 passed: ingestion unit tests, and the Phase 8 /
+  19A / 19B / evidence / constraints / read-API / ingestion-pipeline /
+  migration integration suites. Ruff and mypy are clean.
+- **Browser suites.** The Playwright suites were not re-run for the last two
+  changes, which are ingestion-only; the last real-data run passed 36/36 on
+  desktop and Pixel 7.

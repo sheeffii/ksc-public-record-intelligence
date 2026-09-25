@@ -136,11 +136,11 @@
     "witnesses_with_recorded_appearance": 4,
     "organizations": 6,
     "organizations_with_verified_mention": 6,
-    "exhibits": 1020,
+    "exhibits": 902,
     "exhibits_with_verified_mention": 900,
     "exhibits_with_status_events": 12,
     "exhibit_status": {
-      "unknown": 1018,
+      "unknown": 900,
       "admitted": 2
     },
     "exhibit_status_events": {
@@ -152,8 +152,8 @@
   },
   "relationships": {
     "cited_in:citation": {
-      "edges": 13089,
-      "evidence": 13089
+      "edges": 11054,
+      "evidence": 11054
     },
     "mentioned_in:entity_occurrence": {
       "edges": 1042,
@@ -166,8 +166,8 @@
   },
   "citations": {
     "states": {
-      "resolved": 13107,
-      "unresolved": 6221,
+      "resolved": 11072,
+      "unresolved": 8256,
       "invalid": 526,
       "ambiguous": 183
     },
@@ -177,14 +177,15 @@
       "invalid:invalid.coordinate_missing": 11,
       "invalid:invalid.other_case": 453,
       "invalid:invalid.transcript_line_grid": 62,
-      "resolved:identifier.exact": 11757,
-      "resolved:identifier.zero_padded": 257,
+      "resolved:identifier.exact": 9776,
+      "resolved:identifier.zero_padded": 203,
       "resolved:transcript.hearing_date": 548,
       "resolved:transcript.page_line": 27,
       "resolved:transcript.page_range": 511,
       "resolved:unrecorded": 7,
+      "unresolved:unresolved.exhibit_part_not_registered": 2038,
       "unresolved:unresolved.malformed_transcript_reference": 22,
-      "unresolved:unresolved.target_not_held": 2945,
+      "unresolved:unresolved.target_not_held": 2942,
       "unresolved:unresolved.transcript_date_not_held": 777,
       "unresolved:unresolved.transcript_page_not_held": 2188,
       "unresolved:unresolved.version_not_held": 289
@@ -284,14 +285,20 @@
       {
         "source": "KSC-BC-2020-06/F03667/COR/RED",
         "total": 8623,
-        "unresolved": 2210,
-        "unresolved_share": 0.256
+        "unresolved": 3431,
+        "unresolved_share": 0.398
       },
       {
         "source": "KSC-BC-2020-06/F03668/RED2",
         "total": 2928,
-        "unresolved": 852,
-        "unresolved_share": 0.291
+        "unresolved": 1373,
+        "unresolved_share": 0.469
+      },
+      {
+        "source": "KSC-BC-2020-06/F03664/RED2",
+        "total": 2000,
+        "unresolved": 248,
+        "unresolved_share": 0.124
       },
       {
         "source": "KSC-BC-2020-06/F03668/RED/A01/RED",
@@ -312,12 +319,6 @@
         "unresolved_share": 0.789
       },
       {
-        "source": "KSC-BC-2020-06/F03664/RED2",
-        "total": 2000,
-        "unresolved": 66,
-        "unresolved_share": 0.033
-      },
-      {
         "source": "KSC-BC-2020-06/F03308/RED",
         "total": 80,
         "unresolved": 65,
@@ -328,6 +329,12 @@
         "total": 77,
         "unresolved": 64,
         "unresolved_share": 0.831
+      },
+      {
+        "source": "KSC-BC-2020-06/T/2026-02-13",
+        "total": 158,
+        "unresolved": 58,
+        "unresolved_share": 0.367
       },
       {
         "source": "KSC-BC-2020-06/IA042/F00005/RED",
@@ -346,12 +353,6 @@
         "total": 66,
         "unresolved": 53,
         "unresolved_share": 0.803
-      },
-      {
-        "source": "KSC-BC-2020-06/F02445",
-        "total": 82,
-        "unresolved": 52,
-        "unresolved_share": 0.634
       }
     ]
   },

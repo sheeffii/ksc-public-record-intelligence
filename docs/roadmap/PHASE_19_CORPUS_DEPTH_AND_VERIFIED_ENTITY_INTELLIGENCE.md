@@ -1,6 +1,6 @@
 # Phase 19 — Corpus Depth & Verified Entity Intelligence
 
-**Status:** IN PROGRESS — 19A, 19B (with the corpus-04 batch) and the 19C final review are recorded (2026-09-25); the approved integrity cleanup is done; closeout awaits the operator decision on exhibit sub-number bindings (see `docs/PROJECT_STATE.md`).
+**Status:** COMPLETE (2026-09-25) — tag `phase-19-complete`.
 
 ## Goal
 
@@ -237,27 +237,61 @@ Protection state fails closed to the protected treatment.
 
 ## Acceptance criteria
 
-- [ ] `entity_occurrences` carries rule, run and mention-state lineage. Every
+- [x] `entity_occurrences` carries rule, run and mention-state lineage. Every
   verified row has exact coordinates.
-- [ ] Deterministic extractors for people, witness codes, organizations and
+- [x] Deterministic extractors for people, witness codes, organizations and
   exhibits, with review-required handling for ambiguity.
-- [ ] `witness_appearances` populated only from explicit transcript signals.
+- [x] `witness_appearances` populated only from explicit transcript signals.
   Hearing totals are shown only from stored appearances.
-- [ ] One balanced official acquisition batch passes its batch gate.
-- [ ] Citation re-resolution with before/after counts. No fuzzy resolution.
-- [ ] Paginated, depth-bounded focused-network reads. The unfocused view no
+- [x] One balanced official acquisition batch passes its batch gate.
+- [x] Citation re-resolution with before/after counts. No fuzzy resolution.
+- [x] Paginated, depth-bounded focused-network reads. The unfocused view no
   longer depends on a 500-edge default.
-- [ ] Reconciliation and sampling audit recorded.
-- [ ] Mentions/appearances APIs and dossier UI keep verified mentions and search
+- [x] Reconciliation and sampling audit recorded.
+- [x] Mentions/appearances APIs and dossier UI keep verified mentions and search
   matches visibly distinct.
-- [ ] All quality gates pass on desktop and Pixel 7. Privacy/safety rules hold.
+- [x] All quality gates pass on desktop and Pixel 7. Privacy/safety rules hold.
 
 ## Completion Record
 
-- **Status:** —
-- **Completion date:** —
-- **Commits:** —
-- **Tag:** `phase-19-complete` (not yet created)
+- **Status:** COMPLETE. Every acceptance criterion is verified against
+  repository and database reality.
+- **Completion date:** 2026-09-25
+- **Commits:** `94e74aa` (roadmap) … `8db04b8`, plus the closeout commit tagged
+  `phase-19-complete`.
+  - 19A: `935ef1f`, `a3dfbed`, `3bebfc0`, `bcfc0dc`, `d12cbab`.
+  - 19B: `400d6a5`, `b748f97`, `c876525`, `404882e`, `495b6e3`, `0d1fa8b`,
+    `9146ad9`, `99249f3`.
+  - 19C: `01f7c16`, `ea690dc`, `7bff053`, `67629f9`, `8db04b8`.
+- **Tag:** `phase-19-complete` (annotated, on the closeout commit)
+- **Final data (KSC-BC-2020-06, known public corpus; not an exhaustive
+  claim):**
+  - Corpus: 202 source records / 176 documents / 201 versions /
+    125,250,466 bytes / 9,447 pages / 15,171 transcript segments /
+    31 hearings.
+  - Entities: 62 people · 212 witness codes · 6 organizations · 902 exhibits
+    (2 admitted, 0 sub-number rows) · 31 status events.
+  - Mentions: 22,320 verified · 4,373 review-required.
+  - Appearances: 26 witness appearances over 18 hearings.
+  - Edges: CITED_IN 11,054 · MENTIONED_IN 1,042 · TESTIFIED_AT 21, each with
+    exactly one evidence basis.
+  - Citations: resolved 11,072 · ambiguous 183 · unresolved 8,256 (2,038
+    unregistered exhibit sub-numbers) · invalid 526 (453 other-case).
+- **Integrity:** 130 exhibit rows were withdrawn with operator approval and an
+  audit row each: 12 other-case contamination and 118 sub-number base
+  bindings. Provenance violations and integrity violations are both 0.
+- **Evidence:** `docs/ingestion/PHASE19_QUALITY_GATE.md`,
+  `docs/ingestion/PHASE19_DATA_QUALITY.md`,
+  `docs/ingestion/manifests/phase19c-review.json`, ADR-024 to ADR-026.
+- **Known limitations (non-blocking, all fail closed):**
+  - 3 source documents stay parse-review-required (a double-drawn text layer,
+    a repeated page stamp, image-only pages);
+  - the "P189" admission is not captured;
+  - exhibit sub-number citations stay unresolved without an exact registry row;
+  - the remaining unresolved and ambiguous citations stay fail-closed;
+  - 43 surname-level counsel identities stay review-required;
+  - party filings have no Albanian counterparts in the held corpus;
+  - Phase 16 external deployment/alerting stays deferred.
 
 ## Stop condition
 

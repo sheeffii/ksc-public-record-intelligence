@@ -84,7 +84,7 @@ The original core roadmap contains **13 numbered phases**. Seven additional mile
 | 16 | Production Readiness, Security & Lawyer Beta | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred |
 | 17 | Historical Corpus Expansion, Coverage & Continuous Sync | **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim |
 | 18 | Research Experience & Visual Excellence | **COMPLETE (2026-09-24)** — tag `phase-18-complete` |
-| 19 | Corpus Depth & Verified Entity Intelligence | **IN PROGRESS** — 19A–19C recorded 2026-09-25; closeout awaits the exhibit sub-number decision |
+| 19 | Corpus Depth & Verified Entity Intelligence | **COMPLETE (2026-09-25)** — tag `phase-19-complete` |
 
 ## Recommended execution order from now
 
@@ -115,7 +115,7 @@ Phase 15
        ↓
      Phase 18 (COMPLETE 2026-09-24)
        ↓
-     Phase 19 (IN PROGRESS; 19A–19C recorded, closeout pending one decision)
+     Phase 19 (COMPLETE 2026-09-25)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -126,9 +126,10 @@ complete/exhaustive KSC corpus claim. All 134 accepted versions are verified,
 parsed and indexed; structured projections and citations retain fail-closed
 provenance rules. Phase 16 remains **IN PROGRESS** with only external
 deployment/alerting blockers intentionally deferred. Phase 18 is **COMPLETE
-(2026-09-24)**. Phase 19 is **IN PROGRESS**: 19A, 19B and the 19C final review
-are recorded, and the approved integrity cleanup is done; closeout awaits the
-operator decision on exhibit sub-number bindings.
+(2026-09-24)**. Phase 19 is **COMPLETE (2026-09-25)**, tag `phase-19-complete`:
+verified mentions, header-backed appearances, exhibit status history, typed
+evidence edges and fail-closed citations over the known public corpus. Phase 20
+has not started.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

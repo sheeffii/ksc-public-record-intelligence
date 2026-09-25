@@ -22,7 +22,7 @@
   "dedup_conflicts": 0,
   "exhibit_status_counts": {
     "admitted": 2,
-    "unknown": 1018
+    "unknown": 900
   },
   "generated_at": "2026-09-25",
   "kinds": {
@@ -33,7 +33,7 @@
       "sample_reproduced": 100,
       "sampled": 100,
       "search_only": null,
-      "unregistered_identifiers": 2338,
+      "unregistered_identifiers": 2342,
       "verified": 6220
     },
     "organization": {
@@ -72,7 +72,7 @@
   "passed": true,
   "precision_threshold": 1.0,
   "processor": "phase19a-mentions",
-  "projection_run_id": "070e1465-f720-4d78-8003-061e243098aa",
+  "projection_run_id": "96b3720c-32c7-4680-9d85-9ac917078ed0",
   "protected_identity_violations": 0,
   "provenance_violations": 0,
   "review_state_violations": 0,

@@ -1279,3 +1279,12 @@ Addendum (2026-09-25, operator-approved cleanup):
 - Re-resolution retires a citation it no longer extracts only when the row is
   unreviewed and referenced by none of the 17 citation foreign keys, and
   writes a `citation.retired` audit row.
+- Exhibit identifiers keep their sub-number. `P01136.1` is its own exhibit and
+  resolves only to an exact registry row, never to P01136. Zero-padding keeps
+  the sub-number. An unregistered sub-number is UNRESOLVED
+  (`unresolved.exhibit_part_not_registered`), and no sub-number rows are
+  invented.
+- A retired citation may take its own unreviewed, deterministic-citation
+  edges with it. Any other reference keeps it.
+- 118 base exhibits that existed only through truncated sub-number references
+  were withdrawn with approval (`invalid.sub_number_base_binding`).

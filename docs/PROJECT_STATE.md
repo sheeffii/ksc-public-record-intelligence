@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-25 (Phase 19C final review checkpoint)
+Last updated: 2026-09-25 (Phase 19 COMPLETE)
 
 ## Milestones
 
@@ -26,7 +26,7 @@ Last updated: 2026-09-25 (Phase 19C final review checkpoint)
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
-| **19** | **Corpus depth and verified entity intelligence**                                                         | **IN PROGRESS** — 19A/19B/19C PASS; closeout blocked on 12 misbound exhibit rows                         |
+| **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
 
 ## Roadmap
 
@@ -795,7 +795,7 @@ experience`).
 - Both gates pass. Details: `docs/ingestion/PHASE19_DATA_QUALITY.md` →
   "Acquisition checkpoint".
 
-## Phase 19C final review checkpoint (2026-09-25)
+## Phase 19C final review and closeout (2026-09-25)
 
 - **Quarantine.** 4 of 4 records ACCEPTED on two agreeing official signals:
   `F01534/A02/RED`, `F03176/COR2/RED`, `F02426/CONF/RED` (reclassified) and
@@ -825,19 +825,24 @@ experience`).
     is 453.
   - Stale unreviewed, unreferenced citations are retired with an audit row
     (1 retired).
-- **Final counts.**
+- **Exhibit sub-numbers (operator decision A).**
+  - Citations keep the sub-number: "P01136.1" is never P01136. An
+    unregistered sub-number stays UNRESOLVED.
+  - 2,038 truncated rows and 2,035 derived CITED_IN edges were retired, with
+    audit rows.
+  - 118 orphaned base exhibits were withdrawn (`invalid.sub_number_base_binding`).
+- **Final counts (Phase 19 close).**
   - Corpus: 202 source records / 176 documents / 201 versions /
     125,250,466 bytes / 9,447 pages / 15,171 segments / 31 hearings.
-  - Entities: 62 people / 212 witness codes / 6 organizations / 1,020
-    exhibits (2 admitted) / 31 status events.
+  - Entities: 62 people / 212 witness codes / 6 organizations / 902 exhibits
+    (2 admitted, 0 sub-number rows) / 31 status events.
   - Mentions and appearances: 22,320 verified / 4,373 review-required /
     26 appearances over 18 hearings.
-  - Edges: CITED_IN 13,089 · MENTIONED_IN 1,042 · TESTIFIED_AT 21.
-  - Citations: resolved 13,107 · ambiguous 183 · unresolved 6,221 ·
-    invalid 526 (20,037 total).
-- **Open decision.** 2,035 resolved exhibit citations and CITED_IN edges bind a
-  sub-numbered reference ("P00099.1") to its base exhibit. 118 registry rows
-  exist only from such references.
+  - Edges: CITED_IN 11,054 · MENTIONED_IN 1,042 · TESTIFIED_AT 21.
+  - Citations: resolved 11,072 · ambiguous 183 · unresolved 8,256 (2,038
+    exhibit parts) · invalid 526 (20,037 total).
+  - Withdrawn exhibits: 130 (12 other-case, 118 sub-number base).
+  - Violations: 0 provenance, 0 integrity.
 - **Evidence.** `docs/ingestion/PHASE19_DATA_QUALITY.md` → "Phase 19C",
   `PHASE19_QUALITY_GATE.md` → "Pass C", `manifests/phase19c-review.json`,
   ADR-026.
