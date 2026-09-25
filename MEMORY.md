@@ -8,7 +8,7 @@ Live checkpoint. Repository state wins over this note.
   place from `feat/phase-20` at Phase 19 closeout `8661630`. `main` and
   `origin/main` contain Phase 19 through `8661630`.
 - Current milestone: **Phase 20 IN PROGRESS (2026-09-25)**; **20A COMPLETE**;
-  **20B NOT STARTED**. Phase
+  **20B CHECKPOINT RECORDED (pending acceptance)**; **20C NOT STARTED**. Phase
   19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
   are pushed. Phase 18 is COMPLETE (tag `phase-18-complete`). Phase
   16 remains **IN PROGRESS**; local
@@ -347,9 +347,26 @@ explicit authorization.
 - Known gap: the eight native-empty pages remain explicitly `ocr_required`; no
   OCR engine ran and no OCR geometry is claimed.
 
-Next only after authorization: 20B transcript-native Reader, deterministic
-PDF↔transcript synchronization and source-backed research overlays. Do not
-acquire records, revisit Phase 19 or resume Phase 16 as part of that decision.
+## Phase 20B result and next
+
+20B checkpoint recorded (pending acceptance) on the same branch; see
+`docs/PROJECT_STATE.md` → "Phase 20B checkpoint" and
+`docs/ingestion/PHASE20B_TRANSCRIPT_READER_REPORT.md` (ADR-028, migration
+`0016`).
+
+- Re-running projections: `ksc-ingest project-source-geometry` (20A, replaces
+  only its own anchor types), then `ksc-ingest project-transcript-sync` (20B).
+- 15,171 transcript segments: 14,180 exact line geometry, 991 page-and-line.
+  74,026 SourceAnchors in total. Integrity checks: 0 violations.
+- The Reader route renders `components/reader/SourceReader.tsx` for real data.
+  `DocumentReaderScreen` remains for mock/demo and component tests.
+- Local verification tip: Next dev (`next dev`) writes `apps/web/AGENTS.md` and
+  `apps/web/CLAUDE.md`; delete them and never commit them.
+
+Next, only after explicit authorization: 20C deep source-fidelity audit,
+performance/accessibility verification and closeout. Do not tag
+`phase-20-complete`, merge to `main`, acquire records or resume Phase 16
+without that authorization.
 
 Final state:
 

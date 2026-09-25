@@ -1,7 +1,7 @@
 # Phase 20 — Source-Native Intelligent PDF & Transcript Reader
 
-**Status:** IN PROGRESS (2026-09-25) — 20A COMPLETE. Stop before 20B pending
-explicit authorization.
+**Status:** IN PROGRESS (2026-09-25) — 20A COMPLETE; 20B checkpoint recorded
+(pending acceptance). Stop before 20C pending explicit authorization.
 
 ## Goal
 
@@ -73,7 +73,7 @@ and consumers; it must not assume that character offsets share one text base.
 | Pass | Scope | Entry / stop rule |
 |---|---|---|
 | **20A** | Source geometry, SourceAnchor architecture and original PDF viewer | COMPLETE (2026-09-25). Checkpoint recorded; stopped before 20B. |
-| **20B** | Transcript-native Reader, deterministic PDF synchronization and research overlays | Start only after 20A is accepted. Stop after integration/mobile gates and checkpoint docs. |
+| **20B** | Transcript-native Reader, deterministic PDF synchronization and research overlays | CHECKPOINT RECORDED (2026-09-25), pending acceptance. Stopped before 20C. |
 | **20C** | Deep source-fidelity audit, performance/accessibility verification and closeout | Start only after 20B is accepted. Do not begin another phase after closeout. |
 
 Each pass is a separate implementation, verification and documentation
@@ -400,7 +400,15 @@ Phase 20 does **not**:
 
 - **Status:** IN PROGRESS (20A complete; Phase 20 not complete).
 - **Started:** 2026-09-25.
-- **Current checkpoint:** 20A COMPLETE; 20B NOT STARTED.
+- **Current checkpoint:** 20A COMPLETE; 20B CHECKPOINT RECORDED (pending
+  acceptance); 20C NOT STARTED.
+- **20B:** Migration `0016`, transcript-segment anchors with validated line
+  geometry, printed page-header context, page-scoped Reader API and the
+  three-layer source-native Reader. Evidence:
+  `docs/ingestion/PHASE20B_TRANSCRIPT_READER_REPORT.md`. Open against the 20B
+  exit criteria: Events have no source anchors in this corpus (reported as
+  unsupported), and browser deep-link timing on a production build is left for
+  20C.
 - **Implementation:** Migration `0015`, native geometry projection, reusable
   SourceAnchor API, immutable ranged PDF delivery and source-first original PDF
   Reader (`70596a4`). Evidence: `docs/ingestion/PHASE20A_SOURCE_GEOMETRY_REPORT.md` and

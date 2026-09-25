@@ -119,7 +119,7 @@ Phase 15
        ↓
      Phase 19 (COMPLETE 2026-09-25)
        ↓
-     Phase 20 (IN PROGRESS; 20A complete, 20B not started)
+     Phase 20 (IN PROGRESS; 20A complete, 20B checkpoint recorded)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -133,9 +133,10 @@ deployment/alerting blockers intentionally deferred. Phase 18 is **COMPLETE
 (2026-09-24)**. Phase 19 is **COMPLETE (2026-09-25)**, tag `phase-19-complete`:
 verified mentions, header-backed appearances, exhibit status history, typed
 evidence edges and fail-closed citations over the known public corpus. Phase 20
-is **IN PROGRESS (2026-09-25)** with 20A complete; 20B (transcript-native Reader,
-deterministic PDF synchronization and research overlays) has not started. Stop
-pending explicit authorization.
+is **IN PROGRESS (2026-09-25)** with 20A complete and the 20B checkpoint
+(transcript-native Reader, deterministic PDF synchronization and research
+overlays) recorded pending acceptance. 20C has not started; stop pending
+explicit authorization.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

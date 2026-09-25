@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-25 (Phase 20A complete; 20B not started)
+Last updated: 2026-09-25 (Phase 20A complete; 20B checkpoint recorded; 20C not started)
 
 ## Milestones
 
@@ -27,7 +27,7 @@ Last updated: 2026-09-25 (Phase 20A complete; 20B not started)
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
-| **20** | **Source-native intelligent PDF and transcript Reader**                                                   | **IN PROGRESS (2026-09-25)** — 20A complete; stop before 20B                                             |
+| **20** | **Source-native intelligent PDF and transcript Reader**                                                   | **IN PROGRESS (2026-09-25)** — 20A complete; 20B checkpoint recorded; stop before 20C                    |
 
 ## Roadmap
 
@@ -53,7 +53,10 @@ declared known-public-corpus scope. Phase 18 is complete: Passes A and B align
 the research surfaces to that real-data baseline. Phase 19 is complete. Phase
 20A is complete: exact-version PDF delivery, native geometry, reusable
 SourceAnchor/SourceSpan and the source-first original PDF Reader are implemented
-and audited. Phase 20 remains in progress; 20B has not started.
+and audited. The 20B checkpoint adds transcript-segment anchors with
+validated line geometry, printed page-header context, page-scoped Reader reads
+and the three-layer source-native Reader. Phase 20 remains in progress; 20C
+has not started.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -878,6 +881,38 @@ experience`).
   `docs/ingestion/manifests/phase20a-source-geometry.json`.
 - No records were acquired, no original artifact changed, Phase 19 was not
   redone, and Phase 16 was not resumed.
+
+## Phase 20B checkpoint (2026-09-25)
+
+- Status: Phase 20 **IN PROGRESS**; **20B CHECKPOINT RECORDED** (pending
+  acceptance); stop before 20C. Not complete, and no `phase-20-complete` tag.
+- Migration `0016` (ADR-028): `transcript_segment` SourceAnchors plus
+  `transcript_page_contexts`. `ksc-ingest project-transcript-sync` run
+  `36ae2fb5-857f-4508-99e4-690f160724fa` is idempotent: 44 versions · 15,171
+  segments · 14,180 exact geometry / 991 page-and-line (804 closed/private
+  session, 157 no line grid, 27 text mismatch, 2 ambiguous grid, 1 missing
+  line) · 113,487 line regions · 2,519 printed page headers.
+- The 20A projection now replaces only its own anchor types. Its re-run
+  reproduced 58,855 anchors exactly. All SourceAnchors: 74,026 (22,645 exact ·
+  11,993 page-and-line · 39,375 page-only · 13 text-only).
+- Reader API (version/page-scoped): transcript outline, segments (page, T.
+  page+line, segment, speaker, header subject/examination, text), page
+  context (people, witness codes, organizations, exhibits, citations, typed
+  edges, findings) and local source search (always SEARCH_MATCH).
+- `components/reader/SourceReader.tsx`: the original PDF stays primary,
+  alongside synchronized verbatim text and page-local context with
+  collapsible panels. Mobile uses Source/Text/Context tabs. Two-way line sync
+  runs only on validated boxes. Version switches remount with no coordinate
+  carry-over, and the OCR-required state is explicit.
+- Verification: `tests/e2e/phase20b.spec.ts` 26/26 on desktop and Pixel 7
+  (paths A–I, sync, filter, search, OCR, axe). Phase 20A 6/6, Phase 19 8/8 and
+  route accessibility 18/18 were re-run. Focused backend suites: 62 passed;
+  Vitest 259; lint/format/typecheck/build clean. The full `make test` was not
+  re-run (targeted gates only).
+- Evidence: `docs/ingestion/PHASE20B_TRANSCRIPT_READER_REPORT.md`.
+- Open: Events have no source anchors (reported as unsupported); the eight
+  OCR pages have no OCR run; the mobile toolbar is dense; the 20C fidelity audit
+  and production-build browser timings are not started.
 
 ## Technical debt / notes
 

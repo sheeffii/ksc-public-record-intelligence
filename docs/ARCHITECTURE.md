@@ -290,6 +290,23 @@ bounded byte ranges with an immutable SHA-256 ETag; storage keys are never route
 inputs. The locally bundled PDF.js worker lazily renders only the selected page,
 while parsed text and research context remain secondary views.
 
+### Transcript-native Reader (Phase 20B, ADR-028)
+
+`project-transcript-sync` gives every transcript segment a `transcript_segment`
+anchor. It persists line boxes only when the version's own printed line-number
+column and line words reproduce the stored segment text. It also persists each
+page's official witness/session/examination header in
+`transcript_page_contexts`. The Reader (`components/reader/SourceReader.tsx`)
+has three layers: the original PDF (primary), synchronized verbatim text
+(transcript segments or parsed paragraphs) and page-local research context.
+They sit side by side on desktop, with collapsible text/context panels. On
+mobile they become Source/Text/Context tabs. After the server-rendered deep
+link, the browser fetches one page at a time from
+`/document-versions/{ref}/transcript[/segments]`,
+`/pages/{pdf_page_index}/context` and `/source-search`. The whole network and
+full-document anchors are never requested, and the opened PDF is cached per
+artifact URL.
+
 ## Cross-cutting rules enforced in code
 
 | Rule                                         | Where                                                                               |

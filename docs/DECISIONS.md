@@ -1335,3 +1335,54 @@ search coverage, especially for duplicate text, image-only pages and invalid
 out-of-page source marks; those cases remain useful through explicit weaker
 precision. Word geometry increases derived storage but allows bounded page
 queries and exact highlights without retaining millions of glyph rows.
+
+## ADR-028 — Transcript line geometry, page-header context and page-scoped Reader reads
+
+Date: 2026-09-25
+
+Status: Accepted (Phase 20B)
+
+Context:
+Phase 20A anchored research objects to the original PDF, but transcript
+segments had no anchor, speaker/examination values were parser state rather
+than printed source structure, and the Reader loaded one focused network per
+document instead of page-local context. Synchronizing a transcript line with
+the PDF must never align text that merely looks similar.
+
+Decision:
+
+1. Every transcript segment gets a `transcript_segment` SourceAnchor
+   (migration `0016`). A segment receives regions only when its own version's
+   native word geometry holds exactly one right-aligned printed line-number
+   column 1..N in strictly increasing vertical order, every line of the
+   segment exists in that column, and the words on those lines reproduce the
+   stored `speaker: text` whitespace-insensitively. Each region is one validated
+   line box. Missing/ambiguous grids, text mismatch, closed/private session,
+   OCR-required pages and missing PDF pages keep `PAGE_AND_LINE` / `PAGE_ONLY`
+   / `TEXT_ONLY` with a machine-readable reason. The 20A anchor projection only
+   replaces its own object types.
+2. `transcript_page_contexts` persists the official running page header
+   (Phase 19B rule `witness.transcript_page_header/1`): subject (code, or a
+   name the official header prints), session state and examination heading, with
+   exact page-text offsets. It states whose evidence a page belongs to. It is
+   never used to name a speaker label such as "THE WITNESS"; the parser's sticky
+   `examination_type` and label-derived `speaker_role` are not displayed.
+3. Reader reads are version- and page-scoped: transcript outline, paginated
+   segments (by PDF page, printed page/line, segment, verbatim speaker label,
+   header subject/examination or text), page context (source-anchored people,
+   witness codes, organizations, exhibits, citations, public typed edges and
+   findings on one PDF page, capped per kind with exact totals) and local source
+   search. Search hits are always `SEARCH_MATCH` with the precision of their
+   containing segment/page, never a PDF region.
+4. The UI draws a rectangle only for `EXACT_GEOMETRY`/`OCR_GEOMETRY` regions of
+   the displayed version and page, states why it exists, and states the fallback
+   otherwise. PDF → transcript synchronization hit-tests only validated segment
+   line boxes. A different version or link target remounts the Reader, so no
+   page, focus or highlight crosses versions.
+
+Consequences:
+Most transcript text becomes line-addressable on the original PDF without a
+new extractor. Entity/citation anchors inside a transcript line are not
+upgraded to the segment box. Their own precision is kept, and the line is
+focused in the text layer instead. Events have no source anchors and are
+reported as unsupported rather than approximated.

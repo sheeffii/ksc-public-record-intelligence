@@ -210,6 +210,13 @@ Phase 20A (`0015`, ADR-027) adds source-native geometry and anchors:
 - Related versions cannot share geometry through the schema: every geometry
   row and span carries the exact `document_version_id`.
 
+Phase 20B (`0016`, ADR-028) adds `transcript_segment` to the anchor object
+types (one anchor per segment, line-box regions only when validated) and
+`transcript_page_contexts`: one row per transcript page whose official running
+header states a witness code or officially printed name, a session state
+(`open`/`private`/`closed`) and an optional examination heading, with exact
+`document_pages.text` offsets and rule lineage.
+
 Phase 17C adds `entity_occurrences`: exactly one person, witness, organization
 or exhibit target plus the held document version, optional transcript segment,
 original occurrence text and exact page/line/character coordinates. The row
