@@ -40,6 +40,7 @@ from ksc_api.models import (
     Witness,
     version_language,
 )
+from ksc_ingestion.citation_resolution import foreign_case_before
 from ksc_ingestion.identity import (
     NAMED_ROLES,
     classify_label,
@@ -61,7 +62,10 @@ PAGE_TEXT = "document_page_text"
 # rule_id -> (rule_version, mention_state it produces)
 RULES: dict[str, tuple[int, str]] = {
     "witness.code.exact": (1, VERIFIED),
-    "exhibit.identifier.exact": (1, VERIFIED),
+    # v2: an identifier printed right after another court's case number
+    # ("IT-04-84 P00340") belongs to that case and is not a mention (Phase 19C).
+    # v3: the same with a binding comma, colon or parentheses ("IT-04-84bis, P00119").
+    "exhibit.identifier.exact": (3, VERIFIED),
     "organization.name.exact": (1, VERIFIED),
     "organization.acronym.exact": (1, VERIFIED),
     "organization.variant.shared": (1, REVIEW_REQUIRED),
@@ -131,6 +135,8 @@ class Registry:
     name_keys: Counter[str] = field(default_factory=Counter)
     # recorded full-name alias -> people it is recorded for (source-backed only)
     full_names: dict[str, set[uuid.UUID]] = field(default_factory=dict)
+    # The case being projected; another court's case number never names its records.
+    case_number: str = ""
 
 
 @dataclass(frozen=True)
@@ -160,10 +166,12 @@ def witness_code_mentions(text: str, witnesses: Mapping[str, uuid.UUID]) -> Iter
             )
 
 
-def exhibit_mentions(text: str, exhibits: Mapping[str, uuid.UUID]) -> Iterator[Mention]:
+def exhibit_mentions(
+    text: str, exhibits: Mapping[str, uuid.UUID], case_number: str = ""
+) -> Iterator[Mention]:
     for match in EXHIBIT_ID.finditer(text):
         exhibit_id = exhibits.get(match.group(0))
-        if exhibit_id is not None:
+        if exhibit_id is not None and not foreign_case_before(text, match.start(), case_number):
             yield Mention(
                 "exhibit_id",
                 exhibit_id,
@@ -303,7 +311,9 @@ def load_registry(session: Session, case: Case) -> Registry:
     for name, owners in full_names.items():
         folded.setdefault(name.casefold(), set()).update(owners)
     full_names = {name: folded[name.casefold()] for name in full_names}
-    return Registry(witnesses, exhibits, variants, person_labels, name_keys, full_names)
+    return Registry(
+        witnesses, exhibits, variants, person_labels, name_keys, full_names, case.case_number
+    )
 
 
 # -------------------------------------------------------------- anchors --
@@ -406,7 +416,7 @@ def anchor_mentions(anchor: Anchor, registry: Registry) -> Iterator[Mention]:
             yield mention
         return
     yield from witness_code_mentions(anchor.text, registry.witnesses)
-    yield from exhibit_mentions(anchor.text, registry.exhibits)
+    yield from exhibit_mentions(anchor.text, registry.exhibits, registry.case_number)
     yield from organization_mentions(anchor.text, registry.organization_variants)
     yield from full_name_mentions(anchor.text, registry.full_names)
 

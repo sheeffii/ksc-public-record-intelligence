@@ -27,6 +27,7 @@ from ksc_api.models import (
     TextExtractionMethod,
     Transcript,
     TranscriptSegment,
+    VerificationState,
 )
 from ksc_ingestion.citation_resolution import (
     apply_resolution,
@@ -102,6 +103,8 @@ class Phase8Pipeline:
         self.sessions = sessions
         self.store = store
         self.case_number = case_number
+        # Stale citations retired by the most recent extract-and-resolve pass.
+        self.retired_citations = 0
 
     def run(self, *, force: bool = False) -> Phase8RunResult:
         with self.sessions() as session:
@@ -187,9 +190,9 @@ class Phase8Pipeline:
             run_id,
             status="completed",
             processed=sum(counts.values()),
-            detail={"identifiers": identifiers, **counts},
+            detail={"identifiers": identifiers, **counts, "retired": self.retired_citations},
         )
-        return {"identifiers": identifiers, **counts}
+        return {"identifiers": identifiers, **counts, "retired": self.retired_citations}
 
     def _finish_processing_run(
         self,
@@ -469,6 +472,7 @@ class Phase8Pipeline:
 
     def _extract_and_resolve(self) -> dict[str, int]:
         counts = {"resolved": 0, "ambiguous": 0, "unresolved": 0, "invalid": 0}
+        retired: list[uuid.UUID] = []
         with self.sessions() as session:
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
@@ -505,6 +509,7 @@ class Phase8Pipeline:
                         )
                         for page in version.pages
                     ]
+                extracted_ids: set[uuid.UUID] = set()
                 for text, source_page, pdf_page_index, source_segment_id in sources:
                     for extracted in extract_citations(text):
                         resolution = resolve_extracted(
@@ -522,6 +527,7 @@ class Phase8Pipeline:
                             extracted.source_end,
                             extracted.raw_text,
                         )
+                        extracted_ids.add(citation_id)
                         citation = existing_citations.get(citation_id)
                         if citation is None:
                             citation = Citation(id=citation_id, case_id=case.id)
@@ -546,6 +552,12 @@ class Phase8Pipeline:
                         citation.target_line_to = extracted.target_line_to
                         apply_resolution(citation, resolution)
                         counts[resolution.state.value] += 1
+                retired.extend(
+                    self._retire_stale_citations(
+                        session,
+                        [c for cid, c in existing_citations.items() if cid not in extracted_ids],
+                    )
+                )
                 version.document.ingestion_state = DocumentIngestionState.INDEXED
             session.add(
                 AuditLog(
@@ -553,11 +565,58 @@ class Phase8Pipeline:
                     action="citations.resolved",
                     entity_type="case",
                     entity_id=str(case.id),
-                    detail=counts,
+                    detail={**counts, "retired": len(retired)},
                 )
             )
             session.commit()
+        self.retired_citations = len(retired)
         return counts
+
+    @staticmethod
+    def _retire_stale_citations(session: Session, stale: list[Citation]) -> list[uuid.UUID]:
+        """Retire machine-extracted citations the current parser no longer produces.
+
+        Only unreviewed rows with no downstream reference of any kind are
+        removed, each with an audit record; curated, human-reviewed or
+        referenced rows are kept for review rather than silently rewritten.
+        """
+
+        retired: list[uuid.UUID] = []
+        referencing = [
+            column
+            for table in Citation.metadata.sorted_tables
+            for column in table.columns
+            if any(fk.target_fullname == "citations.id" for fk in column.foreign_keys)
+        ]
+        for citation in stale:
+            if citation.verification_state is not VerificationState.UNREVIEWED:
+                continue
+            if any(
+                session.scalar(select(exists().where(column == citation.id)))
+                for column in referencing
+            ):
+                continue
+            session.add(
+                AuditLog(
+                    actor="ksc-ingest-phase8",
+                    action="citation.retired",
+                    entity_type="citation",
+                    entity_id=str(citation.id),
+                    detail={
+                        "reason": "no longer extracted by the current parser/resolver; "
+                        "unreviewed and unreferenced",
+                        "raw_text": citation.raw_text,
+                        "source_document_version_id": str(citation.source_document_version_id),
+                        "source_pdf_page_index": citation.source_pdf_page_index,
+                        "source_char_start": citation.source_char_start,
+                        "source_char_end": citation.source_char_end,
+                        "resolution_state": citation.resolution_state.value,
+                    },
+                )
+            )
+            session.delete(citation)
+            retired.append(citation.id)
+        return retired
 
 
 def re_page_header(line: str) -> bool:

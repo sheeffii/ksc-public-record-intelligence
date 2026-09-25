@@ -58,6 +58,28 @@ _PARA_AFTER_RE = re.compile(
     re.IGNORECASE,
 )
 _PAGE_AFTER_RE = re.compile(r"^[\s,;()]*\b(?:p\.|page)\s*(\d+)\b", re.IGNORECASE)
+_DASH = "[-\u2010\u2011\u2013]"
+# The case number of another court immediately before a bare identifier:
+# "IT-04-84bis P00119" is ICTY Haradinaj's exhibit, "KSC-BC-2020-05 P00123" the
+# Mustafa case's. Between them only a binding separator is allowed: whitespace,
+# one comma or colon ("IT-04-84bis, P00119"), and parentheses around either side
+# ("(IT-04-84) P00340", "IT-04-84 (P00340)"). A semicolon separates distinct
+# citations, so an identifier after it is not bound to the earlier case.
+_FOREIGN_CASE_BEFORE_RE = re.compile(
+    rf"(?<![0-9A-Za-z])(?P<case>(?:IT|ICTR|MICT|IRMCT|STL|ICC|SCSL){_DASH}\d{{2}}{_DASH}\d{{1,3}}"
+    rf"(?:\.\d+)?(?:bis|ter)?(?:{_DASH}[A-Z]{{1,3}}\d*)?|KSC-[A-Z]{{2}}-\d{{4}}-\d{{2}})"
+    r"\)?[^\S\n]*[,:]?\s*\(?\s*$"
+)
+
+
+def foreign_case_before(text: str, start: int, case_number: str) -> str | None:
+    """The other case whose number immediately precedes `text[start:]`, if any."""
+
+    match = _FOREIGN_CASE_BEFORE_RE.search(text, max(0, start - 48), start)
+    if match is None:
+        return None
+    foreign = re.sub(_DASH, "-", match.group("case"))
+    return None if foreign.upper() == case_number.upper() else foreign
 
 
 @dataclass(frozen=True)
@@ -72,6 +94,8 @@ class ExtractedCitation:
     target_line_to: int | None = None
     source_start: int = 0
     source_end: int = 0
+    # Case number printed immediately before a bare identifier (another court).
+    preceding_case: str | None = None
 
 
 @dataclass(frozen=True)
@@ -149,6 +173,11 @@ def extract_citations(text: str) -> list[ExtractedCitation]:
                         target_para_to=para_to,
                         source_start=match.start(),
                         source_end=raw_end,
+                        preceding_case=(
+                            foreign_case_before(text, match.start(), "")
+                            if pattern is not _CASE_REF_RE
+                            else None
+                        ),
                     ),
                 )
             )
@@ -465,6 +494,15 @@ def resolve_extracted(
             ResolutionMethod.PATTERN,
             UNRESOLVED_DISPLAY,
             f"reference names different case {case_match.group(1)}",
+            rule="invalid.other_case",
+        )
+    preceding = extracted.preceding_case
+    if preceding and preceding.upper() != case.case_number.upper():
+        return Resolution(
+            ResolutionState.INVALID,
+            ResolutionMethod.PATTERN,
+            UNRESOLVED_DISPLAY,
+            f"identifier follows the case number of a different case {preceding}",
             rule="invalid.other_case",
         )
     if extracted.target_line_from is not None:

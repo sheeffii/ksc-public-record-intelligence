@@ -3,6 +3,9 @@ from __future__ import annotations
 from ksc_api.models import CitationType
 from ksc_ingestion.citation_resolution import canonical_identifier, extract_citations
 
+# Official filings print Unicode hyphens (U+2010) in ICTY case numbers.
+ICTY_HYPHENATED = "IT" + chr(0x2010) + "05" + chr(0x2010) + "87.1"
+
 
 def test_citation_extraction_preserves_raw_text_and_normalizes_exact_identifiers() -> None:
     text = "See KSC-BC-2020-06/F00004/RED, para. 3 and F03776, p. 2; W01234; P00123."
@@ -49,3 +52,24 @@ def test_sub_file_series_references_are_extracted_as_versions() -> None:
         c.normalized_identifier for c in extract_citations("see IA042-F00005RED and PL003/F00004")
     }
     assert {"IA042/F00005/RED", "PL003/F00004"} <= found
+
+
+def test_identifier_after_another_courts_case_number_records_that_case() -> None:
+    text = (
+        "IT-04-84bis P00119, p. 4255; "
+        + ICTY_HYPHENATED
+        + " P01029; KSC-BC-2020-06 P00003; P00004; IT-04-84bis, P00340; (IT-03-66) P00140; "
+        "KSC-BC-2020-05: P00123; IT-04-84; P00005."
+    )
+    by_id = {c.normalized_identifier: c.preceding_case for c in extract_citations(text)}
+    assert by_id == {
+        "P00119": "IT-04-84bis",
+        "P01029": "IT-05-87.1",
+        "P00003": "KSC-BC-2020-06",
+        "P00004": None,
+        "P00340": "IT-04-84bis",
+        "P00140": "IT-03-66",
+        "P00123": "KSC-BC-2020-05",
+        # A semicolon starts a new citation: not bound to the preceding case.
+        "P00005": None,
+    }

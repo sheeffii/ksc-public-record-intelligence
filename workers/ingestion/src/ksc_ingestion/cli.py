@@ -454,7 +454,7 @@ def cmd_reresolve(args: argparse.Namespace) -> int:
     print(
         f"identifiers={result['identifiers']} resolved={result['resolved']} "
         f"ambiguous={result['ambiguous']} unresolved={result['unresolved']} "
-        f"invalid={result['invalid']}"
+        f"invalid={result['invalid']} retired={result['retired']}"
     )
     return 0
 

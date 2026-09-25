@@ -15,6 +15,9 @@ from ksc_ingestion.verified_mentions import (
     witness_code_mentions,
 )
 
+# Official filings print Unicode hyphens (U+2010) in ICTY case numbers.
+ICTY_HYPHENATED = "IT" + chr(0x2010) + "05" + chr(0x2010) + "87.1"
+
 W1, P1, O1, O2 = (uuid.uuid4() for _ in range(4))
 JUDGE, COUNSEL, COUNSEL_SMITH, ACCUSED = (uuid.uuid4() for _ in range(4))
 
@@ -116,3 +119,33 @@ def test_official_version_marker_wins_over_recorded_language() -> None:
     assert version_language("KSC-BC-2020-06/T/2022-03-24/sqi", "en") == "sq"
     assert version_language("KSC-BC-2020-06/F00002/RED", "en") == "en"
     assert version_language("KSC-BC-2020-06/F00002/RED", None) is None
+    # Phase 19C: a corrected translation carries the marker mid-reference.
+    assert version_language("KSC-BC-2020-06/F00026/RED/sqi/COR", "en") == "sq"
+
+
+def test_exhibit_after_another_courts_case_number_is_not_this_cases_exhibit() -> None:
+    # Phase 19C: "IT-04-84 P00003" is an ICTY Haradinaj exhibit, not this case's.
+    foreign = [
+        "IT-04-84 P00003, p. 3293",
+        ICTY_HYPHENATED + " P00003",
+        "KSC-BC-2020-05 P00003",
+        "IT-04-84bis, P00003",
+        "IT-04-84: P00003",
+        "(IT-04-84) P00003",
+        "IT-04-84 (P00003)",
+    ]
+    for text in foreign:
+        assert list(exhibit_mentions(text, _registry().exhibits, "KSC-BC-2020-06")) == [], text
+    # This case's own number, a bare identifier, and one after a semicolon (a new
+    # citation) or in a list continuation stay mentions of this case's exhibit.
+    kept = [
+        "KSC-BC-2020-06 P00003",
+        "KSC-BC-2020-06, P00003",
+        "see P00003",
+        "IT-04-84 P00931; P00003",
+        "IT-04-84 P00931, P00003",
+    ]
+    for text in kept:
+        mentions = list(exhibit_mentions(text, _registry().exhibits, "KSC-BC-2020-06"))
+        assert [m.char_start for m in mentions] == [text.rindex("P00003")], text
+    assert RULES["exhibit.identifier.exact"][0] == 3
