@@ -86,6 +86,8 @@ export interface SourceAnchorView {
   pageWidth?: number;
   pageHeight?: number;
   pageRotation?: number;
+  /** Set when the anchor names a transcript coordinate: its exact segment. */
+  transcriptSegmentId?: string;
   regions: readonly SourceRegionView[];
 }
 export type SearchResult = MockSearchResult;

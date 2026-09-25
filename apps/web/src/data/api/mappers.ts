@@ -638,6 +638,14 @@ export function toDocument(
     parserVersion: version?.parser_version ?? undefined,
     parseRequiresReview: version?.parse_requires_review,
     extractionMethod: version?.text_extraction_method,
+    versions: isPublic
+      ? document.versions.map((candidate) => ({
+          ref: candidate.official_version_ref,
+          type: candidate.version_type,
+          label: candidate.version_label ?? undefined,
+          fetched: candidate.artifact_status === "fetched",
+        }))
+      : [],
   };
 }
 

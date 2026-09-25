@@ -242,6 +242,7 @@ export interface ApiSourceAnchor {
   page_width: number | null;
   page_height: number | null;
   page_rotation: number | null;
+  transcript_segment_id?: string | null;
   regions: { x: number; y: number; width: number; height: number; coordinate_space: string }[];
 }
 

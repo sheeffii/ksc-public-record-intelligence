@@ -74,6 +74,8 @@ export interface MockDocument {
   parseRequiresReview?: boolean;
   extractionMethod?: string;
   artifactUrl?: string;
+  /** Held versions of the same document; coordinates never cross between them. */
+  versions?: { ref: string; type?: string; label?: string; fetched: boolean }[];
 }
 
 export interface MockSearchResult {

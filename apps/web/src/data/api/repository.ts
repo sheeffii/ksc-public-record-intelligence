@@ -186,6 +186,7 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
             pageWidth: anchor.page_width ?? undefined,
             pageHeight: anchor.page_height ?? undefined,
             pageRotation: anchor.page_rotation ?? undefined,
+            transcriptSegmentId: anchor.transcript_segment_id ?? undefined,
             regions: anchor.regions,
           }
         : null;

@@ -384,7 +384,22 @@ export function DocumentReaderScreen({
                       pageIndex={sourcePdfIndex}
                       fit={pdfFit}
                       zoom={pdfZoom}
-                      anchor={sourceAnchor}
+                      highlight={
+                        sourceAnchor &&
+                        (sourceAnchor.precision === "exact_geometry" ||
+                          sourceAnchor.precision === "ocr_geometry") &&
+                        sourceAnchor.pdfPageIndex === sourcePdfIndex &&
+                        sourceAnchor.pageWidth &&
+                        sourceAnchor.pageHeight
+                          ? {
+                              key: sourceAnchor.id,
+                              regions: sourceAnchor.regions,
+                              pageWidth: sourceAnchor.pageWidth,
+                              pageHeight: sourceAnchor.pageHeight,
+                              label: sourceAnchor.exactText ?? sourceAnchor.officialVersionRef,
+                            }
+                          : undefined
+                      }
                       onPageCount={onPdfPages}
                       onScale={onPdfScale}
                       onError={onPdfError}
