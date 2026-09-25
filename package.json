@@ -21,6 +21,6 @@
     "@types/node": "^24.13.6",
     "prettier": "^3.9.8",
     "prettier-plugin-tailwindcss": "^0.8.1",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   }
 }
