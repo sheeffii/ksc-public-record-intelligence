@@ -4,7 +4,10 @@ import { EmptyState } from "@/components/primitives/States";
 import { Panel } from "@/components/primitives/Panel";
 import {
   CitationChip,
+  EvidenceBasis,
+  IntelligenceStateLabel,
   ProtectionNotice,
+  ProvenanceSource,
   SourceBadge,
   VerificationBadge,
 } from "@/components/provenance";
@@ -13,11 +16,13 @@ import type {
   EntityMention,
   EntityMentionsView,
   ExhibitDossier,
+  ExhibitStatusEventView,
   IncidentView,
   NetworkView,
   OrganizationDossier,
   PersonDossier,
   SearchResult,
+  WitnessAppearanceView,
   WitnessDossier,
 } from "@/data";
 import type { DirectoryKind, DirectoryRow } from "@/data";
@@ -41,11 +46,13 @@ export function RealPersonScreen({
   occurrences = [],
   mentions = NO_MENTIONS,
   network = { nodes: [], edges: [] },
+  appearances = [],
 }: {
   person: PersonDossier;
   occurrences?: readonly SearchResult[];
   mentions?: EntityMentionsView;
   network?: NetworkView;
+  appearances?: readonly WitnessAppearanceView[];
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
@@ -109,6 +116,7 @@ export function RealPersonScreen({
             </div>
           </Panel>
         </div>
+        {appearances.length ? <AppearancesPanel appearances={appearances} /> : null}
         <ResearchTrail
           entityRef={person.slug}
           occurrences={occurrences}
@@ -126,11 +134,13 @@ export function RealWitnessScreen({
   occurrences = [],
   mentions = NO_MENTIONS,
   network = { nodes: [], edges: [] },
+  appearances = [],
 }: {
   dossier: WitnessDossier;
   occurrences?: readonly SearchResult[];
   mentions?: EntityMentionsView;
   network?: NetworkView;
+  appearances?: readonly WitnessAppearanceView[];
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
@@ -180,7 +190,7 @@ export function RealWitnessScreen({
                 />
               </div>
             </Panel>
-            <NoteStrip>{t18("hearingsUnavailable")}</NoteStrip>
+            {appearances.length ? null : <NoteStrip>{t18("hearingsUnavailable")}</NoteStrip>}
             <Panel title={t18("sourceNavigation")}>
               <p className="text-fg-secondary text-[11px] leading-relaxed">
                 {t18("sourceNavigationHint")}
@@ -217,6 +227,7 @@ export function RealWitnessScreen({
             {witness.protected ? <ProtectionNotice /> : null}
           </div>
         </div>
+        {appearances.length ? <AppearancesPanel appearances={appearances} /> : null}
         <ResearchTrail
           entityRef={witness.code}
           occurrences={occurrences}
@@ -253,6 +264,108 @@ function MentionList({ mentions }: { mentions: readonly EntityMention[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Hearings with a recorded public appearance — stored rows only, never estimated. */
+function AppearancesPanel({ appearances }: { appearances: readonly WitnessAppearanceView[] }) {
+  const t19 = useTranslations("phase19");
+  const hearings = new Set(appearances.map((row) => row.hearingDate)).size;
+  return (
+    <Panel title={t19("appearances.title")}>
+      <p className="text-fg-secondary mb-2 text-[11px] leading-relaxed">
+        {t19("appearances.summary", { hearings, rows: appearances.length })}
+      </p>
+      <p className="text-fg-tertiary mb-2 text-[10px] leading-relaxed">
+        {t19("appearances.basis")}
+      </p>
+      <ul className="divide-border-faint divide-y">
+        {appearances.map((row, index) => (
+          <li key={`${row.versionRef}-${index}`} className="space-y-1.5 py-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="identifier text-fg text-[11px] font-semibold">
+                {row.hearingDate}
+              </span>
+              <span className="text-fg-secondary font-mono text-[10px]">{row.versionRef}</span>
+              <IntelligenceStateLabel state="VERIFIED" />
+            </div>
+            <p className="text-fg-secondary text-[11px]">
+              {t19("appearances.pages", {
+                from: row.pageFrom ?? "—",
+                to: row.pageTo ?? "—",
+                header: row.headerPages,
+              })}{" "}
+              ·{" "}
+              {t19("appearances.sessions", {
+                open: row.openSessionPages,
+                private: row.privateSessionPages,
+                closed: row.closedSessionPages,
+              })}
+            </p>
+            {row.examinations.length ? (
+              <ul className="text-fg-secondary space-y-0.5 text-[11px]">
+                {row.examinations.map((exam) => (
+                  <li key={`${exam.page ?? "x"}-${exam.text}`}>
+                    <span className="font-mono text-[10px]">{exam.page ?? "—"}</span> · {exam.text}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <ProvenanceSource provenance={row.provenance} />
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
+/** Exhibit status history: explicit court-record statements only. */
+function StatusHistoryPanel({
+  events,
+  status,
+}: {
+  events: readonly ExhibitStatusEventView[];
+  status: string;
+}) {
+  const t19 = useTranslations("phase19");
+  return (
+    <Panel title={t19("statusHistory.title")}>
+      <p className="text-fg-tertiary mb-2 text-[10px] leading-relaxed">
+        {t19("statusHistory.basis")}
+      </p>
+      {events.length ? (
+        <ul className="divide-border-faint divide-y">
+          {events.map((event, index) => (
+            <li
+              key={`${event.provenance.versionRef}-${event.eventType}-${index}`}
+              className="space-y-1.5 py-2"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-fg text-[11px] font-semibold">
+                  {t19(`statusHistory.event.${event.eventType}`)}
+                </span>
+                <span className="identifier text-fg-secondary text-[10px]">{event.identifier}</span>
+                {event.classification ? (
+                  <span className="text-fg-secondary text-[10px]">{event.classification}</span>
+                ) : null}
+                <span className="text-fg-tertiary font-mono text-[10px]">
+                  {t19("statusHistory.statementDate", { date: event.statementDate ?? "—" })}
+                </span>
+                {event.speaker ? (
+                  <span className="text-fg-tertiary text-[10px]">{event.speaker}</span>
+                ) : null}
+              </div>
+              <ProvenanceSource provenance={event.provenance} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-fg-secondary flex flex-wrap items-center gap-2 text-[11px]">
+          {status.toLowerCase() === "unknown" ? <IntelligenceStateLabel state="UNKNOWN" /> : null}
+          {t19("statusHistory.none")}
+        </p>
+      )}
+    </Panel>
   );
 }
 
@@ -349,6 +462,17 @@ function ResearchTrail({
         ) : null}
         {edges.length ? (
           <Panel title={t18("relationships")}>
+            {network.page && network.page.total > edges.length ? (
+              <p className="text-fg-tertiary mb-2 text-[10px]">
+                {t19("relationshipTotal", { shown: edges.length, total: network.page.total })}{" "}
+                <Link
+                  href={`/network?focus=${encodeURIComponent(entityRef)}`}
+                  className="text-accent font-semibold"
+                >
+                  {t("viewNetwork")}
+                </Link>
+              </p>
+            ) : null}
             <ul className="divide-border-faint divide-y">
               {edges.map((edge) => {
                 const other = edge.from === focusNode?.id ? edge.to : edge.from;
@@ -360,11 +484,18 @@ function ResearchTrail({
                     <div className="flex flex-wrap items-center gap-2">
                       <SourceBadge type={edge.sourceType} size="sm" />
                       <VerificationBadge state={edge.verification} size="sm" />
-                      <CitationChip citation={edge.citation} size="sm" />
-                      {edge.sourcePath ? (
-                        <ActionLink href={edge.sourcePath}>{t("openSource")}</ActionLink>
-                      ) : null}
+                      <EvidenceBasis kind={edge.evidenceKind} count={edge.evidenceCount} />
                     </div>
+                    {edge.provenance ? (
+                      <ProvenanceSource provenance={edge.provenance} />
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CitationChip citation={edge.citation} size="sm" />
+                        {edge.sourcePath ? (
+                          <ActionLink href={edge.sourcePath}>{t("openSource")}</ActionLink>
+                        ) : null}
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -381,11 +512,13 @@ export function RealExhibitScreen({
   occurrences,
   mentions = NO_MENTIONS,
   network,
+  statusEvents = [],
 }: {
   exhibit: ExhibitDossier;
   occurrences: readonly SearchResult[];
   mentions?: EntityMentionsView;
   network: NetworkView;
+  statusEvents?: readonly ExhibitStatusEventView[];
 }) {
   const t = useTranslations("phase5");
   const t15 = useTranslations("phase15");
@@ -416,7 +549,16 @@ export function RealExhibitScreen({
             <KeyValue
               rows={[
                 { key: "id", label: t18("officialIdentifier"), value: exhibit.id },
-                { key: "status", label: t18("status"), value: exhibit.status.toUpperCase() },
+                {
+                  key: "status",
+                  label: t18("status"),
+                  value:
+                    exhibit.status.toLowerCase() === "unknown" ? (
+                      <IntelligenceStateLabel state="UNKNOWN" />
+                    ) : (
+                      exhibit.status.toUpperCase()
+                    ),
+                },
                 { key: "party", label: t18("tenderedBy"), value: exhibit.tenderedBy ?? "—" },
                 {
                   key: "date",
@@ -434,6 +576,7 @@ export function RealExhibitScreen({
             ) : null}
           </Panel>
         </div>
+        <StatusHistoryPanel events={statusEvents} status={exhibit.status} />
         <ResearchTrail
           entityRef={exhibit.id}
           occurrences={occurrences}

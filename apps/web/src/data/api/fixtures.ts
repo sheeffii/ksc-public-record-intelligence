@@ -17,7 +17,11 @@ import type {
   ApiFindingDetail,
   ApiFindingSummary,
   ApiIncident,
+  ApiEdgePage,
+  ApiExhibitStatusEvent,
   ApiNetwork,
+  ApiProvenance,
+  ApiWitnessAppearance,
   ApiPage,
   ApiPerson,
   ApiReferenceCounts,
@@ -525,6 +529,123 @@ export const network: ApiNetwork = {
   ],
 };
 
+function provenance(overrides: Partial<ApiProvenance>): ApiProvenance {
+  return {
+    kind: "citation",
+    rule: "identifier.exact",
+    document_ref: "KSC-DEMO-0000/F-DEMO-001",
+    document_title: "Demo judgment (synthetic)",
+    version_ref: "KSC-DEMO-0000/F-DEMO-001/RED",
+    language: "en",
+    pdf_page_index: 3,
+    page: 4,
+    paragraph: 12,
+    line_from: null,
+    line_to: null,
+    char_anchor: "document_page_text",
+    char_start: 10,
+    char_end: 16,
+    text: "F-DEMO-002",
+    source_url: null,
+    target_path: "/documents/F-DEMO-001?version=KSC-DEMO-0000%2FF-DEMO-001%2FRED&page=4&para=12",
+    ...overrides,
+  };
+}
+
+const transcriptProvenance = provenance({
+  kind: "witness_appearance",
+  rule: "witness.transcript_page_header",
+  document_ref: "KSC-DEMO-0000/T/2023-06-01",
+  document_title: "Transcript 2023-06-01 (synthetic)",
+  version_ref: "KSC-DEMO-0000/T/2023-06-01",
+  page: 101,
+  paragraph: null,
+  char_start: 0,
+  char_end: 38,
+  text: "Witness: W-DEMO-001 (Open Session)",
+  target_path: "/documents/transcript?document=T%2F2023-06-01&page=101",
+});
+
+export const edgePage: ApiEdgePage = {
+  items: [
+    {
+      id: "e-1",
+      from_node_id: "n-org",
+      to_node_id: "n-person",
+      relationship_type: "cited_in",
+      extraction_origin: "deterministic_citation",
+      verification_state: "unreviewed",
+      source_category: "court",
+      relationship_date: "2023-06-01",
+      evidence_count: 1,
+      provenance: provenance({}),
+    },
+    {
+      id: "e-2",
+      from_node_id: "n-witness",
+      to_node_id: "n-hearing",
+      relationship_type: "testified_at",
+      extraction_origin: "deterministic_occurrence",
+      verification_state: "unreviewed",
+      source_category: "witness",
+      relationship_date: "2023-06-01",
+      evidence_count: 2,
+      provenance: transcriptProvenance,
+    },
+    {
+      id: "e-3",
+      from_node_id: "n-person",
+      to_node_id: "n-orphan",
+      relationship_type: "mentioned_in",
+      extraction_origin: "deterministic_occurrence",
+      verification_state: "human_rejected",
+      source_category: "court",
+      relationship_date: null,
+      evidence_count: 1,
+      provenance: provenance({ kind: "entity_occurrence", rule: "person.full_name.exact" }),
+    },
+  ],
+  nodes: network.nodes,
+  total: 250,
+  by_type: { cited_in: 240, testified_at: 9, mentioned_in: 1 },
+  next_cursor: "00000000-0000-4000-8000-0000000000e2",
+};
+
+export const appearances: ApiWitnessAppearance[] = [
+  {
+    hearing_date: "2023-06-01",
+    session_label: "Trial hearing",
+    transcript_ref: "KSC-DEMO-0000/T/2023-06-01",
+    version_ref: "KSC-DEMO-0000/T/2023-06-01",
+    language: "en",
+    page_from: 101,
+    page_to: 140,
+    header_pages: 40,
+    open_session_pages: 30,
+    private_session_pages: 10,
+    closed_session_pages: 0,
+    examinations: [{ page: 101, text: "Examination by Demo Counsel" }, { page: 130 }],
+    rule_id: "witness.transcript_page_header",
+    provenance: transcriptProvenance,
+  },
+];
+
+export const statusEvents: ApiExhibitStatusEvent[] = [
+  {
+    exhibit_identifier: "P-DEMO-001",
+    event_type: "admitted",
+    classification: null,
+    statement_date: "2023-06-01",
+    speaker: "PRESIDING JUDGE",
+    rule_id: "exhibit.bench_statement.admitted",
+    provenance: provenance({
+      kind: "exhibit_status_event",
+      rule: "exhibit.bench_statement.admitted",
+      text: "P-DEMO-001 is admitted",
+    }),
+  },
+];
+
 export const evidencePath: ApiEvidencePath = {
   found: true,
   nodes: network.nodes.slice(0, 2),
@@ -582,6 +703,9 @@ export const routes: Record<string, unknown> = {
   "/events": page(events),
   "/claims": page([claim]),
   "/network": network,
+  "/network/edges": edgePage,
+  "/witnesses/W-DEMO-001/appearances": appearances,
+  "/exhibits/P-DEMO-001/status-events": statusEvents,
   "/network/path": evidencePath,
   "/search": search,
   "/ai/runs": [aiRunSummary],

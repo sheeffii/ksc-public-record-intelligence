@@ -14,6 +14,8 @@ import type {
   EntityMentionKind,
   EntityMentionsView,
   EvidenceRow,
+  ExhibitStatusEventView,
+  NetworkQuery,
   NetworkView,
   OrganizationDossier,
   ExhibitDossier,
@@ -22,6 +24,7 @@ import type {
   ResearchRepository,
   SearchResult,
   TimelineItem,
+  WitnessAppearanceView,
   WitnessDossier,
 } from "../contract";
 import { ApiClient, type ApiClientOptions } from "./client";
@@ -36,7 +39,9 @@ import type {
   ApiDocumentChunk,
   ApiDocumentDetail,
   ApiDocumentSummary,
+  ApiEdgePage,
   ApiEntityMention,
+  ApiExhibitStatusEvent,
   ApiEvent,
   ApiEvidencePath,
   ApiExhibit,
@@ -44,17 +49,19 @@ import type {
   ApiFindingSummary,
   ApiIncident,
   ApiMediaWorkspace,
-  ApiNetwork,
   ApiOrganization,
   ApiPage,
   ApiPerson,
   ApiSearch,
   ApiStatementComparison,
   ApiWitness,
+  ApiWitnessAppearance,
 } from "./types";
 
 const PAGE = { limit: 200, offset: 0 } as const;
 const MENTION_PAGE_SIZE = 50;
+// One bounded page of `/network/edges`; the full graph is never requested.
+const EDGE_PAGE_SIZE = 100;
 const MENTION_COLLECTION: Record<EntityMentionKind, string> = {
   person: "people",
   witness: "witnesses",
@@ -166,20 +173,34 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       return { total: page?.total ?? 0, items: (page?.items ?? []).map(map.toEntityMention) };
     },
 
-    async getNetwork(focusRef?: string): Promise<NetworkView> {
-      const network = await client.get<ApiNetwork>("/network", {
+    async getNetwork(focusRef?: string, query: NetworkQuery = {}): Promise<NetworkView> {
+      const page = await client.get<ApiEdgePage>("/network/edges", {
+        limit: EDGE_PAGE_SIZE,
         ...(focusRef ? { focus_ref: focusRef } : {}),
+        ...(query.relationshipType ? { relationship_type: query.relationshipType } : {}),
+        ...(query.evidenceKind ? { evidence_kind: query.evidenceKind } : {}),
+        ...(query.cursor ? { cursor: query.cursor } : {}),
       });
-      if (!network) return { nodes: [], edges: [] };
-      const edges = network.edges
-        .map(map.toNetworkEdge)
-        .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
-      const used = new Set(edges.flatMap((edge) => [edge.from, edge.to]));
-      const nodes = network.nodes.filter((node) => used.has(node.id));
-      return {
-        nodes: nodes.map((node, index) => map.toNetworkNode(node, index, nodes.length)),
-        edges,
-      };
+      if (!page) return { nodes: [], edges: [] };
+      return map.toEdgePage(page, query);
+    },
+
+    async getAppearances(
+      kind: "witness" | "person",
+      key: string,
+    ): Promise<readonly WitnessAppearanceView[]> {
+      const collection = kind === "witness" ? "witnesses" : "people";
+      const rows = await client.get<ApiWitnessAppearance[]>(
+        `/${collection}/${encodeURIComponent(key)}/appearances`,
+      );
+      return (rows ?? []).map(map.toWitnessAppearance);
+    },
+
+    async getExhibitStatusEvents(id: string): Promise<readonly ExhibitStatusEventView[]> {
+      const rows = await client.get<ApiExhibitStatusEvent[]>(
+        `/exhibits/${encodeURIComponent(id)}/status-events`,
+      );
+      return (rows ?? []).map(map.toExhibitStatusEvent);
     },
 
     async getPath(

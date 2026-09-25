@@ -8,10 +8,11 @@ export default async function Page({ params }: { params: Promise<{ code: string 
   const decoded = decodeURIComponent(code);
   const dossier = await repository.getWitness(decoded);
   if (!dossier) notFound();
-  const [mentions, occurrences, network] = await Promise.all([
+  const [mentions, occurrences, network, appearances] = await Promise.all([
     repository.getEntityMentions("witness", dossier.witness.code),
     repository.search(dossier.witness.code),
     repository.getNetwork(dossier.witness.code),
+    repository.getAppearances("witness", dossier.witness.code),
   ]);
   return (
     <RealWitnessScreen
@@ -19,6 +20,7 @@ export default async function Page({ params }: { params: Promise<{ code: string 
       mentions={mentions}
       occurrences={occurrences}
       network={network}
+      appearances={appearances}
     />
   );
 }

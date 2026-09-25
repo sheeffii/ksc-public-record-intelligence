@@ -1299,10 +1299,16 @@ class RecordRepository(IntelligenceReadsMixin):
         node_ids = {from_node_id, to_node_id}
         for edge in found:
             node_ids.update((edge.from_node_id, edge.to_node_id))
+        provenance = self._edge_provenance(found)
         return EvidencePathRead(
             found=True,
             nodes=self._nodes(node_ids),
-            hops=[mappers.to_relationship(edge) for edge in found],
+            hops=[
+                mappers.to_relationship(edge).model_copy(
+                    update={"provenance": provenance.get(edge.id)}
+                )
+                for edge in found
+            ],
         )
 
     def list_relationships(

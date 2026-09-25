@@ -11,7 +11,8 @@ export default async function Page({
   )
     return <EvidencePathScreen />;
   const repository = getRepository();
-  const network = await repository.getNetwork();
+  // Evidence Path traverses citation-backed edges only (ADR-014).
+  const network = await repository.getNetwork(undefined, { evidenceKind: "citation" });
   const query = await searchParams;
   const from = query.from ?? network.edges[0]?.from ?? network.nodes[0]?.id ?? "";
   const to = query.to ?? network.edges[0]?.to ?? network.nodes[1]?.id ?? from;

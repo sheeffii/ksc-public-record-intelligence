@@ -4,13 +4,15 @@ import type { DateType, Direction } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRef, useState } from "react";
-import type { NetworkView, PathHop, TimelineItem } from "@/data";
+import type { NetworkQuery, NetworkView, PathHop, TimelineItem } from "@/data";
 import { ActiveFilters, FilterOption, FilterSection } from "@/components/primitives/Filter";
 import { Panel } from "@/components/primitives/Panel";
 import { EmptyState } from "@/components/primitives/States";
 import {
   CitationChip,
   DirectionBadge,
+  EvidenceBasis,
+  ProvenanceSource,
   RecordBlock,
   ScopeNote,
   SourceBadge,
@@ -54,6 +56,95 @@ export function EvidenceExplorerScreen({
 
 // ------------------------------------------------------------ network -----
 
+const NETWORK_RELATIONS = ["cited_in", "mentioned_in", "testified_at"] as const;
+const NETWORK_EVIDENCE = ["citation", "entity_occurrence", "witness_appearance"] as const;
+
+function networkHref(focus: string | undefined, query: NetworkQuery): string {
+  const params = new URLSearchParams();
+  if (focus) params.set("focus", focus);
+  if (query.relationshipType) params.set("type", query.relationshipType);
+  if (query.evidenceKind) params.set("evidence", query.evidenceKind);
+  if (query.cursor) params.set("cursor", query.cursor);
+  const search = params.toString();
+  return search ? `/network?${search}` : "/network";
+}
+
+/**
+ * Server-side, cursor-paginated slice of `/network/edges`: filters and paging
+ * are URL state, so the full graph is never loaded or rendered at once.
+ */
+function NetworkPageControls({
+  page,
+  focus,
+  shown,
+}: {
+  page: NonNullable<NetworkView["page"]>;
+  focus?: string;
+  shown: number;
+}) {
+  const t19 = useTranslations("phase19");
+  const { query } = page;
+  const base = { relationshipType: query.relationshipType, evidenceKind: query.evidenceKind };
+  const chip = (href: string, label: string, active: boolean) => (
+    <Link
+      key={href + label}
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`rounded-control border px-2 py-1 text-[10px] font-semibold ${
+        active ? "border-accent text-accent" : "border-border text-fg-secondary"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+  return (
+    <div className="border-border bg-surface space-y-2 border-b px-3 py-2" data-network-page>
+      <p className="text-fg-secondary text-[11px]">
+        {t19("network.pageSummary", { total: page.total, shown })}
+        {focus ? null : ` ${t19("network.overview")}`}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-fg-tertiary text-[10px]">{t19("network.relationFilter")}</span>
+        {chip(
+          networkHref(focus, { evidenceKind: query.evidenceKind }),
+          t19("network.all"),
+          !query.relationshipType,
+        )}
+        {NETWORK_RELATIONS.map((relation) =>
+          chip(
+            networkHref(focus, { ...base, relationshipType: relation }),
+            `${relation.replaceAll("_", " ")} (${page.byType[relation] ?? 0})`,
+            query.relationshipType === relation,
+          ),
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-fg-tertiary text-[10px]">{t19("network.evidenceFilter")}</span>
+        {chip(
+          networkHref(focus, { relationshipType: query.relationshipType }),
+          t19("network.all"),
+          !query.evidenceKind,
+        )}
+        {NETWORK_EVIDENCE.map((kind) =>
+          chip(
+            networkHref(focus, { ...base, evidenceKind: kind }),
+            t19(`evidenceKind.${kind}`),
+            query.evidenceKind === kind,
+          ),
+        )}
+        {query.cursor ? chip(networkHref(focus, base), t19("network.firstPage"), false) : null}
+        {page.nextCursor
+          ? chip(
+              networkHref(focus, { ...base, cursor: page.nextCursor }),
+              t19("network.nextPage"),
+              false,
+            )
+          : null}
+      </div>
+    </div>
+  );
+}
+
 const NODE_KINDS = [
   "person",
   "witness",
@@ -78,7 +169,7 @@ export function NetworkScreen({
   const footer = useTranslations("footer");
   const t18 = useTranslations("phase18");
   const realData = initialNetwork !== undefined;
-  const { nodes, edges } = initialNetwork ?? mockRepository.getNetwork();
+  const { nodes, edges }: NetworkView = initialNetwork ?? mockRepository.getNetwork();
   const [selectedNode, setSelectedNode] = useState(
     nodes.find((node) => node.ref === initialFocus) ?? nodes[0]!,
   );
@@ -256,20 +347,31 @@ export function NetworkScreen({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <SourceBadge type={selectedEdge.sourceType} />
           <VerificationBadge state={selectedEdge.verification} size="sm" />
+          <EvidenceBasis kind={selectedEdge.evidenceKind} count={selectedEdge.evidenceCount} />
         </div>
-        <div className="mt-2">
-          <CitationChip citation={selectedEdge.citation} />
-        </div>
-        {selectedEdge.sourceCoordinate ? (
-          <p className="identifier text-fg-muted mt-2 text-[10px]">
-            {selectedEdge.sourceCoordinate}
-          </p>
-        ) : null}
-        <div className="mt-3">
-          <ActionLink href={selectedEdge.sourcePath ?? `/documents/${selectedEdge.citation.docId}`}>
-            {t("openSource")}
-          </ActionLink>
-        </div>
+        {selectedEdge.provenance ? (
+          <div className="mt-2">
+            <ProvenanceSource provenance={selectedEdge.provenance} />
+          </div>
+        ) : (
+          <>
+            <div className="mt-2">
+              <CitationChip citation={selectedEdge.citation} />
+            </div>
+            {selectedEdge.sourceCoordinate ? (
+              <p className="identifier text-fg-muted mt-2 text-[10px]">
+                {selectedEdge.sourceCoordinate}
+              </p>
+            ) : null}
+            <div className="mt-3">
+              <ActionLink
+                href={selectedEdge.sourcePath ?? `/documents/${selectedEdge.citation.docId}`}
+              >
+                {t("openSource")}
+              </ActionLink>
+            </div>
+          </>
+        )}
         <p className="governance-text mt-3">{footer("network")}</p>
       </Panel>
       <Panel title={t("graphTextAlternative")}>
@@ -353,6 +455,9 @@ export function NetworkScreen({
           {tb("resolvingDepth", { d: depth })}
         </span>
       </Toolbar>
+      {initialNetwork?.page ? (
+        <NetworkPageControls page={initialNetwork.page} focus={initialFocus} shown={edges.length} />
+      ) : null}
       <div
         className={`grid min-h-[690px] flex-1 ${fullscreen ? "" : "lg:grid-cols-[220px_minmax(0,1fr)_280px]"}`}
       >
@@ -630,7 +735,7 @@ export function EvidencePathScreen({
   const tb = useTranslations("phase5b");
   const footer = useTranslations("footer");
   const realData = initialNetwork !== undefined;
-  const hops = initialHops ?? mockRepository.getPath();
+  const hops: readonly PathHop[] = initialHops ?? mockRepository.getPath();
   const { nodes } = initialNetwork ?? mockRepository.getNetwork();
   const [maxHops, setMaxHops] = useState<"1" | "2" | "3">("3");
   const [from, setFrom] = useState(initialFrom ?? nodes[0]?.id ?? "");
@@ -748,7 +853,9 @@ export function EvidencePathScreen({
                   </button>
                   {openHop === hop.index ? (
                     <div className="mt-2 ml-9 space-y-2">
-                      {realData ? (
+                      {realData && hop.provenance ? (
+                        <ProvenanceSource provenance={hop.provenance} />
+                      ) : realData ? (
                         <p className="text-fg-body text-[12px]">{hop.note}</p>
                       ) : (
                         <p className="text-fg-body font-serif text-[12px]">

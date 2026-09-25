@@ -1052,7 +1052,7 @@
     "documents": "Documents",
     "transcriptOccurrences": "Transcript occurrences",
     "relationships": "Source-backed relationships",
-    "hearingsUnavailable": "Distinct hearing totals are not exposed by the current public API; transcript occurrences are shown without inferring a hearing count.",
+    "hearingsUnavailable": "No hearing with a recorded public appearance is held for this witness. Hearing totals are shown only from stored transcript-header appearances, never estimated.",
     "openDocuments": "Open matching documents",
     "openTranscripts": "Open transcript occurrences",
     "openFindings": "Open connected findings",
@@ -1117,6 +1117,53 @@
       "VERIFIED_MENTION": "VERIFIED MENTION",
       "REVIEW_REQUIRED": "REVIEW REQUIRED",
       "SEARCH_MATCH": "SEARCH MATCH"
-    }
+    },
+    "openExactSource": "Open exact source",
+    "state": {
+      "VERIFIED": "VERIFIED",
+      "SEARCH_MATCH": "SEARCH MATCH",
+      "REVIEW_REQUIRED": "REVIEW REQUIRED",
+      "AMBIGUOUS": "AMBIGUOUS",
+      "UNKNOWN": "UNKNOWN"
+    },
+    "evidenceKind": {
+      "citation": "Citation",
+      "entity_occurrence": "Verified mention",
+      "witness_appearance": "Transcript appearance header",
+      "exhibit_status_event": "Court-record statement"
+    },
+    "evidenceCount": "{count, plural, one {# source anchor} other {# source anchors}}",
+    "relationshipTotal": "Showing {shown} of {total} relationships.",
+    "appearances": {
+      "title": "Hearings with a recorded public appearance",
+      "summary": "{hearings, plural, one {# hearing} other {# hearings}} · {rows, plural, one {# transcript version} other {# transcript versions}}",
+      "basis": "Each row comes from the transcript's own page header naming this witness. A mention in the body text is not an appearance. Private and closed pages are counted from the header, never read, and gaps are never bridged.",
+      "pages": "Transcript pages {from}–{to} ({header} header pages)",
+      "sessions": "open {open} · private {private} · closed {closed}"
+    },
+    "statusHistory": {
+      "title": "Status history",
+      "basis": "Status comes only from explicit statements by the bench or court officer. The date shown is the hearing in which the statement was made, which may be later than the ruling itself.",
+      "none": "No court-record statement about this exhibit is held. The status is not inferred.",
+      "statementDate": "stated {date}",
+      "event": {
+        "number_assigned": "Number assigned",
+        "admitted": "Admitted",
+        "rejected": "Rejected",
+        "marked_for_identification": "Marked for identification",
+        "withdrawn": "Withdrawn"
+      }
+    },
+    "network": {
+      "pageSummary": "{total, plural, one {# relationship} other {# relationships}} match. Showing {shown} at a time; the full graph is never loaded.",
+      "byType": "By type",
+      "relationFilter": "Relationship type",
+      "evidenceFilter": "Evidence",
+      "all": "All",
+      "nextPage": "Next page",
+      "firstPage": "First page",
+      "overview": "No entity is focused. This is one bounded page of evidence edges; search for a node or open the network from a dossier to focus it."
+    },
+    "exactSourceOutside": "The exact source text is on this page but outside the parsed paragraphs shown here (for example a running header, heading or footnote). Verbatim source text:"
   }
 }

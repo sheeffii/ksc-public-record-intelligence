@@ -103,7 +103,8 @@ export interface MockNetworkEdge {
   sourceType: Exclude<SourceType, "ai">;
   citation: Citation;
   verification: VerificationState;
-  extractionOrigin?: "source_documented" | "deterministic_citation" | "analytical";
+  extractionOrigin?:
+    "source_documented" | "deterministic_citation" | "deterministic_occurrence" | "analytical";
   relationshipDate?: string;
   datePrecision?: string;
   note?: string;

@@ -79,8 +79,74 @@ export interface EntityMentionsView {
   items: readonly EntityMention[];
 }
 export type NetworkNode = MockNetworkNode;
-export type NetworkEdge = MockNetworkEdge;
-export type PathHop = MockPathHop;
+export type EvidenceKind =
+  "citation" | "entity_occurrence" | "witness_appearance" | "exhibit_status_event";
+/**
+ * The unified exact-source answer to "why does this exist?" — the same shape
+ * for a citation, a verified mention, a witness appearance and an exhibit
+ * status event. `text` is the verbatim source slice at `charStart..charEnd`.
+ */
+export interface ProvenanceView {
+  kind: EvidenceKind;
+  rule?: string;
+  documentRef: string;
+  documentTitle: string;
+  versionRef: string;
+  language?: string;
+  pdfPageIndex?: number;
+  page?: number;
+  paragraph?: number;
+  lineFrom?: number;
+  lineTo?: number;
+  charStart?: number;
+  charEnd?: number;
+  text: string;
+  href: string;
+  citation: Citation;
+}
+export type NetworkEdge = MockNetworkEdge & {
+  /** Which single evidence row backs the edge (DB-enforced exactly one). */
+  evidenceKind?: EvidenceKind;
+  /** Number of exact source anchors behind the edge — a count, never a weight. */
+  evidenceCount?: number;
+  provenance?: ProvenanceView;
+};
+export type NetworkRelationFilter = "cited_in" | "mentioned_in" | "testified_at";
+export type NetworkEvidenceFilter = "citation" | "entity_occurrence" | "witness_appearance";
+export interface NetworkQuery {
+  relationshipType?: NetworkRelationFilter;
+  evidenceKind?: NetworkEvidenceFilter;
+  cursor?: string;
+}
+/** A hearing with a recorded public appearance, from the transcript page header. */
+export interface WitnessAppearanceView {
+  hearingDate: string;
+  sessionLabel?: string;
+  transcriptRef?: string;
+  versionRef: string;
+  language?: string;
+  pageFrom?: number;
+  pageTo?: number;
+  headerPages: number;
+  openSessionPages: number;
+  privateSessionPages: number;
+  closedSessionPages: number;
+  examinations: readonly { page?: number; text: string }[];
+  ruleId: string;
+  provenance: ProvenanceView;
+}
+/** An explicit court-record statement about an exhibit (history, never inferred). */
+export interface ExhibitStatusEventView {
+  identifier: string;
+  eventType:
+    "number_assigned" | "admitted" | "rejected" | "marked_for_identification" | "withdrawn";
+  classification?: string;
+  statementDate?: string;
+  speaker?: string;
+  ruleId: string;
+  provenance: ProvenanceView;
+}
+export type PathHop = MockPathHop & Pick<NetworkEdge, "evidenceKind" | "provenance">;
 export type TimelineItem = MockTimelineItem;
 export type EvidenceRow = MockEvidenceRow;
 
@@ -99,6 +165,13 @@ export interface IncidentView {
 export interface NetworkView {
   nodes: readonly NetworkNode[];
   edges: readonly NetworkEdge[];
+  /** Present for bounded, cursor-paginated reads of `/network/edges`. */
+  page?: {
+    total: number;
+    byType: Readonly<Record<string, number>>;
+    nextCursor?: string;
+    query: NetworkQuery;
+  };
 }
 
 export interface FindingCitationView {
@@ -421,7 +494,12 @@ export interface ResearchRepository {
   getFinding(key: string): Promise<FindingView | null>;
   search(query: string): Promise<readonly SearchResult[]>;
   getEntityMentions(kind: EntityMentionKind, key: string): Promise<EntityMentionsView>;
-  getNetwork(focusRef?: string): Promise<NetworkView>;
+  getNetwork(focusRef?: string, query?: NetworkQuery): Promise<NetworkView>;
+  getAppearances(
+    kind: "witness" | "person",
+    key: string,
+  ): Promise<readonly WitnessAppearanceView[]>;
+  getExhibitStatusEvents(id: string): Promise<readonly ExhibitStatusEventView[]>;
   getPath(fromNodeId?: string, toNodeId?: string, maxHops?: number): Promise<readonly PathHop[]>;
   getTimeline(): Promise<readonly TimelineItem[]>;
   getEvidence(): Promise<readonly EvidenceRow[]>;
@@ -450,6 +528,8 @@ export const REPOSITORY_METHODS = [
   "search",
   "getEntityMentions",
   "getNetwork",
+  "getAppearances",
+  "getExhibitStatusEvents",
   "getPath",
   "getTimeline",
   "getEvidence",

@@ -171,6 +171,10 @@ def test_evidence_path_uses_only_cited_edges_and_invents_no_hops(demo_client):
     assert all(hop["citation"]["source_document_version_ref"] for hop in path["hops"])
     assert all(hop["citation"]["source_path"] for hop in path["hops"])
     assert all(hop["extraction_origin"] != "analytical" for hop in path["hops"])
+    # Hops answer "why?" with the same exact-source contract as /network/edges.
+    for hop in path["hops"]:
+        assert hop["provenance"]["kind"] == "citation"
+        assert hop["provenance"]["version_ref"] == hop["citation"]["source_document_version_ref"]
 
     missing = demo_client.get(
         f"{V1}/network/path",

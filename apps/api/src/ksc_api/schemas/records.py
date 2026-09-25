@@ -395,6 +395,8 @@ class RelationshipRead(ReadModel):
     extraction_origin: RelationshipOrigin
     relationship_date: date | None
     date_precision: DatePrecision
+    # Set on Evidence Path hops: the same exact-source contract as `/network/edges`.
+    provenance: ProvenanceRead | None = None
 
 
 EvidenceKind = Literal[

@@ -1052,7 +1052,7 @@
     "documents": "Dokumentet",
     "transcriptOccurrences": "Paraqitjet në transkript",
     "relationships": "Marrëdhënie të mbështetura në burime",
-    "hearingsUnavailable": "Numri i veçantë i seancave nuk jepet nga API-ja publike aktuale; paraqitjet në transkript shfaqen pa nxjerrë një numër seancash.",
+    "hearingsUnavailable": "Për këtë dëshmitar nuk mbahet asnjë seancë me paraqitje publike të regjistruar. Numri i seancave shfaqet vetëm nga paraqitjet e ruajtura nga kokat e transkriptit, nuk vlerësohet kurrë.",
     "openDocuments": "Hap dokumentet përkatëse",
     "openTranscripts": "Hap paraqitjet në transkript",
     "openFindings": "Hap konstatimet e lidhura",
@@ -1117,6 +1117,53 @@
       "VERIFIED_MENTION": "PËRMENDJE E VERIFIKUAR",
       "REVIEW_REQUIRED": "KËRKON SHQYRTIM",
       "SEARCH_MATCH": "PËRPUTHJE KËRKIMI"
-    }
+    },
+    "openExactSource": "Hap burimin e saktë",
+    "state": {
+      "VERIFIED": "E VERIFIKUAR",
+      "SEARCH_MATCH": "PËRPUTHJE KËRKIMI",
+      "REVIEW_REQUIRED": "KËRKON SHQYRTIM",
+      "AMBIGUOUS": "E PAQARTË",
+      "UNKNOWN": "E PANJOHUR"
+    },
+    "evidenceKind": {
+      "citation": "Citim",
+      "entity_occurrence": "Përmendje e verifikuar",
+      "witness_appearance": "Kokë faqeje e paraqitjes në transkript",
+      "exhibit_status_event": "Deklaratë në procesverbalin e gjykatës"
+    },
+    "evidenceCount": "{count, plural, one {# pikë burimore} other {# pika burimore}}",
+    "relationshipTotal": "Shfaqen {shown} nga {total} lidhje.",
+    "appearances": {
+      "title": "Seanca me një paraqitje publike të regjistruar",
+      "summary": "{hearings, plural, one {# seancë} other {# seanca}} · {rows, plural, one {# version transkripti} other {# versione transkripti}}",
+      "basis": "Çdo rresht vjen nga koka e faqes së vetë transkriptit që e emërton këtë dëshmitar. Një përmendje në tekst nuk është paraqitje. Faqet private dhe të mbyllura numërohen nga koka, nuk lexohen kurrë, dhe boshllëqet nuk plotësohen kurrë.",
+      "pages": "Faqet e transkriptit {from}–{to} ({header} faqe me kokë)",
+      "sessions": "e hapur {open} · private {private} · e mbyllur {closed}"
+    },
+    "statusHistory": {
+      "title": "Historiku i statusit",
+      "basis": "Statusi vjen vetëm nga deklarata të shprehura të trupit gjykues ose zyrtarit të gjykatës. Data e shfaqur është seanca në të cilën u bë deklarata, e cila mund të jetë më vonë se vendimi.",
+      "none": "Nuk mbahet asnjë deklaratë e procesverbalit të gjykatës për këtë provë. Statusi nuk nxirret.",
+      "statementDate": "deklaruar {date}",
+      "event": {
+        "number_assigned": "Numër i caktuar",
+        "admitted": "Pranuar",
+        "rejected": "Refuzuar",
+        "marked_for_identification": "Shënuar për identifikim",
+        "withdrawn": "Tërhequr"
+      }
+    },
+    "network": {
+      "pageSummary": "{total, plural, one {# lidhje përputhet} other {# lidhje përputhen}}. Shfaqen {shown} njëherësh; grafi i plotë nuk ngarkohet kurrë.",
+      "byType": "Sipas llojit",
+      "relationFilter": "Lloji i lidhjes",
+      "evidenceFilter": "Prova",
+      "all": "Të gjitha",
+      "nextPage": "Faqja tjetër",
+      "firstPage": "Faqja e parë",
+      "overview": "Asnjë entitet nuk është në fokus. Kjo është një faqe e kufizuar e lidhjeve me prova; kërkoni një nyje ose hapni rrjetin nga një dosje për ta fokusuar."
+    },
+    "exactSourceOutside": "Teksti i saktë burimor gjendet në këtë faqe, por jashtë paragrafëve të analizuar që shfaqen këtu (për shembull një kokë faqeje, titull ose shënim në fund të faqes). Teksti burimor fjalë për fjalë:"
   }
 }

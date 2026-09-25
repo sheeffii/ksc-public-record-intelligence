@@ -24,6 +24,11 @@ import type {
   DocumentView,
   EntityMention,
   EvidenceRow,
+  ExhibitStatusEventView,
+  NetworkQuery,
+  NetworkView,
+  ProvenanceView,
+  WitnessAppearanceView,
   FindingArgumentView,
   FindingCitationView,
   FindingView,
@@ -76,7 +81,13 @@ import type {
   ApiVerificationState,
   ApiWitness,
   ApiEntityMention,
+  ApiEdge,
+  ApiEdgePage,
+  ApiExhibitStatusEvent,
+  ApiProvenance,
+  ApiWitnessAppearance,
 } from "./types";
+import { withExactSource } from "@/lib/exact-source";
 
 const VERIFICATION: Record<ApiVerificationState, VerificationState | null> = {
   human_verified: "verified",
@@ -723,6 +734,12 @@ export function toNetworkEdge(edge: ApiRelationship): NetworkEdge | null {
       ]
         .filter(Boolean)
         .join(" · ") || undefined,
+    ...(edge.provenance
+      ? {
+          evidenceKind: edge.provenance.kind,
+          provenance: toProvenance(edge.provenance, edge.source_category ?? citation.sourceType),
+        }
+      : {}),
   };
 }
 
@@ -840,16 +857,7 @@ export function toAiRunSummary(run: ApiAiRunSummary): AiRunSummaryView {
  * so it is never labelled as testimony.
  */
 export function toEntityMention(mention: ApiEntityMention): EntityMention {
-  const coordinate = [
-    mention.page !== null ? `p. ${mention.page}` : undefined,
-    mention.paragraph !== null ? `¶${mention.paragraph}` : undefined,
-    mention.line_from !== null
-      ? `lines ${mention.line_from}${mention.line_to && mention.line_to !== mention.line_from ? `–${mention.line_to}` : ""}`
-      : undefined,
-    mention.page === null && mention.pdf_page_index !== null
-      ? `PDF ${mention.pdf_page_index}`
-      : undefined,
-  ].filter(Boolean);
+  const coordinate = coordinateParts(mention);
   return {
     id: mention.id,
     matchClass: mention.match_class,
@@ -857,7 +865,7 @@ export function toEntityMention(mention: ApiEntityMention): EntityMention {
     occurrenceText: mention.occurrence_text,
     documentTitle: mention.document_title,
     versionSuperseded: mention.version_superseded,
-    href: mention.target_path,
+    href: withExactSource(mention.target_path, mention.occurrence_text),
     citation: {
       sourceType: "court",
       ref: mention.version_ref,
@@ -869,5 +877,131 @@ export function toEntityMention(mention: ApiEntityMention): EntityMention {
       resolved: true,
       display: [mention.version_ref, ...coordinate].join(" · "),
     },
+  };
+}
+
+function coordinateParts(p: {
+  page: number | null;
+  paragraph: number | null;
+  line_from: number | null;
+  line_to: number | null;
+  pdf_page_index: number | null;
+}): string[] {
+  return [
+    p.page !== null ? `p. ${p.page}` : undefined,
+    p.paragraph !== null ? `¶${p.paragraph}` : undefined,
+    p.line_from !== null
+      ? `lines ${p.line_from}${p.line_to && p.line_to !== p.line_from ? `–${p.line_to}` : ""}`
+      : undefined,
+    p.page === null && p.pdf_page_index !== null ? `PDF ${p.pdf_page_index}` : undefined,
+  ].filter((part): part is string => part !== undefined);
+}
+
+/** `ProvenanceRead` → the screen-facing exact-source view (one shape for every kind). */
+export function toProvenance(
+  provenance: ApiProvenance,
+  sourceType: Citation["sourceType"] = "court",
+): ProvenanceView {
+  return {
+    kind: provenance.kind,
+    rule: provenance.rule ?? undefined,
+    documentRef: provenance.document_ref,
+    documentTitle: provenance.document_title,
+    versionRef: provenance.version_ref,
+    language: provenance.language ?? undefined,
+    pdfPageIndex: provenance.pdf_page_index ?? undefined,
+    page: provenance.page ?? undefined,
+    paragraph: provenance.paragraph ?? undefined,
+    lineFrom: provenance.line_from ?? undefined,
+    lineTo: provenance.line_to ?? undefined,
+    charStart: provenance.char_start ?? undefined,
+    charEnd: provenance.char_end ?? undefined,
+    text: provenance.text,
+    href: withExactSource(provenance.target_path, provenance.text),
+    citation: {
+      sourceType,
+      ref: provenance.version_ref,
+      docId: documentRouteId(provenance.document_ref),
+      page: provenance.page ?? undefined,
+      paraFrom: provenance.paragraph ?? undefined,
+      lineFrom: provenance.line_from ?? undefined,
+      lineTo: provenance.line_to ?? undefined,
+      resolved: true,
+      display: [provenance.version_ref, ...coordinateParts(provenance)].join(" · "),
+    },
+  };
+}
+
+/** A `/network/edges` row. Every edge carries exactly one exact provenance. */
+export function toEvidenceEdge(edge: ApiEdge): NetworkEdge | null {
+  const verification = toVerification(edge.verification_state);
+  if (verification === null) return null;
+  const provenance = toProvenance(edge.provenance, edge.source_category);
+  return {
+    id: edge.id,
+    from: edge.from_node_id,
+    to: edge.to_node_id,
+    relation: edge.relationship_type,
+    sourceType: edge.source_category,
+    citation: provenance.citation,
+    verification,
+    extractionOrigin: edge.extraction_origin as NetworkEdge["extractionOrigin"],
+    relationshipDate: edge.relationship_date ?? undefined,
+    sourcePath: provenance.href,
+    sourceCoordinate: provenance.citation.display,
+    evidenceKind: edge.provenance.kind,
+    evidenceCount: edge.evidence_count,
+    provenance,
+  };
+}
+
+export function toEdgePage(page: ApiEdgePage, query: NetworkQuery): NetworkView {
+  const edges = page.items
+    .map(toEvidenceEdge)
+    .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
+  const used = new Set(edges.flatMap((edge) => [edge.from, edge.to]));
+  const nodes = page.nodes.filter((node) => used.has(node.id));
+  return {
+    nodes: nodes.map((node, index) => toNetworkNode(node, index, nodes.length)),
+    edges,
+    page: {
+      total: page.total,
+      byType: page.by_type,
+      nextCursor: page.next_cursor ?? undefined,
+      query,
+    },
+  };
+}
+
+export function toWitnessAppearance(row: ApiWitnessAppearance): WitnessAppearanceView {
+  return {
+    hearingDate: row.hearing_date,
+    sessionLabel: row.session_label ?? undefined,
+    transcriptRef: row.transcript_ref ?? undefined,
+    versionRef: row.version_ref,
+    language: row.language ?? undefined,
+    pageFrom: row.page_from ?? undefined,
+    pageTo: row.page_to ?? undefined,
+    headerPages: row.header_pages,
+    openSessionPages: row.open_session_pages,
+    privateSessionPages: row.private_session_pages,
+    closedSessionPages: row.closed_session_pages,
+    examinations: row.examinations.flatMap((exam) =>
+      exam.text ? [{ page: exam.page ?? undefined, text: exam.text }] : [],
+    ),
+    ruleId: row.rule_id,
+    provenance: toProvenance(row.provenance, "witness"),
+  };
+}
+
+export function toExhibitStatusEvent(row: ApiExhibitStatusEvent): ExhibitStatusEventView {
+  return {
+    identifier: row.exhibit_identifier,
+    eventType: row.event_type,
+    classification: row.classification ?? undefined,
+    statementDate: row.statement_date ?? undefined,
+    speaker: row.speaker ?? undefined,
+    ruleId: row.rule_id,
+    provenance: toProvenance(row.provenance),
   };
 }

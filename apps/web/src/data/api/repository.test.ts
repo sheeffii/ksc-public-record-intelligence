@@ -69,15 +69,59 @@ describe("ApiRepository", () => {
     expect(stub.calls).toEqual(["/documents/F-DEMO-004"]);
   });
 
-  it("builds a network of provenance-backed edges and only the nodes they touch", async () => {
-    const { repo } = repository();
-    const { nodes, edges } = await repo.getNetwork();
-    expect(edges.map((e) => e.id)).toEqual(["r-1", "r-2"]);
-    expect(nodes.map((n) => n.id).sort()).toEqual(["n-hearing", "n-org", "n-person", "n-witness"]);
-    const witness = nodes.find((n) => n.id === "n-witness");
+  it("reads one bounded page of typed evidence edges and only the nodes they touch", async () => {
+    const { repo, stub } = repository();
+    const view = await repo.getNetwork("W-DEMO-001", {
+      relationshipType: "testified_at",
+      evidenceKind: "witness_appearance",
+    });
+    expect(stub.calls).toEqual([
+      "/network/edges?limit=100&focus_ref=W-DEMO-001&relationship_type=testified_at&evidence_kind=witness_appearance",
+    ]);
+    // A rejected edge never surfaces; the orphan node it touched is dropped.
+    expect(view.edges.map((e) => e.id)).toEqual(["e-1", "e-2"]);
+    expect(view.nodes.map((n) => n.id).sort()).toEqual([
+      "n-hearing",
+      "n-org",
+      "n-person",
+      "n-witness",
+    ]);
+    const witness = view.nodes.find((n) => n.id === "n-witness");
     expect(witness?.type).toBe("protected");
     expect(witness?.label).toBe("W-DEMO-001");
-    expect(nodes.every((n) => Number.isFinite(n.x) && Number.isFinite(n.y))).toBe(true);
+    expect(view.nodes.every((n) => Number.isFinite(n.x) && Number.isFinite(n.y))).toBe(true);
+    const testified = view.edges[1]!;
+    expect(testified.evidenceKind).toBe("witness_appearance");
+    expect(testified.evidenceCount).toBe(2);
+    expect(testified.provenance?.href).toBe(
+      "/documents/transcript?document=T%2F2023-06-01&page=101&hl=Witness%3A%20W-DEMO-001%20(Open%20Session)",
+    );
+    expect(testified.citation.display).toBe("KSC-DEMO-0000/T/2023-06-01 · p. 101");
+    expect(view.page).toEqual({
+      total: 250,
+      byType: { cited_in: 240, testified_at: 9, mentioned_in: 1 },
+      nextCursor: "00000000-0000-4000-8000-0000000000e2",
+      query: { relationshipType: "testified_at", evidenceKind: "witness_appearance" },
+    });
+  });
+
+  it("reads header-backed appearances and court-record status history", async () => {
+    const { repo, stub } = repository();
+    const [appearance] = await repo.getAppearances("witness", "W-DEMO-001");
+    expect(appearance?.examinations).toEqual([{ page: 101, text: "Examination by Demo Counsel" }]);
+    expect(appearance?.provenance.kind).toBe("witness_appearance");
+    expect(await repo.getAppearances("person", "nobody")).toEqual([]);
+    const [event] = await repo.getExhibitStatusEvents("P-DEMO-001");
+    expect(event?.eventType).toBe("admitted");
+    expect(event?.provenance.text).toBe("P-DEMO-001 is admitted");
+    expect(event?.provenance.citation.display).toBe("KSC-DEMO-0000/F-DEMO-001/RED · p. 4 · ¶12");
+    expect(await repo.getExhibitStatusEvents("P-NONE")).toEqual([]);
+    expect(stub.calls).toEqual([
+      "/witnesses/W-DEMO-001/appearances",
+      "/people/nobody/appearances",
+      "/exhibits/P-DEMO-001/status-events",
+      "/exhibits/P-NONE/status-events",
+    ]);
   });
 
   it("maps timeline, evidence and search", async () => {

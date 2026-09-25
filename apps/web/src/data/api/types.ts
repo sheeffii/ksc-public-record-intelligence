@@ -453,11 +453,86 @@ export interface ApiRelationship {
   extraction_origin?: "source_documented" | "deterministic_citation" | "analytical";
   relationship_date?: string | null;
   date_precision?: string;
+  /** Present on Evidence Path hops (the shared `ProvenanceRead` contract). */
+  provenance?: ApiProvenance | null;
 }
 
 export interface ApiNetwork {
   nodes: ApiGraphNode[];
   edges: ApiRelationship[];
+}
+
+export type ApiEvidenceKind =
+  "citation" | "entity_occurrence" | "witness_appearance" | "exhibit_status_event";
+
+/** `ProvenanceRead`: one exact-source answer to "why does this exist?". */
+export interface ApiProvenance {
+  kind: ApiEvidenceKind;
+  rule: string | null;
+  document_ref: string;
+  document_title: string;
+  version_ref: string;
+  language: string | null;
+  pdf_page_index: number | null;
+  page: number | null;
+  paragraph: number | null;
+  line_from: number | null;
+  line_to: number | null;
+  char_anchor: string | null;
+  char_start: number | null;
+  char_end: number | null;
+  text: string;
+  source_url: string | null;
+  target_path: string;
+}
+
+export interface ApiEdge {
+  id: string;
+  from_node_id: string;
+  to_node_id: string;
+  relationship_type: string;
+  extraction_origin: string;
+  verification_state: ApiVerificationState;
+  source_category: "court" | "witness" | "spo" | "defence" | "exhibit";
+  relationship_date: string | null;
+  evidence_count: number;
+  provenance: ApiProvenance;
+}
+
+export interface ApiEdgePage {
+  items: ApiEdge[];
+  nodes: ApiGraphNode[];
+  total: number;
+  by_type: Record<string, number>;
+  next_cursor: string | null;
+}
+
+export interface ApiWitnessAppearance {
+  hearing_date: string;
+  session_label: string | null;
+  transcript_ref: string | null;
+  version_ref: string;
+  language: string | null;
+  page_from: number | null;
+  page_to: number | null;
+  header_pages: number;
+  open_session_pages: number;
+  private_session_pages: number;
+  closed_session_pages: number;
+  examinations: { page?: number | null; text?: string }[];
+  rule_id: string;
+  provenance: ApiProvenance;
+}
+
+export interface ApiExhibitStatusEvent {
+  exhibit_identifier: string;
+  event_type:
+    "number_assigned" | "admitted" | "rejected" | "marked_for_identification" | "withdrawn";
+  classification: string | null;
+  statement_date: string | null;
+  speaker: string | null;
+  rule_id: string;
+  provenance: ApiProvenance;
 }
 
 export interface ApiEvidencePath {

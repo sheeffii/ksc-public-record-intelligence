@@ -50,6 +50,8 @@ export function createMockRepositoryAdapter(
     search: async (query) => source.search(query),
     getEntityMentions: async () => ({ total: 0, items: [] }),
     getNetwork: async () => source.getNetwork(),
+    getAppearances: async () => [],
+    getExhibitStatusEvents: async () => [],
     getPath: async () => source.getPath(),
     getTimeline: async () => source.getTimeline(),
     getEvidence: async () => source.getEvidence(),

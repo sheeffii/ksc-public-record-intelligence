@@ -39,7 +39,7 @@ test.describe("Phase 18 Pass B research experience gate", () => {
       .first()
       .click();
     await expect(page).toHaveURL(/\/exhibits\/P00003/);
-    await expect(page.getByText("Source occurrences")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Verified mentions" })).toBeVisible();
     const source = page.getByRole("link", { name: "Open exact source" }).first();
     await expect(source).toHaveAttribute("href", /\/documents\//);
     await source.click();
@@ -49,7 +49,7 @@ test.describe("Phase 18 Pass B research experience gate", () => {
 
   test("person occurrence opens the exact court source", async ({ page }) => {
     await page.goto("/people/accused-krasniqi");
-    await expect(page.getByText("Source occurrences")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Verified mentions" })).toBeVisible();
     const source = page.getByRole("link", { name: "Open exact source" }).first();
     await expect(source).toHaveAttribute("href", /\/documents\/.*pdfPage=\d+/);
     await source.click();
@@ -84,6 +84,6 @@ test.describe("Phase 18 Pass B research experience gate", () => {
     await expect(
       page.getByRole("region", { name: "Network" }).getByRole("button", { name: "P00003" }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: /Open source/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Open (exact )?source/i }).first()).toBeVisible();
   });
 });

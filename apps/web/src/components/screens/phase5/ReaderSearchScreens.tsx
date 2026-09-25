@@ -4,7 +4,7 @@ import type { SourceType } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActiveFilters,
   FilterOption,
@@ -14,6 +14,7 @@ import {
 import { Panel } from "@/components/primitives/Panel";
 import { EmptyState, GapNotice } from "@/components/primitives/States";
 import {
+  EvidenceBasis,
   AiAnalysisBlock,
   CitationChip,
   ProtectionNotice,
@@ -21,6 +22,7 @@ import {
   SourceBadge,
   VerificationBadge,
 } from "@/components/provenance";
+import { exactSourcePattern, splitExactSource } from "@/lib/exact-source";
 import { AppShell } from "@/components/shell/AppShell";
 import {
   courtCitation,
@@ -47,12 +49,18 @@ export function DocumentReaderScreen({
   initialDocument,
   initialPage,
   initialPdfPage,
+  initialPara,
+  highlight,
   contextNetwork,
 }: {
   id: string;
   initialDocument?: MockDocument;
   initialPage?: number;
   initialPdfPage?: number;
+  /** Paragraph named by a provenance link; the exact slice is marked only there. */
+  initialPara?: number;
+  /** Verbatim persisted source slice to mark (see `lib/exact-source`). */
+  highlight?: string;
   contextNetwork?: NetworkView;
 }) {
   const t = useTranslations("phase5");
@@ -62,15 +70,32 @@ export function DocumentReaderScreen({
   const isReal = initialDocument !== undefined;
   const document = initialDocument ?? mockRepository.getDocument(id);
   const isTranscript = !isReal && id.startsWith("T-");
-  const [page, setPage] = useState(initialPage ?? initialPdfPage ?? document.page);
   const coordinateKind =
     initialPdfPage !== undefined || (initialPage === undefined && document.coordinateKind === "pdf")
       ? "pdfPage"
       : "page";
+  // The page state is in the coordinate system the Reader filters by: a link
+  // carrying both `pdfPage` and printed `page` navigates by the PDF index.
+  const [page, setPage] = useState(
+    coordinateKind === "pdfPage"
+      ? (initialPdfPage ?? document.page)
+      : (initialPage ?? initialPdfPage ?? document.page),
+  );
   const [panelTab, setPanelTab] = useState<
     "summary" | "mentions" | "people" | "exhibits" | "findings" | "citations"
   >("summary");
   const [inDoc, setInDoc] = useState("");
+  const exactPattern = useMemo(
+    () => (isReal ? exactSourcePattern(highlight) : null),
+    [isReal, highlight],
+  );
+  const t19 = useTranslations("phase19");
+  useEffect(() => {
+    const target =
+      window.document.querySelector("[data-exact-source]") ??
+      (initialPara !== undefined ? window.document.getElementById(`para-${initialPara}`) : null);
+    target?.scrollIntoView?.({ block: "center" });
+  }, [initialPara, highlight]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const total = document.pageCount ?? (isReal ? undefined : 52);
@@ -332,10 +357,44 @@ export function DocumentReaderScreen({
                         PDF {paragraph.pdfPageIndex ?? page}
                       </span>
                     )}
-                    {paragraph.text}
+                    {splitExactSource(
+                      paragraph.text,
+                      initialPara === undefined || paragraph.number === initialPara
+                        ? exactPattern
+                        : null,
+                    ).map((part, partIndex) =>
+                      part.exact ? (
+                        <mark
+                          key={partIndex}
+                          data-exact-source
+                          className="bg-surface-high text-fg ring-accent rounded px-0.5 ring-1"
+                        >
+                          {part.text}
+                        </mark>
+                      ) : (
+                        part.text
+                      ),
+                    )}
                   </p>
                 ))
               )}
+              {highlight &&
+              exactPattern &&
+              !paragraphs.some(
+                (paragraph) =>
+                  (initialPara === undefined || paragraph.number === initialPara) &&
+                  splitExactSource(paragraph.text, exactPattern).some((part) => part.exact),
+              ) ? (
+                // The exact span lies outside the rendered paragraphs (running
+                // header, heading or footnote). Say so; never mark a guess.
+                <div
+                  data-exact-source-outside
+                  className="border-border-subtle bg-surface-raised rounded-card mb-4 border p-3"
+                >
+                  <p className="text-fg-secondary text-[11px]">{t19("exactSourceOutside")}</p>
+                  <p className="text-fg mt-1 font-mono text-[11px] break-words">{highlight}</p>
+                </div>
+              ) : null}
               {isReal && paragraphs.length === 0 ? (
                 <EmptyState
                   title={
@@ -396,6 +455,7 @@ export function DocumentReaderScreen({
                       <div className="flex flex-wrap items-center gap-2">
                         <SourceBadge type={edge.sourceType} size="sm" />
                         <VerificationBadge state={edge.verification} size="sm" />
+                        <EvidenceBasis kind={edge.evidenceKind} count={edge.evidenceCount} />
                         <CitationChip citation={edge.citation} size="sm" />
                         {edge.sourcePath ? (
                           <ActionLink href={edge.sourcePath}>{t("openSource")}</ActionLink>

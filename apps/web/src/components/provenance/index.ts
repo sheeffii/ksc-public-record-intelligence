@@ -8,3 +8,9 @@ export { RecordBlock } from "./RecordBlock";
 export { ReferenceCountStrip } from "./ReferenceCountStrip";
 export { SourceBadge } from "./SourceBadge";
 export { VerificationBadge } from "./VerificationBadge";
+export {
+  EvidenceBasis,
+  IntelligenceStateLabel,
+  ProvenanceSource,
+  type IntelligenceState,
+} from "./IntelligenceLabels";
