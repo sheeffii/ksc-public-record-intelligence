@@ -91,3 +91,52 @@ def test_transcript_sync_projection_is_idempotent_and_never_boxes_without_geomet
             select(SourceSpan).where(SourceSpan.id.in_(owned), SourceSpan.exact_text.is_(None))
         ).all()
         assert len(closed) == 1 and closed[0].precision.value in {"unavailable", "page_and_line"}
+
+
+def test_shared_filing_number_resolves_by_official_ref_or_not_at_all(demo_client):
+    """A filing and its annex share a filing number; only an exact official
+    reference or an unambiguous filing number resolves (Phase 20C finding)."""
+    from ksc_api.db.session import session_scope
+    from ksc_api.fixtures.demo import DEMO_CASE_NUMBER
+    from ksc_api.models import Case, Document, DocumentIngestionState, Visibility
+
+    with session_scope() as session:
+        case = session.query(Case).filter_by(case_number=DEMO_CASE_NUMBER).one()
+        for key, filing in (
+            ("F-DEMO-001/A01", "F-DEMO-001"),
+            ("F-DEMO-777/A01", "F-DEMO-777"),
+            ("F-DEMO-777/A02", "F-DEMO-777"),
+        ):
+            if (
+                not session.query(Document)
+                .filter_by(official_ref=f"{DEMO_CASE_NUMBER}/{key}")
+                .first()
+            ):
+                session.add(
+                    Document(
+                        case_id=case.id,
+                        official_ref=f"{DEMO_CASE_NUMBER}/{key}",
+                        filing_number=filing,
+                        title=f"Annex {key} (synthetic)",
+                        document_type="annex",
+                        visibility=Visibility.PUBLIC,
+                        ingestion_state=DocumentIngestionState.DISCOVERED,
+                    )
+                )
+    try:
+        main = demo_client.get(f"{V1}/documents/F-DEMO-001").json()
+        assert main["official_ref"] == f"{DEMO_CASE_NUMBER}/F-DEMO-001"
+        annex = demo_client.get(f"{V1}/documents/F-DEMO-001/A01").json()
+        assert annex["official_ref"] == f"{DEMO_CASE_NUMBER}/F-DEMO-001/A01"
+        # Two annexes and no main document: the bare filing number is ambiguous.
+        assert demo_client.get(f"{V1}/documents/F-DEMO-777").status_code == 404
+    finally:
+        with session_scope() as session:
+            session.query(Document).filter(
+                Document.official_ref.in_(
+                    [
+                        f"{DEMO_CASE_NUMBER}/{k}"
+                        for k in ("F-DEMO-001/A01", "F-DEMO-777/A01", "F-DEMO-777/A02")
+                    ]
+                )
+            ).delete(synchronize_session=False)

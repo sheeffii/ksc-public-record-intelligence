@@ -39,13 +39,17 @@ test.describe("Phase 15 production real-data routes", () => {
   }) => {
     await page.goto("/documents/F03752?pdfPage=0");
     await expect(page.locator('[data-surface="light"]')).toBeVisible();
-    await expect(page.getByText("F03752 · PDF index 0", { exact: true })).toBeVisible();
+    // Phase 20: exact version + PDF page metadata sit under the original PDF,
+    // and the parsed court text is the labelled derivative layer.
+    const source = page.locator('[data-reader-layer="source"]');
+    await expect(source).toContainText("KSC-BC-2020-06/F03752");
+    await expect(source).toContainText("PDF page 1 of");
+    await expect(
+      page.getByRole("link", { name: /official (court )?source/i }).first(),
+    ).toHaveAttribute("href", /^https:\/\//);
+    if (isMobile) await page.getByRole("radio", { name: "Text", exact: true }).click();
+    await expect(page.locator('[data-reader-layer="text"] p.font-serif').first()).toBeVisible();
     await expect(page.getByText("No parsed public content", { exact: false })).toHaveCount(0);
-    if (isMobile) await page.getByRole("button", { name: "Research panel" }).click();
-    await expect(page.getByRole("link", { name: /official source/i })).toHaveAttribute(
-      "href",
-      /^https:\/\//,
-    );
     await expect(page.locator("[data-demo-flag]")).toHaveCount(0);
   });
 

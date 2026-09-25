@@ -40,6 +40,12 @@ describe("ApiRepository", () => {
     ]);
   });
 
+  it("never substitutes another version when the requested one is not held", async () => {
+    const { repo, stub } = repository();
+    expect(await repo.getDocument("F-DEMO-001", "F-DEMO-001/NOT-HELD")).toBeNull();
+    expect(stub.calls).toEqual(["/documents/F-DEMO-001"]);
+  });
+
   it("loads a document with the chunks of its newest public version", async () => {
     const { repo, stub } = repository();
     const document = await repo.getDocument("F-DEMO-001");

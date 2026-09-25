@@ -7,8 +7,8 @@ Live checkpoint. Repository state wins over this note.
 - Current branch: `feat/phase-20-source-native-intelligent-reader`, renamed in
   place from `feat/phase-20` at Phase 19 closeout `8661630`. `main` and
   `origin/main` contain Phase 19 through `8661630`.
-- Current milestone: **Phase 20 IN PROGRESS (2026-09-25)**; **20A COMPLETE**;
-  **20B CHECKPOINT RECORDED (pending acceptance)**; **20C NOT STARTED**. Phase
+- Current milestone: **Phase 20 COMPLETE (2026-09-25)**, tag
+  `phase-20-complete` (not merged to `main`). No later phase started. Phase
   19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
   are pushed. Phase 18 is COMPLETE (tag `phase-18-complete`). Phase
   16 remains **IN PROGRESS**; local
@@ -27,7 +27,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. Both are
   contained in `main`.
-- Latest completion tag: annotated `phase-19-complete`.
+- Latest completion tag: annotated `phase-20-complete`.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
@@ -363,10 +363,17 @@ explicit authorization.
 - Local verification tip: Next dev (`next dev`) writes `apps/web/AGENTS.md` and
   `apps/web/CLAUDE.md`; delete them and never commit them.
 
-Next, only after explicit authorization: 20C deep source-fidelity audit,
-performance/accessibility verification and closeout. Do not tag
-`phase-20-complete`, merge to `main`, acquire records or resume Phase 16
-without that authorization.
+## Phase 20 closeout
+
+Phase 20 is COMPLETE (20C audit PASS; `docs/ingestion/PHASE20_QUALITY_GATE.md`).
+Real-case totals exclude the 13 synthetic demo anchors: 74,013 anchors (22,645
+exact). Document lookup by bare filing number is deterministic or 404 (ADR-029).
+The Reader never substitutes a version or draws an anchor on another version.
+The audit spec `tests/e2e/phase20c.spec.ts` runs against the production build
+(`docker compose up -d --build api web`, then `E2E_REAL_DATA=1 pnpm e2e`).
+
+Next: no phase is authorized. Merging to `main`, Phase 21, or resuming Phase 16
+each need an explicit instruction.
 
 Final state:
 

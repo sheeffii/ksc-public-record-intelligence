@@ -1,5 +1,10 @@
 # Phase 20A source geometry and original PDF Reader checkpoint
 
+> **Erratum (20C, 2026-09-25):** the anchor totals below (58,855; 13 `TEXT_ONLY`)
+> include 13 anchors from the synthetic `KSC-DEMO-0000` test fixture. The real
+> case has 58,842 20A anchors and 0 `TEXT_ONLY`. See
+> `PHASE20_QUALITY_GATE.md` for the final real-case figures.
+
 Date: 2026-09-25
 
 Case: `KSC-BC-2020-06`

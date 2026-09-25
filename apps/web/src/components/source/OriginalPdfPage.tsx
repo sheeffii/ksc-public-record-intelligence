@@ -70,12 +70,26 @@ export function OriginalPdfPage({
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [viewport, setViewport] = useState<{ width: number; height: number; page: number }>();
+  const [viewport, setViewport] = useState<{
+    width: number;
+    height: number;
+    page: number;
+    ready: boolean;
+  }>();
   const [layoutRevision, setLayoutRevision] = useState(0);
 
   useEffect(() => {
     if (!hostRef.current || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => setLayoutRevision((value) => value + 1));
+    // Only the available width feeds page fitting. Height changes are caused
+    // by the page itself resizing and must not restart its own render.
+    let width = hostRef.current.clientWidth;
+    const observer = new ResizeObserver(() => {
+      const next = hostRef.current?.clientWidth ?? width;
+      // A hidden layer (mobile tabs) reports 0: keep the last real layout.
+      if (next === 0 || next === width) return;
+      width = next;
+      setLayoutRevision((value) => value + 1);
+    });
     observer.observe(hostRef.current);
     return () => observer.disconnect();
   }, []);
@@ -103,11 +117,18 @@ export function OriginalPdfPage({
         onScale(scale);
         const canvas = canvasRef.current;
         if (!canvas || cancelled) return;
+        // The overlay box and the canvas CSS size change together, and
+        // regions stay hidden until this bitmap is drawn: a highlight is never
+        // shown against a stretched or stale page.
+        setViewport({
+          width: nextViewport.width,
+          height: nextViewport.height,
+          page: pageIndex,
+          ready: false,
+        });
         const ratio = window.devicePixelRatio || 1;
         canvas.width = Math.floor(nextViewport.width * ratio);
         canvas.height = Math.floor(nextViewport.height * ratio);
-        canvas.style.width = `${nextViewport.width}px`;
-        canvas.style.height = `${nextViewport.height}px`;
         const context = canvas.getContext("2d");
         if (!context) throw new Error("Canvas rendering is unavailable");
         const task = page.render({
@@ -119,7 +140,12 @@ export function OriginalPdfPage({
         cancelRender = () => task.cancel();
         await task.promise;
         if (!cancelled) {
-          setViewport({ width: nextViewport.width, height: nextViewport.height, page: pageIndex });
+          setViewport({
+            width: nextViewport.width,
+            height: nextViewport.height,
+            page: pageIndex,
+            ready: true,
+          });
         }
       } catch (error) {
         if (cancelled) return;
@@ -134,7 +160,8 @@ export function OriginalPdfPage({
     };
   }, [url, pageIndex, fit, zoom, layoutRevision, onPageCount, onScale, onError]);
 
-  const rendered = viewport && viewport.page === pageIndex ? viewport : undefined;
+  const rendered = viewport && viewport.page === pageIndex && viewport.ready ? viewport : undefined;
+  const sized = viewport && viewport.page === pageIndex ? viewport : undefined;
   const highlightKey = highlight?.key;
   useEffect(() => {
     if (!rendered || !highlightKey) return;
@@ -148,11 +175,13 @@ export function OriginalPdfPage({
       <div
         className="shadow-page relative shrink-0"
         data-pdf-rendered={rendered ? "true" : "false"}
-        style={rendered ? { width: rendered.width, height: rendered.height } : undefined}
+        style={sized ? { width: sized.width, height: sized.height } : undefined}
       >
         <canvas
           ref={canvasRef}
           aria-label={`PDF page ${pageIndex + 1}`}
+          // CSS size comes from the same state as the overlay, in one commit.
+          style={sized ? { width: sized.width, height: sized.height } : undefined}
           className="bg-surface block"
           onClick={(event) => {
             if (!onPointClick || !rendered || !pageSize) return;

@@ -143,6 +143,9 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       const version = versionRef
         ? document.versions.find((candidate) => candidate.official_version_ref === versionRef)
         : document.versions.at(-1);
+      // A requested version that this document does not hold is not found:
+      // never silently substitute another version's artifact or coordinates.
+      if (versionRef && !version) return null;
       const chunks = version
         ? ((
             await client.get<ApiPage<ApiDocumentChunk>>(

@@ -71,6 +71,8 @@ interface ActiveSource {
   failureReason?: string;
   regions: PdfHighlight["regions"];
   segmentId?: string;
+  /** Set for link-carried anchors: the exact version the coordinates belong to. */
+  versionRef?: string;
   pageWidth?: number;
   pageHeight?: number;
 }
@@ -101,6 +103,32 @@ export interface SourceReaderProps {
 
 function segmentKey(segment: TranscriptSegmentView): string {
   return `seg-${segment.id}`;
+}
+
+/** The segment's own anchor as the active source; never another object's. */
+function segmentSource(
+  segment: TranscriptSegmentView | undefined,
+  t20: ReturnType<typeof useTranslations<"phase20">>,
+): ActiveSource | undefined {
+  if (!segment?.anchor) return undefined;
+  return {
+    key: segmentKey(segment),
+    kind: "segment",
+    label: [
+      segment.pageNumber ? t20("transcriptPage", { page: segment.pageNumber }) : null,
+      segment.lineFrom
+        ? t20("lines", { from: segment.lineFrom, to: segment.lineTo ?? segment.lineFrom })
+        : null,
+      segment.speaker,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    pdfPageIndex: segment.pdfPageIndex,
+    precision: segment.anchor.precision,
+    failureReason: segment.anchor.failureReason,
+    regions: segment.anchor.regions,
+    segmentId: segment.id,
+  };
 }
 
 function inRegion(regions: PdfHighlight["regions"], x: number, y: number): boolean {
@@ -166,10 +194,17 @@ export function SourceReader(props: SourceReaderProps) {
           failureReason: sourceAnchor.failureReason,
           regions: sourceAnchor.regions,
           segmentId: sourceAnchor.transcriptSegmentId,
+          versionRef: sourceAnchor.officialVersionRef,
           pageWidth: sourceAnchor.pageWidth,
           pageHeight: sourceAnchor.pageHeight,
         }
-      : undefined,
+      : // A transcript page/line or segment link highlights that segment's own
+        // validated line boxes. An `anchor` link never borrows them: its own
+        // precision (e.g. PAGE_AND_LINE for a mention) is what is shown.
+        segmentSource(
+          props.initialSegments?.items.find((segment) => segment.id === props.focusSegmentId),
+          t20,
+        ),
   );
   const [draftFilters, setDraftFilters] = useState<Filters>(NO_FILTERS);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
@@ -254,25 +289,8 @@ export function SourceReader(props: SourceReaderProps) {
   const selectSegment = useCallback(
     (segment: TranscriptSegmentView) => {
       setFocusSegment(segment.id);
-      if (!segment.anchor) return;
-      setActive({
-        key: segmentKey(segment),
-        kind: "segment",
-        label: [
-          segment.pageNumber ? t20("transcriptPage", { page: segment.pageNumber }) : null,
-          segment.lineFrom
-            ? t20("lines", { from: segment.lineFrom, to: segment.lineTo ?? segment.lineFrom })
-            : null,
-          segment.speaker,
-        ]
-          .filter(Boolean)
-          .join(" · "),
-        pdfPageIndex: segment.pdfPageIndex,
-        precision: segment.anchor.precision,
-        failureReason: segment.anchor.failureReason,
-        regions: segment.anchor.regions,
-        segmentId: segment.id,
-      });
+      const source = segmentSource(segment, t20);
+      if (source) setActive(source);
     },
     [t20],
   );
@@ -312,6 +330,7 @@ export function SourceReader(props: SourceReaderProps) {
   const pdfHighlight: PdfHighlight | undefined =
     active &&
     EXACT.includes(active.precision) &&
+    (active.versionRef === undefined || active.versionRef === versionRef) &&
     active.pdfPageIndex === pdfPage &&
     active.regions.length &&
     pageWidth &&
@@ -1198,12 +1217,12 @@ export function SourceReader(props: SourceReaderProps) {
           />
         </div>
         <div
-          className={`grid min-w-0 flex-1 ${showContext ? "lg:grid-cols-[240px_minmax(0,1fr)_300px]" : "lg:grid-cols-[240px_minmax(0,1fr)]"}`}
+          className={`grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] ${showContext ? "lg:grid-cols-[240px_minmax(0,1fr)_300px]" : "lg:grid-cols-[240px_minmax(0,1fr)]"}`}
         >
           {sidebar}
           <div className="bg-surface-alt min-w-0 p-3 md:p-4">
             <div
-              className={`mx-auto grid w-full gap-3 ${sourceView === "original" && showText ? "max-w-[1400px] xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]" : "max-w-[960px]"}`}
+              className={`mx-auto grid w-full grid-cols-[minmax(0,1fr)] gap-3 ${sourceView === "original" && showText ? "max-w-[1400px] xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]" : "max-w-[960px]"}`}
             >
               {sourceView === "original" ? (
                 <div className={pane === "source" ? "block" : "hidden lg:block"}>

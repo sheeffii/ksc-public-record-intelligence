@@ -1386,3 +1386,34 @@ new extractor. Entity/citation anchors inside a transcript line are not
 upgraded to the segment box. Their own precision is kept, and the line is
 focused in the text layer instead. Events have no source anchors and are
 reported as unsupported rather than approximated.
+
+## ADR-029 — Unambiguous document references and no version substitution
+
+Date: 2026-09-25
+
+Status: Accepted (Phase 20C)
+
+Context:
+The 20C visual audit found `/documents/F03668?anchor=…` (an anchor on
+`F03668/RED2`) rendering annex `F03668/RED/A01/RED` with the RED2 rectangle
+drawn on it. There were two causes. `get_document` matched either the official
+reference or the filing number, and a filing shares its number with its annexes
+(`F00002`, `F00045` and `F03668` in the held corpus), so an arbitrary row won.
+Then the web repository, not finding the requested version, fell back to that
+document's newest version through a default parameter.
+
+Decision:
+
+1. An exact official reference (`F03668`, `KSC-BC-2020-06/F03668`,
+   `F03668/A01`) resolves to exactly one document. A bare filing number
+   resolves only when exactly one document carries it; otherwise it is not
+   found.
+2. A requested version that the resolved document does not hold is not found.
+   Another version's artifact, text or coordinates are never substituted.
+3. A link-carried SourceAnchor is served and drawn only when the displayed
+   version is the anchor's own version.
+
+Consequences:
+Wrong-version highlights are impossible by construction. Links to a bare
+filing number shared only by annexes (e.g. `F00002`) now return 404; product
+links already use the official-reference route ID, so none of them change.

@@ -1,7 +1,7 @@
 # Phase 20 — Source-Native Intelligent PDF & Transcript Reader
 
-**Status:** IN PROGRESS (2026-09-25) — 20A COMPLETE; 20B checkpoint recorded
-(pending acceptance). Stop before 20C pending explicit authorization.
+**Status:** COMPLETE (2026-09-25) — 20A, 20B and 20C complete; tag
+`phase-20-complete`. Do not begin another phase without explicit authorization.
 
 ## Goal
 
@@ -73,8 +73,8 @@ and consumers; it must not assume that character offsets share one text base.
 | Pass | Scope | Entry / stop rule |
 |---|---|---|
 | **20A** | Source geometry, SourceAnchor architecture and original PDF viewer | COMPLETE (2026-09-25). Checkpoint recorded; stopped before 20B. |
-| **20B** | Transcript-native Reader, deterministic PDF synchronization and research overlays | CHECKPOINT RECORDED (2026-09-25), pending acceptance. Stopped before 20C. |
-| **20C** | Deep source-fidelity audit, performance/accessibility verification and closeout | Start only after 20B is accepted. Do not begin another phase after closeout. |
+| **20B** | Transcript-native Reader, deterministic PDF synchronization and research overlays | COMPLETE (2026-09-25). Checkpoint accepted. |
+| **20C** | Deep source-fidelity audit, performance/accessibility verification and closeout | COMPLETE (2026-09-25). Audit PASS; stopped after closeout. |
 
 Each pass is a separate implementation, verification and documentation
 checkpoint. Run focused tests during implementation and the full repository
@@ -287,15 +287,18 @@ Citations, Findings, Events and Relationships only through their source anchors.
 
 ### 20B exit criteria
 
-- [ ] Transcript-native navigation preserves exact source text and all available
+- [x] Transcript-native navigation preserves exact source text and all available
   hearing/session/date/page/line/timestamp/speaker/witness/examination structure.
-- [ ] Deterministic PDF ↔ transcript synchronization works where proven and
+- [x] Deterministic PDF ↔ transcript synchronization works where proven and
   refuses ambiguous alignment.
-- [ ] All eight research-context classes use SourceAnchor and keep their data
+- [x] All eight research-context classes use SourceAnchor and keep their data
   states distinct while the source remains visually primary.
-- [ ] Large-document/transcript behavior meets recorded bounded-query, overlay,
+  _(20C: every class exposed in the Reader is SourceAnchor-backed. The 201 real
+  events are docket metadata with no text passage; they are stated as not
+  source-anchored and none was fabricated — `PHASE20_QUALITY_GATE.md` §12.)_
+- [x] Large-document/transcript behavior meets recorded bounded-query, overlay,
   rendering and deep-link budgets.
-- [ ] Desktop and Pixel 7 source-first workflows pass accessibility and
+- [x] Desktop and Pixel 7 source-first workflows pass accessibility and
   interaction verification.
 
 ## 20C — Deep source-fidelity audit and final closeout
@@ -375,45 +378,67 @@ Phase 20 does **not**:
 
 ## Acceptance criteria
 
-- [ ] The Reader renders the exact stored official PDF and exposes version
+- [x] The Reader renders the exact stored official PDF and exposes version
   identity, official-source link, page navigation and zoom/fit controls.
-- [ ] Geometry is page- and version-specific, validated, lineage-bearing and
+- [x] Geometry is page- and version-specific, validated, lineage-bearing and
   never reused between related versions.
-- [ ] A reusable SourceSpan/SourceAnchor abstraction supports verified people,
+- [x] A reusable SourceSpan/SourceAnchor abstraction supports verified people,
   witness codes, organizations, exhibits, citations, relationships, findings,
   transcript segments and applicable search results.
-- [ ] Structured objects navigate through evidence/occurrence to exact original
+- [x] Structured objects navigate through evidence/occurrence to exact original
   source regions when proven; fallbacks are honest and visibly distinct.
-- [ ] Transcript-native navigation preserves exact text and real structure, with
+- [x] Transcript-native navigation preserves exact text and real structure, with
   deterministic PDF synchronization only where supported.
-- [ ] Research context is source-backed, bounded and secondary to the source.
-- [ ] OCR is limited to unsupported pages, labelled derivative and incapable of
+- [x] Research context is source-backed, bounded and secondary to the source.
+- [x] OCR is limited to unsupported pages, labelled derivative and incapable of
   reconstructing redactions or private text.
-- [ ] Large PDFs and transcripts use lazy/virtualized rendering, bounded overlays
+- [x] Large PDFs and transcripts use lazy/virtualized rendering, bounded overlays
   and server-side context queries against recorded budgets.
-- [ ] Mobile is source-first with context in a drawer/sheet; accessibility gates
+- [x] Mobile is source-first with context in a drawer/sheet; accessibility gates
   pass on desktop and Pixel 7.
-- [ ] All nine representative real-source paths pass the Phase 20 audit, version
+- [x] All nine representative real-source paths pass the Phase 20 audit, version
   isolation holds, and all repository quality gates pass.
 
 ## Completion Record
 
-- **Status:** IN PROGRESS (20A complete; Phase 20 not complete).
-- **Started:** 2026-09-25.
-- **Current checkpoint:** 20A COMPLETE; 20B CHECKPOINT RECORDED (pending
-  acceptance); 20C NOT STARTED.
+- **Status:** COMPLETE (2026-09-25).
+- **Started / completed:** 2026-09-25 / 2026-09-25.
+- **20A:** Migration `0015`, version-bound native geometry (201 versions,
+  9,439 native pages, 8 OCR-required, 2,551,752 word rows), reusable
+  SourceSpan/SourceAnchor, immutable ranged PDF delivery and the source-first
+  original PDF Reader (`70596a4`). Evidence:
+  `docs/ingestion/PHASE20A_SOURCE_GEOMETRY_REPORT.md`.
 - **20B:** Migration `0016`, transcript-segment anchors with validated line
-  geometry, printed page-header context, page-scoped Reader API and the
-  three-layer source-native Reader. Evidence:
-  `docs/ingestion/PHASE20B_TRANSCRIPT_READER_REPORT.md`. Open against the 20B
-  exit criteria: Events have no source anchors in this corpus (reported as
-  unsupported), and browser deep-link timing on a production build is left for
-  20C.
-- **Implementation:** Migration `0015`, native geometry projection, reusable
-  SourceAnchor API, immutable ranged PDF delivery and source-first original PDF
-  Reader (`70596a4`). Evidence: `docs/ingestion/PHASE20A_SOURCE_GEOMETRY_REPORT.md` and
-  `docs/ingestion/manifests/phase20a-source-geometry.json`.
-- **Tag:** Not created.
+  geometry (14,180 of 15,171 exact), printed page-header context, page-scoped
+  Reader API and the three-layer source-native Reader (`f4780cb`, `f82ea7e`).
+  Evidence: `docs/ingestion/PHASE20B_TRANSCRIPT_READER_REPORT.md`.
+- **20C:** Source-fidelity audit PASS with 0 remaining highlight mismatches,
+  cross-version leakage, provenance violations or fabricated precision:
+  - 201/201 artifact hashes re-verified; all 9,447 page boxes checked;
+  - 1,171 exact anchors region-audited against the original bytes;
+  - 51,368 fallback anchors and 15,171 transcript segments audited against
+    page text;
+  - 7 highlights visually inspected (one per object type);
+  - production-build deep-link, version, sync, overlay, OCR, performance and
+    mobile paths verified on desktop and Pixel 7.
+
+  Five demonstrated defects were fixed in the closeout commit: segment deep
+  links without their box; a wrong-version highlight caused by an ambiguous
+  filing-number lookup plus a silent version fallback; overlay/canvas re-render
+  timing; a mobile fit-width re-render loop; and hidden-layer re-renders.
+  Evidence: `docs/ingestion/PHASE20_QUALITY_GATE.md` and
+  `docs/ingestion/manifests/phase20-audit.json`.
+- **Final coverage (real case only):** 74,013 SourceAnchors: 22,645 exact
+  geometry, 11,993 page-and-line, 39,375 page-only, 0 text-only, 0
+  unavailable. The earlier 20A/20B totals included 13 synthetic demo-fixture
+  anchors.
+- **Gates:** `make lint`, `make typecheck` and `make test` pass (backend 353,
+  frontend 260). Full production-build Playwright: 176 passed, 0 failed, 98
+  skipped (specs gated to other data modes).
+- **Known limitations:** the 8 OCR-required pages have no OCR run; events have
+  no source anchors; 991 transcript segments stay page-and-line; CORRED and
+  rotated pages are not held.
+- **Tag:** `phase-20-complete` (annotated).
 
 ## Stop condition
 

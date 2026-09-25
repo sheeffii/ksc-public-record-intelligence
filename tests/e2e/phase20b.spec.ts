@@ -150,29 +150,58 @@ test.describe("Phase 20B transcript-native Reader", () => {
 
   test("transcript page/line deep link lands on the exact segment and syncs both ways", async ({
     page,
+    request,
   }) => {
+    const api = process.env.E2E_API_URL ?? "http://localhost:8000";
+    const target = (
+      await (
+        await request.get(
+          `${api}/api/v1/document-versions/KSC-BC-2020-06/T/2024-04-29/transcript/segments?page=14987&line=3`,
+        )
+      ).json()
+    ).items[0];
+    const context = await (
+      await request.get(
+        `${api}/api/v1/document-versions/KSC-BC-2020-06/T/2024-04-29/pages/4/context`,
+      )
+    ).json();
     await page.goto(`${TRANSCRIPT_EN}&page=14987&line=3`);
     await pdfReady(page);
     await expect(page).toHaveURL(/pdfPage=4/);
+    // Transcript → PDF: the deep-linked segment's validated line box.
+    await expect(page.locator("[data-source-region]").first()).toBeVisible();
     await layer(page, "Text");
     const focused = page.locator('[data-transcript-segments] li[aria-current="location"]');
     await expect(focused).toContainText("Of my testimony.");
     await expect(page.locator("[data-page-header]")).toContainText("W03877");
-    // Transcript → PDF: the focused segment's validated line box.
-    await focused.getByRole("button").click();
-    await layer(page, "Source");
-    const region = page.locator("[data-source-region]").first();
-    await expect(region).toBeVisible();
-    const box = await region.boundingBox();
-    // PDF → transcript: select another line, then click the first line's box.
-    await layer(page, "Text");
+    // Select another line, then click the persisted centre of the first line.
     await page
       .locator('[data-transcript-segments] li[data-segment-precision="exact_geometry"]')
       .nth(5)
       .getByRole("button")
       .click();
     await layer(page, "Source");
-    await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await pdfReady(page);
+    // The new highlight scrolls itself into view; measure once layout is still.
+    const canvasBox = () => page.locator('[data-reader-layer="source"] canvas').boundingBox();
+    let last = "";
+    await expect
+      .poll(
+        async () => {
+          const current = JSON.stringify(await canvasBox());
+          const stable = current === last;
+          last = current;
+          return stable;
+        },
+        { intervals: [250] },
+      )
+      .toBe(true);
+    const canvas = (await canvasBox())!;
+    const region = target.anchor.regions[0];
+    await page.mouse.click(
+      canvas.x + ((region.x + region.width / 2) / context.page_width) * canvas.width,
+      canvas.y + ((region.y + region.height / 2) / context.page_height) * canvas.height,
+    );
     await layer(page, "Text");
     await expect(
       page.locator('[data-transcript-segments] li[aria-current="location"]'),

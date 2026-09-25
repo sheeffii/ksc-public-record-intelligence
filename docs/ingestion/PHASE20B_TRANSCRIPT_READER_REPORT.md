@@ -1,5 +1,10 @@
 # Phase 20B transcript-native Reader checkpoint
 
+> **Erratum (20C, 2026-09-25):** "All SourceAnchors" (74,026; 13 `TEXT_ONLY`)
+> and the 20,037 citation overlays include 13 anchors from the synthetic
+> `KSC-DEMO-0000` fixture (6 of them citations). Real case: 74,013 anchors,
+> 0 `TEXT_ONLY`, 20,031 citation overlays. See `PHASE20_QUALITY_GATE.md`.
+
 Date: 2026-09-25
 
 Case: `KSC-BC-2020-06`

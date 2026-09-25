@@ -50,6 +50,8 @@ export default async function Page({
     anchor?.pdfPageIndex ?? pdfPageIndex,
   );
   if (!document) notFound();
+  // Fail closed: an anchor is only ever shown on its own exact version.
+  if (anchor && document.versionRef !== anchor.officialVersionRef) notFound();
   const publicApi = resolveApiBaseUrl(
     { NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL },
     false,

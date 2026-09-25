@@ -328,7 +328,7 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
         """Any visibility: a not-public document is returned with no versions
         so the UI can say "exists, not public" instead of 404. UNKNOWN and
         PRIVATE_AUTHORIZED are treated the same way — stated, never shown."""
-        document = self.session.scalar(
+        candidates = self.session.scalars(
             select(Document)
             .options(selectinload(Document.versions).selectinload(DocumentVersion.supersedes))
             .where(
@@ -339,8 +339,16 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
                     Document.filing_number == ref,
                 ),
             )
-        )
-        if document is None:
+        ).all()
+        # An official reference names exactly one document. A bare filing
+        # number is shared by a filing and its annexes (e.g. F03668 and
+        # F03668/A01): it resolves only when unambiguous, never arbitrarily.
+        exact = [d for d in candidates if d.official_ref in (ref, f"{self.case.case_number}/{ref}")]
+        if len(exact) == 1:
+            document = exact[0]
+        elif not exact and len(candidates) == 1:
+            document = candidates[0]
+        else:
             return None
         public_versions = (
             [v for v in document.versions if v.visibility in _PUBLIC]

@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-25 (Phase 20A complete; 20B checkpoint recorded; 20C not started)
+Last updated: 2026-09-25 (Phase 20 COMPLETE; tag `phase-20-complete`)
 
 ## Milestones
 
@@ -27,7 +27,7 @@ Last updated: 2026-09-25 (Phase 20A complete; 20B checkpoint recorded; 20C not s
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
-| **20** | **Source-native intelligent PDF and transcript Reader**                                                   | **IN PROGRESS (2026-09-25)** — 20A complete; 20B checkpoint recorded; stop before 20C                    |
+| **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
 
 ## Roadmap
 
@@ -55,8 +55,9 @@ the research surfaces to that real-data baseline. Phase 19 is complete. Phase
 SourceAnchor/SourceSpan and the source-first original PDF Reader are implemented
 and audited. The 20B checkpoint adds transcript-segment anchors with
 validated line geometry, printed page-header context, page-scoped Reader reads
-and the three-layer source-native Reader. Phase 20 remains in progress; 20C
-has not started.
+and the three-layer source-native Reader. Phase 20 is complete: the 20C
+source-fidelity audit passed and the tag is `phase-20-complete`. No later phase
+has started.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -913,6 +914,42 @@ experience`).
 - Open: Events have no source anchors (reported as unsupported); the eight
   OCR pages have no OCR run; the mobile toolbar is dense; the 20C fidelity audit
   and production-build browser timings are not started.
+
+## Phase 20 closeout (2026-09-25)
+
+- Status: **COMPLETE**; annotated tag `phase-20-complete` on the
+  `feat/phase-20-source-native-intelligent-reader` closeout commit. Not merged
+  to `main`.
+- The 20C audit (`docs/ingestion/PHASE20_QUALITY_GATE.md`,
+  `manifests/phase20-audit.json`) found:
+  - 201/201 artifacts match their SHA-256 and size;
+  - all 9,447 page boxes are consistent with the PDF.js view space;
+  - 1,171 exact anchors region-audited against original bytes, 0 mismatches;
+  - 51,368 fallback anchors with 0 regions and 0 page/line errors;
+  - all 14,367 open transcript segments verbatim to their printed numbered
+    lines, and 804 closed segments without text;
+  - 7 highlights visually inspected, one per object type;
+  - production-build deep-link, version, sync, overlay, OCR, performance and
+    mobile checks.
+- Fixed in 20C:
+  - segment/line deep links now show their validated box;
+  - a wrong-version highlight: document lookup by a shared filing number
+    (F00002/F00045/F03668) is now deterministic or 404, a requested version
+    that isn't held is never substituted, and anchors are drawn only on their
+    own version;
+  - overlay/canvas re-render timing;
+  - a mobile fit-width re-render loop;
+  - hidden-layer re-renders.
+
+  The Phase 15 Reader route test now asserts the source-native Reader contract.
+
+- Final coverage (real case only; earlier totals included 13 demo-fixture
+  anchors): 74,013 anchors (22,645 exact / 11,993 page-and-line / 39,375
+  page-only / 0 text-only / 0 unavailable); 15,171 segments (14,180 / 991 / 0).
+- Gates: `make lint`, `make typecheck` and `make test` (backend 353, frontend
+  260). Full production-build Playwright: 176 passed, 0 failed, 98 skipped.
+- Known limitations: no OCR run for the 8 OCR-required pages; events have no
+  source anchors; CORRED and rotated pages are not held.
 
 ## Technical debt / notes
 
