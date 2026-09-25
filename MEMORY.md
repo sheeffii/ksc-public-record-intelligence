@@ -17,7 +17,8 @@ Live checkpoint. Repository state wins over this note.
   deployment is desired.
 - Phase 18 Pass A implementation commit: `5733533`; Pass B implementation
   follows `c65a5f7` (see `git log`).
-- Phase 20A implementation commit: `70596a4`; checkpoint evidence is
+- Phase 20A implementation commit: `70596a4`; checkpoint commit: `b7bea6b`.
+  Both are pushed on the feature branch. Checkpoint evidence is
   `docs/ingestion/PHASE20A_SOURCE_GEOMETRY_REPORT.md` and
   `docs/ingestion/manifests/phase20a-source-geometry.json`.
 - Push state before Phase 20 setup (2026-09-25): `main` and `origin/main` are
