@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-25 (Phase 19 COMPLETE)
+Last updated: 2026-09-25 (Phase 20 setup; 20A NEXT)
 
 ## Milestones
 
@@ -27,6 +27,7 @@ Last updated: 2026-09-25 (Phase 19 COMPLETE)
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
+| **20** | **Source-native intelligent PDF and transcript Reader**                                                   | **IN PROGRESS (2026-09-25)** — roadmap prepared; 20A NEXT; no implementation started                    |
 
 ## Roadmap
 
@@ -49,7 +50,9 @@ dependency, not an active completion blocker. Phase 16 remains **IN PROGRESS**;
 its remaining blockers are external deployment/alerting only and it will resume
 when public deployment is desired. Phase 17 is complete against its explicitly
 declared known-public-corpus scope. Phase 18 is complete: Passes A and B align
-the research surfaces to that real-data baseline.
+the research surfaces to that real-data baseline. Phase 19 is complete. Phase 20
+is registered and remains at its setup checkpoint; 20A is next and no Reader
+implementation has started.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Completed features (Phase 4)
@@ -846,6 +849,21 @@ experience`).
 - **Evidence.** `docs/ingestion/PHASE19_DATA_QUALITY.md` → "Phase 19C",
   `PHASE19_QUALITY_GATE.md` → "Pass C", `manifests/phase19c-review.json`,
   ADR-026.
+
+## Phase 20 setup checkpoint (2026-09-25)
+
+- Branch renamed in place to
+  `feat/phase-20-source-native-intelligent-reader` from the Phase 19 closeout
+  `8661630`; no second branch was created.
+- Execution contract:
+  `docs/roadmap/PHASE_20_SOURCE_NATIVE_INTELLIGENT_PDF_AND_TRANSCRIPT_READER.md`.
+- Status: **IN PROGRESS** for milestone tracking; **20A NEXT**. No application,
+  schema, ingestion or test change is part of this setup checkpoint.
+- Planned passes: 20A source geometry / SourceAnchor / original PDF viewer; 20B
+  transcript-native Reader / synchronization / research overlays; 20C deep
+  source-fidelity audit and closeout.
+- No additional record acquisition, Phase 16 work or Phase 20A implementation
+  has started.
 
 ## Technical debt / notes
 

@@ -4,26 +4,27 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-19-corpus-depth-verified-intelligence`, created
-  from `main` at `e38bbd4`. `main` contains all work through Phase 18 (including
-  Phase 16 `eb01a87` and Phase 17 `0e382b3`).
-- Current milestone: **Phase 19 COMPLETE (2026-09-25)**, local annotated tag
-  `phase-19-complete`; not pushed. Phase 20 has not started. Phase 18 is COMPLETE (tag
-  `phase-18-complete`). Phase
+- Current branch: `feat/phase-20-source-native-intelligent-reader`, renamed in
+  place from `feat/phase-20` at Phase 19 closeout `8661630`. `main` and
+  `origin/main` contain Phase 19 through `8661630`.
+- Current milestone: **Phase 20 IN PROGRESS (setup only, 2026-09-25)**; **20A
+  NEXT**. The roadmap exists, but no Phase 20 implementation has started. Phase
+  19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
+  are pushed. Phase 18 is COMPLETE (tag `phase-18-complete`). Phase
   16 remains **IN PROGRESS**; local
   implementation/security/performance/accessibility work is complete, while
   external deployment/alerting gates are intentionally deferred until public
   deployment is desired.
 - Phase 18 Pass A implementation commit: `5733533`; Pass B implementation
   follows `c65a5f7` (see `git log`).
-- Push state (2026-09-24): `main` fast-forwarded to the Phase 18 closeout
-  `1cb4cc4` and pushed; tag `phase-18-complete` is pushed. The Phase 18 feature
-  branch is preserved on `origin`.
+- Push state before Phase 20 setup (2026-09-25): `main` and `origin/main` are
+  synchronized at the Phase 19 closeout `8661630`; `phase-19-complete` and the
+  Phase 19 feature branch are pushed.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. Both are
   contained in `main`.
-- Latest completion tag: annotated `phase-18-complete`.
-- Phase 15–18 feature branches are preserved on `origin`.
+- Latest completion tag: annotated `phase-19-complete`.
+- Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
 - Migration head and live database revision: `0014`.
@@ -323,11 +324,16 @@ Live checkpoint. Repository state wins over this note.
 
 ## Next
 
-Phase 19 is COMPLETE (2026-09-25). The closeout commit carries the local
-annotated tag `phase-19-complete`. The branch
-`feat/phase-19-corpus-depth-verified-intelligence` and the tag are **not
-pushed**; push only when the operator says "push". Do not start Phase 20
-without explicit authorisation.
+Phase 20 is IN PROGRESS at the setup-only checkpoint (2026-09-25). Its execution
+contract is
+`docs/roadmap/PHASE_20_SOURCE_NATIVE_INTELLIGENT_PDF_AND_TRANSCRIPT_READER.md`.
+20A — source geometry, SourceAnchor architecture and the original PDF viewer —
+is NEXT. Do not implement 20A during the setup checkpoint, acquire more records,
+revisit Phase 19 or resume Phase 16.
+
+The Phase 20 setup branch is
+`feat/phase-20-source-native-intelligent-reader`. Commit and push the setup docs,
+then stop before implementation.
 
 Final state:
 
