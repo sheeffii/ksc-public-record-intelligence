@@ -1,28 +1,28 @@
 {
   "by_anchor": {
-    "document_page_text": 14870,
-    "transcript_segment_text": 2676,
+    "document_page_text": 14881,
+    "transcript_segment_text": 2663,
     "transcript_speaker_label": 9149
   },
   "by_language": {
-    "en": 23471,
-    "sq": 3224
+    "en": 23442,
+    "sq": 3251
   },
   "by_rule": {
-    "exhibit.identifier.exact": 6308,
-    "organization.acronym.exact": 309,
-    "organization.name.exact": 610,
-    "person.full_name.exact": 4771,
+    "exhibit.identifier.exact": 6220,
+    "organization.acronym.exact": 326,
+    "organization.name.exact": 625,
+    "person.full_name.exact": 4821,
     "person.speaker_label.honorific": 4369,
     "person.speaker_label.role_qualified": 4776,
     "person.speaker_label.shared_surname": 4,
-    "witness.code.exact": 5548
+    "witness.code.exact": 5552
   },
   "case_number": "KSC-BC-2020-06",
   "dedup_conflicts": 0,
   "exhibit_status_counts": {
     "admitted": 2,
-    "unknown": 1030
+    "unknown": 1018
   },
   "generated_at": "2026-09-25",
   "kinds": {
@@ -33,8 +33,8 @@
       "sample_reproduced": 100,
       "sampled": 100,
       "search_only": null,
-      "unregistered_identifiers": 2245,
-      "verified": 6308
+      "unregistered_identifiers": 2338,
+      "verified": 6220
     },
     "organization": {
       "rejected": 0,
@@ -44,7 +44,7 @@
       "sampled": 100,
       "search_only": null,
       "unregistered_identifiers": null,
-      "verified": 919
+      "verified": 951
     },
     "person": {
       "rejected": 0,
@@ -52,9 +52,9 @@
       "sample_precision": 1.0,
       "sample_reproduced": 100,
       "sampled": 100,
-      "search_only": 20140,
+      "search_only": 20795,
       "unregistered_identifiers": null,
-      "verified": 9547
+      "verified": 9597
     },
     "witness": {
       "rejected": 0,
@@ -64,20 +64,20 @@
       "sampled": 100,
       "search_only": 0,
       "unregistered_identifiers": 0,
-      "verified": 5548
+      "verified": 5552
     }
   },
-  "language_metadata_conflicts": 19,
+  "language_metadata_conflicts": 20,
   "legacy_rows": 0,
   "passed": true,
   "precision_threshold": 1.0,
   "processor": "phase19a-mentions",
-  "projection_run_id": "4e1f5223-18b9-4d72-b829-1e76509b3800",
+  "projection_run_id": "070e1465-f720-4d78-8003-061e243098aa",
   "protected_identity_violations": 0,
   "provenance_violations": 0,
   "review_state_violations": 0,
   "rule_versions": {
-    "exhibit.identifier.exact": 1,
+    "exhibit.identifier.exact": 3,
     "organization.acronym.exact": 1,
     "organization.name.exact": 1,
     "organization.variant.shared": 1,
@@ -90,8 +90,8 @@
   "sample_seed": 19,
   "smith_review_required": 4,
   "total_review_required": 4373,
-  "total_rows": 26695,
-  "total_verified": 22322,
-  "verified_with_line": 7452,
-  "verified_with_paragraph": 1080
+  "total_rows": 26693,
+  "total_verified": 22320,
+  "verified_with_line": 7439,
+  "verified_with_paragraph": 1100
 }

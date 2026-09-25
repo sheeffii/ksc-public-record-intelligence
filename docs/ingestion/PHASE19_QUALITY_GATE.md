@@ -121,3 +121,76 @@ Targeted verification:
 
 The full frontend/backend suites and browser suites were not rerun, by design
 for this pass.
+
+## Pass C — final review and application integration (2026-09-25)
+
+Scope: a review of the held corpus plus the four quarantined corpus-04 records.
+No new acquisition. Evidence: `manifests/phase19c-review.json`, and the
+refreshed `manifests/phase19b-corpus-intelligence.json` and
+`manifests/phase19a-verified-mentions-quality.json`. Full narrative:
+`PHASE19_DATA_QUALITY.md` → "Phase 19C".
+
+Result: **gates PASS; closeout BLOCKED** on 12 misbound exhibit registry rows
+(see Open).
+
+### Gates
+
+| Gate                               | Result                                                        |
+| ---------------------------------- | ------------------------------------------------------------- |
+| `report-phase19b` (17 invariants)  | PASS, all 0                                                   |
+| `gate-phase19a`                    | PASS: 26,693 rows, 0 provenance violations, 0 dedup conflicts |
+| Relationship evidence (full table) | 0 edges without exactly one evidence basis                    |
+| Sampling audit                     | 1 systematic false positive found and fixed (other-court ids) |
+
+### Tests (focused, plus one backend run for the cross-cutting changes)
+
+- `make lint` and `make typecheck`: pass.
+- Backend `pytest` (unit + integration): 329 passed.
+- Frontend `vitest`: 256 passed.
+- Real-data Playwright (`E2E_REAL_DATA=1`, desktop + Pixel 7): `phase19.spec.ts`
+  8/8 and `phase18.spec.ts` 28/28. The phase18 spec's stale "Source
+  occurrences" expectation (renamed in 19A) was updated.
+  `routes` / `accessibility` / `phase15`: 56 passed, 62 mock-only skipped.
+
+### Application integration
+
+- **Dossiers.**
+  - Witness and person dossiers show hearings with a recorded public
+    appearance: hearing, transcript version, header pages, session page
+    counts, verbatim examination headers and the exact header source.
+  - Exhibit dossiers show the status history with the court statement behind
+    each event. `UNKNOWN` is shown as a state, never inferred.
+- **Relationships.** Dossier relationship panels, the Reader context panel and
+  the Network screen read `/network/edges`. That brings in MENTIONED_IN and
+  TESTIFIED_AT edges, which the citation-only `/network` never returned. Each
+  row carries its evidence kind, `evidence_count` and `ProvenanceRead`.
+- **Network.** Reads are bounded (100 per page), filtered server-side by
+  relationship type and evidence kind, and cursor-paginated. The unfocused
+  view is one labelled page, not a graph dump.
+- **Evidence Path.** Hops now carry `ProvenanceRead` too, so one exact-source
+  contract serves dossiers, Reader, Network and Path.
+- **Reader.** It marks the verbatim slice, whole-token and within the
+  targeted paragraph. When the span lies outside the rendered paragraphs
+  (running header, heading), it says so and shows the verbatim text.
+- **States.** VERIFIED · SEARCH MATCH · REVIEW REQUIRED · AMBIGUOUS · UNKNOWN
+  are text labels in EN and SQ. A search match is never shown as verified.
+
+### Integrity cleanup (operator-approved)
+
+- **Withdrawn exhibits.** 12 exhibits withdrawn with audit rows; not
+  recreated.
+- **Other-case guard.** It now accepts binding punctuation, which brings
+  `invalid.other_case` to 453 and includes "KSC-BC-2020-05, F00494"-style
+  references.
+- **Stale citations.** Re-resolution retires stale, unreviewed, unreferenced
+  citations with an audit row (1 retired).
+- **Gates.** `report-phase19b` PASS (all 17 checks 0); `gate-phase19a` PASS.
+- **Focused tests.** 241 passed: ingestion units, and the Phase 8 / 19A / 19B /
+  ingestion-pipeline / constraints / read-API integration suites. Ruff and
+  mypy are clean.
+
+### Open
+
+- **Decision required: exhibit sub-numbers.** 2,035 resolved exhibit
+  citations and CITED_IN edges bind "P00099.1" to base P00099. 118 registry
+  rows exist only from such references.

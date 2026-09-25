@@ -365,3 +365,183 @@ Newly resolved by rule:
   have no Albanian counterpart (0 of 77).
 - **Parse review:** 5 versions need it (`F00002/A03`, `F02198`, `T/2024-04-29`,
   `T/2024-04-30/sqi`, `T/2024-07-15`).
+
+## Phase 19C — final review (2026-09-25)
+
+A review of real records, not a new acquisition. Machine-readable evidence:
+`manifests/phase19c-review.json`, plus the refreshed
+`manifests/phase19b-corpus-intelligence.json` (report PASS, 17 invariants 0) and
+`manifests/phase19a-verified-mentions-quality.json` (gate PASS, 0 provenance
+violations, 0 dedup conflicts).
+
+### Quarantine review
+
+Each record was checked against its captured detail page and the running
+header of every PDF page. All four are **ACCEPT**. Each one rests on two
+official signals that agree, and each rule is narrow and unit-tested:
+
+| Record | Adopted version                    | Why it had failed                            | Deciding evidence                                                                                            |
+| ------ | ---------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| r11    | `F01534/A02/RED`                   | Title "Public Redacted Version of ANNEX 2 …" | Record type _Filing Annex_; header `F01534/A02/RED` on 224/224 pages                                         |
+| r12    | `F03176/COR2/RED`                  | `COR2` was not a suffix token                | Header `F03176/COR2/RED` on 33/33 pages; classification Public                                               |
+| r20    | `F02426/CONF/RED` (reclassified)   | `CONF` was not a suffix token                | Header on 8/8 pages; court stamp "Reclassified as Public … CRSPD546". `CONF` without that stamp fails closed |
+| r63    | `F00026/RED/sqi/COR` (translation) | Header extends the published id with `/COR`  | Header on 239/239 pages; published title ends "- COR"; "Date corr. translation 24/02/2022"                   |
+
+- **Import:** the bundle was re-derived, and only these four records changed;
+  all 63 other records and every hash are identical. Resumed ingestion
+  downloaded 4 artifacts with 0 failures.
+- **Quarantine rows:** set to `released`, with reviewer, date and the adopted
+  reference.
+- **Still open:** one quarantine item, the Phase 17 `F03734`, which is out of
+  scope.
+
+### Parse-review versions
+
+| Version            | Result          | Cause                                                                                |
+| ------------------ | --------------- | ------------------------------------------------------------------------------------ |
+| `F00002/A03`       | REVIEW_REQUIRED | The page 2 text layer is drawn twice ("`2 ofof 55`"). The printed page can't be read |
+| `F02198`           | REVIEW_REQUIRED | Source defect: the stamp prints "1 of 8" on every page. The PDF index is kept        |
+| `T/2024-04-29`     | REVIEW_REQUIRED | 8 image-only pages (JPEG, no text layer). No OCR                                     |
+| `T/2024-04-30/sqi` | resolved        | p. 112 is a private-session page with an empty 1–25 line grid (parser v3)            |
+| `T/2024-07-15`     | resolved        | p. 69 is the same case (parser v3)                                                   |
+
+The v3 reparse updated rows in place under stable ids. It changed no segment
+count (15,171).
+
+### Human sampling audit
+
+Each sample was traced along this chain:
+
+1. structured row;
+2. evidence row;
+3. version;
+4. page / paragraph / line / char range;
+5. the exact slice of the stored text;
+6. the same text on that PDF page of the original bytes, located by SHA-256;
+7. a reading of the surrounding context.
+
+| Object                      | Checked | Result                                                                |
+| --------------------------- | ------- | --------------------------------------------------------------------- |
+| Person (full name, speaker) | 10      | 10/10 slice, PDF page and token boundary                              |
+| Person review-required      | 5       | Surname-level counsel labels, correctly not verified                  |
+| Organization                | 8       | 8/8                                                                   |
+| Witness code                | 6       | 6/6 slice and PDF page; code only                                     |
+| Exhibit occurrence          | 8       | **1 false positive** (see below)                                      |
+| Witness appearance          | all 26  | 26/26 slice, PDF page and hearing date                                |
+| Public named witness        | all 9   | Header-backed; none linked to a code                                  |
+| Exhibit status event        | all 31  | 31/31 slice; bench or officer only                                    |
+| CITED_IN / MENTIONED_IN     | 8 + 8   | All pass; full-table direction, anchor and count checks: 0 violations |
+| TESTIFIED_AT                | all 21  | Subject, hearing and `evidence_count` all correct                     |
+
+**False positive, fixed.** "IT-04-84 P00340" in `F01475/RED` is an exhibit of
+the ICTY _Haradinaj_ case, not this case's `P00340`. The defect was
+systematic: 177 identifiers printed right after another court's case number had
+become this case's verified exhibit mentions, resolved citations and CITED_IN
+edges.
+
+- A bare identifier immediately after another court's case number (ICTY /
+  ICTR / MICT / STL / ICC / SCSL, or another KSC case) is now
+  `invalid.other_case`. The exhibit rule is now `exhibit.identifier.exact` v2.
+- Only whitespace may separate the two. "IT-04-84bis, P00119", with a comma,
+  still binds; that is a residual risk.
+- No finding, appeal, AI or research-note row referenced the 177 citations.
+
+**False negative (conservative).** The bench said "admitted as P1277 and
+P189". P189 is not captured.
+
+### Other defects fixed
+
+- **Language marker.** `version_language()` honoured `/sqi` only as a suffix,
+  so the corrected translation `…/RED/sqi/COR` was labelled English
+  (27 mentions). The marker is now matched as a path segment.
+- **Reader coordinates.** When a link carried both `pdfPage` and a printed
+  `page`, the Reader started from the printed page but filtered by PDF index.
+  Every exact-source link opened one page off where the two numberings differ.
+
+### Final policy checks
+
+- **Person identity.** Full names come only from the case caption (4) and
+  transcript witness headers (9), each with an exact span. The 101 rule-less
+  aliases are exact speaker labels held in transcripts. The four `Smith`
+  shared-surname rows stay REVIEW_REQUIRED. No witness code is linked to a
+  person.
+- **Citations.** No bare F-number resolves to an annex, and none cited in a
+  subcase resolves. All 194 ambiguous rows keep their candidates. No
+  non-resolved row has a target. Every resolver-produced state carries a rule.
+  The 7 hand-verified Phase 10/12 citations carry their reviewer instead.
+- **Versions.** No `supersedes_version_id` is set, and no RED → RED2 is
+  inferred. The 6 annexes are separate documents.
+- **Language marker conflicts.** There are now 20, up from 13. All are `/sqi`
+  translation versions of documents whose recorded language is the English
+  original. Each has its English sibling on the same logical document, and the
+  marker wins.
+
+### Integrity cleanup (operator-approved, 2026-09-25)
+
+- **Withdrawn exhibits.** 12 exhibit rows that existed only from other-court
+  identifiers: `P00050`, `P00064`, `P00082`, `P00119`, `P00126`, `P00161`,
+  `P00240`, `P00248`, `P00340`, `P00803`, `P00931` and `P02662`.
+  - Re-verified first: the selection was exactly these 12, with 0 relationships,
+    0 status or description data, and 0 live citations naming them.
+  - One `audit_log` row per exhibit (`exhibit.withdrawn`, reason
+    "other-case contamination / invalid case binding").
+  - Their `record_identifiers` and `graph_nodes` cascaded.
+  - `build-structured` did not recreate them.
+- **Root cause.** The other-case guard now accepts _binding_ separators:
+  - whitespace;
+  - one comma or colon ("IT-04-84bis, P00119");
+  - parentheses on either side.
+
+  A semicolon starts a new citation and is not binding. The exhibit mention
+  rule is now v3. The same rule also caught the standard KSC style
+  "KSC-BC-2020-05, F00494" (the _Mustafa_ trial judgment) and
+  "KSC-CC-2022-13, F00001". These had resolved to, or been counted as, this
+  case's F00494 / F00001 / IA003/F00005. `invalid.other_case` is now 453.
+
+- **Stale citation.** Re-resolution now retires a citation it no longer
+  extracts, but only when that row is:
+  - unreviewed, and
+  - unreferenced by any of the 17 referencing columns.
+
+  Each retirement writes an `audit_log` row (`citation.retired`). Curated,
+  reviewed or referenced rows are kept. One row was retired
+  (`IA042/F00005/RED`, "F00005").
+
+- **Checks after reconciliation, all 0.** Withdrawn exhibits reappearing;
+  exhibits or witness codes without any case-local support; exhibit citations
+  resolved after a foreign case number; edges on unverified occurrences;
+  edges without exactly one evidence basis; non-resolved citations with a
+  target. The one edge on an unresolved citation is the synthetic
+  `KSC-DEMO-0000` fixture.
+
+### Final counts (database, case-scoped, after the cleanup)
+
+| Measure                                               | Phase 19B                  | Final 19C                  |
+| ----------------------------------------------------- | -------------------------- | -------------------------- |
+| Documents / versions                                  | 173 / 197                  | 176 / 201                  |
+| Bytes                                                 | 118,310,439                | 125,250,466                |
+| Pages / transcript segments                           | 8,943 / 15,171             | 9,447 / 15,171             |
+| Exhibits (admitted) / status events                   | 1,032 (2) / 31             | 1,020 (2) / 31             |
+| Verified / review-required mentions                   | 22,322 / 4,373             | 22,320 / 4,373             |
+| Appearances / hearings with appearance                | 26 / 18                    | 26 / 18                    |
+| CITED_IN / MENTIONED_IN / TESTIFIED_AT                | 13,124 / 1,022 / 21        | 13,089 / 1,042 / 21        |
+| Citations resolved / ambiguous / unresolved / invalid | 13,142 / 194 / 6,308 / 218 | 13,107 / 183 / 6,221 / 526 |
+
+- The people (62), witness codes (212), organizations (6) and hearings (31)
+  counts are unchanged.
+- Citations total 20,037.
+- CITED_IN = 13,100 machine-resolved citations − 12 self-citations + 1 curated
+  edge.
+
+### Open
+
+- **Decision required: exhibit sub-numbers.** 2,035 of 5,351 resolved exhibit
+  citations, and the same number of CITED_IN edges, bind a sub-numbered
+  reference ("P00099.1") to the base exhibit P00099. The citation extractor
+  keeps the base prefix, while the mention and status rules leave sub-numbers
+  unbound. 118 exhibit registry rows are supported only by such references.
+  A fix re-resolves about 2,035 citations and leaves those 118 rows
+  unsupported.
+- **Known gaps.**
+  - 3 parse-review versions (source defects / image pages).
+  - "P189" in "admitted as P1277 and P189" is not captured.

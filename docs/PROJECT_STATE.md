@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-25 (Phase 19 Pass B acquisition checkpoint)
+Last updated: 2026-09-25 (Phase 19C final review checkpoint)
 
 ## Milestones
 
@@ -26,7 +26,7 @@ Last updated: 2026-09-25 (Phase 19 Pass B acquisition checkpoint)
 | **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
 | **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
-| **19** | **Corpus depth and verified entity intelligence**                                                         | **IN PROGRESS** — 19A + 19B checkpoints PASS; 19C not started                                            |
+| **19** | **Corpus depth and verified entity intelligence**                                                         | **IN PROGRESS** — 19A/19B/19C PASS; closeout blocked on 12 misbound exhibit rows                         |
 
 ## Roadmap
 
@@ -795,6 +795,53 @@ experience`).
 - Both gates pass. Details: `docs/ingestion/PHASE19_DATA_QUALITY.md` →
   "Acquisition checkpoint".
 
+## Phase 19C final review checkpoint (2026-09-25)
+
+- **Quarantine.** 4 of 4 records ACCEPTED on two agreeing official signals:
+  `F01534/A02/RED`, `F03176/COR2/RED`, `F02426/CONF/RED` (reclassified) and
+  `F00026/RED/sqi/COR` (translation). The importer has narrow new forms, each
+  tested, and the quarantine rows are released.
+- **Parse review.** Parser v3 clears the blank private-session line grids
+  (`T/2024-04-30/sqi`, `T/2024-07-15`). Still review-required: `F00002/A03`
+  (double-drawn text), `F02198` (source stamps "1 of 8"), `T/2024-04-29`
+  (8 image-only pages).
+- **Sampling audit.** Full-table relationship checks found 0 violations. One
+  systematic false positive was fixed: identifiers after another court's case
+  number ("IT-04-84 P00340"). That withdrew 177 citations, CITED_IN edges and
+  exhibit mentions (`invalid.other_case`, exhibit rule v2).
+- **Other fixes.**
+  - `version_language()` now finds a mid-reference `/sqi` marker.
+  - The Reader page coordinate with both `pdfPage` and `page` is fixed.
+- **UI.**
+  - Dossiers show appearances and status history.
+  - Dossiers, Reader, Network and Evidence Path consume `/network/edges` or
+    `ProvenanceRead`.
+  - Network reads are bounded, filtered and cursor-paginated.
+  - The Reader marks the exact span.
+- **Integrity cleanup (operator-approved).**
+  - 12 other-case exhibits withdrawn, each with an audit row.
+  - The other-case guard now accepts binding punctuation
+    ("IT-04-84bis, P00119", "KSC-BC-2020-05, F00494"); `invalid.other_case`
+    is 453.
+  - Stale unreviewed, unreferenced citations are retired with an audit row
+    (1 retired).
+- **Final counts.**
+  - Corpus: 202 source records / 176 documents / 201 versions /
+    125,250,466 bytes / 9,447 pages / 15,171 segments / 31 hearings.
+  - Entities: 62 people / 212 witness codes / 6 organizations / 1,020
+    exhibits (2 admitted) / 31 status events.
+  - Mentions and appearances: 22,320 verified / 4,373 review-required /
+    26 appearances over 18 hearings.
+  - Edges: CITED_IN 13,089 · MENTIONED_IN 1,042 · TESTIFIED_AT 21.
+  - Citations: resolved 13,107 · ambiguous 183 · unresolved 6,221 ·
+    invalid 526 (20,037 total).
+- **Open decision.** 2,035 resolved exhibit citations and CITED_IN edges bind a
+  sub-numbered reference ("P00099.1") to its base exhibit. 118 registry rows
+  exist only from such references.
+- **Evidence.** `docs/ingestion/PHASE19_DATA_QUALITY.md` → "Phase 19C",
+  `PHASE19_QUALITY_GATE.md` → "Pass C", `manifests/phase19c-review.json`,
+  ADR-026.
+
 ## Technical debt / notes
 
 - `next/font/google` fetches fonts at build time; builds need network access.
@@ -821,8 +868,8 @@ experience`).
 
 | Suite                          | Count        | Last result                                              |
 | ------------------------------ | ------------ | -------------------------------------------------------- |
-| Backend (pytest)               | 303          | pass                                                     |
-| Frontend (vitest)              | 239          | pass                                                     |
+| Backend (pytest)               | 329          | pass (2026-09-25, Phase 19C)                             |
+| Frontend (vitest)              | 256          | pass (2026-09-25, Phase 19C)                             |
 | E2E (playwright)               | Phase 16     | 38/38 workflows; 18/18 axe routes pass desktop/mobile    |
 | Targeted frontend verification | Phase 15     | 28/28 pass                                               |
 | Evaluation                     | 3 real items | Phase 14 controlled real-public-source quality gate PASS |

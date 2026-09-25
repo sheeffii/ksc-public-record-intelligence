@@ -262,6 +262,15 @@ endpoints are:
 - `/people/{slug}/appearances`;
 - `/exhibits/{id}/status-events`.
 
+Evidence Path hops (`/network/path`) carry the same `ProvenanceRead` (ADR-026).
+The web maps it once (`toProvenance`) and renders it once (`ProvenanceSource`)
+for mentions, appearances, status events, typed edges and path hops. Dossiers,
+the Reader context panel and the Network screen read `/network/edges` rather
+than the citation-only `/network`. Network filters and the cursor are URL
+state, never a whole-graph load. Reader links carry the verbatim slice
+(`hl`). The Reader marks it whole-token inside the targeted paragraph, or
+states that it lies outside the rendered paragraphs (`lib/exact-source.ts`).
+
 ## Cross-cutting rules enforced in code
 
 | Rule                                         | Where                                                                               |

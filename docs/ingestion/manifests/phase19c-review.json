@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "phase": "19C",
+  "generated_at": "2026-09-25",
+  "case_number": "KSC-BC-2020-06",
+  "quarantine_review": [
+    {
+      "record": "r11",
+      "published_id": "F01534",
+      "decision": "ACCEPT",
+      "adopted_version_ref": "KSC-BC-2020-06/F01534/A02/RED",
+      "evidence": "published record type 'Filing Annex'; published title 'Public Redacted Version of ANNEX 2 to …'; PDF running header KSC-BC-2020-06/F01534/A02/RED on 224/224 pages; public_redacted",
+      "rule": "annex title may carry the repository prefix 'Public Redacted Version of'; header must extend the published id"
+    },
+    {
+      "record": "r12",
+      "published_id": "F03176COR2RED",
+      "decision": "ACCEPT",
+      "adopted_version_ref": "KSC-BC-2020-06/F03176/COR2/RED",
+      "evidence": "PDF running header KSC-BC-2020-06/F03176/COR2/RED on 33/33 pages; page-1 classification Public",
+      "rule": "suffix token COR2 (further correction); published id confirmed by PDF header"
+    },
+    {
+      "record": "r20",
+      "published_id": "F02426CONFRED",
+      "decision": "ACCEPT",
+      "adopted_version_ref": "KSC-BC-2020-06/F02426/CONF/RED",
+      "version_type": "reclassified",
+      "evidence": "PDF running header KSC-BC-2020-06/F02426/CONF/RED on 8/8 pages; court stamp 'Reclassified as Public pursuant to instruction contained in CRSPD546 of 23 July 2024'; listed public_redacted",
+      "rule": "suffix token CONF accepted only with the court's page-1 reclassification-as-public stamp (fails closed otherwise)"
+    },
+    {
+      "record": "r63",
+      "published_id": "F00026RED (sqi)",
+      "decision": "ACCEPT",
+      "adopted_version_ref": "KSC-BC-2020-06/F00026/RED/sqi/COR",
+      "version_type": "translation",
+      "evidence": "PDF running header KSC-BC-2020-06/F00026/RED/sqi/COR on 239/239 pages; published title ends '- COR'; 'Date corr. translation: 24/02/2022'; listed as the Albanian translation on the F00026RED detail page; classification Publik",
+      "rule": "corrected translation: header = candidate + '/COR' AND published title ends in 'COR'"
+    }
+  ],
+  "parse_review": [
+    {
+      "version": "KSC-BC-2020-06/F00002/A03",
+      "state": "REVIEW_REQUIRED",
+      "cause": "pdf page 1 text layer is double-drawn ('A03/2KSC-BC-…/2  ofof  55'); printed page cannot be read without undoing glyph doubling"
+    },
+    {
+      "version": "KSC-BC-2020-06/F02198",
+      "state": "REVIEW_REQUIRED",
+      "cause": "source defect: reclassification stamp prints '1 of 8' on every page; printed numbers withheld, PDF index kept"
+    },
+    {
+      "version": "KSC-BC-2020-06/T/2024-04-29",
+      "state": "REVIEW_REQUIRED",
+      "cause": "8 image-only pages (JPEG, no text layer; pdf 37,44,59,67,72,73,80,89); no OCR"
+    },
+    {
+      "version": "KSC-BC-2020-06/T/2024-04-30/sqi",
+      "state": "RESOLVED",
+      "cause": "pdf page 112 is a private-session page with an empty 1-25 line grid; parser v3 recognises the blank grid"
+    },
+    {
+      "version": "KSC-BC-2020-06/T/2024-07-15",
+      "state": "RESOLVED",
+      "cause": "pdf page 69 is a private-session page with an empty 1-25 line grid; parser v3 recognises the blank grid"
+    }
+  ],
+  "sampling_audit": {
+    "method": "structured object -> evidence row -> document version -> page/paragraph/line/char range -> exact slice of stored text -> same text on the PDF page of the original bytes (located by SHA-256) -> human reading of context",
+    "person_full_name_mentions": {
+      "sampled": 6,
+      "slice_ok": 6,
+      "pdf_ok": 6,
+      "false_positives": 0
+    },
+    "person_speaker_labels": {
+      "sampled": 4,
+      "slice_ok": 4,
+      "false_positives": 0
+    },
+    "person_review_required": {
+      "sampled": 5,
+      "slice_ok": 5,
+      "note": "surname-level counsel labels; correctly not verified"
+    },
+    "organization_mentions": {
+      "sampled": 8,
+      "slice_ok": 8,
+      "pdf_ok": 8,
+      "false_positives": 0
+    },
+    "exhibit_occurrences": {
+      "sampled": 8,
+      "slice_ok": 8,
+      "pdf_ok": 8,
+      "false_positives": 1,
+      "false_positive": "F01475/RED 'IT-04-84 P00340' is an ICTY Haradinaj exhibit; systematic: 177 verified exhibit mentions and 177 resolved citations/CITED_IN edges followed another court's case number. Fixed (exhibit.identifier.exact v2 + invalid.other_case)."
+    },
+    "witness_code_mentions": {
+      "sampled": 6,
+      "slice_ok": 6,
+      "pdf_ok": 6,
+      "false_positives": 0
+    },
+    "witness_appearances": {
+      "checked": 26,
+      "slice_ok": 26,
+      "pdf_ok": 26,
+      "hearing_date_match": 26,
+      "false_positives": 0
+    },
+    "public_named_witness_aliases": {
+      "checked": 9,
+      "linked_to_code": 0,
+      "note": "5 alias spans differ from the alias only in whitespace (double spaces / line breaks)"
+    },
+    "exhibit_status_events": {
+      "checked": 31,
+      "slice_ok": 31,
+      "court_speaker": 31,
+      "false_positives": 0,
+      "false_negative": "T/2024-07-17 bench 'admitted as P1277 and P189': P189 not captured (conservative)"
+    },
+    "cited_in_edges": {
+      "sampled": 8,
+      "slice_ok": 8,
+      "pdf_ok": 8,
+      "full_table": {
+        "edges": 13100,
+        "unresolved_anchor": 0,
+        "direction_violations": 0,
+        "evidence_count_not_1": 0
+      }
+    },
+    "mentioned_in_edges": {
+      "sampled": 8,
+      "slice_ok": 8,
+      "pdf_ok": 8,
+      "full_table": {
+        "edges": 1042,
+        "evidence_count_mismatch": 0,
+        "direction_violations": 0,
+        "speaker_label_anchor": 0,
+        "unverified_anchor": 0
+      }
+    },
+    "testified_at_edges": {
+      "checked": 21,
+      "subject_ok": 21,
+      "hearing_ok": 21,
+      "evidence_count_ok": 21
+    },
+    "relationships_without_exactly_one_evidence": 0
+  },
+  "defects_fixed": [
+    "other-court case number before a bare identifier (IT-04-84 P00340): citation now INVALID (invalid.other_case), exhibit mention not projected (rule v2); 177 CITED_IN edges withdrawn",
+    "version_language() only honoured a trailing /sqi marker; /RED/sqi/COR was labelled English (27 mentions)",
+    "Reader initialised printed page into the PDF-index coordinate when a link carried both pdfPage and page; exact-source links opened the wrong page",
+    "parser v3: a blank private-session line grid is not a review reason",
+    "other-case guard accepts binding separators (comma, colon, parentheses) but not a semicolon; this also invalidated 'KSC-BC-2020-05, F00494'-style references to other KSC cases that had resolved to, or been counted as, this case's filings (invalid.other_case 453)"
+  ],
+  "open_items": [
+    {
+      "item": "12 exhibit registry rows (P00050, P00064, P00082, P00119, P00126, P00161, P00240, P00248, P00340, P00803, P00931, P02662) registered only from other-court identifiers; no in-case citation, occurrence or status event remains (ADR-023 §1)",
+      "state": "DONE - withdrawn 2026-09-25 with operator approval; 12 audit_log rows (action exhibit.withdrawn); record_identifiers and graph_nodes cascaded; not recreated by build-structured",
+      "selection_sql": "select x.id, x.official_exhibit_id from exhibits x join cases c on c.id = x.case_id and c.case_number = 'KSC-BC-2020-06' where not exists (select 1 from citations ci where ci.target_exhibit_id = x.id) and not exists (select 1 from entity_occurrences o where o.exhibit_id = x.id) and not exists (select 1 from exhibit_status_events e where e.exhibit_id = x.id) and not exists (select 1 from court_media_links m where m.exhibit_id = x.id)",
+      "proposed_action": "insert one audit_log row per exhibit (actor phase19c-review, action exhibit.withdrawn, rule invalid.other_case), then delete those exhibits; record_identifiers and graph_nodes cascade; no relationship references them"
+    },
+    {
+      "item": "1 stale unreferenced citation row (IA042/F00005/RED 'F00005' at chars 2916-2922, superseded by 'PL002/F00005' at 2910-2922); re-resolution upserts but never removes rows it no longer extracts",
+      "state": "DONE - re-resolution now retires unreviewed, unreferenced citations it no longer extracts (audit_log action citation.retired); 1 row retired"
+    },
+    {
+      "item": "2,035 of 5,351 resolved exhibit citations (and 2,035 CITED_IN edges) bind a sub-numbered exhibit reference such as 'P00099.1' to the base exhibit P00099: the citation extractor keeps the base prefix; 118 exhibit registry rows are supported only by such references. The mention and status rules already leave sub-numbers unbound.",
+      "state": "DECISION REQUIRED - fixing it re-resolves ~2,035 citations and leaves 118 registry rows unsupported (withdrawal needs approval)"
+    }
+  ],
+  "final_counts": {
+    "corpus": {
+      "source_records": 202,
+      "documents": 176,
+      "versions": 201,
+      "bytes": 125250466,
+      "pages": 9447,
+      "transcript_segments": 15171,
+      "hearings": 31,
+      "parse_review_versions": 3
+    },
+    "intelligence": {
+      "people": 62,
+      "witness_codes": 212,
+      "organizations": 6,
+      "exhibits": 1020,
+      "exhibits_admitted": 2,
+      "exhibit_status_events": 31,
+      "verified_mentions": 22320,
+      "review_required_mentions": 4373,
+      "witness_appearances": 26,
+      "hearings_with_appearance": 18
+    },
+    "relationships": {
+      "cited_in": 13089,
+      "mentioned_in": 1042,
+      "testified_at": 21
+    },
+    "citations": {
+      "total": 20037,
+      "resolved": 13107,
+      "ambiguous": 183,
+      "unresolved": 6221,
+      "invalid": 526,
+      "invalid_other_case": 453
+    }
+  }
+}

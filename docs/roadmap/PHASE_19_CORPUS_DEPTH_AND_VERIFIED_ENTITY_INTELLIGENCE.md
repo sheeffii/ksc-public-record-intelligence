@@ -1,6 +1,6 @@
 # Phase 19 — Corpus Depth & Verified Entity Intelligence
 
-**Status:** IN PROGRESS — roadmap registered 2026-09-24; Phase 19A not started.
+**Status:** IN PROGRESS — 19A, 19B (with the corpus-04 batch) and the 19C final review are recorded (2026-09-25); the approved integrity cleanup is done; closeout awaits the operator decision on exhibit sub-number bindings (see `docs/PROJECT_STATE.md`).
 
 ## Goal
 

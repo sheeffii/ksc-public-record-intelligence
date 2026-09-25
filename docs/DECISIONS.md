@@ -1217,3 +1217,65 @@ Counts may fall where a guess was removed (admitted exhibits 3 → 1; 20 citatio
 edges withdrawn) and rise only where a rule is deterministic. Downgrading `0014`
 drops the non-citation edges, appearances and status history; PostgreSQL keeps
 the unused `deterministic_occurrence` enum value.
+
+## ADR-026 — Reviewed reference forms, other-court identifiers and one provenance contract in the UI
+
+Date: 2026-09-25
+
+Status: Accepted (Phase 19C)
+
+Context:
+The corpus-04 batch quarantined four records whose references the importer
+could not derive: an annex title prefix, `COR2`, `CONF`, and a corrected
+translation. A human sampling audit then found that identifiers printed right
+after another court's case number ("IT-04-84 P00340") were bound to this case's
+exhibits and citation graph. The UI still read the citation-only `/network`, so
+evidence-backed MENTIONED_IN and TESTIFIED_AT edges were invisible. The Reader
+also opened the wrong page when a link carried both a PDF index and a printed
+page.
+
+Decision:
+
+1. The importer accepts four more reference forms. Each one needs the PDF
+   running header to confirm it:
+   - an annex title prefixed "Public Redacted Version of";
+   - the suffix token `COR2`;
+   - `CONF`, and only with the court's page-1 reclassification-as-public stamp
+     (the version type is `reclassified`);
+   - a corrected translation (`…/sqi/COR`), when the published title also ends
+     in "COR".
+
+   Anything else stays quarantined.
+
+2. A bare identifier printed immediately after another court's case number
+   (ICTY / ICTR / MICT / IRMCT / STL / ICC / SCSL, or a different KSC case) is
+   that case's record. The citation is `INVALID` (`invalid.other_case`), and
+   the exhibit is not projected as a mention (`exhibit.identifier.exact` v2).
+   Only whitespace may separate the two; nothing looser is inferred.
+3. A language marker is a path segment (`…/RED/sqi/COR`), not only a suffix.
+4. Parser v3: a transcript page whose numbered line grid is complete but empty
+   (private session) is not a review reason. No segment is created, and
+   nothing is bridged.
+5. The web consumes one exact-source contract (`ProvenanceRead`) for mentions,
+   appearances, status events, typed edges and Evidence Path hops. Network
+   reads use `/network/edges`: bounded, server-filtered, cursor-paginated.
+   Reader links carry the verbatim slice (`hl`). The Reader marks it only
+   inside the targeted paragraph, whole-token. Otherwise it says the span lies
+   outside the rendered paragraphs.
+
+Consequences:
+177 citations, 177 CITED_IN edges and 177 exhibit mentions were withdrawn as
+other-case references. Twelve exhibit registry rows lost their only support.
+They need an approved withdrawal, because the pipeline never deletes
+registry rows. A `CONF` record without the court's page-1 stamp still fails
+closed. No schema migration.
+
+Addendum (2026-09-25, operator-approved cleanup):
+
+- The 12 exhibit rows were withdrawn, each with an `audit_log` row.
+- The other-case guard accepts binding separators: whitespace, one comma or
+  colon, and parentheses. A semicolon is not binding, because it starts a new
+  citation. The exhibit mention rule is now v3.
+- Re-resolution retires a citation it no longer extracts only when the row is
+  unreviewed and referenced by none of the 17 citation foreign keys, and
+  writes a `citation.retired` audit row.
