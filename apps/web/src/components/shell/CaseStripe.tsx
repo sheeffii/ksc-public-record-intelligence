@@ -22,10 +22,24 @@ export function CaseStripe({
 }) {
   const t = useTranslations("app");
   return (
-    <div className="border-border-subtle bg-bg-deep flex h-8 shrink-0 items-center gap-3 border-b px-4 text-[11px]">
+    <aside
+      aria-label={t("courtName")}
+      className="border-border-subtle bg-bg-deep flex h-8 shrink-0 items-center gap-3 border-b px-4 text-[11px]"
+    >
       <span className="flex min-w-0 items-center gap-2">
         <span className="section-label">{t("caseLabel")}</span>
-        <span className="identifier text-fg">{CASE_ID}</span>
+        <span className="identifier text-accent">{CASE_ID}</span>
+        <span aria-hidden className="text-fg-faint hidden sm:inline">
+          ·
+        </span>
+        <span className="text-fg-secondary hidden truncate sm:inline">{t("courtName")}</span>
+        <span aria-hidden className="text-fg-faint hidden lg:inline">
+          ·
+        </span>
+        <span className="text-verified hidden items-center gap-1.5 lg:inline-flex">
+          <span className="bg-verified size-1.5 rounded-full" aria-hidden />
+          {t("publicRecord")}
+        </span>
       </span>
       {crumbs.length > 0 ? (
         <nav
@@ -49,6 +63,6 @@ export function CaseStripe({
         </nav>
       ) : null}
       {showDemoFlag ? <DemoDataFlag compact className="ml-auto" /> : null}
-    </div>
+    </aside>
   );
 }

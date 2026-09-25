@@ -5,10 +5,11 @@
     "tagline": "Citation-first research over the public court record",
     "skipToContent": "Skip to content",
     "caseLabel": "Case",
-    "courtName": "Kosovo Specialist Chambers"
+    "courtName": "Kosovo Specialist Chambers",
+    "publicRecord": "Public record"
   },
   "nav": {
-    "home": "Home",
+    "home": "Overview",
     "search": "Search",
     "documents": "Documents",
     "people": "People",
@@ -1274,5 +1275,46 @@
     "segmentCount": "{count} segments",
     "loading": "Loading…",
     "contextUnavailable": "Research context could not be loaded for this page."
+  },
+  "phase21": {
+    "homeEyebrow": "Public court record · Case KSC-BC-2020-06",
+    "quickTry": "Try",
+    "corpusAtGlance": "Public record at a glance",
+    "researchEntryPoints": "Explore the record",
+    "recentRecords": "Recently filed or recorded",
+    "ingestionStatus": "Corpus processing status",
+    "viewAll": "View all",
+    "exploreDescriptions": {
+      "people": "Named people and public roles",
+      "witnesses": "Public and protected codes",
+      "documents": "Filings, decisions and transcripts",
+      "exhibits": "Evidence items and status history",
+      "timeline": "Events, hearings and decisions",
+      "network": "Source-backed record connections",
+      "findings": "Court findings and source chains",
+      "ai": "Citation-first research over the record"
+    },
+    "filters": "Filters",
+    "searchMatch": "Search match",
+    "recordType": "Record type",
+    "openRecord": "Open record",
+    "openExactSource": "Open exact source",
+    "queryRead": "How this query was read",
+    "relatedUnavailable": "No source-backed related entities were returned for this query.",
+    "commandDetected": "Record pattern detected",
+    "commandHint": "Type an identifier, name or phrase",
+    "commandEmpty": "No source-backed match yet.",
+    "commandFullResults": "Full search results",
+    "commandLoading": "Searching the public record…",
+    "corpusCount": "{count} records",
+    "identifier": "Identifier",
+    "recordDate": "Date",
+    "recordStatus": "Record status",
+    "sourceState": "Source state",
+    "openDossier": "Open dossier",
+    "closeInspector": "Close inspector",
+    "selectRecord": "Select a row to inspect its source-backed metadata.",
+    "selectedRecord": "Selected record",
+    "unknownField": "Not established in the held public record"
   }
 }

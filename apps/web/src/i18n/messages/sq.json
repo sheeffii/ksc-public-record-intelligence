@@ -5,10 +5,11 @@
     "tagline": "Hulumtim i bazuar në citime mbi regjistrin publik të gjykatës",
     "skipToContent": "Kalo te përmbajtja",
     "caseLabel": "Çështja",
-    "courtName": "Dhomat e Specializuara të Kosovës"
+    "courtName": "Dhomat e Specializuara të Kosovës",
+    "publicRecord": "Regjistri publik"
   },
   "nav": {
-    "home": "Kreu",
+    "home": "Përmbledhje",
     "search": "Kërko",
     "documents": "Dokumentet",
     "people": "Personat",
@@ -1274,5 +1275,46 @@
     "segmentCount": "{count} segmente",
     "loading": "Duke u ngarkuar…",
     "contextUnavailable": "Konteksti kërkimor nuk mund të ngarkohej për këtë faqe."
+  },
+  "phase21": {
+    "homeEyebrow": "Regjistri publik gjyqësor · Çështja KSC-BC-2020-06",
+    "quickTry": "Provoni",
+    "corpusAtGlance": "Regjistri publik me një vështrim",
+    "researchEntryPoints": "Eksploroni regjistrin",
+    "recentRecords": "Të parashtruara ose regjistruara së fundi",
+    "ingestionStatus": "Gjendja e përpunimit të korpusit",
+    "viewAll": "Shiko të gjitha",
+    "exploreDescriptions": {
+      "people": "Persona të emërtuar dhe role publike",
+      "witnesses": "Kode publike dhe të mbrojtura",
+      "documents": "Parashtresa, vendime dhe transkripte",
+      "exhibits": "Prova materiale dhe historia e statusit",
+      "timeline": "Ngjarje, seanca dhe vendime",
+      "network": "Lidhje regjistri të mbështetura në burime",
+      "findings": "Konstatime të Gjykatës dhe zinxhirë burimorë",
+      "ai": "Hulumtim me citime së pari mbi regjistrin"
+    },
+    "filters": "Filtrat",
+    "searchMatch": "Përputhje kërkimi",
+    "recordType": "Lloji i regjistrit",
+    "openRecord": "Hap regjistrin",
+    "openExactSource": "Hap burimin e saktë",
+    "queryRead": "Si u lexua kjo pyetje",
+    "relatedUnavailable": "Nuk u kthyen entitete të lidhura të mbështetura në burime për këtë pyetje.",
+    "commandDetected": "U zbulua modeli i regjistrit",
+    "commandHint": "Shkruani një identifikues, emër ose frazë",
+    "commandEmpty": "Ende nuk ka përputhje të mbështetur në burim.",
+    "commandFullResults": "Rezultatet e plota të kërkimit",
+    "commandLoading": "Duke kërkuar në regjistrin publik…",
+    "corpusCount": "{count} regjistra",
+    "identifier": "Identifikuesi",
+    "recordDate": "Data",
+    "recordStatus": "Gjendja e regjistrit",
+    "sourceState": "Gjendja e burimit",
+    "openDossier": "Hap dosjen",
+    "closeInspector": "Mbyll inspektorin",
+    "selectRecord": "Zgjidhni një rresht për të parë metadatat e tij të mbështetura në burim.",
+    "selectedRecord": "Regjistri i zgjedhur",
+    "unknownField": "Nuk është përcaktuar në regjistrin publik të mbajtur"
   }
 }

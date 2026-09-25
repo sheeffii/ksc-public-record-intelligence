@@ -32,7 +32,7 @@ import {
   type MockSearchResult,
 } from "@/mock";
 import { ActionLink, DemoNotice, ScreenHeader, TabStrip } from "./ScreenChrome";
-import { KeyValue, NoteStrip, SectionCard, Segmented, ToolButton, Toolbar } from "./Workspace";
+import { KeyValue, SectionCard, Segmented, ToolButton, Toolbar } from "./Workspace";
 import type { NetworkView } from "@/data";
 import type { SourceAnchorView } from "@/data";
 import { OriginalPdfPage, type PdfFit } from "@/components/source/OriginalPdfPage";
@@ -740,6 +740,7 @@ export function SearchScreen({
   const tb = useTranslations("phase5b");
   const t15 = useTranslations("phase15");
   const t18 = useTranslations("phase18");
+  const t21 = useTranslations("phase21");
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<Category | "all">("all");
@@ -768,12 +769,7 @@ export function SearchScreen({
   ];
   return (
     <AppShell showDemoFlag={initialResults === undefined}>
-      <ScreenHeader
-        realData={initialResults !== undefined}
-        eyebrow={t("search")}
-        title={t("search")}
-        description={tb("searchSyntax")}
-      />
+      <h1 className="sr-only">{t("search")}</h1>
       <form
         role="search"
         onSubmit={(e) => {
@@ -782,38 +778,47 @@ export function SearchScreen({
         }}
         className="border-border-subtle bg-bg-deep border-b px-4 py-3"
       >
-        <div className="mx-auto flex w-full max-w-[1440px] flex-wrap gap-2">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("commandHint")}
-            aria-label={t("searchRecords")}
-            className="border-border bg-surface text-fg rounded-inset h-11 min-w-[240px] flex-1 border px-4 text-[13px]"
-          />
+        <div className="mx-auto flex w-full max-w-[1440px] flex-wrap items-center gap-2">
+          <label className="border-accent bg-surface rounded-inset shadow-focus flex h-11 min-w-[240px] flex-1 items-center border px-3">
+            <span aria-hidden className="text-accent mr-2">
+              ⌕
+            </span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t21("commandHint")}
+              aria-label={t("searchRecords")}
+              className="text-fg min-w-0 flex-1 bg-transparent text-[13px]"
+            />
+            <span className="text-fg-muted hidden text-[10px] md:inline">{tb("searchSyntax")}</span>
+          </label>
           <ToolButton primary onClick={() => undefined}>
             {t("search")}
           </ToolButton>
         </div>
-        <p className="text-fg-secondary tabular mx-auto mt-2 w-full max-w-[1440px] text-[11px]">
-          {tb("resultSummary", { count: filtered.length, groups: groups.length, ms: 3 })}
-        </p>
-        <div className="mx-auto mt-2 flex w-full max-w-[1440px] gap-2">
-          {(["court", "external", "both"] as const).map((scope) => (
-            <ActionLink
-              key={scope}
-              href={`/search?q=${encodeURIComponent(query)}&scope=${scope}`}
-              primary={sourceScope === scope}
-            >
-              {scope === "court"
-                ? t15("courtRecord")
-                : scope === "external"
-                  ? t15("externalSources")
-                  : t15("bothSeparated")}
-            </ActionLink>
-          ))}
+        <div className="mx-auto mt-2 flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-2">
+          <p className="text-fg-secondary tabular text-[11px]">
+            {tb("resultSummary", { count: filtered.length, groups: groups.length, ms: 3 })}
+          </p>
+          <div className="flex gap-1">
+            {(["court", "external", "both"] as const).map((scope) => (
+              <ActionLink
+                key={scope}
+                href={`/search?q=${encodeURIComponent(query)}&scope=${scope}`}
+                primary={sourceScope === scope}
+              >
+                {scope === "court"
+                  ? t15("courtRecord")
+                  : scope === "external"
+                    ? t15("externalSources")
+                    : t15("bothSeparated")}
+              </ActionLink>
+            ))}
+          </div>
         </div>
       </form>
       <TabStrip
+        label={t21("recordType")}
         tabs={[
           { key: "all", label: `${tb("allCategories")} (${results.length})` },
           ...CATEGORIES.map((c) => ({
@@ -823,8 +828,8 @@ export function SearchScreen({
         ].map((tab) => ({ ...tab, href: undefined }))}
         active={category}
       />
-      <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 lg:grid-cols-[238px_minmax(0,1fr)] xl:grid-cols-[238px_minmax(0,1fr)_262px]">
-        <FilterRail>
+      <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 lg:grid-cols-[238px_minmax(0,1fr)] xl:grid-cols-[238px_minmax(0,1fr)_262px]">
+        <FilterRail className="border-border-subtle bg-surface hidden border-r p-4 lg:flex">
           <FilterSection title={tb("allCategories")}>
             <Segmented
               label={tb("allCategories")}
@@ -876,10 +881,35 @@ export function SearchScreen({
             </div>
           </FilterSection>
         </FilterRail>
-        <div className="min-w-0 space-y-3">
+        <div className="min-w-0 p-3 md:p-4">
+          <details className="border-border bg-surface rounded-card mb-3 border p-3 lg:hidden">
+            <summary className="section-label cursor-pointer">{t21("filters")}</summary>
+            <div className="mt-3 space-y-4">
+              <FilterSection title={tb("allCategories")}>
+                <Segmented
+                  label={tb("allCategories")}
+                  value={category}
+                  onChange={(next) => {
+                    setCategory(next);
+                    setPage(1);
+                  }}
+                  options={[
+                    { key: "all", label: tb("allCategories") },
+                    ...CATEGORIES.map((key) => ({
+                      key,
+                      label: key === "external" ? t15("externalSources") : tb(key),
+                    })),
+                  ]}
+                />
+              </FilterSection>
+            </div>
+          </details>
           {initialResults === undefined ? <DemoNotice /> : null}
-          {initialResults !== undefined ? <NoteStrip>{tb("realDataNotice")}</NoteStrip> : null}
+          {initialResults !== undefined ? (
+            <p className="governance-text mb-2">{tb("realDataNotice")}</p>
+          ) : null}
           <ActiveFilters
+            className="mb-2"
             filters={activeFilters}
             onRemove={(id) => {
               const [k, v] = id.split(":");
@@ -911,23 +941,25 @@ export function SearchScreen({
               }
             />
           ) : (
-            groups.map((group) => (
-              <section
-                key={group.key}
-                aria-labelledby={`group-${group.key}`}
-                className="border-border-subtle bg-surface rounded-card border"
-              >
-                <header className="border-border-faint flex items-center justify-between border-b px-3 py-1.5">
-                  <h2 id={`group-${group.key}`} className="section-label">
-                    {group.key === "external" ? t15("externalSources") : tb(group.key)}
-                  </h2>
-                  <span className="tabular text-fg-muted text-[10px]">{group.rows.length}</span>
-                </header>
-                {group.rows.map((row) => (
-                  <ResultRow key={row.id} row={row} query={query} />
-                ))}
-              </section>
-            ))
+            <div className="border-border-subtle border-t">
+              {groups.map((group) => (
+                <section
+                  key={group.key}
+                  aria-labelledby={`group-${group.key}`}
+                  className="border-border-subtle border-b"
+                >
+                  <header className="bg-bg-deep flex items-center justify-between px-3 py-2">
+                    <h2 id={`group-${group.key}`} className="section-label">
+                      {group.key === "external" ? t15("externalSources") : tb(group.key)}
+                    </h2>
+                    <span className="tabular text-fg-muted text-[10px]">{group.rows.length}</span>
+                  </header>
+                  {group.rows.map((row) => (
+                    <ResultRow key={row.id} row={row} query={query} />
+                  ))}
+                </section>
+              ))}
+            </div>
           )}
           {filtered.length > pageSize ? (
             <nav aria-label={t18("pagination")} className="flex items-center justify-between gap-3">
@@ -948,10 +980,10 @@ export function SearchScreen({
               </ToolButton>
             </nav>
           ) : null}
-          <NoteStrip>{tb("rankingDisclaimer")}</NoteStrip>
+          <p className="governance-text mt-3">{tb("rankingDisclaimer")}</p>
         </div>
-        <aside className="min-w-0 space-y-3 lg:col-span-2 xl:col-span-1">
-          <Panel title={t("queryInterpretation")}>
+        <aside className="border-border-subtle bg-surface min-w-0 space-y-3 border-l p-3 lg:col-span-2 xl:col-span-1">
+          <Panel className="rounded-none border-x-0 border-t-0" title={t21("queryRead")}>
             <KeyValue
               rows={[
                 {
@@ -970,7 +1002,7 @@ export function SearchScreen({
               <span className="section-label">{tb("variants")}</span> {query || "—"}
             </p>
           </Panel>
-          <Panel title={tb("syntaxReference")}>
+          <Panel className="rounded-none border-x-0" title={tb("syntaxReference")}>
             <ul className="identifier text-fg-secondary space-y-1 text-[11px]">
               {PATTERNS.map((p) => (
                 <li key={p.kind}>{p.kind}</li>
@@ -978,8 +1010,8 @@ export function SearchScreen({
               <li>free text</li>
             </ul>
           </Panel>
-          <Panel title={tb("relatedEntities")}>
-            <p className="text-fg-secondary text-[11px]">{t15("sourceBackedOnly")}</p>
+          <Panel className="rounded-none border-x-0" title={tb("relatedEntities")}>
+            <p className="text-fg-secondary text-[11px]">{t21("relatedUnavailable")}</p>
           </Panel>
         </aside>
       </div>
@@ -990,47 +1022,70 @@ export function SearchScreen({
 function ResultRow({ row, query }: { row: MockSearchResult; query: string }) {
   const t15 = useTranslations("phase15");
   const t18 = useTranslations("phase18");
+  const tb = useTranslations("phase5b");
+  const t21 = useTranslations("phase21");
   const parts = query.trim()
     ? row.context.split(new RegExp(`(${query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "i"))
     : [row.context];
+  const detailHref =
+    row.category === "witnesses"
+      ? `/witnesses/${encodeURIComponent(row.id)}`
+      : row.category === "people"
+        ? `/people/${encodeURIComponent(row.id)}`
+        : row.category === "exhibits"
+          ? `/exhibits/${encodeURIComponent(row.id)}`
+          : row.category === "findings"
+            ? `/findings/${encodeURIComponent(row.id)}`
+            : row.category === "incidents"
+              ? `/incidents/${encodeURIComponent(row.id)}`
+              : undefined;
   return (
-    <Link
-      href={row.href}
-      className="border-border-faint hover:bg-surface-raised grid gap-x-3 gap-y-1 border-b px-3 py-2 text-[11px] last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto]"
-    >
-      <span className="min-w-0 space-y-1">
-        <span className="block">
-          <span className="section-label block">{t18("whatMatched")}</span>
-          <span className="text-fg block font-medium">{row.title}</span>
+    <article className="border-border-faint hover:bg-surface-raised border-b px-4 py-3 text-[11px] last:border-b-0">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="section-label text-accent">
+          {row.category === "external" ? t15("externalSource") : tb(row.category)}
         </span>
-        <span className="text-fg-secondary block leading-relaxed">
-          <span className="section-label mr-2">{t18("whereMatched")}</span>
+        <span className="rounded-badge border-border bg-surface-raised text-fg-muted border px-1.5 py-0.5 text-[8.5px] font-semibold tracking-wide uppercase">
+          {t21("searchMatch")}
+        </span>
+      </div>
+      <div className="mt-1 flex flex-wrap items-baseline gap-2">
+        <span className="identifier text-accent text-[12px]">{row.id}</span>
+        <h3 className="text-fg text-[12.5px] font-semibold">{row.title}</h3>
+      </div>
+      {row.context ? (
+        <p className="text-fg-secondary mt-1.5 leading-relaxed">
           {parts.map((part, i) =>
             i % 2 === 1 ? (
-              <mark key={i} className="bg-surface-high text-fg rounded px-0.5">
+              <mark key={i} className="bg-doc/20 text-fg rounded px-0.5">
                 {part}
               </mark>
             ) : (
               <span key={i}>{part}</span>
             ),
           )}
-        </span>
-        <span className="text-fg-muted block text-[10px]">
+        </p>
+      ) : null}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {row.citation ? <SourceBadge type={row.citation.sourceType} size="sm" /> : null}
+        {row.citation ? <CitationChip citation={row.citation} navigable={false} size="sm" /> : null}
+        <span className="text-fg-muted mr-auto text-[10px]">
           {t18("matchedBy")}
           {row.matchKind ? ` · ${t18(`matchKind.${row.matchKind}`)}` : ""}
         </span>
-      </span>
-      <span className="flex flex-wrap items-center gap-2 sm:justify-end">
-        <span className="section-label">{t18("source")}</span>
-        {row.category === "external" ? (
-          <span className="rounded-badge border-border bg-surface-raised border px-1.5 py-0.5 text-[10px]">
-            {t15("externalSource")}
-          </span>
+        {detailHref && detailHref !== row.href ? (
+          <Link href={detailHref} className="text-fg-secondary hover:text-fg text-[10.5px]">
+            {t21("openRecord")}
+          </Link>
         ) : null}
-        {row.citation ? <SourceBadge type={row.citation.sourceType} size="sm" /> : null}
-        {row.citation ? <CitationChip citation={row.citation} navigable={false} size="sm" /> : null}
-      </span>
-    </Link>
+        <Link
+          href={row.href}
+          className="border-accent bg-accent text-bg-deep rounded-control border px-2 py-1 text-[10.5px] font-semibold"
+        >
+          {row.citation ? t21("openExactSource") : t21("openRecord")} →
+        </Link>
+      </div>
+    </article>
   );
 }
 

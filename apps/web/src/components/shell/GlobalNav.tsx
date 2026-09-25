@@ -25,8 +25,9 @@ export function GlobalNav() {
   const pathname = usePathname();
   const active = navKeyForPath(pathname ?? "/");
 
-  const inline = PRIMARY_NAV.filter((i) => !i.overflow);
+  const inline = PRIMARY_NAV.filter((i) => !i.overflow && !i.isAi);
   const overflow = PRIMARY_NAV.filter((i) => i.overflow);
+  const ai = PRIMARY_NAV.find((i) => i.isAi);
 
   return (
     <header
@@ -51,6 +52,7 @@ export function GlobalNav() {
         <span className="flex xl:hidden">
           <OverflowMenu items={overflow} active={active} />
         </span>
+        {ai ? <NavLink item={ai} active={active === ai.key} label={t(ai.key)} /> : null}
       </nav>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">

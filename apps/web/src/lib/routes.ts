@@ -148,14 +148,15 @@ export interface NavItem {
 }
 
 export const PRIMARY_NAV: readonly NavItem[] = [
-  { key: "documents", href: "/documents" },
+  { key: "home", href: "/" },
   { key: "people", href: "/people" },
   { key: "witnesses", href: "/witnesses" },
+  { key: "documents", href: "/documents" },
   { key: "exhibits", href: "/exhibits" },
-  { key: "findings", href: "/findings" },
-  { key: "network", href: "/network" },
-  { key: "incidents", href: "/incidents", overflow: true },
   { key: "timeline", href: "/timeline", overflow: true },
+  { key: "network", href: "/network" },
+  { key: "findings", href: "/findings" },
+  { key: "incidents", href: "/incidents", overflow: true },
   { key: "appeal", href: "/appeal", overflow: true },
   { key: "media", href: "/media", overflow: true },
   { key: "ai", href: "/ai", isAi: true },

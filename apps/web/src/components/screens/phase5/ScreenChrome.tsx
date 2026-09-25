@@ -76,13 +76,15 @@ export function ActionLink({
 export function TabStrip({
   tabs,
   active,
+  label = "Sections",
 }: {
   tabs: readonly { key: string; label: string; href?: string }[];
   active?: string;
+  label?: string;
 }) {
   return (
     <nav
-      aria-label="Sections"
+      aria-label={label}
       className="border-border-subtle bg-bg-deep overflow-x-auto border-b"
       tabIndex={0}
     >

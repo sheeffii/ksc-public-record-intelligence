@@ -18,8 +18,10 @@ import {
 } from "@/components/primitives/Filter";
 import { Panel } from "@/components/primitives/Panel";
 import { EmptyState } from "@/components/primitives/States";
+import { CloseIcon, SearchIcon } from "@/components/primitives/icons";
 import { SourceBadge, VerificationBadge } from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
+import { cn } from "@/lib/utils";
 import { ActionLink, ScreenHeader } from "./ScreenChrome";
 import { KeyValue, NoteStrip, Pager, SelectControl, ToolButton, Toolbar } from "./Workspace";
 
@@ -52,6 +54,7 @@ export function DirectoryScreen({
   const tFooter = useTranslations("footer");
   const t15 = useTranslations("phase15");
   const t18 = useTranslations("phase18");
+  const t21 = useTranslations("phase21");
   const [query, setQuery] = useState("");
   const [density, setDensity] = useState<Density>("compact");
   const [sortBy, setSortBy] = useState(kind === "findings" ? "id" : "title");
@@ -60,6 +63,7 @@ export function DirectoryScreen({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [selectedId, setSelectedId] = useState<string>();
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
 
   const all = useMemo(() => initialRows, [initialRows]);
   const rows = useMemo(() => {
@@ -114,7 +118,7 @@ export function DirectoryScreen({
       identifier: true,
       minWidth: 100,
       sortable: true,
-      cell: (row) => <span className="text-accent">{row.id}</span>,
+      cell: (row) => <span className="text-accent-bright">{row.id}</span>,
     },
     {
       key: "title",
@@ -236,6 +240,252 @@ export function DirectoryScreen({
               ]
             : identityColumns;
 
+  if (kind === "documents" || kind === "exhibits") {
+    return (
+      <AppShell footer={tFooter("referenceCounts")}>
+        <div className="border-border-subtle bg-bg-deep flex min-h-[52px] flex-wrap items-center gap-2 border-b px-4 py-2">
+          <div className="mr-2 min-w-[190px]">
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-fg text-[19px] font-bold tracking-[-0.02em]">{screenTitle}</h1>
+              <span className="text-fg-secondary tabular text-[10.5px]">
+                {t21("corpusCount", { count: all.length })}
+              </span>
+            </div>
+          </div>
+          <label className="relative min-w-[220px] flex-1 xl:max-w-[420px]">
+            <span className="sr-only">{t("searchRecords")}</span>
+            <SearchIcon
+              size={14}
+              className="text-fg-muted pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+            />
+            <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+              type="search"
+              placeholder={t("searchRecords")}
+              className="border-border bg-surface text-fg rounded-control h-8 w-full border pr-3 pl-9 text-[11px]"
+            />
+          </label>
+          <label className="text-fg-secondary inline-flex items-center gap-1 text-[10.5px]">
+            <span className="sr-only">{tb("verification")}</span>
+            <select
+              value={[...states][0] ?? "all"}
+              onChange={(event) => {
+                setStates(
+                  event.target.value === "all"
+                    ? new Set()
+                    : new Set([event.target.value as VerificationState]),
+                );
+                setPage(1);
+              }}
+              className="border-border bg-surface-raised text-fg rounded-control h-8 border px-2"
+            >
+              <option value="all">{tb("allCategories")}</option>
+              {STATES.map((state) => (
+                <option key={state} value={state}>
+                  {state}
+                </option>
+              ))}
+            </select>
+          </label>
+          <DensityToggle value={density} onChange={setDensity} />
+          <a
+            href={csv}
+            download={`${kind}.csv`}
+            className="border-border bg-surface-raised text-fg rounded-control inline-flex h-8 items-center border px-3 text-[10.5px]"
+          >
+            {tb("exportCsv")}
+          </a>
+          {activeFilters.length ? (
+            <ActiveFilters
+              className="basis-full"
+              filters={activeFilters}
+              onRemove={removeFilter}
+              onClearAll={() => {
+                setQuery("");
+                setStates(new Set());
+              }}
+            />
+          ) : null}
+        </div>
+
+        <div className="grid min-h-[calc(100dvh-168px)] min-w-0 flex-1 xl:grid-cols-[minmax(0,1fr)_376px]">
+          <section className="border-border-subtle min-w-0 border-r" aria-label={screenTitle}>
+            {visible.length === 0 ? (
+              <div className="p-6">
+                <EmptyState
+                  title={tb("noMatch")}
+                  reason={query || states.size ? t15("noFilteredRecords") : t15(`empty.${kind}`)}
+                  action={
+                    <ToolButton
+                      onClick={() => {
+                        setQuery("");
+                        setStates(new Set());
+                      }}
+                    >
+                      {tTable("empty")}
+                    </ToolButton>
+                  }
+                />
+              </div>
+            ) : (
+              <DataTable
+                columns={columns}
+                rows={visible}
+                rowKey={(row) => row.id}
+                rowLabel={(row) => row.title}
+                density={density}
+                sortBy={sortBy}
+                onSort={(key) => {
+                  setSortBy(key);
+                  setPage(1);
+                }}
+                selectedId={selected?.id}
+                selectedAccentClass={kind === "exhibits" ? "border-l-doc" : "border-l-accent"}
+                onSelect={(row) => {
+                  setSelectedId(row.id);
+                  setMobileInspectorOpen(true);
+                }}
+              />
+            )}
+            <div className="border-border-subtle mt-auto border-t">
+              <Pager
+                page={current}
+                pageCount={pageCount}
+                onChange={setPage}
+                prevLabel={tb("prevPage")}
+                nextLabel={tb("nextPage")}
+                summary={tb("rowsShown", {
+                  from: rows.length ? (current - 1) * pageSize + 1 : 0,
+                  to: Math.min(current * pageSize, rows.length),
+                  total: rows.length,
+                })}
+              />
+              <p className="governance-text border-border-faint border-t px-3 py-1.5">
+                {kind === "exhibits" ? tb("columnMeaning") : tTable("columnNote")}
+              </p>
+            </div>
+          </section>
+
+          <aside
+            aria-label={t21("selectedRecord")}
+            className={cn(
+              "border-border-subtle bg-surface min-w-0 border-l",
+              mobileInspectorOpen
+                ? "rounded-card shadow-sheet fixed inset-x-3 top-[92px] bottom-16 z-40 block overflow-y-auto border"
+                : "hidden",
+              "xl:static xl:z-auto xl:block xl:overflow-visible xl:rounded-none xl:border-y-0 xl:border-r-0 xl:shadow-none",
+            )}
+          >
+            <div className="border-border-subtle flex min-h-12 items-start justify-between gap-3 border-b px-4 py-3">
+              <div>
+                <p className="section-label">{t21("selectedRecord")}</p>
+                {selected ? (
+                  <p
+                    className={cn(
+                      "identifier mt-1 text-[16px]",
+                      kind === "exhibits" ? "text-doc" : "text-accent",
+                    )}
+                  >
+                    {selected.id}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileInspectorOpen(false)}
+                aria-label={t21("closeInspector")}
+                className="border-border text-fg-secondary rounded-control inline-flex size-8 items-center justify-center border xl:hidden"
+              >
+                <CloseIcon size={14} />
+              </button>
+            </div>
+            {selected ? (
+              <div className="space-y-5 p-4">
+                <div>
+                  {kind === "exhibits" ? <SourceBadge type="exhibit" /> : null}
+                  <h2 className="text-fg mt-2 text-[14px] leading-snug font-semibold">
+                    {selected.title}
+                  </h2>
+                  <p className="text-fg-secondary mt-1 text-[11px] leading-relaxed">
+                    {selected.description}
+                  </p>
+                </div>
+                <section>
+                  <h3 className="section-label mb-2">{t("metadata")}</h3>
+                  <KeyValue
+                    rows={[
+                      {
+                        key: "id",
+                        label: t21("identifier"),
+                        value: <span className="identifier">{selected.id}</span>,
+                      },
+                      {
+                        key: "date",
+                        label: t21("recordDate"),
+                        value: <span className="tabular">{selected.date}</span>,
+                      },
+                      ...(selected.status
+                        ? [
+                            {
+                              key: "status",
+                              label: t21("recordStatus"),
+                              value: selected.status.toUpperCase(),
+                            },
+                          ]
+                        : []),
+                      ...(selected.party
+                        ? [{ key: "party", label: t18("tenderedBy"), value: selected.party }]
+                        : []),
+                      ...(selected.relatedWitness
+                        ? [
+                            {
+                              key: "witness",
+                              label: t18("throughWitness"),
+                              value: (
+                                <span className="identifier text-witness">
+                                  {selected.relatedWitness}
+                                </span>
+                              ),
+                            },
+                          ]
+                        : []),
+                      {
+                        key: "refs",
+                        label: kind === "exhibits" ? t18("documentOccurrences") : t("sourcesUsed"),
+                        value: <span className="tabular">{selected.references}</span>,
+                      },
+                      {
+                        key: "ver",
+                        label: tb("verification"),
+                        value: <VerificationBadge state={selected.verification} size="sm" />,
+                      },
+                    ]}
+                  />
+                </section>
+                {selected.status?.toUpperCase() === "UNKNOWN" ? (
+                  <NoteStrip>{t18("unknownStatus")}</NoteStrip>
+                ) : null}
+                <section>
+                  <h3 className="section-label mb-2">{tb("linkedRecords")}</h3>
+                  <p className="text-fg-secondary text-[11px]">{t15("linkedRecordsUnavailable")}</p>
+                </section>
+                <ActionLink href={selected.href} primary>
+                  {kind === "documents" ? t21("openExactSource") : t21("openDossier")}
+                </ActionLink>
+              </div>
+            ) : (
+              <p className="text-fg-secondary p-4 text-[11px]">{t21("selectRecord")}</p>
+            )}
+          </aside>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell footer={tFooter("referenceCounts")}>
       <ScreenHeader
@@ -333,10 +583,7 @@ export function DirectoryScreen({
           ) : null}
         </FilterRail>
         <div className="flex min-w-0 flex-col gap-3">
-          <Panel
-            padded={false}
-            footer={kind === "exhibits" ? tb("columnMeaning") : tTable("columnNote")}
-          >
+          <Panel padded={false} footer={tTable("columnNote")}>
             {visible.length === 0 ? (
               <div className="p-4">
                 <EmptyState
@@ -398,12 +645,8 @@ export function DirectoryScreen({
           <Panel title={tb("detail")}>
             {selected ? (
               <>
-                {kind !== "people" && kind !== "documents" && kind !== "incidents" ? (
-                  <SourceBadge
-                    type={
-                      kind === "exhibits" ? "exhibit" : kind === "witnesses" ? "witness" : "court"
-                    }
-                  />
+                {kind !== "people" && kind !== "incidents" ? (
+                  <SourceBadge type={kind === "witnesses" ? "witness" : "court"} />
                 ) : null}
                 <h2 className="text-fg mt-2 text-[14px] font-semibold">{selected.title}</h2>
                 <p className="text-fg-secondary mt-1 text-[11px]">{selected.description}</p>
@@ -454,9 +697,7 @@ export function DirectoryScreen({
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <ActionLink href={selected.href} primary>
-                    {kind === "documents" || kind === "exhibits"
-                      ? tb("openFullDocument")
-                      : t("open")}
+                    {t("open")}
                   </ActionLink>
                 </div>
               </>
