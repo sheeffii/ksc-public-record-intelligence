@@ -18,8 +18,10 @@ exists — must never:
 
 - bypass authentication or access restrictions;
 - guess confidential URLs or enumerate identifiers to discover non-public material;
-- fetch from anything but the court's official public site (or an officially
-  designated public mirror), recorded per document in `documents.source_url`;
+- fetch from anything but the court's official public site, an officially
+  designated public mirror, or the Legal Tools Database under the written
+  permission recorded in ADR-030 — the official URL is recorded per document in
+  `documents.source_url` and the mirror in `fetch_method`;
 - ignore robots rules or rate limits.
 
 A document whose identifier is known but whose text is not public is stored with

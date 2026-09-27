@@ -408,7 +408,7 @@ Relevant files:
 
 Date: 2026-09-20
 
-Status: Accepted
+Status: Accepted — amended by ADR-030 (Legal Tools mirror as a permitted byte source)
 
 Context:
 Phase 7 is the first contact with real KSC material. On 2026-09-20 every
@@ -1417,3 +1417,92 @@ Consequences:
 Wrong-version highlights are impossible by construction. Links to a bare
 filing number shared only by annexes (e.g. `F00002`) now return 404; product
 links already use the official-reference route ID, so none of them change.
+
+## ADR-030 — Legal Tools Database as a permitted byte source for public KSC records
+
+Date: 2026-09-27
+
+Status: Accepted. Amends ADR-011 (third-party copies) and the `docs/SECURITY.md`
+source rule.
+
+Context:
+The official repository still challenges automated clients (ADR-011), so every
+record so far came through an attended browser session: 202 source records in
+four bundles. The Legal Tools Database (legal-tools.org, administered by CILRAP)
+mirrors the public KSC record. A 2026-09-27 survey of its public search API
+found:
+
+- 5,049 records for KSC-BC-2020-06, all marked `confidentiality: public` and
+  "download from authoritative source";
+- for 5,045 of them, the official `repository.scp-ks.org` PDF URL they came
+  from;
+- six random PDFs that were byte-identical (SHA-256) to our official captures;
+- dates that agreed with all 168 officially captured records we could compare,
+  and language tags that agreed with every one;
+- no challenge for an identified client, and a robots.txt that asks only for
+  `crawl-delay: 10`.
+
+Its terms of use allow downloading for non-commercial use but forbid compiling
+or creating derivative works without written permission. The project owner
+asked CILRAP (info@cilrap.org), and CILRAP gave written permission to download
+the documents for this project. The permission email is kept by the owner and
+cited by date in each bundle; it is not stored in the repository.
+
+The Cloudflare challenge on the official site is still never solved, evaded or
+routed around (ADR-011 decision 1 is unchanged).
+
+Decision:
+
+1. **The mirror is a permitted byte source, not an authority.** An official
+   record is identified by the official artifact URL the mirror recorded. That
+   URL must classify as an official repository artifact, or the record is
+   skipped. The mirror's own categories are not adopted: filing party and
+   court level stay blank.
+2. **The existing path is reused.** `scripts/ksc_legal_tools_harvest.py`
+   writes capture-v0 bundles of at most 99 records. The page-1 public-stamp
+   check (`scripts/check_capture_pdfs.py`) runs on every PDF. Flagged records
+   are quarantined, as are records whose page-1 classification wording
+   contradicts the mirror's language tag. `import-capture` then derives and
+   confirms references against the PDF header exactly as for browser captures.
+3. **Provenance is honest.** `document_versions.fetch_method` is
+   `legal_tools_mirror`. `raw_metadata.metadata.extra.mirror` keeps the Legal
+   Tools PURL (attribution, as the terms ask), the mirror's object URL, its
+   id and the permission citation. The source record key is the official
+   artifact: `artifact:<folder id>` for filings and
+   `artifact-path:<official path>` for transcripts. The mirror never saw the
+   repository's detail-page `doc_id`.
+4. **Scope.** English and Albanian only; Serbian is skipped. Records already
+   held, by official URL or SHA-256, and mirror duplicates are skipped. The
+   client is identified and paced: API calls follow robots.txt, and PDF
+   downloads from the mirror's object store are 3 s apart by default.
+5. **Gap fill stays official.** After a mirror run, the browser collector
+   fills what the mirror lacks, such as the newest filings (the mirror lags by
+   days) and records it has no official URL for. The collector now takes
+   repeated `--also-exclude` corpus manifests and skips any PDF whose official
+   URL is already held before downloading it.
+
+Alternatives:
+
+- Solving or evading the official site's challenge — rejected (ADR-011).
+- Using the mirror without permission — rejected: its terms forbid compiling.
+- Treating the mirror's metadata as authoritative — rejected: only the fields
+  verified against official captures are taken, and public status comes from
+  the PDF itself.
+
+Consequences:
+
+- About 3,550 new English/Albanian records can be acquired unattended. The
+  estimate from the 2026-09-27 plan is roughly 3 hours of downloading.
+- Mirror-sourced records have no saved detail page. Their `detail_page_url` is
+  the official PDF URL, and their `metadata_source` is `capture_snapshot` of
+  the mirror's fields.
+- If the permission is withdrawn, mirror-sourced versions can be found by
+  `fetch_method` and re-acquired officially or removed.
+
+Files:
+`workers/ingestion/src/ksc_ingestion/legal_tools.py`,
+`scripts/ksc_legal_tools_harvest.py`,
+`workers/ingestion/src/ksc_ingestion/{capture,capture_import,quality_gate}.py`,
+`scripts/ksc_operator_browser_capture.mjs`,
+`docs/ingestion/LEGAL_TOOLS_MIRROR.md`,
+`tests/unit/ingestion/test_legal_tools.py`

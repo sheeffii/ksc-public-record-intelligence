@@ -103,6 +103,8 @@ class ManifestArtifact(_Model):
     # Recorded at capture time for the official bytes; verified before storing.
     sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     byte_size: int | None = Field(default=None, ge=0)
+    # How the bytes were obtained when not the operator's browser (ADR-030).
+    fetch_method: str | None = Field(default=None, max_length=64)
 
 
 class ManifestRecord(_Model):
@@ -339,7 +341,7 @@ def discover(
                 public_date=parse_date(a.public_date),
                 local_file=bundle.resolve(a.file) if a.file else None,
                 captured_at=a.captured_at or captured_at,
-                fetch_method=CAPTURE_FETCH_METHOD if a.file else None,
+                fetch_method=(a.fetch_method or CAPTURE_FETCH_METHOD) if a.file else None,
                 declared_sha256=a.sha256,
                 declared_byte_size=a.byte_size,
             )

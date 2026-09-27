@@ -535,6 +535,25 @@ authorized and the phase is now complete on
 - Phase 22 remains **IN PROGRESS**. Next action requires explicit authorization
   for 22B; do not start it automatically.
 
+## Legal Tools mirror acquisition (ADR-030, 2026-09-27)
+
+- This is outside the phase roadmap and was authorised by the owner. CILRAP gave
+  written permission (the owner keeps the email) to download the
+  KSC-BC-2020-06 documents from legal-tools.org.
+- `scripts/ksc_legal_tools_harvest.py` writes capture-v0 bundles, using the
+  logic in `ksc_ingestion/legal_tools.py`. The import records
+  `fetch_method = legal_tools_mirror` and the Legal Tools PURL. Runbook:
+  `docs/ingestion/LEGAL_TOOLS_MIRROR.md`.
+- Survey on 2026-09-27: 5,049 mirror records; the plan selects **3,550** new
+  English/Albanian records. Skipped: 703 Serbian, 198 held, 592 mirror
+  duplicates, 6 unusable.
+- Smoke test: 5 records went through the stamp check, `import-capture` and
+  `discover` in the scratchpad, with all references confirmed by the PDF
+  headers.
+- Nothing from the mirror has been ingested into `data/captures` or the
+  database yet. After a full run, fill the gaps with the collector's new
+  `--also-exclude` option.
+
 ## Non-negotiable rules
 
 - Official public sources only; never bypass the court's access controls.

@@ -147,6 +147,10 @@ class SourceRecordEntry(_Model):
     http_status_verified: int
     selection_reason: str | None = None
     hearing_date: str | None = None
+    # Mirror captures (ADR-030): the official artifact is the record key when
+    # no repository detail page was seen, and the mirror's provenance is kept.
+    external_record_id: str | None = Field(default=None, max_length=256)
+    mirror: dict[str, Any] | None = None
 
 
 class SourceBundleInfo(BaseModel):
@@ -615,6 +619,8 @@ def import_capture(
         shutil.copy2(source_root / "CAPTURE_NOTES.md", dest_root / "CAPTURE_NOTES.md")
 
     captured_at = datetime.fromisoformat(manifest.bundle.capture_date).replace(tzinfo=UTC)
+    # How the bytes were obtained, when not the operator's browser (ADR-030).
+    fetch_method = (manifest.bundle.model_extra or {}).get("fetch_method")
     by_id = {row.record_id: row for row in rows}
     records: list[dict[str, Any]] = []
     report_records: list[dict[str, Any]] = []
@@ -671,6 +677,8 @@ def import_capture(
             "page1_reclassification_stamp": header.reclassification_note,
             "snapshot_footer": snap.footer_note,
         }
+        if r.mirror:
+            extra["mirror"] = r.mirror
         if hearing:
             extra["hearing_session_sequence_assumed"] = True
         metadata: dict[str, Any] = {
@@ -685,6 +693,8 @@ def import_capture(
             "classification": PUBLIC_STATUSES[r.public_status],
             "extra": extra,
         }
+        if r.external_record_id:
+            metadata["external_record_id"] = r.external_record_id
         if hearing:
             metadata["hearing"] = hearing
         artifact: dict[str, Any] = {
@@ -695,6 +705,8 @@ def import_capture(
             "sha256": r.sha256,
             "byte_size": r.bytes,
         }
+        if fetch_method:
+            artifact["fetch_method"] = fetch_method
         if refs.status == "ok":
             artifact["official_version_ref"] = refs.version_ref
             artifact["version_type"] = refs.version_type

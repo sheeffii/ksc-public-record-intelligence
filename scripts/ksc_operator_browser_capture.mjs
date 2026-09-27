@@ -28,6 +28,11 @@
  *   pnpm exec node scripts/ksc_operator_browser_capture.mjs --probe --attach
  *   pnpm exec node scripts/ksc_operator_browser_capture.mjs --attach [--strata plan.json] \
  *     --case KSC-BC-2020-06 --target-new 3 --output ~/Downloads/ksc-bc-2020-06-phase13-corpus-02
+ *
+ *   --also-exclude PATH (repeatable) adds further corpus manifests (ksc-ingest
+ *   export-corpus) to the held set — e.g. the Legal Tools mirror bundles
+ *   (ADR-030) — so a gap run only downloads PDFs whose official URL and bytes
+ *   are not held yet.
  */
 
 import { chromium } from "@playwright/test";
@@ -58,6 +63,7 @@ function parseArgs(argv) {
     profile: join(ROOT, ".tmp", "ksc-operator-browser-profile"),
     exclude: join(ROOT, "docs", "ingestion", "manifests", "phase7-controlled-corpus.json"),
     excludeInventory: null,
+    alsoExclude: [],
     bundleId: "2026-09-21-corpus-02",
     paceMs: 2500,
     probe: false,
@@ -77,6 +83,7 @@ function parseArgs(argv) {
     else if (a === "--profile") args.profile = resolve(next());
     else if (a === "--exclude") args.exclude = resolve(next());
     else if (a === "--exclude-inventory") args.excludeInventory = resolve(next());
+    else if (a === "--also-exclude") args.alsoExclude.push(resolve(next()));
     else if (a === "--bundle-id") args.bundleId = next();
     else if (a === "--pace-ms") args.paceMs = Number(next());
     else if (a === "--captured-by") args.capturedBy = next();
@@ -856,7 +863,11 @@ function filingKey(documentId) {
 
 async function collect(context, page, args) {
   const known = JSON.parse(readFileSync(args.exclude, "utf8"));
+  for (const path of args.alsoExclude) {
+    known.records.push(...JSON.parse(readFileSync(path, "utf8")).records);
+  }
   const heldDocIds = new Set(known.records.map((r) => r.external_record_id));
+  const heldPdfUrls = new Set(known.records.map((r) => decodeURI(r.artifact_url)));
   if (args.excludeInventory) {
     const inventory = JSON.parse(readFileSync(args.excludeInventory, "utf8"));
     for (const record of inventory.inventory ?? []) heldDocIds.add(record.source_record_id);
@@ -924,6 +935,11 @@ async function collect(context, page, args) {
       return null;
     }
     const pdfUrl = new URL(detail.downloads[0], REPOSITORY).toString();
+    if (heldPdfUrls.has(decodeURI(pdfUrl))) {
+      events.duplicates += 1;
+      skipped.push({ docId, title: hint.title, why: "already held (official PDF URL)" });
+      return null;
+    }
     const pdf = await acquirePdf(context, pdfUrl, args.paceMs);
     events.pdfs += 1;
     if (!pdf.ok) {
