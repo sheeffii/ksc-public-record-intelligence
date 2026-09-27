@@ -39,6 +39,28 @@ def test_missing_record_abstains_and_renders_no_partial_answer(demo_client):
     assert body["validation_errors"][0]["code"] == "DOCUMENT_NOT_FOUND"
 
 
+def test_low_relevance_lexical_matches_fail_closed(demo_client):
+    body = demo_client.post(
+        "/api/v1/ai/runs",
+        json={"question": "What did the Panel say about synthetic lunar treaty remedies?"},
+    ).json()
+    assert body["answer_withheld"] is True
+    assert body["insufficient_evidence"] is True
+    assert body["blocks"] == []
+    assert body["sources"] == []
+    assert body["validation_errors"][0]["code"] == "INSUFFICIENT_RELEVANCE"
+
+
+def test_party_question_requires_party_attributed_sources(demo_client):
+    body = demo_client.post(
+        "/api/v1/ai/runs",
+        json={"question": "What did the Defence argue about the synthetic demo event?"},
+    ).json()
+    assert body["answer_withheld"] is False
+    assert body["sources"]
+    assert {source["category"] for source in body["sources"]} == {"defence_argument"}
+
+
 class FabricatingProvider:
     name = "adversarial-test"
     model = "fabricator"

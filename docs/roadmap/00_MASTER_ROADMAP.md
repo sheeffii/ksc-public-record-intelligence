@@ -90,7 +90,7 @@ The original core roadmap contains **13 numbered phases**. Ten additional milest
 | 19 | Corpus Depth & Verified Entity Intelligence | **COMPLETE (2026-09-25)** — tag `phase-19-complete` |
 | 20 | Source-Native Intelligent PDF & Transcript Reader | **COMPLETE (2026-09-25)** — tag `phase-20-complete` |
 | 21 | Design Parity & Research UX | **COMPLETE (2026-09-27)** — tag `phase-21-complete` |
-| 22 | Evidence Matrix, Witness Comparison & Legal Issue Intelligence | **IN PROGRESS** — 22C audit complete; closeout blocked |
+| 22 | Evidence Matrix, Witness Comparison & Legal Issue Intelligence | **COMPLETE (2026-09-27)** — tag `phase-22-complete` |
 
 ## Recommended execution order from now
 
@@ -127,7 +127,7 @@ Phase 15
        ↓
      Phase 21 (COMPLETE 2026-09-27)
        ↓
-     Phase 22 (IN PROGRESS; 22C audit complete; closeout blocked)
+     Phase 22 (COMPLETE 2026-09-27)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -149,9 +149,9 @@ audit passed. Phase 21 is **COMPLETE (2026-09-27)**, tag
 `phase-21-complete`: all 18 real research surfaces were visually audited
 against `Design.html`, with honest data limitations retained. Phase 21 is
 merged into synchronized `main` at `f25cfe0`. Phase 22 is **IN PROGRESS** on
-`feat/phase-22-evidence-matrix-legal-intelligence`; the 22C source-fidelity
-audit is complete, but closeout is blocked by the real AI relevance/fail-closed
-finding and deferred full repository gates. Phase 23 has not started.
+`feat/phase-22-evidence-matrix-legal-intelligence`; Phase 22 is **COMPLETE** at
+tag `phase-22-complete`. The final deterministic AI relevance gate leaves zero
+unsupported answered runs. Phase 23 has not started.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

@@ -29,6 +29,8 @@ from ksc_api.models import (
     DocumentChunk,
     DocumentVersion,
     Finding,
+    FindingEvidenceLink,
+    FindingLinkType,
     Party,
     PromptVersion,
     ResearchNote,
@@ -60,12 +62,14 @@ _SCORE_SCALE = Decimal("0.00000001")
 _PUBLIC = {"public", "public_redacted"}
 _WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9_/-]{2,}")
 _RECORD_REF = re.compile(r"\b(?:KSC-BC-2020-06/)?(F\d{5})(?:/[A-Z0-9/]+)?\b", re.I)
+_ENTITY_REF = re.compile(r"\b(?:F\d{5}|W\d{4,6}|P\d{3,6})\b", re.I)
 _STOPWORDS = {
     "about",
     "according",
     "available",
     "court",
     "does",
+    "did",
     "from",
     "have",
     "record",
@@ -80,6 +84,36 @@ _STOPWORDS = {
     "where",
     "which",
     "with",
+}
+_INTENT_WORDS = {
+    "argue",
+    "argued",
+    "argument",
+    "compare",
+    "comparison",
+    "court",
+    "defence",
+    "evidence",
+    "establish",
+    "established",
+    "explain",
+    "find",
+    "finding",
+    "finds",
+    "panel",
+    "passage",
+    "passages",
+    "position",
+    "prosecution",
+    "relied",
+    "reliance",
+    "rely",
+    "show",
+    "spo",
+    "summarize",
+    "testified",
+    "testimony",
+    "witness",
 }
 
 
@@ -110,6 +144,15 @@ class Candidate:
     method: str = "lexical_fts"
     score: Decimal = Decimal("0")
     metadata: dict[str, str | None] | None = None
+
+
+@dataclass(frozen=True)
+class RelevancePlan:
+    intent: str
+    topic_tokens: tuple[str, ...]
+    identifiers: tuple[str, ...]
+    required_categories: frozenset[str]
+    minimum_sources: int = 1
 
 
 class AiResearchService:
@@ -161,17 +204,42 @@ class AiResearchService:
 
         insufficiency = self._known_insufficiency(question)
         candidates = [] if insufficiency else self._retrieve(question)
-        sources = self._persist_sources(run, candidates)
+        plan = _relevance_plan(question)
+        relevant = [] if insufficiency else self._relevant_candidates(plan, candidates)
+        relevance_failure = None
+        if not insufficiency and len(relevant) < plan.minimum_sources:
+            relevance_failure = (
+                "The available public sources retrieved for this question do not provide "
+                "sufficiently relevant evidence to answer reliably."
+            )
+            relevant = []
+        run.extra = {
+            **(run.extra or {}),
+            "research_intent": plan.intent,
+            "retrieval_candidates": len(candidates),
+            "relevant_sources": len(relevant),
+            "relevance_gate": "deterministic_v1",
+        }
+        sources = self._persist_sources(run, relevant)
         run.retrieved_citation_ids = [
             str(source.citation_id) for source in sources if source.citation_id is not None
         ]
         run.input_sha256 = self._input_hash(question, prompt_hash, sources)
 
-        if insufficiency or not sources:
-            reason = insufficiency or "No verified public source matched the question."
+        if insufficiency or relevance_failure or not sources:
+            reason = (
+                insufficiency
+                or relevance_failure
+                or "No verified public source matched the question."
+            )
             self._withhold(
                 run,
-                [ValidationError("DOCUMENT_NOT_FOUND", reason)],
+                [
+                    ValidationError(
+                        "DOCUMENT_NOT_FOUND" if insufficiency else "INSUFFICIENT_RELEVANCE",
+                        reason,
+                    )
+                ],
                 insufficient=True,
                 structured={"claims": [], "abstention": reason},
             )
@@ -339,6 +407,64 @@ class AiResearchService:
             deduplicated.values(), key=lambda item: (-item.score, item.category, item.ref)
         )
         return ordered[:MAX_SOURCES]
+
+    def _relevant_candidates(
+        self, plan: RelevancePlan, candidates: list[Candidate]
+    ) -> list[Candidate]:
+        reliance_citations: set[uuid.UUID] = set()
+        reliance_versions: set[uuid.UUID] = set()
+        reliance_segments: set[uuid.UUID] = set()
+        if plan.intent == "FIND_COURT_RELIANCE":
+            rows = self.session.execute(
+                select(
+                    FindingEvidenceLink.citation_id,
+                    Citation.target_document_version_id,
+                    Citation.target_transcript_segment_id,
+                )
+                .join(Citation, Citation.id == FindingEvidenceLink.citation_id)
+                .join(Finding, Finding.id == FindingEvidenceLink.finding_id)
+                .where(
+                    Finding.case_id == self.case.id,
+                    FindingEvidenceLink.link_type == FindingLinkType.COURT_RELIES_ON,
+                    FindingEvidenceLink.verification_state != VerificationState.HUMAN_REJECTED,
+                    Citation.resolution_state == ResolutionState.RESOLVED,
+                )
+            ).all()
+            reliance_citations = {row.citation_id for row in rows}
+            reliance_versions = {
+                row.target_document_version_id
+                for row in rows
+                if row.target_document_version_id is not None
+            }
+            reliance_segments = {
+                row.target_transcript_segment_id
+                for row in rows
+                if row.target_transcript_segment_id is not None
+            }
+
+        result: list[Candidate] = []
+        for candidate in candidates:
+            if plan.required_categories and candidate.category not in plan.required_categories:
+                continue
+            if plan.intent == "FIND_COURT_RELIANCE" and not (
+                candidate.citation_id in reliance_citations
+                or candidate.document_version_id in reliance_versions
+                or (
+                    candidate.anchor_kind == "transcript_segment"
+                    and candidate.anchor_id in reliance_segments
+                )
+            ):
+                continue
+            if _candidate_relevant(candidate, plan):
+                result.append(candidate)
+        if plan.intent == "COMPARE_PASSAGES" and plan.identifiers:
+            combined = " ".join(
+                f"{candidate.ref} {candidate.version_ref or ''} {candidate.text}".casefold()
+                for candidate in result
+            )
+            if any(identifier.casefold() not in combined for identifier in plan.identifiers):
+                return []
+        return result[:MAX_SOURCES]
 
     def _structured_candidates(self, tokens: tuple[str, ...]) -> list[Candidate]:
         result: list[Candidate] = []
@@ -594,6 +720,9 @@ class AiResearchService:
                         "speaker": segment.speaker,
                         "speaker_role": segment.speaker_role,
                         "witness_reference": "code_only" if segment.witness_id else None,
+                        "witness_code": (
+                            segment.witness.code if segment.witness is not None else None
+                        ),
                     },
                 )
             )
@@ -749,6 +878,103 @@ def _query_tokens(question: str) -> tuple[str, ...]:
         if len(token) >= 3 and token not in _STOPWORDS and token not in values:
             values.append(token)
     return tuple(values[:12])
+
+
+def _relevance_plan(question: str) -> RelevancePlan:
+    lowered = question.casefold()
+    identifiers = tuple(dict.fromkeys(match.upper() for match in _ENTITY_REF.findall(question)))
+    asks_defence = _asks_party_position(lowered, ("defence",))
+    asks_spo = _asks_party_position(lowered, ("spo", "prosecution"))
+    if any(term in lowered for term in ("compare", "comparison", "difference", "tension")):
+        intent = "COMPARE_PASSAGES"
+        minimum_sources = 2
+    elif ("court" in lowered or "panel" in lowered) and any(
+        term in lowered for term in ("rely", "relied", "reliance")
+    ):
+        intent = "FIND_COURT_RELIANCE"
+        minimum_sources = 1
+    elif asks_defence:
+        intent = "FIND_PARTY_POSITION"
+        minimum_sources = 1
+    elif asks_spo:
+        intent = "FIND_PARTY_POSITION"
+        minimum_sources = 1
+    elif any(term in lowered for term in ("witness", "testimony", "testified")):
+        intent = "FIND_WITNESS_TESTIMONY"
+        minimum_sources = 1
+    elif ("court" in lowered or "panel" in lowered) and any(
+        term in lowered for term in ("finding", "finds", "found")
+    ):
+        intent = "FIND_COURT_FINDING"
+        minimum_sources = 1
+    elif identifiers or "find source" in lowered or "filing" in lowered:
+        intent = "FIND_SOURCE"
+        minimum_sources = 1
+    else:
+        intent = "EXPLAIN_OR_SUMMARIZE"
+        minimum_sources = 1
+
+    required_categories: frozenset[str] = frozenset()
+    if intent == "COMPARE_PASSAGES" and any(
+        term in lowered for term in ("witness", "testimony", "testified")
+    ):
+        required_categories = frozenset({"witness_testimony"})
+    elif (
+        intent == "COMPARE_PASSAGES"
+        and "defence" in lowered
+        and ("spo" in lowered or "prosecution" in lowered)
+    ):
+        required_categories = frozenset({"defence_argument", "spo_argument"})
+    elif intent == "FIND_PARTY_POSITION":
+        required_categories = frozenset({"defence_argument"} if asks_defence else {"spo_argument"})
+    elif intent == "FIND_WITNESS_TESTIMONY":
+        required_categories = frozenset({"witness_testimony"})
+    elif intent == "FIND_COURT_FINDING":
+        required_categories = frozenset({"court_finding", "court_response"})
+
+    topic_tokens = tuple(token for token in _query_tokens(question) if token not in _INTENT_WORDS)
+    return RelevancePlan(
+        intent=intent,
+        topic_tokens=topic_tokens,
+        identifiers=identifiers,
+        required_categories=required_categories,
+        minimum_sources=minimum_sources,
+    )
+
+
+def _asks_party_position(lowered: str, party_terms: tuple[str, ...]) -> bool:
+    position_terms = ("argue", "argued", "argument", "position", "submit", "submitted")
+    for party in party_terms:
+        if party not in lowered:
+            continue
+        if re.search(rf"\b(?:what|how)\s+did\s+(?:the\s+)?{party}\b", lowered):
+            return True
+        if any(term in lowered for term in position_terms):
+            return True
+    return False
+
+
+def _candidate_relevant(candidate: Candidate, plan: RelevancePlan) -> bool:
+    metadata = " ".join(str(value) for value in (candidate.metadata or {}).values() if value)
+    haystack = " ".join(
+        value
+        for value in (candidate.ref, candidate.version_ref or "", candidate.text, metadata)
+        if value
+    ).casefold()
+    if plan.identifiers:
+        matches_identifier = [identifier.casefold() in haystack for identifier in plan.identifiers]
+        if plan.intent == "COMPARE_PASSAGES":
+            if not any(matches_identifier):
+                return False
+        elif not all(matches_identifier):
+            return False
+    if not plan.topic_tokens:
+        return bool(plan.identifiers)
+    matched = sum(token in haystack for token in plan.topic_tokens)
+    if len(plan.topic_tokens) == 1:
+        return matched == 1
+    required_share = Decimal("0.60") if candidate.method == "lexical_fts" else Decimal("0.50")
+    return matched >= 2 and Decimal(matched) / Decimal(len(plan.topic_tokens)) >= required_share
 
 
 def _match_score(text: str, tokens: tuple[str, ...]) -> Decimal:

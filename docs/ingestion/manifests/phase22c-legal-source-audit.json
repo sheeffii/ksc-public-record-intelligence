@@ -2,7 +2,7 @@
   "phase": "22C",
   "audit_date": "2026-09-27",
   "case": "KSC-BC-2020-06",
-  "status": "closeout_blocked",
+  "status": "complete",
   "migration_head": "0019",
   "counts": {
     "findings_in_matrices": 1,
@@ -29,9 +29,13 @@
     "completed_runs": 64,
     "answered_runs": 25,
     "withheld_or_insufficient_runs": 39,
-    "answered_runs_with_low_relevance_retrieval": 25,
+    "answered_runs_with_low_relevance_retrieval": 0,
     "outputs_with_unresolved_citation_claims": 0,
-    "result": "fail_closed_not_demonstrated"
+    "replay_answered": 28,
+    "replay_withheld_or_insufficient": 36,
+    "previous_answered_newly_withheld": 0,
+    "unsupported_answered_runs": 0,
+    "result": "pass"
   },
   "court_relation_correction": {
     "finding_key": "FD-F03752-P12-16",
@@ -44,7 +48,8 @@
     "backend_tests_passed": 9,
     "frontend_tests_passed": 7,
     "ruff": "pass",
-    "full_repository_gate": "deferred_by_operator"
+    "focused_ai_tests_passed": 17,
+    "full_repository_gate": "not_repeated_by_operator_instruction"
   },
-  "completion_tag_created": false
+  "completion_tag_created": true
 }

@@ -6,11 +6,11 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-22-evidence-matrix-legal-intelligence`, created
   from clean, synchronized `main` at Phase 21 closeout `f25cfe0`.
-- Current milestone: **Phase 22 IN PROGRESS**. The 22C legal/source fidelity
-  audit is complete, but closeout is blocked: answered AI runs include
-  low-relevance retrieval material without failing closed, and the operator
-  deferred the full repository gate. Phase 22 is not tagged; Phase 23 has not
-  started. Phase 21 is complete, merged into `main` and
+- Current milestone: **Phase 22 COMPLETE** at annotated tag
+  `phase-22-complete`. The deterministic AI relevance gate resolves the final
+  fail-closed blocker with 0 unsupported answered runs. The feature branch is
+  not merged to `main`; Phase 23 has not started. Phase 21 is complete, merged
+  into `main` and
   tagged `phase-21-complete`.
   Phase 20 is complete at tag `phase-20-complete`. Phase
   19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
@@ -31,7 +31,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. Both are
   contained in `main`.
-- Latest completion tag: annotated `phase-21-complete`.
+- Latest completion tag: annotated `phase-22-complete`.
 - Phase 21 is registered in
   `docs/roadmap/PHASE_21_DESIGN_PARITY_AND_RESEARCH_UX.md`. The actual Home,
   Search, command-search, Evidence Explorer, Document Reader, Mobile and System

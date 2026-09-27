@@ -21,6 +21,7 @@ ERROR_CODES = frozenset(
         "DOCUMENT_NOT_FOUND",
         "TRANSCRIPT_LOCATION_NOT_FOUND",
         "EXHIBIT_NOT_FOUND",
+        "INSUFFICIENT_RELEVANCE",
     }
 )
 
