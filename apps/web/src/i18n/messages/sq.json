@@ -193,6 +193,18 @@
     "witnesses": "Dëshmitarët",
     "witnessDossier": "Dosja e dëshmitarit",
     "statementComparison": "Krahasimi i deklaratave",
+    "witnessComparison": "Krahasimi i dëshmitarit",
+    "witnessComparisonBoundary": "Paraqitjet publike në seancë dhe titujt e marrjes në pyetje tregohen nga burimet e sakta të transkriptit. Krahasimi i fragmenteve mbetet i padisponueshëm derisa dy fragmente publike të lidhura me dëshmitarin të zgjidhen saktë.",
+    "hearingAppearances": "Paraqitjet në seancë",
+    "sessionUnavailable": "Etiketa e seancës nuk është e disponueshme",
+    "publicSessionCounts": "Faqe publike: {open} · Private: {private} · Të mbyllura: {closed}",
+    "noComparablePassages": "Nuk ka çift fragmentesh të sigurt sipas burimit",
+    "noComparablePassagesReason": "Korpusi nuk përmban çift fragmentesh publike të transkriptit të lidhura në mënyrë përcaktuese me dëshmitarin. Nuk nxirret lidhje përtej redaktimeve, seancave private ose deklaratave që mungojnë.",
+    "partyPositionMap": "Harta e qëndrimeve të palëve dhe trajtimi nga Gjykata",
+    "sourceAnchor": "SourceAnchor",
+    "citationAnchor": "burim i saktë i mbështetur me citim",
+    "document": "Dokumenti / versioni",
+    "pageLine": "Faqja / paragrafi / rreshti",
     "documents": "Dokumentet",
     "documentReader": "Lexuesi i dokumenteve",
     "exhibits": "Eksploruesi i provave",
@@ -862,6 +874,29 @@
     "statementA": "Deklarata A",
     "statementB": "Deklarata B",
     "noCredibilityInference": "Asnjë dëshmitar nuk etiketohet i pandershëm ose i pabesueshëm. Dallimet kërkojnë shqyrtim njerëzor.",
+    "sourceCategory": {
+      "court_finding": "GJETJE E GJYKATËS",
+      "spo_argument": "ARGUMENT I ZPS-së",
+      "defence_argument": "ARGUMENT I MBROJTJES",
+      "victims_counsel_argument": "ARGUMENT I MBROJTËSIT TË VIKTIMAVE",
+      "witness_testimony": "DËSHMI E DËSHMITARIT",
+      "document_exhibit": "DOKUMENT / PROVË MATERIALE",
+      "court_response": "TRAJTIM NGA GJYKATA",
+      "public_authority": "AUTORITET PUBLIK",
+      "human_note": "SHËNIM KËRKIMOR NJERËZOR",
+      "ai_analysis": "ANALIZË E IA-së",
+      "external_public_source": "BURIM PUBLIK I JASHTËM"
+    },
+    "sourceScope": {
+      "direct_source": "Burim i drejtpërdrejtë i palës",
+      "court_summary": "Përmbledhje e Gjykatës për qëndrimin e palës",
+      "source_missing": "Burimi bazë nuk është i disponueshëm"
+    },
+    "candidateOrigin": {
+      "source_derived": "E nxjerrë nga burimi",
+      "human_defined": "E përcaktuar nga njeriu",
+      "ai_suggested": "AI_SUGGESTED — kërkohet shqyrtim"
+    },
     "category": {
       "error_of_law": "Gabim juridik",
       "error_of_fact": "Gabim faktik",
@@ -919,9 +954,10 @@
       "source_limitation": "Kufizim i burimit"
     },
     "comparison": {
-      "possible_contradiction": "Kundërthënie e mundshme",
-      "qualification": "Cilësim",
-      "timeline_difference": "Dallim në kronologji",
+      "potential_tension": "POTENTIAL_TENSION",
+      "potential_difference": "POTENTIAL_DIFFERENCE",
+      "potential_qualification": "POTENTIAL_QUALIFICATION",
+      "contradiction": "CONTRADICTION — E SHQYRTUAR NGA NJERIU",
       "consistent": "Në përputhje",
       "not_comparable": "E pakrahasueshme"
     }

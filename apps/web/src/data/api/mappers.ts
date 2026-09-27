@@ -166,6 +166,8 @@ export function toStatementComparison(comparison: ApiStatementComparison): State
       source: findingCitation(comparison.statement_b_citation),
     },
     explanation: comparison.explanation,
+    candidateOrigin: comparison.candidate_origin,
+    reviewProcess: comparison.review_process ?? undefined,
     verification: toVerification(comparison.verification_state) ?? "unreviewed",
   };
 }
@@ -194,6 +196,11 @@ export function toAppealIssue(issue: ApiAppealIssue): AppealIssueView {
       note: source.note ?? undefined,
       verification: toVerification(source.verification_state) ?? "unreviewed",
       source: findingCitation(source.citation),
+      classificationOrigin: source.classification_origin,
+      reviewStatus: source.review_status,
+      sourceAnchorId: source.source_anchor_id ?? undefined,
+      partyAttribution: source.party_attribution ?? undefined,
+      sourceScope: source.source_scope ?? undefined,
     })),
     missingMaterial: issue.missing_material,
     comparisons: issue.statement_comparisons.map(toStatementComparison),

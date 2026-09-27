@@ -718,6 +718,8 @@ export interface ApiStatementComparison {
   statement_a_citation: ApiCitation;
   statement_b_citation: ApiCitation;
   explanation: string;
+  candidate_origin: "source_derived" | "human_defined" | "ai_suggested";
+  review_process: string | null;
   verification_state: ApiVerificationState;
 }
 
@@ -741,6 +743,12 @@ export interface ApiAppealIssue extends ApiAppealIssueSummary {
     note: string | null;
     verification_state: ApiVerificationState;
     citation: ApiCitation;
+    classification_origin: "source_derived" | "human_defined" | "ai_suggested";
+    review_process: string | null;
+    review_status: string;
+    source_anchor_id: string | null;
+    party_attribution: string | null;
+    source_scope: "direct_source" | "court_summary" | "source_missing" | null;
   }[];
   missing_material: { reference: string; kind: string; reason: string; state: string }[];
   statement_comparisons: ApiStatementComparison[];

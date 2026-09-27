@@ -60,6 +60,8 @@ const issue: AppealIssueView = {
       category: "court_finding",
       excerpt: "Exact Court passage.",
       verification: "verified",
+      classificationOrigin: "source_derived",
+      reviewStatus: "verified_source_relation",
       source,
     },
   ],

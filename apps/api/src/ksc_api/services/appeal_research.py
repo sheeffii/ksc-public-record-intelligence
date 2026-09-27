@@ -202,6 +202,8 @@ class AppealResearchService:
             statement_a_citation=mappers.to_citation(row.statement_a_citation),
             statement_b_citation=mappers.to_citation(row.statement_b_citation),
             explanation=row.explanation,
+            candidate_origin=row.candidate_origin,
+            review_process=row.review_process,
             verification_state=row.verification_state,
             verified_by=row.verified_by,
             verified_at=row.verified_at,
@@ -313,6 +315,12 @@ class AppealResearchService:
                         source.classification_origin, source.verification_state
                     ),
                     source_anchor_id=source.source_anchor_id,
+                    party_attribution=(
+                        source.argument.party_attribution if source.argument is not None else None
+                    ),
+                    source_scope=(
+                        source.argument.source_scope if source.argument is not None else None
+                    ),
                 )
                 for source in issue.sources
             ],

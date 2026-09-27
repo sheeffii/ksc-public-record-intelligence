@@ -156,8 +156,12 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
 - Migration round-trip/schema comparison, focused semantic/API/UI/path checks,
   `make lint`, `make typecheck` and `make test` pass (357 backend and 260
   frontend tests).
-- Phase 22 remains **IN PROGRESS**. 22B is **NEXT**, not authorized and not
-  started.
+- Phase 22 remains **IN PROGRESS**. 22B is implemented with targeted
+  verification, but is not complete because the operator deferred the full
+  repository gate. The real corpus has 0 comparison-ready witnesses, 0
+  comparable passage groups, 2 separately attributed party-position rows, 1
+  issue, 1 issue/finding link and 74,036 SourceAnchors. Phase 22C has not
+  started. See `docs/ingestion/PHASE22B_LEGAL_RESEARCH_REPORT.md`.
 
 ## Completed features (Phase 4)
 

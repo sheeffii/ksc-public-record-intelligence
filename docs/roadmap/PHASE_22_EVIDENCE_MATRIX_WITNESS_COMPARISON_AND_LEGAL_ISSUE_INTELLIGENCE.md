@@ -157,7 +157,7 @@ Additional permanent rules:
 | Checkpoint | Scope | Status / stop rule |
 |---|---|---|
 | **22A** | Evidence Matrix + legal-issue/finding architecture | **COMPLETE (2026-09-27)**. |
-| **22B** | Witness comparison + party-position mapping + research intelligence | **NEXT; not authorized.** Stop after 22A. |
+| **22B** | Witness comparison + party-position mapping + research intelligence | **IMPLEMENTED; targeted verification passed, full checkpoint gate deferred.** |
 | **22C** | Deep legal/source fidelity audit + closeout | Not started. Stop after 22B until explicitly authorized. |
 
 Each checkpoint has separate implementation, verification and documentation.
@@ -457,7 +457,25 @@ Stop after Phase 22 closeout. Do not begin a later phase automatically.
 
 ### 22B
 
-`NOT STARTED`
+**IMPLEMENTED — TARGETED VERIFICATION 2026-09-27; NOT YET COMPLETE**
+
+- Witness comparison routes now expose the real hearing appearance,
+  session/examination and exact transcript-source trail. The controlled corpus
+  has 0 source-safe witness passage pairs, so the workflow stops at an honest
+  missing-pair state rather than inferring testimony relationships.
+- The issue workspace displays SPO, Defence and Court treatment with explicit
+  party attribution, direct-source/Court-summary scope, exact excerpts,
+  SourceAnchor identifiers and Reader links. Victims' Counsel remains a
+  distinct empty category in this benchmark.
+- Migration `0018` replaces ambiguous machine-facing labels with
+  `POTENTIAL_TENSION`, `POTENTIAL_DIFFERENCE` and
+  `POTENTIAL_QUALIFICATION`; `CONTRADICTION` requires identified human review,
+  and `AI_SUGGESTED` cannot be verified automatically.
+- Actual counts and focused checks are recorded in
+  `docs/ingestion/PHASE22B_LEGAL_RESEARCH_REPORT.md`.
+- The operator explicitly deferred the full repository quality gate to the
+  next step. Do not mark 22B complete and do not start 22C until that gate and
+  remaining B4 acceptance review are run.
 
 ### 22C
 

@@ -193,6 +193,18 @@
     "witnesses": "Witnesses",
     "witnessDossier": "Witness Dossier",
     "statementComparison": "Statement Comparison",
+    "witnessComparison": "Witness comparison",
+    "witnessComparisonBoundary": "Public hearing appearances and examination headings are shown from exact transcript sources. Passage comparison remains unavailable until two witness-linked public passages resolve exactly.",
+    "hearingAppearances": "Hearing appearances",
+    "sessionUnavailable": "Session label unavailable",
+    "publicSessionCounts": "Open pages: {open} · Private pages: {private} · Closed pages: {closed}",
+    "noComparablePassages": "No source-safe passage pair",
+    "noComparablePassagesReason": "The corpus contains no deterministically witness-linked pair of public transcript passages. No relationship is inferred across redactions, private sessions or missing statements.",
+    "partyPositionMap": "Party position map and Court treatment",
+    "sourceAnchor": "SourceAnchor",
+    "citationAnchor": "citation-backed exact source",
+    "document": "Document / version",
+    "pageLine": "Page / paragraph / line",
     "documents": "Documents",
     "documentReader": "Document Reader",
     "exhibits": "Evidence Explorer",
@@ -862,6 +874,29 @@
     "statementA": "Statement A",
     "statementB": "Statement B",
     "noCredibilityInference": "No witness is labelled dishonest or unreliable. Differences require human review.",
+    "sourceCategory": {
+      "court_finding": "COURT FINDING",
+      "spo_argument": "SPO ARGUMENT",
+      "defence_argument": "DEFENCE ARGUMENT",
+      "victims_counsel_argument": "VICTIMS' COUNSEL ARGUMENT",
+      "witness_testimony": "WITNESS TESTIMONY",
+      "document_exhibit": "DOCUMENT / EXHIBIT",
+      "court_response": "COURT TREATMENT",
+      "public_authority": "PUBLIC AUTHORITY",
+      "human_note": "HUMAN RESEARCH NOTE",
+      "ai_analysis": "AI ANALYSIS",
+      "external_public_source": "EXTERNAL PUBLIC SOURCE"
+    },
+    "sourceScope": {
+      "direct_source": "Direct party source",
+      "court_summary": "Court summary of party position",
+      "source_missing": "Underlying source unavailable"
+    },
+    "candidateOrigin": {
+      "source_derived": "Source-derived",
+      "human_defined": "Human-defined",
+      "ai_suggested": "AI_SUGGESTED — review required"
+    },
     "category": {
       "error_of_law": "Error of Law",
       "error_of_fact": "Error of Fact",
@@ -919,9 +954,10 @@
       "source_limitation": "Source Limitation"
     },
     "comparison": {
-      "possible_contradiction": "Possible Contradiction",
-      "qualification": "Qualification",
-      "timeline_difference": "Timeline Difference",
+      "potential_tension": "POTENTIAL_TENSION",
+      "potential_difference": "POTENTIAL_DIFFERENCE",
+      "potential_qualification": "POTENTIAL_QUALIFICATION",
+      "contradiction": "CONTRADICTION — HUMAN REVIEWED",
       "consistent": "Consistent",
       "not_comparable": "Not Comparable"
     }

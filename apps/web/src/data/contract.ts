@@ -439,6 +439,8 @@ export interface StatementComparisonView {
   statementA: { excerpt: string; speaker?: string; source: FindingCitationView };
   statementB: { excerpt: string; speaker?: string; source: FindingCitationView };
   explanation: string;
+  candidateOrigin: "source_derived" | "human_defined" | "ai_suggested";
+  reviewProcess?: string;
   verification: VerificationState;
 }
 
@@ -453,6 +455,11 @@ export interface AppealIssueView extends AppealIssueSummaryView {
     note?: string;
     verification: VerificationState;
     source: FindingCitationView;
+    classificationOrigin: "source_derived" | "human_defined" | "ai_suggested";
+    reviewStatus: string;
+    sourceAnchorId?: string;
+    partyAttribution?: string;
+    sourceScope?: "direct_source" | "court_summary" | "source_missing";
   }[];
   missingMaterial: readonly { reference: string; kind: string; reason: string; state: string }[];
   comparisons: readonly StatementComparisonView[];

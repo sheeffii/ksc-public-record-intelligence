@@ -215,9 +215,23 @@ class StatementComparison(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin
     __table_args__ = (
         UniqueConstraint("case_id", "comparison_key", name="uq_statement_comparisons_case_key"),
         CheckConstraint(
-            "classification IN ('possible_contradiction', 'qualification', "
-            "'timeline_difference', 'consistent', 'not_comparable')",
+            "classification IN ('potential_tension', 'potential_difference', "
+            "'potential_qualification', 'contradiction', 'consistent', 'not_comparable')",
             name="classification_allowed",
+        ),
+        CheckConstraint(
+            "candidate_origin IN ('source_derived', 'human_defined', 'ai_suggested')",
+            name="candidate_origin_allowed",
+        ),
+        CheckConstraint(
+            "classification != 'contradiction' OR (verification_state = 'human_verified' "
+            "AND verified_by IS NOT NULL)",
+            name="contradiction_requires_human_review",
+        ),
+        CheckConstraint(
+            "candidate_origin != 'ai_suggested' OR verification_state IN "
+            "('unreviewed', 'ai_flagged', 'needs_more_evidence', 'unresolved')",
+            name="ai_suggestion_not_verified",
         ),
         CheckConstraint(
             "comparison_type IN ('witness_statement_testimony', 'testimony_testimony', "
@@ -252,6 +266,10 @@ class StatementComparison(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin
     statement_b_speaker: Mapped[str | None] = mapped_column(String(128))
     explanation: Mapped[str] = mapped_column(Text, nullable=False)
     extraction_origin: Mapped[str] = mapped_column(String(64), nullable=False)
+    candidate_origin: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="source_derived", server_default="source_derived"
+    )
+    review_process: Mapped[str | None] = mapped_column(String(128))
 
     issue: Mapped[AppealIssue | None] = relationship()
     statement_a_citation: Mapped[Citation] = relationship(foreign_keys=[statement_a_citation_id])

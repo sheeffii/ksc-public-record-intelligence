@@ -214,6 +214,11 @@ export function RealWitnessScreen({
               <p className="text-fg-secondary text-[11px] leading-relaxed">
                 {t18("sourceNavigationHint")}
               </p>
+              <div className="mt-3">
+                <ActionLink href={`/witnesses/${encodeURIComponent(witness.code)}/compare`}>
+                  {t("statementComparison")}
+                </ActionLink>
+              </div>
             </Panel>
           </div>
           <div className="space-y-3">

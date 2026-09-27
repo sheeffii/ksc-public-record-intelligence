@@ -8,6 +8,7 @@ import type {
   ArgumentLabView,
   FindingCitationView,
   StatementComparisonView,
+  WitnessAppearanceView,
 } from "@/data";
 import { EmptyState, GapNotice } from "@/components/primitives/States";
 import { Panel } from "@/components/primitives/Panel";
@@ -98,26 +99,43 @@ export function RealAppealScreen({
                 </div>
                 <p className="text-fg-secondary mt-3 text-[11px]">{issue.courtTreatmentNote}</p>
               </SectionCard>
-              <div className="grid gap-3 lg:grid-cols-2">
-                {issue.sources.map((source) => (
-                  <RecordBlock
-                    key={source.id}
-                    sourceType={source.source.citation.sourceType}
-                    title={t(`role.${source.role}`)}
-                  >
-                    <p className="line-clamp-8 font-serif text-[12px] leading-relaxed whitespace-pre-line">
-                      {source.excerpt}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <SourceLink source={source.source} />
-                      <VerificationBadge state={source.verification} size="sm" />
-                    </div>
-                    {source.note ? (
-                      <p className="text-fg-muted mt-2 text-[10px]">{source.note}</p>
-                    ) : null}
-                  </RecordBlock>
-                ))}
-              </div>
+              <SectionCard title={t("partyPositionMap")}>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {issue.sources.map((source) => (
+                    <RecordBlock
+                      key={source.id}
+                      sourceType={source.source.citation.sourceType}
+                      title={t(`role.${source.role}`)}
+                    >
+                      <div className="mb-2 flex flex-wrap gap-2 text-[10px]">
+                        <span className="rounded-badge bg-surface-high px-2 py-1 font-semibold">
+                          {source.partyAttribution ?? t(`sourceCategory.${source.category}`)}
+                        </span>
+                        {source.sourceScope ? (
+                          <span className="rounded-badge bg-surface-raised px-2 py-1">
+                            {t(`sourceScope.${source.sourceScope}`)}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="line-clamp-8 font-serif text-[12px] leading-relaxed whitespace-pre-line">
+                        {source.excerpt}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <SourceLink source={source.source} />
+                        <VerificationBadge state={source.verification} size="sm" />
+                      </div>
+                      {source.sourceAnchorId ? (
+                        <p className="text-fg-muted mt-2 font-mono text-[9px]">
+                          {t("sourceAnchor")}: {source.sourceAnchorId}
+                        </p>
+                      ) : null}
+                      {source.note ? (
+                        <p className="text-fg-muted mt-2 text-[10px]">{source.note}</p>
+                      ) : null}
+                    </RecordBlock>
+                  ))}
+                </div>
+              </SectionCard>
               <SectionCard title={t("missingMaterial")}>
                 <div className="grid gap-2 md:grid-cols-2">
                   {issue.missingMaterial.map((item) => (
@@ -276,6 +294,9 @@ export function RealStatementComparisonScreen({
           <span className="rounded-badge bg-surface-raised px-2 py-1 text-[10px]">
             {t(`comparison.${comparison.classification}`)}
           </span>
+          <span className="text-fg-muted ml-2 text-[10px]">
+            {t(`candidateOrigin.${comparison.candidateOrigin}`)}
+          </span>
           <div className="mt-3 grid gap-4 md:grid-cols-2">
             {([comparison.statementA, comparison.statementB] as const).map((statement, index) => (
               <RecordBlock
@@ -287,6 +308,14 @@ export function RealStatementComparisonScreen({
                   <p className="text-fg-muted text-[10px]">{statement.speaker}</p>
                 ) : null}
                 <p className="mt-2 font-serif text-[12px] leading-relaxed">{statement.excerpt}</p>
+                <dl className="text-fg-secondary mt-3 grid grid-cols-2 gap-1 text-[10px]">
+                  <dt>{t("document")}</dt>
+                  <dd>{statement.source.citation.docId}</dd>
+                  <dt>{t("pageLine")}</dt>
+                  <dd>{statement.source.citation.display}</dd>
+                  <dt>{t("sourceAnchor")}</dt>
+                  <dd>{t("citationAnchor")}</dd>
+                </dl>
                 <div className="mt-2">
                   <SourceLink source={statement.source} />
                 </div>
@@ -295,6 +324,66 @@ export function RealStatementComparisonScreen({
           </div>
           <p className="text-fg-secondary mt-3 text-[11px]">{comparison.explanation}</p>
         </SectionCard>
+        <NoteStrip tone="legal">{t("noCredibilityInference")}</NoteStrip>
+      </div>
+    </AppShell>
+  );
+}
+
+export function RealWitnessComparisonScreen({
+  code,
+  appearances,
+}: {
+  code: string;
+  appearances: readonly WitnessAppearanceView[];
+}) {
+  const t = useTranslations("phase12");
+  return (
+    <AppShell showDemoFlag={false} footer={t("noCredibilityInference")}>
+      <ScreenHeader
+        eyebrow={code}
+        title={t("witnessComparison")}
+        description={t("witnessComparisonBoundary")}
+        realData
+      />
+      <div className="mx-auto w-full max-w-[1200px] space-y-4 p-3 md:p-4">
+        <SectionCard title={t("hearingAppearances")}>
+          <div className="grid gap-3 md:grid-cols-2">
+            {appearances.map((appearance, index) => (
+              <RecordBlock
+                key={`${appearance.versionRef}-${index}`}
+                sourceType="witness"
+                title={`${appearance.hearingDate} · ${appearance.versionRef}`}
+              >
+                <p className="text-fg-secondary text-[10px]">
+                  {appearance.sessionLabel ?? t("sessionUnavailable")} ·{" "}
+                  {appearance.language ?? "—"}
+                </p>
+                <p className="text-fg-secondary mt-2 text-[11px]">
+                  {t("publicSessionCounts", {
+                    open: appearance.openSessionPages,
+                    private: appearance.privateSessionPages,
+                    closed: appearance.closedSessionPages,
+                  })}
+                </p>
+                <ul className="mt-2 space-y-1 text-[11px]">
+                  {appearance.examinations.map((exam) => (
+                    <li key={`${exam.page ?? "x"}-${exam.text}`}>
+                      {exam.page ?? "—"} · {exam.text}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={appearance.provenance.href}
+                  className="text-accent mt-3 block text-[10px] font-semibold"
+                >
+                  {t("openExactSource")}
+                </Link>
+              </RecordBlock>
+            ))}
+          </div>
+        </SectionCard>
+        <EmptyState title={t("noComparablePassages")} reason={t("noComparablePassagesReason")} />
         <NoteStrip tone="legal">{t("noCredibilityInference")}</NoteStrip>
       </div>
     </AppShell>

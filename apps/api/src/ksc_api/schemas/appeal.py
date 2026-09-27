@@ -51,6 +51,8 @@ class AppealSourceRead(ReadModel):
         "verified_source_relation", "human_reviewed", "review_required", "ai_suggested"
     ]
     source_anchor_id: uuid.UUID | None
+    party_attribution: str | None
+    source_scope: Literal["direct_source", "court_summary", "source_missing"] | None
 
 
 class MissingMaterialRead(ReadModel):
@@ -151,9 +153,10 @@ class StatementComparisonRead(ReadModel):
     title: str
     comparison_type: str
     classification: Literal[
-        "possible_contradiction",
-        "qualification",
-        "timeline_difference",
+        "potential_tension",
+        "potential_difference",
+        "potential_qualification",
+        "contradiction",
         "consistent",
         "not_comparable",
     ]
@@ -164,6 +167,8 @@ class StatementComparisonRead(ReadModel):
     statement_a_citation: CitationRead
     statement_b_citation: CitationRead
     explanation: str
+    candidate_origin: Literal["source_derived", "human_defined", "ai_suggested"]
+    review_process: str | None
     verification_state: VerificationState
     verified_by: str | None
     verified_at: datetime | None
