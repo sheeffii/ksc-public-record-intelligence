@@ -4,13 +4,14 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/reader-design-sync-polish`, created in a clean temporary
-  worktree from `origin/main` at Phase 22 closeout `153fb7e`. The original
-  Phase 22 / Legal Tools workspace was not modified.
+- Current branch: `main`, after fast-forwarding the completed
+  `feat/reader-design-sync-polish` work. The original Phase 22 / Legal Tools
+  workspace was not modified.
 - Current milestone: **Phase 22 COMPLETE** at annotated tag
   `phase-22-complete`. The deterministic AI relevance gate resolves the final
-  fail-closed blocker with 0 unsupported answered runs. The feature branch is
-  not merged to `main`; Phase 23 has not started. Phase 21 is complete, merged
+  fail-closed blocker with 0 unsupported answered runs. Phase 22 and the
+  Reader/Timeline parity follow-up are merged into `main`; Phase 23 has not
+  started. Phase 21 is complete, merged
   into `main` and
   tagged `phase-21-complete`.
   Phase 20 is complete at tag `phase-20-complete`. Phase
@@ -33,7 +34,7 @@ Live checkpoint. Repository state wins over this note.
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. Both are
   contained in `main`.
 - Latest completion tag: annotated `phase-22-complete`.
-- Post-Phase-22 Reader/UI polish is complete on the current feature branch:
+- Post-Phase-22 Reader/UI polish is complete and merged into `main`:
   page-local synchronized text now reads the exact `document_pages` row for
   PDF page N; page changes clear stale display/scroll state; exact text anchors,
   transcript segments and PDF regions synchronize deterministically; and the

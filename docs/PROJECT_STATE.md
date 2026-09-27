@@ -63,16 +63,16 @@ complete on `feat/phase-21-design-parity-research-ux`: Passes A–C align all
 real research workflows with `Design.html` while preserving the source-native
 Reader and evidence-integrity boundaries. The tag is `phase-21-complete`.
 Phase 21 is merged into synchronized `main` at `f25cfe0`. Phase 22 is
-**COMPLETE** on `feat/phase-22-evidence-matrix-legal-intelligence` at tag
-`phase-22-complete`. The deterministic AI relevance gate resolves the final
-fail-closed blocker. The branch is not merged to `main`; Phase 23 has not begun.
+**COMPLETE** at tag `phase-22-complete` and is contained in `main`. The
+deterministic AI relevance gate resolves the final fail-closed blocker. The
+Reader/Timeline parity follow-up is also merged; Phase 23 has not begun.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Reader design and synchronization polish (2026-09-28)
 
 - Branch `feat/reader-design-sync-polish` was created in a clean temporary
-  worktree from current `origin/main`; the unrelated Legal Tools workspace was
-  not changed.
+  worktree from `origin/main` and fast-forwarded into `main`; the unrelated
+  Legal Tools workspace was not changed.
 - The Reader now uses the exact page-local `document_pages` text for PDF page N
   instead of presenting a potentially cross-page retrieval chunk. Page changes
   hide stale text/context immediately and reset the inspector scroll position.
