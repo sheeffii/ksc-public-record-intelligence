@@ -71,4 +71,35 @@ describe("Phase 20B reader data", () => {
       "http://api/api/v1/document-versions/KSC-BC-2020-06/T/2024-04-29/source-search?q=solemn",
     );
   });
+
+  it("loads synchronized source text from exactly one PDF page", async () => {
+    const calls: string[] = [];
+    const client = createReaderClient("http://api", async (input) => {
+      calls.push(input);
+      return new Response(
+        JSON.stringify({
+          items: [
+            {
+              pdf_page_index: 122,
+              page_number: 119,
+              printed_page_label: "119",
+              text: "287. Exact page-local court text.",
+            },
+          ],
+        }),
+      );
+    });
+
+    const page = await client.page("KSC-BC-2020-06/F03664/RED2", 122);
+
+    expect(page).toEqual({
+      pdfPageIndex: 122,
+      pageNumber: 119,
+      printedPageLabel: "119",
+      text: "287. Exact page-local court text.",
+    });
+    expect(calls).toEqual([
+      "http://api/api/v1/document-versions/KSC-BC-2020-06/F03664/RED2/pages?limit=1&offset=122",
+    ]);
+  });
 });

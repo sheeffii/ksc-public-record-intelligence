@@ -32,7 +32,7 @@ import {
   type OverlayKind,
   type PageContext,
   type PageOverlay,
-  type ParsedChunkView,
+  type ParsedPageView,
   type SourcePrecision,
   type TranscriptOutline,
   type TranscriptSegmentPage,
@@ -66,6 +66,7 @@ interface ActiveSource {
   key: string;
   kind: OverlayKind | "segment" | "anchor";
   label: string;
+  exactText?: string;
   pdfPageIndex?: number;
   precision: SourcePrecision;
   failureReason?: string;
@@ -75,6 +76,35 @@ interface ActiveSource {
   versionRef?: string;
   pageWidth?: number;
   pageHeight?: number;
+}
+
+/** Preserve page text verbatim while presenting source-separated blocks. */
+export function splitParsedPageText(text: string | undefined): readonly string[] {
+  if (!text) return [];
+  const lines = text.match(/[^\n]*(?:\n|$)/g)?.filter(Boolean) ?? [];
+  const blocks: string[] = [];
+  let block = "";
+  for (const line of lines) {
+    const value = line.trim();
+    const startsNumberedParagraph = /^\d{1,5}[.)]\s/.test(value);
+    if (startsNumberedParagraph && block.trim()) {
+      blocks.push(block);
+      block = "";
+    }
+    block += line;
+    const shortStructuralLine =
+      value.length > 0 &&
+      value.length < 90 &&
+      (/^[A-Z\d][A-Z\d\s:/.,'’()\-–—]+$/.test(value) ||
+        /^(Date|Before|Name|Registrar):/i.test(value));
+    const sentenceBoundary = block.length >= 260 && /[.!?][”’"')\]]?$/.test(value);
+    if (shortStructuralLine || sentenceBoundary) {
+      blocks.push(block);
+      block = "";
+    }
+  }
+  if (block) blocks.push(block);
+  return blocks.length ? blocks : [text];
 }
 
 interface Filters {
@@ -97,7 +127,7 @@ export interface SourceReaderProps {
   focusSegmentId?: string;
   outline: TranscriptOutline | null;
   initialSegments: TranscriptSegmentPage | null;
-  initialChunks: readonly ParsedChunkView[];
+  initialPageText: ParsedPageView | null;
   initialContext: PageContext | null;
 }
 
@@ -123,6 +153,7 @@ function segmentSource(
     ]
       .filter(Boolean)
       .join(" · "),
+    exactText: segment.text,
     pdfPageIndex: segment.pdfPageIndex,
     precision: segment.anchor.precision,
     failureReason: segment.anchor.failureReason,
@@ -138,16 +169,7 @@ function inRegion(regions: PdfHighlight["regions"], x: number, y: number): boole
 }
 
 export function SourceReader(props: SourceReaderProps) {
-  const {
-    routeId,
-    document,
-    apiBaseUrl,
-    outline,
-    sourceAnchor,
-    initialPara,
-    initialLine,
-    highlight,
-  } = props;
+  const { routeId, document, apiBaseUrl, outline, sourceAnchor, initialLine, highlight } = props;
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
   const t15 = useTranslations("phase15");
@@ -163,12 +185,14 @@ export function SourceReader(props: SourceReaderProps) {
   );
   const [showText, setShowText] = useState(true);
   const [showContext, setShowContext] = useState(true);
+  const [inspectorPane, setInspectorPane] = useState<"text" | "context">("text");
   const [pane, setPane] = useState<Pane>("source");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pdfFit, setPdfFit] = useState<PdfFit>("width");
   const [pdfZoom, setPdfZoom] = useState(1);
   const [pdfScale, setPdfScale] = useState(1);
   const [pdfPages, setPdfPages] = useState<number>();
+  const [pageInput, setPageInput] = useState(String(props.initialPdfPage + 1));
   const [pdfError, setPdfError] = useState<string>();
   const onPdfPages = useCallback((count: number) => setPdfPages(count), []);
   const onPdfScale = useCallback((scale: number) => setPdfScale(scale), []);
@@ -179,7 +203,7 @@ export function SourceReader(props: SourceReaderProps) {
   const [segments, setSegments] = useState<readonly TranscriptSegmentView[]>(
     props.initialSegments?.items ?? [],
   );
-  const [chunks, setChunks] = useState<readonly ParsedChunkView[]>(props.initialChunks);
+  const [pageText, setPageText] = useState<ParsedPageView | null>(props.initialPageText);
   const [loading, setLoading] = useState(false);
   const [contextTab, setContextTab] = useState<ContextTab>("summary");
   const [focusSegment, setFocusSegment] = useState<string | undefined>(props.focusSegmentId);
@@ -189,6 +213,7 @@ export function SourceReader(props: SourceReaderProps) {
           key: `anchor-${sourceAnchor.id}`,
           kind: "anchor",
           label: sourceAnchor.exactText ?? sourceAnchor.officialVersionRef,
+          exactText: sourceAnchor.exactText,
           pdfPageIndex: sourceAnchor.pdfPageIndex,
           precision: sourceAnchor.precision,
           failureReason: sourceAnchor.failureReason,
@@ -212,13 +237,21 @@ export function SourceReader(props: SourceReaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [search, setSearch] = useState<LocalSearchResult | null>(null);
   const firstLoad = useRef(true);
+  const inspectorScrollRef = useRef<HTMLElement>(null);
 
   const pageCount = document.pageCount ?? pdfPages;
   const lastPage = pageCount !== undefined ? Math.max(0, pageCount - 1) : pdfPage;
-  const pageWidth = context?.pageWidth ?? active?.pageWidth;
-  const pageHeight = context?.pageHeight ?? active?.pageHeight;
-  const header = context?.transcriptHeader;
+  const pageContext = context?.pdfPageIndex === pdfPage ? context : null;
+  const pageSegments = segments.filter((segment) => segment.pdfPageIndex === pdfPage);
+  const synchronizedPageText = pageText?.pdfPageIndex === pdfPage ? pageText : null;
+  const pageWidth = pageContext?.pageWidth ?? active?.pageWidth;
+  const pageHeight = pageContext?.pageHeight ?? active?.pageHeight;
+  const header = pageContext?.transcriptHeader;
   const exactPattern = useMemo(() => exactSourcePattern(highlight), [highlight]);
+  const pageBlocks = useMemo(
+    () => splitParsedPageText(synchronizedPageText?.text),
+    [synchronizedPageText?.text],
+  );
 
   // ------------------------------------------------ page-scoped loading --
   useEffect(() => {
@@ -243,7 +276,7 @@ export function SourceReader(props: SourceReaderProps) {
       );
     } else {
       loads.push(
-        reader.chunks(versionRef, pdfPage).then((value) => !cancelled && setChunks(value)),
+        reader.page(versionRef, pdfPage).then((value) => !cancelled && setPageText(value)),
       );
     }
     void Promise.allSettled(loads).then(() => !cancelled && setLoading(false));
@@ -275,12 +308,26 @@ export function SourceReader(props: SourceReaderProps) {
       ?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   }, [focusSegment, segments]);
 
+  useEffect(() => {
+    if (!active?.exactText) return;
+    window.document
+      .querySelector('[data-source-text-selected="true"]')
+      ?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [active?.key, active?.exactText, pageText]);
+
+  // A synchronized page change always starts at the matching page header,
+  // never at the previous page's inspector scroll offset.
+  useEffect(() => {
+    inspectorScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+  }, [pdfPage, versionRef]);
+
   const goToPage = useCallback(
     (next: number, focus?: string) => {
       const target = Math.min(Math.max(0, next), lastPage);
       setFocusSegment(focus);
       setActive((current) => (current && current.pdfPageIndex === target ? current : undefined));
       setPdfError(undefined);
+      setPageInput(String(target + 1));
       setPdfPage(target);
     },
     [lastPage],
@@ -301,6 +348,7 @@ export function SourceReader(props: SourceReaderProps) {
         key: `overlay-${overlay.anchorId}`,
         kind: overlay.kind,
         label: overlay.label,
+        exactText: overlay.exactText,
         pdfPageIndex: pdfPage,
         precision: overlay.precision,
         failureReason: overlay.failureReason,
@@ -308,7 +356,9 @@ export function SourceReader(props: SourceReaderProps) {
         segmentId: overlay.transcriptSegmentId,
       });
       if (overlay.transcriptSegmentId) setFocusSegment(overlay.transcriptSegmentId);
-      setPane("source");
+      setInspectorPane("text");
+      setShowText(true);
+      setPane(overlay.exactText ? "text" : "source");
     },
     [pdfPage],
   );
@@ -316,15 +366,22 @@ export function SourceReader(props: SourceReaderProps) {
   // Reverse synchronization: only validated segment line geometry responds.
   const onPdfPoint = useCallback(
     (x: number, y: number) => {
-      const hit = segments.find(
+      const segmentHit = pageSegments.find(
         (segment) =>
           segment.anchor &&
           EXACT.includes(segment.anchor.precision) &&
           inRegion(segment.anchor.regions, x, y),
       );
-      if (hit) selectSegment(hit);
+      if (segmentHit) {
+        selectSegment(segmentHit);
+        return;
+      }
+      const overlayHit = pageContext?.overlays.find(
+        (overlay) => EXACT.includes(overlay.precision) && inRegion(overlay.regions, x, y),
+      );
+      if (overlayHit) showOverlay(overlayHit);
     },
-    [segments, selectSegment],
+    [pageContext?.overlays, pageSegments, selectSegment, showOverlay],
   );
 
   const pdfHighlight: PdfHighlight | undefined =
@@ -371,7 +428,7 @@ export function SourceReader(props: SourceReaderProps) {
 
   const precisionLabel = (precision: SourcePrecision) => t20(`precisionLabel.${precision}`);
   const kindLabel = (kind: ActiveSource["kind"]) => t20(`kind.${kind}`);
-  const tabOverlays = (context?.overlays ?? []).filter((overlay) =>
+  const tabOverlays = (pageContext?.overlays ?? []).filter((overlay) =>
     TAB_KINDS[contextTab].includes(overlay.kind),
   );
   const hasFilters = Boolean(
@@ -396,7 +453,7 @@ export function SourceReader(props: SourceReaderProps) {
             pageSize={
               pageWidth && pageHeight ? { width: pageWidth, height: pageHeight } : undefined
             }
-            onPointClick={isTranscript ? onPdfPoint : undefined}
+            onPointClick={onPdfPoint}
             onPageCount={onPdfPages}
             onScale={onPdfScale}
             onError={onPdfError}
@@ -406,11 +463,11 @@ export function SourceReader(props: SourceReaderProps) {
             <span className="text-fg-secondary">
               {t20("pdfPage", { page: pdfPage + 1, total: pageCount ?? "—" })}
             </span>
-            {context?.pageNumber ? (
+            {pageContext?.pageNumber ? (
               <span className="text-fg-secondary tabular">
                 {isTranscript
-                  ? t20("transcriptPage", { page: context.pageNumber })
-                  : `p. ${context.pageNumber}`}
+                  ? t20("transcriptPage", { page: pageContext.pageNumber })
+                  : `p. ${pageContext.pageNumber}`}
               </span>
             ) : null}
             {document.sourceUrl ? (
@@ -424,7 +481,7 @@ export function SourceReader(props: SourceReaderProps) {
               </a>
             ) : null}
           </div>
-          {context?.geometryState === "ocr_required" ? (
+          {pageContext?.geometryState === "ocr_required" ? (
             <div
               data-ocr-required
               className="border-border bg-surface-raised rounded-card border border-dashed p-3 text-[11px]"
@@ -559,12 +616,12 @@ export function SourceReader(props: SourceReaderProps) {
         </div>
       ) : (
         <ol aria-label={t20("synchronizedText")} className="space-y-1" data-transcript-segments>
-          {segments.length === 0 ? (
+          {pageSegments.length === 0 ? (
             <li>
               <EmptyState title={t20("noSegments")} reason={`${versionRef} · PDF ${pdfPage + 1}`} />
             </li>
           ) : null}
-          {segments.map((segment) => {
+          {pageSegments.map((segment) => {
             const focused = focusSegment === segment.id;
             const marksHere =
               initialLine === undefined ||
@@ -640,48 +697,87 @@ export function SourceReader(props: SourceReaderProps) {
 
   const paragraphText = (
     <div className="space-y-3">
-      {chunks.length === 0 ? (
+      {pageBlocks.length === 0 ? (
         <EmptyState
           title={document.parseRequiresReview ? t15("parsedReviewRequired") : t20("noParsedText")}
           reason={`${versionRef || document.id} · PDF ${pdfPage + 1}`}
         />
       ) : null}
-      {chunks.map((paragraph, index) => (
-        <p
-          key={`${paragraph.pdfPageIndex ?? pdfPage}-${paragraph.number ?? index}`}
-          id={paragraph.number ? `para-${paragraph.number}` : `chunk-${index}`}
-          className="group relative scroll-mt-24 pl-10 font-serif text-[13px] leading-[1.75] max-md:pl-8 max-md:text-[11.5px] max-md:leading-[1.85]"
-        >
-          {paragraph.number ? (
-            <a
-              href={`#para-${paragraph.number}`}
-              className="tabular text-fg-muted group-hover:text-accent absolute top-0.5 left-0 text-[10px]"
-            >
-              ¶{paragraph.number}
-            </a>
-          ) : (
-            <span className="tabular text-fg-muted absolute top-0.5 left-0 text-[9px]">
-              {t20("pdfIndex", { page: (paragraph.pdfPageIndex ?? pdfPage) + 1 })}
-            </span>
-          )}
-          {splitExactSource(
-            paragraph.text,
-            initialPara === undefined || paragraph.number === initialPara ? exactPattern : null,
-          ).map((part, partIndex) =>
-            part.exact ? (
-              <mark
-                key={partIndex}
-                data-exact-source
-                className="bg-surface-high text-fg ring-accent rounded px-0.5 ring-1"
-              >
-                {part.text}
-              </mark>
-            ) : (
-              part.text
-            ),
-          )}
-        </p>
-      ))}
+      {pageBlocks.map((text, index) => {
+        const selected = Boolean(active?.exactText && text.includes(active.exactText));
+        const exactOverlays = [
+          ...new Map(
+            (pageContext?.overlays ?? [])
+              .filter(
+                (overlay) =>
+                  overlay.exactText &&
+                  text.includes(overlay.exactText) &&
+                  EXACT.includes(overlay.precision) &&
+                  overlay.regions.length > 0,
+              )
+              .map((overlay) => [
+                `${overlay.exactText}|${JSON.stringify(overlay.regions)}`,
+                overlay,
+              ]),
+          ).values(),
+        ].sort(
+          (left, right) => text.indexOf(left.exactText ?? "") - text.indexOf(right.exactText ?? ""),
+        );
+        const anchoredParts: { text: string; overlay?: PageOverlay }[] = [];
+        let cursor = 0;
+        for (const overlay of exactOverlays) {
+          const exactText = overlay.exactText ?? "";
+          const start = text.indexOf(exactText, cursor);
+          if (start < cursor) continue;
+          if (start > cursor) anchoredParts.push({ text: text.slice(cursor, start) });
+          anchoredParts.push({ text: exactText, overlay });
+          cursor = start + exactText.length;
+        }
+        if (cursor < text.length) anchoredParts.push({ text: text.slice(cursor) });
+        return (
+          <div
+            key={`${synchronizedPageText?.pdfPageIndex ?? pdfPage}-${index}`}
+            data-source-text-block
+            data-source-text-selected={selected ? "true" : undefined}
+            data-source-text-sync={exactOverlays.length ? "exact" : undefined}
+            aria-current={selected ? "location" : undefined}
+            className={`rounded-control scroll-mt-24 border px-3 py-2 ${selected ? "border-accent bg-surface-high ring-accent ring-1" : "border-border-faint bg-surface"}`}
+          >
+            <p className="text-fg-body font-serif text-[13px] leading-[1.72] whitespace-normal max-md:text-[12px]">
+              {(anchoredParts.length ? anchoredParts : [{ text }]).map((part, partIndex) =>
+                part.overlay ? (
+                  <button
+                    key={partIndex}
+                    type="button"
+                    data-source-text-anchor={part.overlay.anchorId}
+                    onClick={() => showOverlay(part.overlay!)}
+                    className={`rounded px-0.5 text-left underline decoration-dotted underline-offset-2 ${active?.key === `overlay-${part.overlay.anchorId}` ? "bg-surface-high ring-accent ring-1" : "hover:bg-surface-raised"}`}
+                  >
+                    {part.text}
+                  </button>
+                ) : (
+                  splitExactSource(
+                    part.text,
+                    selected ? exactSourcePattern(active?.exactText) : exactPattern,
+                  ).map((highlightPart, highlightIndex) =>
+                    highlightPart.exact ? (
+                      <mark
+                        key={`${partIndex}-${highlightIndex}`}
+                        data-exact-source
+                        className="bg-surface-high text-fg ring-accent rounded px-0.5 ring-1"
+                      >
+                        {highlightPart.text}
+                      </mark>
+                    ) : (
+                      highlightPart.text
+                    ),
+                  )
+                ),
+              )}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 
@@ -690,14 +786,10 @@ export function SourceReader(props: SourceReaderProps) {
     exactPattern &&
     pdfPage === props.initialPdfPage &&
     !(isTranscript
-      ? segments.some((segment) =>
+      ? pageSegments.some((segment) =>
           splitExactSource(segment.text ?? "", exactPattern).some((part) => part.exact),
         )
-      : chunks.some(
-          (paragraph) =>
-            (initialPara === undefined || paragraph.number === initialPara) &&
-            splitExactSource(paragraph.text, exactPattern).some((part) => part.exact),
-        ));
+      : pageBlocks.some((text) => splitExactSource(text, exactPattern).some((part) => part.exact)));
 
   const textColumn = (
     <section
@@ -709,6 +801,22 @@ export function SourceReader(props: SourceReaderProps) {
         <h2 className="section-label">{t20("synchronizedText")}</h2>
         {loading ? <span className="text-fg-tertiary text-[10px]">{t20("loading")}</span> : null}
         <p className="text-fg-tertiary w-full text-[10.5px]">{t20("derivativeTextNote")}</p>
+        <div className="border-border-faint bg-surface-alt flex w-full flex-wrap items-center gap-x-3 gap-y-1 border-y px-2 py-2 text-[10px]">
+          <strong className="text-fg tabular">
+            {t20("pdfPage", { page: pdfPage + 1, total: pageCount ?? "—" })}
+          </strong>
+          {synchronizedPageText?.printedPageLabel || synchronizedPageText?.pageNumber ? (
+            <span className="text-fg-secondary tabular">
+              {t20("printedPage", {
+                page:
+                  synchronizedPageText.printedPageLabel ?? synchronizedPageText.pageNumber ?? "—",
+              })}
+            </span>
+          ) : null}
+          <span className="text-fg-tertiary ml-auto font-mono">
+            {active ? precisionLabel(active.precision) : t20("pageTextPrecision")}
+          </span>
+        </div>
       </header>
       {highlightOutside ? (
         // The exact span lies outside the rendered text (running header,
@@ -734,7 +842,7 @@ export function SourceReader(props: SourceReaderProps) {
       <div
         role="tablist"
         aria-label={t("researchContext")}
-        className="border-border-faint flex flex-wrap gap-1 border-b p-2"
+        className="border-border-faint flex gap-1 overflow-x-auto border-b p-2"
       >
         {CONTEXT_TABS.map((tab) => (
           <button
@@ -743,12 +851,12 @@ export function SourceReader(props: SourceReaderProps) {
             type="button"
             aria-selected={contextTab === tab}
             onClick={() => setContextTab(tab)}
-            className={`rounded-control min-h-8 px-2 py-1 text-[10px] ${contextTab === tab ? "bg-surface-high text-fg" : "text-fg-secondary"}`}
+            className={`rounded-control min-h-8 shrink-0 px-2 py-1 text-[10px] ${contextTab === tab ? "bg-surface-high text-fg" : "text-fg-secondary"}`}
           >
             {tb(`researchTabs.${tab}`)}
-            {TAB_KINDS[tab].reduce((sum, kind) => sum + (context?.totals[kind] ?? 0), 0) ? (
+            {TAB_KINDS[tab].reduce((sum, kind) => sum + (pageContext?.totals[kind] ?? 0), 0) ? (
               <span className="tabular text-fg-tertiary ml-1">
-                {TAB_KINDS[tab].reduce((sum, kind) => sum + (context?.totals[kind] ?? 0), 0)}
+                {TAB_KINDS[tab].reduce((sum, kind) => sum + (pageContext?.totals[kind] ?? 0), 0)}
               </span>
             ) : null}
           </button>
@@ -758,10 +866,10 @@ export function SourceReader(props: SourceReaderProps) {
         {contextFailed ? (
           <EmptyState title={t20("contextUnavailable")} reason={versionRef} />
         ) : null}
-        {contextTab === "summary" && context ? (
+        {contextTab === "summary" && pageContext ? (
           <Panel title={t20("pageContextTotals")}>
             <ul className="space-y-1 text-[11px]" data-context-totals>
-              {Object.entries(context.totals).map(([kind, count]) => (
+              {Object.entries(pageContext.totals).map(([kind, count]) => (
                 <li key={kind} className="flex justify-between">
                   <span>{t20(`kind.${kind}`)}</span>
                   <span className="tabular">{count}</span>
@@ -771,7 +879,22 @@ export function SourceReader(props: SourceReaderProps) {
             <p className="text-fg-tertiary mt-2 text-[10px]">{t20("eventsUnsupported")}</p>
           </Panel>
         ) : null}
-        {context && tabOverlays.length === 0 && !contextFailed ? (
+        {active ? (
+          <Panel title={t20("whyHighlight")}>
+            <div className="space-y-1 text-[10.5px]" data-selected-context>
+              <p className="text-fg font-semibold break-words">{active.label}</p>
+              <p className="text-fg-secondary font-mono">
+                {kindLabel(active.kind)} · {precisionLabel(active.precision)}
+              </p>
+              {!EXACT.includes(active.precision) ? (
+                <p className="text-fg-tertiary">
+                  {t20("honestFallback", { precision: active.precision })}
+                </p>
+              ) : null}
+            </div>
+          </Panel>
+        ) : null}
+        {pageContext && tabOverlays.length === 0 && !contextFailed ? (
           <EmptyState title={tb(`researchTabs.${contextTab}`)} reason={t20("pageContextEmpty")} />
         ) : null}
         {tabOverlays.some((overlay) => overlay.kind === "relationship") ? (
@@ -788,7 +911,7 @@ export function SourceReader(props: SourceReaderProps) {
             />
           ))}
         </ul>
-        {context?.truncated ? (
+        {pageContext?.truncated ? (
           <p className="text-fg-tertiary text-[10px]">{t20("contextTruncated")}</p>
         ) : null}
         {document.sourceUrl ? (
@@ -963,6 +1086,35 @@ export function SourceReader(props: SourceReaderProps) {
           </div>
         ) : null}
       </Panel>
+      <Panel title={t20("pageNavigation")}>
+        <div className="space-y-2 text-[11px]" data-page-navigation>
+          <div className="flex items-center gap-1">
+            <ToolButton
+              onClick={() => goToPage(pdfPage - 1)}
+              ariaLabel={t("previous")}
+              disabled={pdfPage <= 0}
+            >
+              ‹
+            </ToolButton>
+            <span className="border-border bg-surface tabular rounded-control flex h-8 min-w-0 flex-1 items-center justify-center border px-2">
+              {tb("pager", { n: pdfPage + 1, total: pageCount ?? "—" })}
+            </span>
+            <ToolButton
+              onClick={() => goToPage(pdfPage + 1)}
+              ariaLabel={t("next")}
+              disabled={pageCount !== undefined && pdfPage >= lastPage}
+            >
+              ›
+            </ToolButton>
+          </div>
+          {pageContext?.pageNumber ? (
+            <p className="text-fg-secondary tabular">
+              {t20("printedPage", { page: pageContext.pageNumber })}
+            </p>
+          ) : null}
+          {!outline ? <p className="text-fg-tertiary">{t20("tocUnavailable")}</p> : null}
+        </div>
+      </Panel>
       {outline ? (
         <Panel title={t20("transcriptNavigation")}>
           <div className="space-y-3 text-[11px]" data-transcript-navigation>
@@ -1083,7 +1235,12 @@ export function SourceReader(props: SourceReaderProps) {
     </aside>
   );
 
-  const textVisible = sourceView === "parsed" || showText;
+  const inspectorVisible = sourceView === "parsed" ? showContext : showText || showContext;
+  const commitPageInput = () => {
+    const requested = Number(pageInput);
+    if (Number.isInteger(requested) && requested >= 1) goToPage(requested - 1);
+    else setPageInput(String(pdfPage + 1));
+  };
   return (
     <AppShell
       mode="light"
@@ -1108,44 +1265,65 @@ export function SourceReader(props: SourceReaderProps) {
               {document.type}
             </span>
           </nav>
-          <div className="ml-auto flex flex-wrap items-center gap-1">
-            <span className="rounded-badge bg-surface-high text-fg-secondary px-2 py-1 text-[10px]">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+            <span className="rounded-badge bg-surface-high text-fg-secondary hidden px-2 py-1 text-[10px] md:inline-flex">
               {tb("realDataNotice")}
             </span>
-            <ToolButton
-              onClick={() => goToPage(pdfPage - 1)}
-              ariaLabel={t("previous")}
-              disabled={pdfPage <= 0}
-            >
-              ‹
-            </ToolButton>
-            <span className="tabular text-fg-secondary px-1 text-[11px]">
-              {tb("pager", { n: pdfPage + 1, total: pageCount ?? "—" })}
-            </span>
-            <ToolButton
-              onClick={() => goToPage(pdfPage + 1)}
-              ariaLabel={t("next")}
-              disabled={pageCount !== undefined && pdfPage >= lastPage}
-            >
-              ›
-            </ToolButton>
-            <ToolButton onClick={() => navigator.clipboard?.writeText(window.location.href)}>
-              {t20("lineLink")}
-            </ToolButton>
+            <div className="border-border-faint flex items-center gap-1 border-l pl-1.5">
+              <ToolButton
+                onClick={() => goToPage(pdfPage - 1)}
+                ariaLabel={t("previous")}
+                disabled={pdfPage <= 0}
+              >
+                ‹
+              </ToolButton>
+              <label className="border-border bg-surface rounded-control flex h-8 items-center border px-1.5 text-[10px]">
+                <span className="sr-only">{t20("pageNumber")}</span>
+                <input
+                  aria-label={t20("pageNumber")}
+                  inputMode="numeric"
+                  value={pageInput}
+                  onChange={(event) => setPageInput(event.target.value.replace(/\D/g, ""))}
+                  onBlur={commitPageInput}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") commitPageInput();
+                  }}
+                  className="text-fg tabular w-8 bg-transparent text-center outline-none"
+                />
+                <span className="text-fg-tertiary">/ {pageCount ?? "—"}</span>
+              </label>
+              <ToolButton
+                onClick={() => goToPage(pdfPage + 1)}
+                ariaLabel={t("next")}
+                disabled={pageCount !== undefined && pdfPage >= lastPage}
+              >
+                ›
+              </ToolButton>
+            </div>
             {document.artifactUrl ? (
-              <>
+              <div className="border-border-faint hidden flex-wrap items-center gap-1 border-l pl-1.5 md:flex">
                 <ToolButton
-                  onClick={() => setSourceView("original")}
+                  onClick={() => {
+                    setSourceView("original");
+                    setPane("source");
+                  }}
                   pressed={sourceView === "original"}
                 >
                   {t20("originalPdf")}
                 </ToolButton>
                 <ToolButton
-                  onClick={() => setSourceView("parsed")}
+                  onClick={() => {
+                    setSourceView("parsed");
+                    setPane("text");
+                  }}
                   pressed={sourceView === "parsed"}
                 >
                   {t20("parsedText")}
                 </ToolButton>
+              </div>
+            ) : null}
+            {document.artifactUrl ? (
+              <div className="border-border-faint hidden flex-wrap items-center gap-1 border-l pl-1.5 md:flex">
                 <ToolButton
                   onClick={() => {
                     setPdfFit("custom");
@@ -1179,19 +1357,38 @@ export function SourceReader(props: SourceReaderProps) {
                 <span className="tabular text-fg-secondary px-1 text-[11px]">
                   {Math.round(pdfScale * 100)}%
                 </span>
-              </>
+              </div>
             ) : null}
+            <ToolButton onClick={() => navigator.clipboard?.writeText(window.location.href)}>
+              {t20("copySourceLink")}
+            </ToolButton>
             <ToolButton
               className="hidden lg:inline-flex"
-              onClick={() => setShowText((value) => !value)}
-              pressed={showText}
+              onClick={() => {
+                if (showText && inspectorPane === "text") {
+                  setShowText(false);
+                  if (showContext) setInspectorPane("context");
+                } else {
+                  setShowText(true);
+                  setInspectorPane("text");
+                }
+              }}
+              pressed={showText && inspectorPane === "text"}
             >
               {t20("textPanel")}
             </ToolButton>
             <ToolButton
               className="hidden lg:inline-flex"
-              onClick={() => setShowContext((value) => !value)}
-              pressed={showContext}
+              onClick={() => {
+                if (showContext && inspectorPane === "context") {
+                  setShowContext(false);
+                  if (showText) setInspectorPane("text");
+                } else {
+                  setShowContext(true);
+                  setInspectorPane("context");
+                }
+              }}
+              pressed={showContext && inspectorPane === "context"}
             >
               {t20("contextPanel")}
             </ToolButton>
@@ -1217,32 +1414,62 @@ export function SourceReader(props: SourceReaderProps) {
           />
         </div>
         <div
-          className={`grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] ${showContext ? "lg:grid-cols-[240px_minmax(0,1fr)_300px]" : "lg:grid-cols-[240px_minmax(0,1fr)]"}`}
+          className={`grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] ${inspectorVisible ? "lg:grid-cols-[224px_minmax(0,1fr)_360px]" : "lg:grid-cols-[224px_minmax(0,1fr)]"}`}
         >
           {sidebar}
-          <div className="bg-surface-alt min-w-0 p-3 md:p-4">
-            <div
-              className={`mx-auto grid w-full grid-cols-[minmax(0,1fr)] gap-3 ${sourceView === "original" && showText ? "max-w-[1400px] xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]" : "max-w-[960px]"}`}
-            >
+          <main className="bg-surface-alt min-w-0 p-3 md:p-4">
+            <div className="mx-auto w-full max-w-[980px]">
               {sourceView === "original" ? (
                 <div className={pane === "source" ? "block" : "hidden lg:block"}>
                   {sourceColumn}
                 </div>
               ) : null}
-              {textVisible ? (
-                <div
-                  className={`${pane === "text" || sourceView === "parsed" ? "block" : "hidden"} lg:block ${sourceView === "original" ? "xl:max-h-[calc(100vh-180px)] xl:overflow-y-auto" : ""}`}
-                >
-                  {textColumn}
-                </div>
-              ) : null}
+              {sourceView === "parsed" ? <div>{textColumn}</div> : null}
             </div>
-          </div>
-          <div
-            className={`border-border border-t lg:border-t-0 lg:border-l ${showContext ? "lg:block" : "lg:hidden"} ${pane === "context" ? "block" : "hidden"}`}
+          </main>
+          <aside
+            ref={inspectorScrollRef}
+            className={`border-border bg-surface min-w-0 border-t lg:max-h-[calc(100vh-104px)] lg:overflow-y-auto lg:border-t-0 lg:border-l ${inspectorVisible ? "lg:block" : "lg:hidden"} ${pane === "text" || pane === "context" ? "block" : "hidden"}`}
           >
-            {contextColumn}
-          </div>
+            {sourceView === "original" ? (
+              <div className="border-border-faint bg-surface sticky top-0 z-10 hidden border-b p-2 lg:flex">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowText(true);
+                    setInspectorPane("text");
+                  }}
+                  aria-pressed={inspectorPane === "text"}
+                  className={`rounded-control min-h-8 flex-1 px-2 text-[10.5px] ${inspectorPane === "text" ? "bg-surface-high text-fg" : "text-fg-secondary"}`}
+                >
+                  {t20("textLayer")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowContext(true);
+                    setInspectorPane("context");
+                  }}
+                  aria-pressed={inspectorPane === "context"}
+                  className={`rounded-control min-h-8 flex-1 px-2 text-[10.5px] ${inspectorPane === "context" ? "bg-surface-high text-fg" : "text-fg-secondary"}`}
+                >
+                  {t20("contextLayer")}
+                </button>
+              </div>
+            ) : null}
+            {sourceView === "original" ? (
+              <div
+                className={`${pane === "text" ? "block" : "hidden"} ${showText && inspectorPane === "text" ? "lg:block" : "lg:hidden"}`}
+              >
+                {textColumn}
+              </div>
+            ) : null}
+            <div
+              className={`${pane === "context" ? "block" : "hidden"} ${showContext && (sourceView === "parsed" || inspectorPane === "context") ? "lg:block" : "lg:hidden"}`}
+            >
+              {contextColumn}
+            </div>
+          </aside>
         </div>
         {document.citation ? (
           <div className="sr-only">
@@ -1373,19 +1600,26 @@ function OverlayRow({
         </p>
       ) : null}
       {overlay.kind === "relationship" && overlay.provenance ? (
-        <div className="text-fg-secondary space-y-0.5 text-[10.5px]">
+        <div className="text-fg-secondary text-[10.5px]">
           <p>
             {t20("evidenceCount", { count: overlay.evidenceCount ?? 1 })} ·{" "}
             {t20("evidenceBasis", { kind: overlay.provenance.kind.replaceAll("_", " ") })}
           </p>
-          <p className="text-fg-tertiary" data-evidence-path>
-            {t20("evidencePath")}: {t20(`kind.${overlay.kind}`)} →{" "}
-            {overlay.provenance.kind.replaceAll("_", " ")} →{" "}
-            <span className="identifier">{overlay.provenance.versionRef}</span>
-          </p>
-          {overlay.provenance.rule ? (
-            <p className="text-fg-tertiary font-mono text-[9.5px]">{overlay.provenance.rule}</p>
-          ) : null}
+          <details className="mt-1">
+            <summary className="text-accent cursor-pointer text-[10px]">
+              {t20("relationshipDetails")}
+            </summary>
+            <p className="text-fg-tertiary mt-1" data-evidence-path>
+              {t20("evidencePath")}: {t20(`kind.${overlay.kind}`)} →{" "}
+              {overlay.provenance.kind.replaceAll("_", " ")} →{" "}
+              <span className="identifier">{overlay.provenance.versionRef}</span>
+            </p>
+            {overlay.provenance.rule ? (
+              <p className="text-fg-tertiary mt-1 font-mono text-[9.5px]">
+                {overlay.provenance.rule}
+              </p>
+            ) : null}
+          </details>
         </div>
       ) : null}
       {overlay.rule && overlay.kind !== "relationship" ? (

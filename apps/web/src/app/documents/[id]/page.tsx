@@ -101,15 +101,15 @@ export default async function Page({
     focusSegmentId = located?.items[0]?.id;
   }
 
-  const [initialContext, initialSegments, initialChunks] = versionRef
+  const [initialContext, initialSegments, initialPageText] = versionRef
     ? await Promise.all([
         reader.context(versionRef, initialPdfPage).catch(() => null),
         outline
           ? reader.segments(versionRef, { pdfPageIndex: initialPdfPage, limit: 200 })
           : Promise.resolve(null),
-        outline ? Promise.resolve([]) : reader.chunks(versionRef, initialPdfPage),
+        outline ? Promise.resolve(null) : reader.page(versionRef, initialPdfPage),
       ])
-    : [null, null, []];
+    : [null, null, null];
 
   return (
     <SourceReader
@@ -127,7 +127,7 @@ export default async function Page({
       focusSegmentId={focusSegmentId}
       outline={outline}
       initialSegments={initialSegments}
-      initialChunks={initialChunks}
+      initialPageText={initialPageText}
       initialContext={initialContext}
     />
   );

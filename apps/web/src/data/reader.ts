@@ -174,6 +174,14 @@ export interface ParsedChunkView {
   pdfPageIndexTo?: number;
 }
 
+/** Exact derivative text for one PDF page, never a cross-page retrieval chunk. */
+export interface ParsedPageView {
+  pdfPageIndex: number;
+  pageNumber?: number;
+  printedPageLabel?: string;
+  text?: string;
+}
+
 export interface SegmentQuery {
   pdfPageIndex?: number;
   page?: number;
@@ -424,6 +432,28 @@ export function createReaderClient(baseUrl: string, fetchImpl?: FetchLike) {
         pdfPageIndex: opt(chunk.pdf_page_index_from),
         pdfPageIndexTo: opt(chunk.pdf_page_index_to),
       }));
+    },
+    async page(versionRef: string, pdfPageIndex: number): Promise<ParsedPageView | null> {
+      const raw = await client.get<{
+        items: {
+          pdf_page_index: number;
+          page_number: number | null;
+          printed_page_label: string | null;
+          text: string | null;
+        }[];
+      }>(`${versionPath(versionRef)}/pages`, {
+        limit: 1,
+        offset: pdfPageIndex,
+      });
+      const page = raw?.items[0];
+      return page
+        ? {
+            pdfPageIndex: page.pdf_page_index,
+            pageNumber: opt(page.page_number),
+            printedPageLabel: opt(page.printed_page_label),
+            text: opt(page.text),
+          }
+        : null;
     },
   };
 }

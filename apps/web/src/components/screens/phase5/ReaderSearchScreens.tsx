@@ -809,7 +809,7 @@ export function SearchScreen({
           <p className="text-fg-secondary tabular text-[11px]">
             {tb("resultSummary", { count: filtered.length, groups: groups.length, ms: 3 })}
           </p>
-          <div className="flex gap-1">
+          <div className="flex max-w-full gap-1 overflow-x-auto pb-0.5">
             {(["court", "external", "both"] as const).map((scope) => (
               <ActionLink
                 key={scope}
