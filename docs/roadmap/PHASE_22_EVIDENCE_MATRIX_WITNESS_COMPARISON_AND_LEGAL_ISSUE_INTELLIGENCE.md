@@ -1,7 +1,7 @@
 # Phase 22 — Evidence Matrix, Witness Comparison & Legal Issue Intelligence
 
 **Status:** IN PROGRESS
-**Current checkpoint:** 22A NEXT — Evidence Matrix + legal-issue/finding architecture
+**Current checkpoint:** 22A COMPLETE — 22B NEXT, not authorized
 **Started:** 2026-09-27
 **Branch:** `feat/phase-22-evidence-matrix-legal-intelligence`
 **Entry point:** synchronized `main` at Phase 21 closeout `f25cfe0`, annotated
@@ -156,8 +156,8 @@ Additional permanent rules:
 
 | Checkpoint | Scope | Status / stop rule |
 |---|---|---|
-| **22A** | Evidence Matrix + legal-issue/finding architecture | **NEXT**. Requires explicit authorization to implement. |
-| **22B** | Witness comparison + party-position mapping + research intelligence | Not started. Stop after 22A until explicitly authorized. |
+| **22A** | Evidence Matrix + legal-issue/finding architecture | **COMPLETE (2026-09-27)**. |
+| **22B** | Witness comparison + party-position mapping + research intelligence | **NEXT; not authorized.** Stop after 22A. |
 | **22C** | Deep legal/source fidelity audit + closeout | Not started. Stop after 22B until explicitly authorized. |
 
 Each checkpoint has separate implementation, verification and documentation.
@@ -243,21 +243,21 @@ encodes source/category only, never strength, credibility or severity.
 
 ### A5. 22A verification and exit criteria
 
-- [ ] Existing Phase 10/12 structures are inventoried and reconciled; no
+- [x] Existing Phase 10/12 structures are inventoried and reconciled; no
       duplicate semantic system is introduced.
-- [ ] Database constraints prevent category conflation and prevent unsupported
+- [x] Database constraints prevent category conflation and prevent unsupported
       relied-upon or Court-finding relationships.
-- [ ] A real-source finding/issue matrix separates Court, each party category,
+- [x] A real-source finding/issue matrix separates Court, each party category,
       testimony, documents/exhibits, human notes, AI and external sources.
-- [ ] Every affirmative matrix relationship is human-verified and opens the
+- [x] Every affirmative matrix relationship is human-verified and opens the
       correct version-bound original passage or exposes an honest fallback.
-- [ ] Missing/ambiguous/unresolved material is visible and never substituted.
-- [ ] Protected-witness and exhibit-status safeguards pass focused tests.
-- [ ] API bounds, UI responsive behavior, accessibility and EN/SQ string parity
+- [x] Missing/ambiguous/unresolved material is visible and never substituted.
+- [x] Protected-witness and exhibit-status safeguards pass focused tests.
+- [x] API bounds, UI responsive behavior, accessibility and EN/SQ string parity
       pass focused verification.
-- [ ] `make lint`, `make typecheck` and `make test` pass at checkpoint
+- [x] `make lint`, `make typecheck` and `make test` pass at checkpoint
       acceptance.
-- [ ] The implementation, real-data reconciliation and remaining limitations
+- [x] The implementation, real-data reconciliation and remaining limitations
       are recorded in this file, `MEMORY.md` and `docs/PROJECT_STATE.md`.
 
 Stop after recording 22A. Do not begin 22B without explicit authorization.
@@ -425,7 +425,35 @@ Stop after Phase 22 closeout. Do not begin a later phase automatically.
 
 ### 22A
 
-`NOT STARTED`
+**COMPLETE — 2026-09-27**
+
+- Migration `0017` extends the existing Phase 10/12 structures instead of
+  creating parallel finding, evidence or issue systems. The closed finding
+  relation vocabulary is `COURT_RELIES_ON`, `COURT_CITES`, `PARTY_CITES`,
+  `SUPPORTS`, `QUALIFIES`, `CONTRARY` and `CONTEXT`.
+- Court relations require source-derived Court attribution. Research direction
+  labels require classification origin and review process; AI suggestions
+  cannot be stored as verified evidence classifications.
+- Potential Issues for Review now carry definition origin. Finding links,
+  arguments and issue sources carry typed SourceAnchors; party/team attribution
+  and direct-source/Court-summary distinctions remain explicit.
+- Bounded finding and issue matrix APIs return backend-composed rows,
+  provenance, review status, filters and pagination. The Finding workspace uses
+  those rows, exact Reader links and honest witness/classification empty states.
+- Phase 22A projects source-documented graph nodes/edges only from the verified
+  benchmark. The real Court-reliance row resolves through Evidence Path in one
+  cited `RELIES_ON` hop; no hop is invented.
+- Real benchmark: 1 finding, 1 Court-reliance link, 2 party positions, 1 Court
+  response, 0 Court-citation-only rows, 0 support/qualify/contrary rows, 0
+  linked witness passages and 0 linked exhibits. All 5 matrix rows have
+  SourceAnchors. Detailed counts and limitations are in
+  `docs/ingestion/PHASE22A_EVIDENCE_MATRIX_REPORT.md`.
+- Migration round-trip and schema comparison pass. Targeted semantic,
+  provenance, SourceAnchor, matrix-query, Finding UI and Evidence Path checks
+  pass. Final gates: `make lint`, `make typecheck` and `make test` PASS (357
+  backend and 260 frontend tests).
+- Phase 22 remains **IN PROGRESS**. Stop here; 22B is next but has not been
+  authorized or started.
 
 ### 22B
 
@@ -441,6 +469,7 @@ Stop after Phase 22 closeout. Do not begin a later phase automatically.
   `f25cfe0`; synchronized `main` and `origin/main` contain that commit.
 - Branch `feat/phase-22-evidence-matrix-legal-intelligence` created from the
   synchronized Phase 21 closeout.
-- Phase 22 registered as **IN PROGRESS** with **22A NEXT**.
+- At setup, Phase 22 was registered as **IN PROGRESS** with **22A NEXT**; the
+  22A completion record above supersedes that checkpoint.
 - Setup only: no schema, ingestion, API, UI or test functionality changed.
-- Do not begin 22A without explicit authorization.
+- Setup stopped before 22A pending the authorization that was later supplied.

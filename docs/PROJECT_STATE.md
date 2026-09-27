@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-27 (Phase 22 IN PROGRESS; 22A NEXT)
+Last updated: 2026-09-27 (Phase 22 IN PROGRESS; 22A COMPLETE, 22B NEXT)
 
 ## Milestones
 
@@ -29,7 +29,7 @@ Last updated: 2026-09-27 (Phase 22 IN PROGRESS; 22A NEXT)
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
 | **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
 | **21** | **Design parity and research UX**                                                                         | ✅ **COMPLETE (2026-09-27)** — tag `phase-21-complete`                                                   |
-| **22** | **Evidence Matrix, Witness Comparison & Legal Issue Intelligence**                                        | **IN PROGRESS** — 22A NEXT                                                                               |
+| **22** | **Evidence Matrix, Witness Comparison & Legal Issue Intelligence**                                        | **IN PROGRESS** — 22A COMPLETE; 22B NEXT, not authorized                                                 |
 
 ## Roadmap
 
@@ -63,9 +63,8 @@ complete on `feat/phase-21-design-parity-research-ux`: Passes A–C align all
 real research workflows with `Design.html` while preserving the source-native
 Reader and evidence-integrity boundaries. The tag is `phase-21-complete`.
 Phase 21 is merged into synchronized `main` at `f25cfe0`. Phase 22 is
-registered and **IN PROGRESS** on
-`feat/phase-22-evidence-matrix-legal-intelligence`; 22A is **NEXT**. No Phase 22
-functionality has been implemented.
+**IN PROGRESS** on `feat/phase-22-evidence-matrix-legal-intelligence`. 22A is
+complete; 22B is next but has not been authorized or started.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Phase 21A checkpoint (2026-09-25)
@@ -127,9 +126,38 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
   `main`.
 - Registered
   `docs/roadmap/PHASE_22_EVIDENCE_MATRIX_WITNESS_COMPARISON_AND_LEGAL_ISSUE_INTELLIGENCE.md`.
-- Phase 22 is **IN PROGRESS**; 22A is **NEXT**.
-- Setup only: no schema, ingestion, API, UI or test functionality changed. Do
-  not begin 22A without explicit authorization.
+- At setup, Phase 22 was **IN PROGRESS** and 22A was **NEXT**. Setup changed no
+  schema, ingestion, API, UI or test functionality. The authorized 22A
+  checkpoint below supersedes that state.
+
+## Phase 22A checkpoint (2026-09-27)
+
+- Migration `0017` extends the canonical finding-evidence, argument,
+  Potential-Issue-for-Review and SourceAnchor models with explicit Court,
+  party and research-classification semantics. AI suggestions cannot be
+  persisted as human-verified evidence classifications.
+- Finding and issue matrix APIs are bounded to 100 rows, filter by relationship
+  and source category, return backend-composed provenance/review state, and do
+  not require frontend semantic reconstruction.
+- The real F03752 benchmark returns 5 anchored rows: 1 Court finding, 1
+  source-derived Court-reliance link, 2 separately attributed party positions
+  recorded through Court summaries and 1 direct Court response. There are no
+  linked witness passages, linked exhibits or supporting/qualifying/contrary
+  research classifications; these remain honest absences.
+- The legal-matrix projector adds only source-documented nodes and edges. The
+  Court-reliance row opens its exact-version relationship passage, separately
+  opens cited material `F03667/COR/RED`, and resolves through Evidence Path in
+  one cited hop.
+- Finding Detail uses the Phase 21 visual language, renders explicit semantic
+  categories and review states, and links each real matrix row through its
+  SourceAnchor. EN/SQ strings remain in parity.
+- Data-quality report:
+  `docs/ingestion/PHASE22A_EVIDENCE_MATRIX_REPORT.md`.
+- Migration round-trip/schema comparison, focused semantic/API/UI/path checks,
+  `make lint`, `make typecheck` and `make test` pass (357 backend and 260
+  frontend tests).
+- Phase 22 remains **IN PROGRESS**. 22B is **NEXT**, not authorized and not
+  started.
 
 ## Completed features (Phase 4)
 

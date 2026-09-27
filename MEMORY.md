@@ -6,9 +6,8 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-22-evidence-matrix-legal-intelligence`, created
   from clean, synchronized `main` at Phase 21 closeout `f25cfe0`.
-- Current milestone: **Phase 22 IN PROGRESS**; **22A NEXT**. Setup is complete,
-  but no Phase 22 functionality has been implemented and 22A must not begin
-  without explicit authorization. Phase 21 is complete, merged into `main` and
+- Current milestone: **Phase 22 IN PROGRESS**; **22A COMPLETE**, **22B NEXT but
+  not authorized**. Phase 21 is complete, merged into `main` and
   tagged `phase-21-complete`.
   Phase 20 is complete at tag `phase-20-complete`. Phase
   19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
@@ -50,7 +49,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0015`.
+- Migration head and live database revision: `0017`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -489,10 +488,35 @@ authorized and the phase is now complete on
 - Branch: `feat/phase-22-evidence-matrix-legal-intelligence`.
 - Roadmap:
   `docs/roadmap/PHASE_22_EVIDENCE_MATRIX_WITNESS_COMPARISON_AND_LEGAL_ISSUE_INTELLIGENCE.md`.
-- Status: **Phase 22 IN PROGRESS**; **22A NEXT**.
-- Setup only. No schema, ingestion, API, UI or test functionality changed.
-- Next action: obtain explicit authorization, then execute 22A only. Do not
-  begin 22B automatically.
+- Setup status was **Phase 22 IN PROGRESS; 22A NEXT**. Setup changed no schema,
+  ingestion, API, UI or test functionality. The authorized checkpoint below
+  supersedes that state.
+
+## Phase 22A checkpoint (2026-09-27)
+
+- Extended the canonical Phase 10/12 records through migration `0017`: explicit
+  Court/party/research matrix relationships, classification and issue origins,
+  review process/state, party attribution and typed legal-object SourceAnchors.
+  No parallel finding, evidence or issue system was introduced.
+- Database constraints prevent unsupported Court-reliance semantics,
+  source-derived research directions and human-verified AI suggestions.
+- Added bounded finding/issue matrix reads with relationship/source filters,
+  pagination, provenance and server-derived review state. The real Finding
+  workspace consumes these rows and preserves Phase 21 design language.
+- Added idempotent `project-legal-matrix`: it projects anchors and only verified
+  source-documented graph edges. The F03752 finding-to-F03667 Court-reliance
+  Evidence Path is one cited `RELIES_ON` hop.
+- Real matrix: 5 anchored rows — 1 Court finding, 1 Court-reliance link, 2 party
+  positions (Court summaries, with F03743/F03746 still missing), 1 Court
+  response. Zero witness/exhibit links and zero supporting/qualifying/contrary
+  classifications; no relationship was inferred to fill those categories.
+- Report: `docs/ingestion/PHASE22A_EVIDENCE_MATRIX_REPORT.md`.
+- Migration round-trip/schema comparison and focused semantic, matrix,
+  SourceAnchor, Finding UI and Evidence Path checks pass. Final repository
+  gates pass: `make lint`, `make typecheck`, `make test` (357 backend and 260
+  frontend tests).
+- Phase 22 remains **IN PROGRESS**. Next action requires explicit authorization
+  for 22B; do not start it automatically.
 
 ## Non-negotiable rules
 
