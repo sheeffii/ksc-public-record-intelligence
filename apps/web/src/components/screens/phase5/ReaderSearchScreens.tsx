@@ -23,6 +23,7 @@ import {
   VerificationBadge,
 } from "@/components/provenance";
 import { exactSourcePattern, splitExactSource } from "@/lib/exact-source";
+import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/shell/AppShell";
 import {
   courtCitation,
@@ -764,6 +765,14 @@ export function SearchScreen({
     rows: visible.filter((r) => r.category === key),
   })).filter((g) => g.rows.length > 0);
   const pattern = PATTERNS.find((p) => p.re.test(query.trim()));
+  const categoryOptions: readonly { key: Category | "all"; label: string; count: number }[] = [
+    { key: "all", label: tb("allCategories"), count: results.length },
+    ...CATEGORIES.map((key) => ({
+      key,
+      label: key === "external" ? t15("externalSources") : tb(key),
+      count: results.filter((result) => result.category === key).length,
+    })),
+  ];
   const activeFilters = [
     ...[...sources].map((s) => ({ id: `src:${s}`, label: `${tb("sourceType")}: ${s}` })),
   ];
@@ -831,20 +840,14 @@ export function SearchScreen({
       <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 lg:grid-cols-[238px_minmax(0,1fr)] xl:grid-cols-[238px_minmax(0,1fr)_262px]">
         <FilterRail className="border-border-subtle bg-surface hidden border-r p-4 lg:flex">
           <FilterSection title={tb("allCategories")}>
-            <Segmented
+            <SearchCategoryFilter
               label={tb("allCategories")}
               value={category}
               onChange={(next) => {
                 setCategory(next);
                 setPage(1);
               }}
-              options={[
-                { key: "all", label: tb("allCategories") },
-                ...CATEGORIES.map((key) => ({
-                  key,
-                  label: key === "external" ? t15("externalSources") : tb(key),
-                })),
-              ]}
+              options={categoryOptions}
             />
           </FilterSection>
           <FilterSection title={tb("sourceType")}>
@@ -886,20 +889,15 @@ export function SearchScreen({
             <summary className="section-label cursor-pointer">{t21("filters")}</summary>
             <div className="mt-3 space-y-4">
               <FilterSection title={tb("allCategories")}>
-                <Segmented
+                <SearchCategoryFilter
                   label={tb("allCategories")}
                   value={category}
                   onChange={(next) => {
                     setCategory(next);
                     setPage(1);
                   }}
-                  options={[
-                    { key: "all", label: tb("allCategories") },
-                    ...CATEGORIES.map((key) => ({
-                      key,
-                      label: key === "external" ? t15("externalSources") : tb(key),
-                    })),
-                  ]}
+                  options={categoryOptions}
+                  compact
                 />
               </FilterSection>
             </div>
@@ -1016,6 +1014,47 @@ export function SearchScreen({
         </aside>
       </div>
     </AppShell>
+  );
+}
+
+function SearchCategoryFilter({
+  options,
+  value,
+  onChange,
+  label,
+  compact = false,
+}: {
+  options: readonly { key: Category | "all"; label: string; count: number }[];
+  value: Category | "all";
+  onChange: (next: Category | "all") => void;
+  label: string;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className={compact ? "grid grid-cols-2 gap-1 sm:grid-cols-3" : "space-y-0.5"}
+    >
+      {options.map((option) => (
+        <button
+          key={option.key}
+          type="button"
+          role="radio"
+          aria-checked={value === option.key}
+          onClick={() => onChange(option.key)}
+          className={cn(
+            "rounded-control flex min-w-0 items-center justify-between gap-2 px-2 py-1.5 text-left text-[11px]",
+            value === option.key
+              ? "bg-surface-high text-fg"
+              : "text-fg-secondary hover:bg-surface-raised hover:text-fg",
+          )}
+        >
+          <span className="truncate">{option.label}</span>
+          <span className="tabular text-fg-muted shrink-0 text-[10px]">{option.count}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 
