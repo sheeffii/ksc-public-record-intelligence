@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-27 (Phase 22 COMPLETE)
+Last updated: 2026-09-28 (Reader design/synchronization polish)
 
 ## Milestones
 
@@ -67,6 +67,30 @@ Phase 21 is merged into synchronized `main` at `f25cfe0`. Phase 22 is
 `phase-22-complete`. The deterministic AI relevance gate resolves the final
 fail-closed blocker. The branch is not merged to `main`; Phase 23 has not begun.
 Repository code, migrations, tests and Git state win over stale roadmap text.
+
+## Reader design and synchronization polish (2026-09-28)
+
+- Branch `feat/reader-design-sync-polish` was created in a clean temporary
+  worktree from current `origin/main`; the unrelated Legal Tools workspace was
+  not changed.
+- The Reader now uses the exact page-local `document_pages` text for PDF page N
+  instead of presenting a potentially cross-page retrieval chunk. Page changes
+  hide stale text/context immediately and reset the inspector scroll position.
+- Deterministic exact text anchors and transcript segments drive PDF highlights;
+  exact PDF regions focus the corresponding text item. Weak precision remains
+  page/line-only and never receives a manufactured rectangle.
+- Desktop follows the approved compact navigation / primary PDF / tabbed
+  Text–Context inspector composition. 1024px and Pixel 7 retain intentional
+  Source/Text/Context modes; the mobile toolbar is reduced to page/source actions.
+- Context rows use progressive provenance disclosure and Search scope controls
+  no longer wrap labels awkwardly on narrow screens.
+- Visual captures for ordinary filing, long filing, transcript and Search at
+  1440px, 1024px and Pixel 7 are in `artifacts/reader-design-sync/`.
+- Focused Reader data tests (4), frontend lint, TypeScript and the production
+  web build pass. Focused real browser checks pass for page synchronization,
+  text/PDF anchor synchronization, transcript lines, version isolation and
+  Search-to-source navigation. No backend, broad Playwright, accessibility or
+  repository-wide suite was run.
 
 ## Phase 21A checkpoint (2026-09-25)
 

@@ -4,8 +4,9 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-22-evidence-matrix-legal-intelligence`, created
-  from clean, synchronized `main` at Phase 21 closeout `f25cfe0`.
+- Current branch: `feat/reader-design-sync-polish`, created in a clean temporary
+  worktree from `origin/main` at Phase 22 closeout `153fb7e`. The original
+  Phase 22 / Legal Tools workspace was not modified.
 - Current milestone: **Phase 22 COMPLETE** at annotated tag
   `phase-22-complete`. The deterministic AI relevance gate resolves the final
   fail-closed blocker with 0 unsupported answered runs. The feature branch is
@@ -32,6 +33,14 @@ Live checkpoint. Repository state wins over this note.
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. Both are
   contained in `main`.
 - Latest completion tag: annotated `phase-22-complete`.
+- Post-Phase-22 Reader/UI polish is complete on the current feature branch:
+  page-local synchronized text now reads the exact `document_pages` row for
+  PDF page N; page changes clear stale display/scroll state; exact text anchors,
+  transcript segments and PDF regions synchronize deterministically; and the
+  Reader uses a compact navigation / primary PDF / tabbed Text–Context layout.
+  Search received only the remaining scope-control wrapping polish. Final
+  captures cover ordinary, long and transcript Readers plus Search at 1440px,
+  1024px and Pixel 7 under `artifacts/reader-design-sync/`.
 - Phase 21 is registered in
   `docs/roadmap/PHASE_21_DESIGN_PARITY_AND_RESEARCH_UX.md`. The actual Home,
   Search, command-search, Evidence Explorer, Document Reader, Mobile and System
