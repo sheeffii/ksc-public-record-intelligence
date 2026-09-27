@@ -6,9 +6,10 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-22-evidence-matrix-legal-intelligence`, created
   from clean, synchronized `main` at Phase 21 closeout `f25cfe0`.
-- Current milestone: **Phase 22 IN PROGRESS**; **22A COMPLETE**, **22B
-  IMPLEMENTED with targeted verification but not complete**. The full
-  repository quality gate was deferred by the operator; Phase 22C has not
+- Current milestone: **Phase 22 IN PROGRESS**. The 22C legal/source fidelity
+  audit is complete, but closeout is blocked: answered AI runs include
+  low-relevance retrieval material without failing closed, and the operator
+  deferred the full repository gate. Phase 22 is not tagged; Phase 23 has not
   started. Phase 21 is complete, merged into `main` and
   tagged `phase-21-complete`.
   Phase 20 is complete at tag `phase-20-complete`. Phase
@@ -51,7 +52,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0018`.
+- Migration head and live database revision: `0019`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is

@@ -358,7 +358,7 @@ class AppealResearchService:
         relation_for_role = {
             "court_reasoning": "court_finding",
             "applicable_standard": "context",
-            "evidence_relied": "court_relies_on",
+            "court_cited_material": "court_cites",
             "defence_position": "party_position",
             "spo_position": "party_position",
             "court_response": "court_treatment",

@@ -928,7 +928,7 @@
     "role": {
       "court_reasoning": "Court Reasoning at Issue",
       "applicable_standard": "Applicable Legal Standard",
-      "evidence_relied": "Evidence Relied Upon",
+      "court_cited_material": "Material Cited by the Court",
       "defence_position": "Defence Position",
       "spo_position": "SPO Position",
       "court_response": "Court Response",

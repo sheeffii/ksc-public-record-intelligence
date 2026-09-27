@@ -158,7 +158,7 @@ Additional permanent rules:
 |---|---|---|
 | **22A** | Evidence Matrix + legal-issue/finding architecture | **COMPLETE (2026-09-27)**. |
 | **22B** | Witness comparison + party-position mapping + research intelligence | **IMPLEMENTED; targeted verification passed, full checkpoint gate deferred.** |
-| **22C** | Deep legal/source fidelity audit + closeout | Not started. Stop after 22B until explicitly authorized. |
+| **22C** | Deep legal/source fidelity audit + closeout | **AUDIT COMPLETE; CLOSEOUT BLOCKED** by AI relevance/fail-closed finding and deferred full gate. |
 
 Each checkpoint has separate implementation, verification and documentation.
 Use focused tests while implementing. Run the full repository gates only at
@@ -479,7 +479,28 @@ Stop after Phase 22 closeout. Do not begin a later phase automatically.
 
 ### 22C
 
-`NOT STARTED`
+**AUDIT COMPLETE — CLOSEOUT BLOCKED (2026-09-27)**
+
+- The source-fidelity audit downgraded the real F03752 relationship from
+  `COURT_RELIES_ON` to `COURT_CITES`: paragraph 12 expressly identifies the
+  corrected SPO brief but does not expressly state Court reliance. Migration
+  `0019` also corrects the issue role and graph edge.
+- Court finding, SPO, Defence, Court response, human issue definition, AI and
+  external-source boundaries pass focused structural and exact-source checks.
+  All sampled real finding, argument and issue excerpts match their
+  SourceAnchors; no witness comparison is published without an exact pair.
+- AI provenance remains present, but all 25 answered stored runs include at
+  least one low-relevance retrieval passage while the analysis says the
+  retrieved passages address the question. Unsupported-material fail-closed
+  behaviour is therefore not yet demonstrated.
+- Focused backend (9) and frontend (7) tests, Ruff and migration round-trip
+  pass. The operator deferred the full repository gate and broad non-functional
+  checks.
+- Audit report and manifest:
+  `docs/ingestion/PHASE22C_LEGAL_SOURCE_FIDELITY_AUDIT.md` and
+  `docs/ingestion/manifests/phase22c-legal-source-audit.json`.
+- Phase 22 remains **IN PROGRESS**. Do not create `phase-22-complete`, merge to
+  `main`, or start Phase 23 until the AI blocker and deferred gates pass.
 
 ## Setup completion record
 

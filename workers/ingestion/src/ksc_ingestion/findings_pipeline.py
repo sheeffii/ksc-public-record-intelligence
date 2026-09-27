@@ -183,18 +183,17 @@ class Phase10Pipeline:
                     id=_id("evidence-link"),
                     finding_id=finding.id,
                     citation_id=evidence_citation.id,
-                    link_type=FindingLinkType.COURT_RELIES_ON,
+                    link_type=FindingLinkType.COURT_CITES,
                     court_cited=True,
                     court_cited_para=12,
-                    relationship_basis="explicit_court_reliance",
+                    relationship_basis="explicit_court_citation",
                     source_category="spo_argument",
                     classification_origin="source_derived",
                     extraction_origin=_ORIGIN,
                     note=(
-                        "The Panel's paragraphs 12-16 reasoning uses the corrected SPO brief "
-                        "and its exhibit-reference substitutions. This records source-backed "
-                        "Court reliance for that reasoning; it does not imply endorsement or "
-                        "evidential weight beyond the cited passage."
+                        "The Panel's paragraph 12 expressly identifies the corrected SPO brief "
+                        "while describing its exhibit-reference substitutions. This records an "
+                        "exact Court citation, not Court reliance or endorsement."
                     ),
                     verification_state=VerificationState.HUMAN_VERIFIED,
                     verified_by=_REVIEWER,

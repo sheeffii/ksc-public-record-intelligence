@@ -116,7 +116,7 @@ class AppealIssueSource(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, 
         UniqueConstraint("issue_id", "sequence", name="uq_appeal_issue_sources_sequence"),
         CheckConstraint("sequence >= 1", name="sequence_positive"),
         CheckConstraint(
-            "role IN ('court_reasoning', 'applicable_standard', 'evidence_relied', "
+            "role IN ('court_reasoning', 'applicable_standard', 'court_cited_material', "
             "'defence_position', 'spo_position', 'court_response', 'supporting', "
             "'contrary', 'qualifying')",
             name="role_allowed",

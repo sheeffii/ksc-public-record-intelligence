@@ -928,7 +928,7 @@
     "role": {
       "court_reasoning": "Arsyetimi i Gjykatës në shqyrtim",
       "applicable_standard": "Standardi juridik i zbatueshëm",
-      "evidence_relied": "Provat ku është mbështetur",
+      "court_cited_material": "Material i cituar nga Gjykata",
       "defence_position": "Qëndrimi i Mbrojtjes",
       "spo_position": "Qëndrimi i ZPS-së",
       "court_response": "Përgjigjja e Gjykatës",

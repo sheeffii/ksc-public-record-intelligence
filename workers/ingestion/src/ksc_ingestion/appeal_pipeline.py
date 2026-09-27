@@ -220,13 +220,13 @@ class Phase12Pipeline:
                 ),
                 (
                     4,
-                    "evidence_relied",
+                    "court_cited_material",
                     "spo_argument",
                     evidence.citation_id,
                     None,
                     evidence.id,
                     evidence.citation.raw_text,
-                    "Exact source expressly identified by the Court.",
+                    "Exact material expressly identified by the Court; reliance is not inferred.",
                 ),
                 (
                     5,

@@ -1,0 +1,50 @@
+{
+  "phase": "22C",
+  "audit_date": "2026-09-27",
+  "case": "KSC-BC-2020-06",
+  "status": "closeout_blocked",
+  "migration_head": "0019",
+  "counts": {
+    "findings_in_matrices": 1,
+    "court_relied_on_links": 0,
+    "court_citation_links": 1,
+    "party_positions": 2,
+    "legal_issues": 1,
+    "supporting_classifications": 0,
+    "qualifying_classifications": 0,
+    "contrary_or_tension_candidates": 0,
+    "witness_comparison_groups": 0,
+    "review_issues": 1,
+    "source_backed_ai_responses": 25,
+    "ai_suggested_candidates": 0,
+    "source_anchors": 74036
+  },
+  "source_anchor_mismatches": {
+    "findings": 0,
+    "finding_links": 0,
+    "arguments": 0,
+    "issue_sources": 0
+  },
+  "ai_audit": {
+    "completed_runs": 64,
+    "answered_runs": 25,
+    "withheld_or_insufficient_runs": 39,
+    "answered_runs_with_low_relevance_retrieval": 25,
+    "outputs_with_unresolved_citation_claims": 0,
+    "result": "fail_closed_not_demonstrated"
+  },
+  "court_relation_correction": {
+    "finding_key": "FD-F03752-P12-16",
+    "from": "court_relies_on",
+    "to": "court_cites",
+    "basis": "F03752 paragraph 12 expressly identifies the filing but does not expressly state reliance"
+  },
+  "focused_verification": {
+    "migration_round_trip": "pass",
+    "backend_tests_passed": 9,
+    "frontend_tests_passed": 7,
+    "ruff": "pass",
+    "full_repository_gate": "deferred_by_operator"
+  },
+  "completion_tag_created": false
+}

@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-27 (Phase 22 IN PROGRESS; 22A COMPLETE, 22B NEXT)
+Last updated: 2026-09-27 (Phase 22 IN PROGRESS; 22C audit complete, closeout blocked)
 
 ## Milestones
 
@@ -29,7 +29,7 @@ Last updated: 2026-09-27 (Phase 22 IN PROGRESS; 22A COMPLETE, 22B NEXT)
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
 | **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
 | **21** | **Design parity and research UX**                                                                         | ✅ **COMPLETE (2026-09-27)** — tag `phase-21-complete`                                                   |
-| **22** | **Evidence Matrix, Witness Comparison & Legal Issue Intelligence**                                        | **IN PROGRESS** — 22A COMPLETE; 22B NEXT, not authorized                                                 |
+| **22** | **Evidence Matrix, Witness Comparison & Legal Issue Intelligence**                                        | **IN PROGRESS** — 22C audit complete; AI fail-closed and full gates pending                              |
 
 ## Roadmap
 
@@ -63,8 +63,9 @@ complete on `feat/phase-21-design-parity-research-ux`: Passes A–C align all
 real research workflows with `Design.html` while preserving the source-native
 Reader and evidence-integrity boundaries. The tag is `phase-21-complete`.
 Phase 21 is merged into synchronized `main` at `f25cfe0`. Phase 22 is
-**IN PROGRESS** on `feat/phase-22-evidence-matrix-legal-intelligence`. 22A is
-complete; 22B is next but has not been authorized or started.
+**IN PROGRESS** on `feat/phase-22-evidence-matrix-legal-intelligence`. The 22C
+audit is complete, but closeout is blocked by the AI relevance/fail-closed
+finding and the operator-deferred full repository gates.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Phase 21A checkpoint (2026-09-25)
@@ -162,6 +163,25 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
   comparable passage groups, 2 separately attributed party-position rows, 1
   issue, 1 issue/finding link and 74,036 SourceAnchors. Phase 22C has not
   started. See `docs/ingestion/PHASE22B_LEGAL_RESEARCH_REPORT.md`.
+
+## Phase 22C source-fidelity audit (2026-09-27)
+
+- Migration `0019` conservatively corrects the real F03752 relation from
+  `COURT_RELIES_ON` to `COURT_CITES`, including the issue-map role and graph
+  edge. The source expressly identifies the filing but does not expressly say
+  the Court relied upon it.
+- Sampled finding, party-position and issue passages exactly match their
+  SourceAnchors. Witness comparisons remain at zero because no exact public
+  passage pair satisfies the publication contract.
+- Final real counts: 1 matrix finding, 0 Court-reliance links, 1 Court-citation
+  link, 2 party positions, 1 legal/review issue, 0 supporting, qualifying,
+  contrary/tension or witness-comparison groups, and 25 source-backed AI
+  responses.
+- Closeout is blocked: all 25 answered stored AI runs include low-relevance
+  retrieval material while the analysis claims the retrieved set addresses the
+  question. The full repository/non-functional gates were also deferred.
+- Report: `docs/ingestion/PHASE22C_LEGAL_SOURCE_FIDELITY_AUDIT.md`. Phase 22 is
+  not complete; no tag exists and Phase 23 has not started.
 
 ## Completed features (Phase 4)
 
