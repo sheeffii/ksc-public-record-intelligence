@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -39,6 +40,8 @@ from ksc_ingestion.citation_resolution import (
 )
 from ksc_ingestion.pdf_parser import PARSER_NAME, PARSER_VERSION, ParsedPdf, parse_pdf
 from ksc_ingestion.storage import ObjectStore
+
+log = logging.getLogger(__name__)
 
 _PHASE8_NAMESPACE = uuid.UUID("d14af643-3782-4fba-a1a2-546c3d1ee9d5")
 
@@ -81,6 +84,9 @@ class ParsedVersionResult:
     chunks: int
     transcript_segments: int
     requires_review: bool
+    # Set when this version could not be parsed. Nothing of it was written;
+    # the rest of the run continued (one bad PDF never aborts a batch).
+    error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -131,9 +137,8 @@ class Phase8Pipeline:
             run_id = run.id
 
         try:
-            results: list[ParsedVersionResult] = []
-            for version_id in version_ids:
-                results.append(self._parse_version(version_id, force=force))
+            results = self._parse_all(run_id, version_ids, force=force)
+            failed = sum(1 for r in results if r.error)
 
             with self.sessions() as session:
                 case = session.scalar(select(Case).where(Case.case_number == self.case_number))
@@ -158,8 +163,13 @@ class Phase8Pipeline:
         self._finish_processing_run(
             run_id,
             status="completed",
-            processed=len(results),
-            detail={"identifiers": identifiers, **citation_counts},
+            processed=len(results) - failed,
+            failed=failed,
+            detail={
+                "identifiers": identifiers,
+                **citation_counts,
+                "failed_versions": [r.official_version_ref for r in results if r.error],
+            },
         )
         return result
 
@@ -202,6 +212,7 @@ class Phase8Pipeline:
         *,
         status: str,
         processed: int = 0,
+        failed: int | None = None,
         error: str | None = None,
         detail: dict[str, Any] | None = None,
     ) -> None:
@@ -210,10 +221,59 @@ class Phase8Pipeline:
             assert run is not None
             run.status = status
             run.processed_count = processed
-            run.failed_count = 1 if status == "failed" else 0
+            run.failed_count = failed if failed is not None else (1 if status == "failed" else 0)
             run.finished_at = datetime.now(UTC)
             run.detail = {**(detail or {}), **({"error": error} if error else {})}
             session.commit()
+
+    def _parse_all(
+        self, run_id: uuid.UUID, version_ids: list[uuid.UUID], *, force: bool
+    ) -> list[ParsedVersionResult]:
+        """Each version parses in its own transaction. A failure is recorded and
+        the batch continues: one bad PDF never aborts the others."""
+
+        results: list[ParsedVersionResult] = []
+        for version_id in version_ids:
+            try:
+                results.append(self._parse_version(version_id, force=force))
+            except Exception as exc:  # noqa: BLE001 - isolated per version and recorded
+                results.append(self._record_parse_failure(run_id, version_id, exc))
+        return results
+
+    def _record_parse_failure(
+        self, run_id: uuid.UUID, version_id: uuid.UUID, exc: Exception
+    ) -> ParsedVersionResult:
+        """The version's own transaction was rolled back with its session, so
+        none of its output was written. Record why, visibly, and move on."""
+
+        error = f"{type(exc).__name__}: {exc}"[:500]
+        with self.sessions() as session:
+            version = session.get(DocumentVersion, version_id)
+            ref = version.official_version_ref if version is not None else str(version_id)
+            session.add(
+                AuditLog(
+                    actor="ksc-ingest-phase8",
+                    action="document_version.parse_failed",
+                    entity_type="document_version",
+                    entity_id=str(version_id),
+                    detail={
+                        "official_version_ref": ref,
+                        "processing_run_id": str(run_id),
+                        "error": error,
+                    },
+                )
+            )
+            session.commit()
+        log.warning("parse failed for %s: %s", ref, error)
+        return ParsedVersionResult(
+            official_version_ref=ref,
+            pages=0,
+            paragraphs=0,
+            chunks=0,
+            transcript_segments=0,
+            requires_review=True,
+            error=error,
+        )
 
     def _parse_version(self, version_id: uuid.UUID, *, force: bool) -> ParsedVersionResult:
         with self.sessions() as session:

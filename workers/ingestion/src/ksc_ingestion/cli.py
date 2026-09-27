@@ -499,6 +499,9 @@ def cmd_parse(args: argparse.Namespace) -> int:
         force=args.force
     )
     for version in result.versions:
+        if version.error:
+            print(f"  {version.official_version_ref:48} FAILED {version.error}")
+            continue
         review = " REVIEW" if version.requires_review else ""
         print(
             f"  {version.official_version_ref:48} pages={version.pages:4} "

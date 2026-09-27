@@ -20,7 +20,7 @@ from typing import Annotated, Any
 from urllib.parse import quote
 
 from fastapi import Depends
-from sqlalchemy import Select, and_, false, func, or_, select
+from sqlalchemy import Select, and_, false, func, or_, select, union_all
 from sqlalchemy.orm import Session, aliased, selectinload
 
 from ksc_api.config import Settings, get_settings
@@ -175,27 +175,47 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
             return {}
         id_list = list(ids)
         node_fk = getattr(GraphNode, _NODE_FK[kind])
-        edges = self._public_edges_stmt().subquery()
+        # Only the public edges touching this page's nodes (endpoint indexes),
+        # then each direction as a plain equality join: the cost follows the
+        # page's own edges, not the size of the whole graph.
+        page_nodes = list(self.session.scalars(select(GraphNode.id).where(node_fk.in_(id_list))))
+        edges = (
+            self._public_edges_stmt()
+            .where(
+                or_(
+                    Relationship.from_node_id.in_(page_nodes),
+                    Relationship.to_node_id.in_(page_nodes),
+                )
+            )
+            .subquery()
+        )
         other = aliased(GraphNode)
+
+        def _direction(near: Any, far: Any) -> Select[Any]:
+            return (
+                select(
+                    node_fk.label("entity_id"), other.entity_kind.label("other_kind"), edges.c.id
+                )
+                .select_from(edges)
+                .join(GraphNode, GraphNode.id == near)
+                .join(other, other.id == far)
+                .where(node_fk.in_(id_list))
+            )
+
+        # A self-loop is counted once, as the OR join counted it.
+        directed = union_all(
+            _direction(edges.c.from_node_id, edges.c.to_node_id),
+            _direction(edges.c.to_node_id, edges.c.from_node_id).where(
+                edges.c.from_node_id != edges.c.to_node_id
+            ),
+        ).subquery()
         # (entity id, neighbouring node kind) -> number of public edges.
         by_kind: dict[tuple[uuid.UUID, EntityKind], int] = {}
         totals: dict[uuid.UUID, int] = {}
         rows = self.session.execute(
-            select(node_fk, other.entity_kind, func.count(edges.c.id))
-            .select_from(GraphNode)
-            .join(
-                edges,
-                or_(edges.c.from_node_id == GraphNode.id, edges.c.to_node_id == GraphNode.id),
+            select(directed.c.entity_id, directed.c.other_kind, func.count(directed.c.id)).group_by(
+                directed.c.entity_id, directed.c.other_kind
             )
-            .join(
-                other,
-                or_(
-                    and_(edges.c.from_node_id == GraphNode.id, edges.c.to_node_id == other.id),
-                    and_(edges.c.to_node_id == GraphNode.id, edges.c.from_node_id == other.id),
-                ),
-            )
-            .where(node_fk.in_(id_list))
-            .group_by(node_fk, other.entity_kind)
         ).all()
         for entity_id, other_kind, count in rows:
             by_kind[(entity_id, EntityKind(other_kind))] = int(count)

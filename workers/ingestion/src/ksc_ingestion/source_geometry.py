@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from ksc_api.models import (
     ArtifactStatus,
+    AuditLog,
     Case,
     Citation,
     Document,
@@ -228,6 +229,7 @@ class SourceGeometryProjector:
             session.add(run)
             session.commit()
             run_id = run.id
+            case_id = case.id
 
         native_pages = ocr_required = word_count = 0
         try:
@@ -279,16 +281,16 @@ class SourceGeometryProjector:
             with ProcessPoolExecutor(max_workers=min(4, len(pending)) or 1) as executor:
 
                 def submit_next() -> bool:
-                    version = next(pending_iter, None)
-                    if version is None:
-                        return False
-                    assert version.storage_key is not None
-                    futures[
-                        executor.submit(
-                            extract_native_geometry, self.store.get(version.storage_key)
-                        )
-                    ] = version
-                    return True
+                    while (version := next(pending_iter, None)) is not None:
+                        assert version.storage_key is not None
+                        try:
+                            data = self.store.get(version.storage_key)
+                        except Exception as exc:  # noqa: BLE001 - isolated per version
+                            self._record_geometry_failure(run_id, version, exc)
+                            continue
+                        futures[executor.submit(extract_native_geometry, data)] = version
+                        return True
+                    return False
 
                 for _ in range(4):
                     if not submit_next():
@@ -297,14 +299,22 @@ class SourceGeometryProjector:
                     finished, _ = wait(futures, return_when=FIRST_COMPLETED)
                     for future in finished:
                         version = futures.pop(future)
-                        added_native, added_ocr, added_words = self._persist_geometry(
-                            version, future.result(), run_id
-                        )
+                        # One bad PDF never aborts the batch: its geometry is
+                        # not written (the session rolls back), the failure is
+                        # recorded and the remaining versions continue.
+                        try:
+                            added_native, added_ocr, added_words = self._persist_geometry(
+                                version, future.result(), run_id
+                            )
+                        except Exception as exc:  # noqa: BLE001 - isolated per version
+                            self._record_geometry_failure(run_id, version, exc)
+                            submit_next()
+                            continue
                         native_pages += added_native
                         ocr_required += added_ocr
                         word_count += added_words
                         submit_next()
-            anchors, precision, by_type = self._project_anchors(run_id)
+            anchors, precision, by_type = self._project_anchors(run_id, case_id)
         except Exception:
             with self.sessions() as session:
                 failed = session.get(ProcessingRun, run_id)
@@ -340,6 +350,36 @@ class SourceGeometryProjector:
             precision,
             by_type,
         )
+
+    def _record_geometry_failure(
+        self, run_id: uuid.UUID, version: DocumentVersion, exc: Exception
+    ) -> None:
+        error = f"{type(exc).__name__}: {exc}"[:500]
+        with self.sessions() as session:
+            run = session.get(ProcessingRun, run_id)
+            assert run is not None
+            run.failed_count += 1
+            run.detail = {
+                **(run.detail or {}),
+                "failed_versions": [
+                    *(run.detail or {}).get("failed_versions", []),
+                    {"official_version_ref": version.official_version_ref, "error": error},
+                ],
+            }
+            session.add(
+                AuditLog(
+                    actor="ksc-ingest-phase20a",
+                    action="document_version.geometry_failed",
+                    entity_type="document_version",
+                    entity_id=str(version.id),
+                    detail={
+                        "official_version_ref": version.official_version_ref,
+                        "processing_run_id": str(run_id),
+                        "error": error,
+                    },
+                )
+            )
+            session.commit()
 
     def _persist_geometry(
         self,
@@ -401,7 +441,11 @@ class SourceGeometryProjector:
             session.commit()
         return native_pages, ocr_required, word_count
 
-    def _project_anchors(self, run_id: uuid.UUID) -> tuple[int, dict[str, int], dict[str, int]]:
+    def _project_anchors(
+        self, run_id: uuid.UUID, case_id: uuid.UUID
+    ) -> tuple[int, dict[str, int], dict[str, int]]:
+        """Re-project this case's anchors. Another case's spans and anchors are
+        never deleted or rewritten."""
         precision: dict[str, int] = {}
         by_type: dict[str, int] = {}
         basis_spans: dict[tuple[str, uuid.UUID, str], tuple[uuid.UUID, SourcePrecision]] = {}
@@ -414,12 +458,19 @@ class SourceGeometryProjector:
             owned = select(SourceAnchor.source_span_id).where(
                 SourceAnchor.object_type != "transcript_segment"
             )
-            session.execute(delete(SourceSpan).where(SourceSpan.id.in_(owned)))
+            case_versions = (
+                select(DocumentVersion.id).join(Document).where(Document.case_id == case_id)
+            )
+            session.execute(
+                delete(SourceSpan).where(
+                    SourceSpan.id.in_(owned), SourceSpan.document_version_id.in_(case_versions)
+                )
+            )
             session.flush()
 
             occurrences = session.scalars(
                 select(EntityOccurrence)
-                .where(EntityOccurrence.rule_id.is_not(None))
+                .where(EntityOccurrence.case_id == case_id, EntityOccurrence.rule_id.is_not(None))
                 .order_by(EntityOccurrence.document_version_id, EntityOccurrence.pdf_page_index)
             ).all()
             for occurrence in occurrences:
@@ -451,7 +502,9 @@ class SourceGeometryProjector:
 
             citations = session.scalars(
                 select(Citation)
-                .where(Citation.source_document_version_id.is_not(None))
+                .where(
+                    Citation.case_id == case_id, Citation.source_document_version_id.is_not(None)
+                )
                 .order_by(Citation.source_document_version_id, Citation.source_pdf_page_index)
             ).all()
             for citation in citations:
@@ -484,7 +537,9 @@ class SourceGeometryProjector:
                     span_precision,
                 )
 
-            relationships = session.scalars(select(Relationship)).all()
+            relationships = session.scalars(
+                select(Relationship).where(Relationship.case_id == case_id)
+            ).all()
             for relationship in relationships:
                 basis_key: tuple[str, uuid.UUID, str] | None = None
                 if relationship.entity_occurrence_id is not None:
@@ -534,7 +589,9 @@ class SourceGeometryProjector:
                 by_type["relationship"] = by_type.get("relationship", 0) + 1
 
             findings = session.scalars(
-                select(Finding).where(Finding.judgment_version_id.is_not(None))
+                select(Finding).where(
+                    Finding.case_id == case_id, Finding.judgment_version_id.is_not(None)
+                )
             ).all()
             for finding in findings:
                 assert finding.judgment_version_id is not None
