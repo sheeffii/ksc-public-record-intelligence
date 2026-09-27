@@ -777,8 +777,8 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
 
     # --- finding evidence links ------------------------------------------------
     for key, citation, link_type, court_cited, para in [
-        ("l1", c_transcript, FindingLinkType.RELIES_ON, True, 13),
-        ("l2", c_exhibit, FindingLinkType.SUPPORTS, True, 13),
+        ("l1", c_transcript, FindingLinkType.COURT_RELIES_ON, True, 13),
+        ("l2", c_exhibit, FindingLinkType.COURT_CITES, True, 13),
         ("l3", c_spo, FindingLinkType.CONTEXT, False, None),
     ]:
         session.add(
@@ -790,7 +790,11 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
                 court_cited=court_cited,
                 court_cited_para=para,
                 relationship_basis=(
-                    "explicit_court_citation" if court_cited else "related_public_record"
+                    "explicit_court_reliance"
+                    if link_type is FindingLinkType.COURT_RELIES_ON
+                    else "explicit_court_citation"
+                    if court_cited
+                    else "human_classification"
                 ),
                 source_category=(
                     "witness_testimony"
@@ -799,6 +803,8 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
                     if citation is c_exhibit
                     else "spo_argument"
                 ),
+                classification_origin="source_derived" if court_cited else "human_defined",
+                review_process=None if court_cited else "demo_human_review",
                 verification_state=VerificationState.HUMAN_VERIFIED,
                 verified_by="demo-reviewer",
                 verified_at=_REVIEWED_AT,
@@ -819,6 +825,7 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
         para_to=5,
         citation_id=c_spo.id,
         finding_id=finding.id,
+        party_attribution="SPO",
     )
     defence_argument = Argument(
         id=demo_id("argument:AR-DEMO-002"),
@@ -833,6 +840,7 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
         para_to=8,
         citation_id=c_defence.id,
         finding_id=finding.id,
+        party_attribution="Defence",
     )
     court_argument = Argument(
         id=demo_id("argument:AR-DEMO-003"),
@@ -847,6 +855,7 @@ def load_demo_fixture(session: Session) -> tuple[Case, bool]:
         para_to=14,
         citation_id=c_judgment_para.id,
         finding_id=finding.id,
+        party_attribution="Demo Panel",
     )
     session.add_all([spo_argument, defence_argument, court_argument])
     session.flush()

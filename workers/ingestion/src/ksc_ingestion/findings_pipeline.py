@@ -183,15 +183,18 @@ class Phase10Pipeline:
                     id=_id("evidence-link"),
                     finding_id=finding.id,
                     citation_id=evidence_citation.id,
-                    link_type=FindingLinkType.RELIES_ON,
+                    link_type=FindingLinkType.COURT_RELIES_ON,
                     court_cited=True,
                     court_cited_para=12,
-                    relationship_basis="explicit_court_citation",
+                    relationship_basis="explicit_court_reliance",
                     source_category="spo_argument",
+                    classification_origin="source_derived",
                     extraction_origin=_ORIGIN,
                     note=(
-                        "The Panel's reasoning expressly identifies the corrected SPO brief. "
-                        "This link records citation, not endorsement or evidential weight."
+                        "The Panel's paragraphs 12-16 reasoning uses the corrected SPO brief "
+                        "and its exhibit-reference substitutions. This records source-backed "
+                        "Court reliance for that reasoning; it does not imply endorsement or "
+                        "evidential weight beyond the cited passage."
                     ),
                     verification_state=VerificationState.HUMAN_VERIFIED,
                     verified_by=_REVIEWER,
@@ -209,6 +212,7 @@ class Phase10Pipeline:
                 version=version,
                 finding=finding,
                 underlying_source_ref="F03743",
+                party_attribution="Joint Defence",
             )
             spo = self._argument(
                 case_id=case.id,
@@ -220,6 +224,7 @@ class Phase10Pipeline:
                 version=version,
                 finding=finding,
                 underlying_source_ref="F03746",
+                party_attribution="SPO",
             )
             court = self._argument(
                 case_id=case.id,
@@ -233,6 +238,7 @@ class Phase10Pipeline:
                 para_to=16,
                 text="\n\n".join(paragraphs[number].text for number in range(14, 17)),
                 source_scope="direct_source",
+                party_attribution="Trial Panel",
             )
             session.add_all([defence, spo, court])
             session.flush()
@@ -359,6 +365,7 @@ class Phase10Pipeline:
         para_to: int | None = None,
         text: str | None = None,
         source_scope: str = "court_summary",
+        party_attribution: str | None = None,
     ) -> Argument:
         end = para_to or paragraph.paragraph_number
         citation = self._coordinate_citation(
@@ -398,6 +405,7 @@ class Phase10Pipeline:
             finding_id=finding.id,
             source_scope=source_scope,
             underlying_source_ref=underlying_source_ref,
+            party_attribution=party_attribution,
             extraction_origin=_ORIGIN,
             verification_state=VerificationState.HUMAN_VERIFIED,
             verified_by=_REVIEWER,

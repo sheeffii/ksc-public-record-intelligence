@@ -55,6 +55,7 @@ if TYPE_CHECKING:
     from ksc_api.models.actor import Location, Person, Witness
     from ksc_api.models.citation import Citation
     from ksc_api.models.document import Document, DocumentVersion
+    from ksc_api.models.source import SourceAnchor
     from ksc_api.models.source_record import SourceRecord
 
 
@@ -385,17 +386,51 @@ class FindingEvidenceLink(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin
             "court_cited OR court_cited_para IS NULL", name="cited_para_needs_court_cited"
         ),
         CheckConstraint(
-            "relationship_basis IN ('explicit_court_citation', 'related_public_record')",
+            "relationship_basis IN ('explicit_court_reliance', 'explicit_court_citation', "
+            "'explicit_party_citation', 'human_classification', 'ai_suggestion', "
+            "'related_public_record')",
             name="relationship_basis_allowed",
         ),
         CheckConstraint(
-            "court_cited = (relationship_basis = 'explicit_court_citation')",
-            name="court_cited_matches_basis",
+            "(link_type IN ('court_relies_on', 'court_cites') AND court_cited) OR "
+            "(link_type NOT IN ('court_relies_on', 'court_cites') AND NOT court_cited)",
+            name="court_cited_matches_relation",
+        ),
+        CheckConstraint(
+            "(link_type = 'court_relies_on' AND relationship_basis = "
+            "'explicit_court_reliance') OR "
+            "(link_type = 'court_cites' AND relationship_basis = "
+            "'explicit_court_citation') OR "
+            "(link_type = 'party_cites' AND relationship_basis = "
+            "'explicit_party_citation') OR "
+            "(link_type IN ('supports', 'qualifies', 'contrary', 'context') AND "
+            "relationship_basis IN ('human_classification', 'ai_suggestion', "
+            "'related_public_record'))",
+            name="relation_matches_basis",
+        ),
+        CheckConstraint(
+            "(link_type IN ('court_relies_on', 'court_cites', 'party_cites') AND "
+            "classification_origin = 'source_derived') OR "
+            "(link_type IN ('supports', 'qualifies', 'contrary', 'context') AND "
+            "classification_origin IN ('human_defined', 'ai_suggested'))",
+            name="relation_matches_origin",
+        ),
+        CheckConstraint(
+            "link_type NOT IN ('supports', 'qualifies', 'contrary', 'context') OR "
+            "review_process IS NOT NULL",
+            name="research_relation_has_process",
+        ),
+        CheckConstraint(
+            "classification_origin != 'ai_suggested' OR "
+            "(relationship_basis = 'ai_suggestion' AND verification_state IN "
+            "('unreviewed', 'ai_flagged', 'needs_more_evidence', 'unresolved'))",
+            name="ai_suggestion_not_verified",
         ),
         CheckConstraint(
             "source_category IN ('court_finding', 'spo_argument', 'defence_argument', "
-            "'witness_testimony', 'document_exhibit', 'court_response', 'human_note', "
-            "'ai_analysis', 'other')",
+            "'victims_counsel_argument', 'witness_testimony', 'document_exhibit', "
+            "'court_response', 'human_note', 'ai_analysis', 'external_public_source', "
+            "'public_authority', 'other')",
             name="source_category_allowed",
         ),
         human_verification_requires_reviewer(),
@@ -414,7 +449,7 @@ class FindingEvidenceLink(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin
         index=True,
     )
     link_type: Mapped[FindingLinkType] = mapped_column(
-        db_enum(FindingLinkType, name="finding_link_type"), nullable=False
+        db_enum(FindingLinkType, name="evidence_matrix_relation"), nullable=False
     )
     # Whether the Court itself cited this source for the finding, and where.
     court_cited: Mapped[bool] = mapped_column(
@@ -424,10 +459,17 @@ class FindingEvidenceLink(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin
     relationship_basis: Mapped[str] = mapped_column(
         String(32),
         nullable=False,
-        default="related_public_record",
-        server_default="related_public_record",
+        default="explicit_court_citation",
+        server_default="explicit_court_citation",
     )
     source_category: Mapped[str] = mapped_column(String(32), nullable=False)
+    classification_origin: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="source_derived", server_default="source_derived"
+    )
+    review_process: Mapped[str | None] = mapped_column(String(128))
+    source_anchor_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("source_anchors.id", ondelete="SET NULL"), index=True
+    )
     extraction_origin: Mapped[str] = mapped_column(
         String(32), nullable=False, default="manual", server_default="manual"
     )
@@ -435,6 +477,7 @@ class FindingEvidenceLink(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin
 
     finding: Mapped[Finding] = relationship(back_populates="evidence_links")
     citation: Mapped[Citation] = relationship()
+    source_anchor: Mapped[SourceAnchor | None] = relationship()
 
 
 class Argument(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
@@ -478,6 +521,10 @@ class Argument(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
         String(32), nullable=False, default="direct_source", server_default="direct_source"
     )
     underlying_source_ref: Mapped[str | None] = mapped_column(String(255))
+    party_attribution: Mapped[str | None] = mapped_column(String(255))
+    source_anchor_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("source_anchors.id", ondelete="SET NULL"), index=True
+    )
     extraction_origin: Mapped[str] = mapped_column(
         String(32), nullable=False, default="manual", server_default="manual"
     )
@@ -486,6 +533,7 @@ class Argument(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     document_version: Mapped[DocumentVersion | None] = relationship()
     citation: Mapped[Citation | None] = relationship()
     finding: Mapped[Finding | None] = relationship()
+    source_anchor: Mapped[SourceAnchor | None] = relationship()
     responses: Mapped[list[ArgumentResponse]] = relationship(
         back_populates="argument",
         foreign_keys="ArgumentResponse.argument_id",

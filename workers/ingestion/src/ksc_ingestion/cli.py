@@ -51,6 +51,7 @@ from ksc_ingestion.external_media import (
 from ksc_ingestion.fetch import HttpFetcher
 from ksc_ingestion.findings_pipeline import Phase10Pipeline
 from ksc_ingestion.findings_quality_gate import run_phase10_gate, write_phase10_report
+from ksc_ingestion.legal_matrix import Phase22ALegalMatrixProjector
 from ksc_ingestion.parse_pipeline import Phase8Pipeline
 from ksc_ingestion.phase13_quality_gate import run_phase13_gate, write_phase13_report
 from ksc_ingestion.phase17_report import build_phase17_pass_a_report, write_phase17_pass_a_report
@@ -267,6 +268,28 @@ def cmd_project_transcript_sync(args: argparse.Namespace) -> int:
                 "precision": result.precision,
                 "reasons": result.reasons,
                 "page_contexts": result.page_contexts,
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def cmd_project_legal_matrix(args: argparse.Namespace) -> int:
+    """Project Phase 22A SourceAnchors and source-backed Evidence Path edges."""
+    settings = get_settings()
+    result = Phase22ALegalMatrixProjector(get_sessionmaker(), case_number=settings.case_id).run()
+    print(
+        json.dumps(
+            {
+                "run_id": str(result.run_id),
+                "finding_links": result.finding_links,
+                "arguments": result.arguments,
+                "issue_sources": result.issue_sources,
+                "graph_nodes": result.graph_nodes,
+                "graph_relationships": result.graph_relationships,
+                "source_anchors": result.source_anchors,
+                "precision": result.precision,
             },
             indent=2,
         )
@@ -744,6 +767,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="project transcript-segment SourceAnchors and printed page-header context",
     )
     p_transcript_sync.set_defaults(func=cmd_project_transcript_sync)
+    p_legal_matrix = sub.add_parser(
+        "project-legal-matrix",
+        help="project Phase 22A matrix SourceAnchors and source-backed path edges",
+    )
+    p_legal_matrix.set_defaults(func=cmd_project_legal_matrix)
     p_intelligence = sub.add_parser(
         "build-intelligence",
         help="project Phase 19B aliases, appearances, exhibit status events, mentions and typed edges",

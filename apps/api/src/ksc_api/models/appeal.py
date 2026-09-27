@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from ksc_api.models.ai import AiRun
     from ksc_api.models.citation import Citation
     from ksc_api.models.evidence import Argument, Finding, FindingEvidenceLink
+    from ksc_api.models.source import SourceAnchor
 
 
 ISSUE_CATEGORIES = (
@@ -65,6 +66,10 @@ class AppealIssue(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
             "'insufficient_record')",
             name="red_team_result_allowed",
         ),
+        CheckConstraint(
+            "definition_origin IN ('human_defined', 'source_derived', 'ai_suggested')",
+            name="definition_origin_allowed",
+        ),
         human_verification_requires_reviewer(),
     )
 
@@ -87,6 +92,9 @@ class AppealIssue(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     red_team_result: Mapped[str] = mapped_column(String(32), nullable=False)
     extraction_origin: Mapped[str] = mapped_column(String(64), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text)
+    definition_origin: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="human_defined", server_default="human_defined"
+    )
 
     finding: Mapped[Finding] = relationship()
     sources: Mapped[list[AppealIssueSource]] = relationship(
@@ -115,8 +123,25 @@ class AppealIssueSource(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, 
         ),
         CheckConstraint(
             "source_category IN ('court_finding', 'spo_argument', 'defence_argument', "
-            "'witness_testimony', 'document_exhibit', 'court_response', 'public_authority')",
+            "'victims_counsel_argument', 'witness_testimony', 'document_exhibit', "
+            "'court_response', 'public_authority', 'human_note', 'ai_analysis', "
+            "'external_public_source')",
             name="source_category_allowed",
+        ),
+        CheckConstraint(
+            "classification_origin IN ('source_derived', 'human_defined', 'ai_suggested')",
+            name="classification_origin_allowed",
+        ),
+        CheckConstraint(
+            "role NOT IN ('supporting', 'contrary', 'qualifying') OR "
+            "(classification_origin IN ('human_defined', 'ai_suggested') AND "
+            "review_process IS NOT NULL)",
+            name="research_role_has_process",
+        ),
+        CheckConstraint(
+            "classification_origin != 'ai_suggested' OR verification_state IN "
+            "('unreviewed', 'ai_flagged', 'needs_more_evidence', 'unresolved')",
+            name="ai_suggestion_not_verified",
         ),
         human_verification_requires_reviewer(),
     )
@@ -144,11 +169,19 @@ class AppealIssueSource(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, 
     )
     excerpt: Mapped[str] = mapped_column(Text, nullable=False)
     note: Mapped[str | None] = mapped_column(Text)
+    classification_origin: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="source_derived", server_default="source_derived"
+    )
+    review_process: Mapped[str | None] = mapped_column(String(128))
+    source_anchor_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("source_anchors.id", ondelete="SET NULL"), index=True
+    )
 
     issue: Mapped[AppealIssue] = relationship(back_populates="sources")
     citation: Mapped[Citation] = relationship()
     argument: Mapped[Argument | None] = relationship()
     finding_evidence_link: Mapped[FindingEvidenceLink | None] = relationship()
+    source_anchor: Mapped[SourceAnchor | None] = relationship()
 
 
 class AppealMissingMaterial(UUIDPrimaryKeyMixin, TimestampMixin, Base):

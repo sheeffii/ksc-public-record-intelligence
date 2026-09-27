@@ -12,6 +12,7 @@ from ksc_api.models import (
     AppealIssue,
     AppealIssueSource,
     Citation,
+    Party,
     RedTeamFinding,
     RedTeamReview,
     ResearchNote,
@@ -21,7 +22,7 @@ from ksc_api.models import (
 )
 from ksc_api.models.case import Case
 from ksc_api.repositories import mappers
-from ksc_api.repositories.records import CITATION_LOAD
+from ksc_api.repositories.records import CITATION_LOAD, RecordRepository, matrix_review_status
 from ksc_api.schemas.appeal import (
     AppealCoverageRead,
     AppealIssueDetail,
@@ -30,12 +31,14 @@ from ksc_api.schemas.appeal import (
     AppealWorkspaceRead,
     ArgumentLabRead,
     CitationAuditRead,
+    IssueMatrixRead,
     MissingMaterialRead,
     RedTeamFindingRead,
     RedTeamReviewRead,
     ResearchNoteCreate,
     StatementComparisonRead,
 )
+from ksc_api.schemas.records import EvidenceMatrixRowRead
 
 _LIMITATIONS = [
     "The controlled corpus does not contain the public Trial Judgment.",
@@ -68,6 +71,7 @@ class AppealResearchService:
             verification_state=issue.verification_state,
             verified_by=issue.verified_by,
             verified_at=issue.verified_at,
+            definition_origin=issue.definition_origin,
         )
 
     def _issues(self) -> list[AppealIssue]:
@@ -168,6 +172,7 @@ class AppealResearchService:
                 selectinload(AppealIssue.sources)
                 .selectinload(AppealIssueSource.citation)
                 .options(*CITATION_LOAD),
+                selectinload(AppealIssue.sources).selectinload(AppealIssueSource.argument),
                 selectinload(AppealIssue.missing_material),
                 selectinload(AppealIssue.red_team_reviews)
                 .selectinload(RedTeamReview.findings)
@@ -302,6 +307,12 @@ class AppealResearchService:
                     note=source.note,
                     verification_state=source.verification_state,
                     citation=mappers.to_citation(source.citation),
+                    classification_origin=source.classification_origin,
+                    review_process=source.review_process,
+                    review_status=matrix_review_status(
+                        source.classification_origin, source.verification_state
+                    ),
+                    source_anchor_id=source.source_anchor_id,
                 )
                 for source in issue.sources
             ],
@@ -321,6 +332,94 @@ class AppealResearchService:
                 for review in issue.red_team_reviews
             ],
             citation_audit=self._audit(issue, comparison_rows),
+        )
+
+    def issue_matrix(
+        self,
+        issue_key: str,
+        *,
+        relationship: str | None,
+        source_category: str | None,
+        limit: int,
+        offset: int,
+    ) -> IssueMatrixRead | None:
+        issue = self._load_issue(issue_key)
+        if issue is None:
+            return None
+        records = RecordRepository(self.session, self.case)
+        relation_for_role = {
+            "court_reasoning": "court_finding",
+            "applicable_standard": "context",
+            "evidence_relied": "court_relies_on",
+            "defence_position": "party_position",
+            "spo_position": "party_position",
+            "court_response": "court_treatment",
+            "supporting": "supports",
+            "qualifying": "qualifies",
+            "contrary": "contrary",
+        }
+        party_for_role = {
+            "defence_position": Party.DEFENCE,
+            "spo_position": Party.SPO,
+            "court_response": Party.COURT,
+            "court_reasoning": Party.COURT,
+        }
+        rows: list[EvidenceMatrixRowRead] = []
+        for source in issue.sources:
+            relation = relation_for_role[source.role]
+            rows.append(
+                EvidenceMatrixRowRead(
+                    id=f"issue-source:{source.id}",
+                    relation=relation,
+                    source_category=source.source_category,
+                    title=source.role.replace("_", " ").title(),
+                    exact_text=source.excerpt,
+                    party=party_for_role.get(source.role),
+                    party_attribution=(
+                        source.argument.party_attribution
+                        if source.argument is not None
+                        else (
+                            party_for_role[source.role].value.replace("_", " ").title()
+                            if source.role in party_for_role
+                            else None
+                        )
+                    ),
+                    source_scope=(
+                        source.argument.source_scope
+                        if source.argument is not None
+                        else "direct_source"
+                    ),
+                    classification_origin=source.classification_origin,
+                    review_process=source.review_process,
+                    review_status=matrix_review_status(
+                        source.classification_origin, source.verification_state
+                    ),
+                    verification_state=source.verification_state,
+                    citation=mappers.to_citation(source.citation),
+                    source_anchor=(
+                        records.get_source_anchor(source.source_anchor_id)
+                        if source.source_anchor_id is not None
+                        else None
+                    ),
+                )
+            )
+        coverage = records._matrix_coverage(rows)
+        filtered = [
+            row
+            for row in rows
+            if (relationship is None or row.relation == relationship)
+            and (source_category is None or row.source_category == source_category)
+        ]
+        return IssueMatrixRead(
+            issue=self._summary(issue),
+            items=filtered[offset : offset + limit],
+            total=len(filtered),
+            limit=limit,
+            offset=offset,
+            coverage=coverage,
+            missing_material=[
+                MissingMaterialRead.model_validate(item) for item in issue.missing_material
+            ],
         )
 
     def argument_lab(self, issue_key: str) -> ArgumentLabRead | None:

@@ -47,6 +47,8 @@ from ksc_api.schemas.records import (
     DocumentSummary,
     DocumentVersionRead,
     EventRead,
+    EvidenceMatrixCoverageRead,
+    EvidenceMatrixRowRead,
     ExhibitRead,
     FindingDetail,
     FindingEvidenceLinkRead,
@@ -430,11 +432,14 @@ def to_claim(claim: Claim, mentions: list[ClaimMention]) -> ClaimRead:
 
 def to_evidence_link(link: FindingEvidenceLink) -> FindingEvidenceLinkRead:
     return FindingEvidenceLinkRead(
+        id=link.id,
         link_type=link.link_type,
         court_cited=link.court_cited,
         court_cited_para=link.court_cited_para,
         relationship_basis=link.relationship_basis,
         source_category=link.source_category,
+        classification_origin=link.classification_origin,
+        review_process=link.review_process,
         note=link.note,
         verification_state=link.verification_state,
         citation=to_citation(link.citation),
@@ -458,6 +463,7 @@ def to_argument(argument: Argument) -> ArgumentRead:
         para_to=argument.para_to,
         source_scope=argument.source_scope,
         underlying_source_ref=argument.underlying_source_ref,
+        party_attribution=argument.party_attribution,
         verification_state=argument.verification_state,
         citation=to_citation(citation) if citation is not None else None,
     )
@@ -501,6 +507,11 @@ def to_finding_detail(
     human_notes: list[HumanNoteRead],
     source_audit: FindingSourceAuditRead,
     corroboration_categories: dict[str, int],
+    matrix_rows: list[EvidenceMatrixRowRead],
+    matrix_total: int,
+    matrix_limit: int,
+    matrix_offset: int,
+    matrix_coverage: EvidenceMatrixCoverageRead,
 ) -> FindingDetail:
     summary = to_finding_summary(finding, counts)
     return FindingDetail(
@@ -517,6 +528,11 @@ def to_finding_detail(
         corroboration_note=(
             "No additional corroborating source has been identified in the indexed public record."
         ),
+        matrix_rows=matrix_rows,
+        matrix_total=matrix_total,
+        matrix_limit=matrix_limit,
+        matrix_offset=matrix_offset,
+        matrix_coverage=matrix_coverage,
     )
 
 

@@ -70,6 +70,8 @@ export interface SourceRegionView {
 export interface SourceAnchorView {
   id: string;
   officialVersionRef: string;
+  documentRef: string;
+  targetPath: string;
   pdfPageIndex?: number;
   pageNumber?: number;
   paragraphNumber?: number;
@@ -212,10 +214,23 @@ export interface FindingCitationView {
 }
 
 export interface FindingEvidenceView {
-  linkType: "relies_on" | "supports" | "qualifies" | "contrary" | "context";
+  linkType:
+    | "court_relies_on"
+    | "court_cites"
+    | "party_cites"
+    | "supports"
+    | "qualifies"
+    | "contrary"
+    | "context";
   courtCited: boolean;
   courtCitedPara?: number;
-  relationshipBasis: "explicit_court_citation" | "related_public_record";
+  relationshipBasis:
+    | "explicit_court_reliance"
+    | "explicit_court_citation"
+    | "explicit_party_citation"
+    | "human_classification"
+    | "ai_suggestion"
+    | "related_public_record";
   sourceCategory: string;
   note?: string;
   verification: VerificationState;
@@ -233,8 +248,28 @@ export interface FindingArgumentView {
   paraTo?: number;
   sourceScope: "direct_source" | "court_summary" | "source_missing";
   underlyingSourceRef?: string;
+  partyAttribution?: string;
   verification: VerificationState;
   source?: FindingCitationView;
+}
+
+export interface EvidenceMatrixRowView {
+  id: string;
+  relation: string;
+  sourceCategory: string;
+  title: string;
+  exactText: string;
+  party?: "spo" | "defence" | "victims_counsel" | "court" | "other";
+  partyAttribution?: string;
+  sourceScope?: "direct_source" | "court_summary" | "source_missing";
+  classificationOrigin: "source_derived" | "human_defined" | "ai_suggested";
+  reviewProcess?: string;
+  reviewStatus: "verified_source_relation" | "human_reviewed" | "review_required" | "ai_suggested";
+  verification: VerificationState;
+  citation?: FindingCitationView;
+  sourceAnchor?: SourceAnchorView;
+  pathFromNodeId?: string;
+  pathToNodeId?: string;
 }
 
 export interface FindingAuditView {
@@ -292,6 +327,25 @@ export interface FindingView {
   audit: FindingAuditView;
   corroborationCategories: Readonly<Record<string, number>>;
   corroborationNote: string;
+  matrix: {
+    rows: readonly EvidenceMatrixRowView[];
+    total: number;
+    limit: number;
+    offset: number;
+    coverage: {
+      rows: number;
+      courtFindings: number;
+      courtReliance: number;
+      courtCitations: number;
+      partyArguments: number;
+      supportingClassifications: number;
+      qualifyingClassifications: number;
+      contraryClassifications: number;
+      witnessPassages: number;
+      exhibitLinks: number;
+      sourceAnchors: number;
+    };
+  };
 }
 
 export type AiSourceCategory =

@@ -170,29 +170,7 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
 
     async getSourceAnchor(id: string) {
       const anchor = await client.get<ApiSourceAnchor>(`/source-anchors/${encodeURIComponent(id)}`);
-      return anchor
-        ? {
-            id: anchor.id,
-            officialVersionRef: anchor.official_version_ref,
-            pdfPageIndex: anchor.pdf_page_index ?? undefined,
-            pageNumber: anchor.page_number ?? undefined,
-            paragraphNumber: anchor.paragraph_number ?? undefined,
-            lineFrom: anchor.line_from ?? undefined,
-            lineTo: anchor.line_to ?? undefined,
-            exactText: anchor.exact_text ?? undefined,
-            extractionMethod: anchor.extraction_method,
-            extractorVersion: anchor.extractor_version,
-            processingRunId: anchor.processing_run_id ?? undefined,
-            precision: anchor.precision,
-            state: anchor.state,
-            failureReason: anchor.failure_reason ?? undefined,
-            pageWidth: anchor.page_width ?? undefined,
-            pageHeight: anchor.page_height ?? undefined,
-            pageRotation: anchor.page_rotation ?? undefined,
-            transcriptSegmentId: anchor.transcript_segment_id ?? undefined,
-            regions: anchor.regions,
-          }
-        : null;
+      return anchor ? map.toSourceAnchor(anchor) : null;
     },
 
     async search(query: string): Promise<readonly SearchResult[]> {

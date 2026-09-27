@@ -45,6 +45,7 @@ from ksc_api.models import (
     Exhibit,
     Finding,
     FindingEvidenceLink,
+    FindingLinkType,
     GraphNode,
     Hearing,
     Incident,
@@ -91,6 +92,8 @@ from ksc_api.schemas.records import (
     DocumentSummary,
     EntityMentionRead,
     EventRead,
+    EvidenceMatrixCoverageRead,
+    EvidenceMatrixRowRead,
     EvidencePathRead,
     ExhibitRead,
     FindingDetail,
@@ -115,6 +118,18 @@ from ksc_api.schemas.records import (
     TranscriptRead,
     WitnessRead,
 )
+
+
+def matrix_review_status(classification_origin: str, verification_state: VerificationState) -> str:
+    """Describe review of the source relationship, never legal truth."""
+    if classification_origin == "ai_suggested":
+        return "ai_suggested"
+    if verification_state != VerificationState.HUMAN_VERIFIED:
+        return "review_required"
+    if classification_origin == "human_defined":
+        return "human_reviewed"
+    return "verified_source_relation"
+
 
 # Eager-load everything `mappers.to_citation` touches, so serialisation never
 # lazy-loads after the session is gone.
@@ -456,7 +471,7 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
 
     def get_source_anchor(self, anchor_id: uuid.UUID) -> SourceAnchorRead | None:
         row = self.session.execute(
-            select(SourceAnchor, SourceSpan, DocumentVersion, DocumentPage)
+            select(SourceAnchor, SourceSpan, DocumentVersion, Document, DocumentPage)
             .join(SourceSpan, SourceSpan.id == SourceAnchor.source_span_id)
             .join(DocumentVersion, DocumentVersion.id == SourceSpan.document_version_id)
             .join(Document, Document.id == DocumentVersion.document_id)
@@ -476,7 +491,7 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
         ).one_or_none()
         if row is None:
             return None
-        anchor, span, version, page = row
+        anchor, span, version, document, page = row
         self.session.refresh(span, ["regions"])
         return SourceAnchorRead(
             id=anchor.id,
@@ -486,6 +501,18 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
             verification_state=anchor.source_verification_state,
             document_version_id=span.document_version_id,
             official_version_ref=version.official_version_ref,
+            document_ref=document.official_ref,
+            target_path=(
+                _document_target_path(
+                    document,
+                    version,
+                    pdf_page_index=span.pdf_page_index,
+                    page=span.page_number,
+                    paragraph=span.paragraph_number,
+                    line=span.line_from,
+                )
+                + f"&anchor={anchor.id}"
+            ),
             pdf_page_index=span.pdf_page_index,
             page_number=span.page_number,
             paragraph_number=span.paragraph_number,
@@ -795,7 +822,15 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
         items = [mappers.to_finding_summary(f, counts.get(f.id, mappers.ZERO_COUNTS)) for f in rows]
         return Page(items=items, total=total, limit=limit, offset=offset)
 
-    def get_finding(self, finding_key: str) -> FindingDetail | None:
+    def get_finding(
+        self,
+        finding_key: str,
+        *,
+        matrix_relation: str | None = None,
+        matrix_source_category: str | None = None,
+        matrix_limit: int = 100,
+        matrix_offset: int = 0,
+    ) -> FindingDetail | None:
         finding = self.session.scalar(
             self._findings_stmt().where(Finding.finding_key == finding_key)
         )
@@ -938,6 +973,22 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
         for link in links:
             categories[link.source_category] = categories.get(link.source_category, 0) + 1
         counts = self._counts(EntityKind.FINDING, [finding.id]).get(finding.id, mappers.ZERO_COUNTS)
+        matrix_rows = self._finding_matrix_rows(
+            finding,
+            list(links),
+            list(arguments),
+            list(responses),
+            list(notes),
+        )
+        coverage = self._matrix_coverage(matrix_rows)
+        if matrix_relation is not None:
+            matrix_rows = [row for row in matrix_rows if row.relation == matrix_relation]
+        if matrix_source_category is not None:
+            matrix_rows = [
+                row for row in matrix_rows if row.source_category == matrix_source_category
+            ]
+        matrix_total = len(matrix_rows)
+        matrix_rows = matrix_rows[matrix_offset : matrix_offset + matrix_limit]
         return mappers.to_finding_detail(
             finding,
             counts,
@@ -948,6 +999,177 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
             human_notes=note_reads,
             source_audit=source_audit,
             corroboration_categories=categories,
+            matrix_rows=matrix_rows,
+            matrix_total=matrix_total,
+            matrix_limit=matrix_limit,
+            matrix_offset=matrix_offset,
+            matrix_coverage=coverage,
+        )
+
+    def _finding_matrix_rows(
+        self,
+        finding: Finding,
+        links: list[FindingEvidenceLink],
+        arguments: list[Argument],
+        responses: list[ArgumentResponse],
+        notes: list[ResearchNote],
+    ) -> list[EvidenceMatrixRowRead]:
+        finding_anchor_id = self.session.scalar(
+            select(SourceAnchor.id).where(
+                SourceAnchor.object_type == "finding",
+                SourceAnchor.object_id == finding.id,
+            )
+        )
+        finding_node_id = self.session.scalar(
+            select(GraphNode.id).where(GraphNode.finding_id == finding.id)
+        )
+        rows = [
+            EvidenceMatrixRowRead(
+                id=f"finding:{finding.id}",
+                relation="court_finding",
+                source_category="court_finding",
+                title="Court finding",
+                exact_text=finding.text,
+                party=Party.COURT,
+                party_attribution="Court",
+                source_scope="direct_source",
+                classification_origin="source_derived",
+                review_process=None,
+                review_status=matrix_review_status("source_derived", finding.verification_state),
+                verification_state=finding.verification_state,
+                citation=(
+                    mappers.to_citation(finding.citation) if finding.citation is not None else None
+                ),
+                source_anchor=(
+                    self.get_source_anchor(finding_anchor_id)
+                    if finding_anchor_id is not None
+                    else None
+                ),
+            )
+        ]
+        for link in links:
+            anchor = (
+                self.get_source_anchor(link.source_anchor_id)
+                if link.source_anchor_id is not None
+                else None
+            )
+            target_node_id = None
+            if finding_node_id is not None and link.citation.target_document_id is not None:
+                target_node_id = self.session.scalar(
+                    select(GraphNode.id).where(
+                        GraphNode.document_id == link.citation.target_document_id
+                    )
+                )
+            rows.append(
+                EvidenceMatrixRowRead(
+                    id=f"evidence-link:{link.id}",
+                    relation=link.link_type.value,
+                    source_category=link.source_category,
+                    title=link.note or link.citation.display,
+                    exact_text=anchor.exact_text
+                    if anchor and anchor.exact_text
+                    else link.citation.display,
+                    party=None,
+                    party_attribution=None,
+                    source_scope="direct_source",
+                    classification_origin=link.classification_origin,
+                    review_process=link.review_process,
+                    review_status=matrix_review_status(
+                        link.classification_origin, link.verification_state
+                    ),
+                    verification_state=link.verification_state,
+                    citation=mappers.to_citation(link.citation),
+                    source_anchor=anchor,
+                    path_from_node_id=finding_node_id if target_node_id is not None else None,
+                    path_to_node_id=target_node_id,
+                )
+            )
+        response_argument_ids = {row.response_argument_id for row in responses}
+        for argument in arguments:
+            if argument.party == Party.COURT and argument.id not in response_argument_ids:
+                continue
+            source_category = {
+                Party.SPO: "spo_argument",
+                Party.DEFENCE: "defence_argument",
+                Party.VICTIMS_COUNSEL: "victims_counsel_argument",
+                Party.COURT: "court_response",
+            }.get(argument.party, "other")
+            relation = "court_treatment" if argument.party == Party.COURT else "party_position"
+            anchor = (
+                self.get_source_anchor(argument.source_anchor_id)
+                if argument.source_anchor_id is not None
+                else None
+            )
+            rows.append(
+                EvidenceMatrixRowRead(
+                    id=f"argument:{argument.id}",
+                    relation=relation,
+                    source_category=source_category,
+                    title=argument.title,
+                    exact_text=argument.text,
+                    party=argument.party,
+                    party_attribution=argument.party_attribution,
+                    source_scope=argument.source_scope,
+                    classification_origin="source_derived",
+                    review_process=None,
+                    review_status=matrix_review_status(
+                        "source_derived", argument.verification_state
+                    ),
+                    verification_state=argument.verification_state,
+                    citation=(
+                        mappers.to_citation(argument.citation)
+                        if argument.citation is not None
+                        else None
+                    ),
+                    source_anchor=anchor,
+                )
+            )
+        for note in notes:
+            for citation in (item for item in note.citations if item.is_resolved):
+                anchor_id = self.session.scalar(
+                    select(SourceAnchor.id).where(
+                        SourceAnchor.object_type == "citation",
+                        SourceAnchor.object_id == citation.id,
+                    )
+                )
+                anchor = self.get_source_anchor(anchor_id) if anchor_id is not None else None
+                rows.append(
+                    EvidenceMatrixRowRead(
+                        id=f"human-note:{note.id}:{citation.id}",
+                        relation="human_note",
+                        source_category="human_note",
+                        title=note.title,
+                        exact_text=note.body,
+                        party=None,
+                        party_attribution=None,
+                        source_scope="direct_source",
+                        classification_origin="human_defined",
+                        review_process=f"Research note by {note.author}",
+                        review_status="review_required",
+                        verification_state=VerificationState.UNREVIEWED,
+                        citation=mappers.to_citation(citation),
+                        source_anchor=anchor,
+                    )
+                )
+        return rows
+
+    @staticmethod
+    def _matrix_coverage(rows: Sequence[EvidenceMatrixRowRead]) -> EvidenceMatrixCoverageRead:
+        def count_relation(value: str) -> int:
+            return sum(row.relation == value for row in rows)
+
+        return EvidenceMatrixCoverageRead(
+            rows=len(rows),
+            court_findings=count_relation("court_finding"),
+            court_reliance=count_relation(FindingLinkType.COURT_RELIES_ON.value),
+            court_citations=count_relation(FindingLinkType.COURT_CITES.value),
+            party_arguments=count_relation("party_position"),
+            supporting_classifications=count_relation(FindingLinkType.SUPPORTS.value),
+            qualifying_classifications=count_relation(FindingLinkType.QUALIFIES.value),
+            contrary_classifications=count_relation(FindingLinkType.CONTRARY.value),
+            witness_passages=sum(row.source_category == "witness_testimony" for row in rows),
+            exhibit_links=sum(row.source_category == "document_exhibit" for row in rows),
+            source_anchors=sum(row.source_anchor is not None for row in rows),
         )
 
     @staticmethod

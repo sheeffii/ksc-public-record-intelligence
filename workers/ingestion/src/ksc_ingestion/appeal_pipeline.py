@@ -182,6 +182,7 @@ class Phase12Pipeline:
                 red_team_result="insufficient_record",
                 extraction_origin=_ORIGIN,
                 notes="No error, valid ground, or predicted outcome is asserted.",
+                definition_origin="human_defined",
                 verification_state=VerificationState.NEEDS_MORE_EVIDENCE,
             )
             session.add(issue)
@@ -260,6 +261,7 @@ class Phase12Pipeline:
                         finding_evidence_link_id=link_id,
                         excerpt=excerpt,
                         note=note,
+                        classification_origin="source_derived",
                         verification_state=VerificationState.HUMAN_VERIFIED,
                         verified_by=_REVIEWER,
                         verified_at=_REVIEWED_AT,

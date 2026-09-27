@@ -225,7 +225,13 @@ export interface ApiDocumentVersion {
 
 export interface ApiSourceAnchor {
   id: string;
+  object_type: string;
+  object_id: string;
+  anchor_role: string;
+  verification_state: string;
   official_version_ref: string;
+  document_ref: string;
+  target_path: string;
   pdf_page_index: number | null;
   page_number: number | null;
   paragraph_number: number | null;
@@ -335,14 +341,30 @@ export interface ApiFindingSummary {
   counts: ApiReferenceCounts;
 }
 
-export type ApiFindingLinkType = "relies_on" | "supports" | "qualifies" | "contrary" | "context";
+export type ApiFindingLinkType =
+  | "court_relies_on"
+  | "court_cites"
+  | "party_cites"
+  | "supports"
+  | "qualifies"
+  | "contrary"
+  | "context";
 
 export interface ApiFindingEvidenceLink {
+  id: string;
   link_type: ApiFindingLinkType;
   court_cited: boolean;
   court_cited_para: number | null;
-  relationship_basis: "explicit_court_citation" | "related_public_record";
+  relationship_basis:
+    | "explicit_court_reliance"
+    | "explicit_court_citation"
+    | "explicit_party_citation"
+    | "human_classification"
+    | "ai_suggestion"
+    | "related_public_record";
   source_category: string;
+  classification_origin: "source_derived" | "human_defined" | "ai_suggested";
+  review_process: string | null;
   note: string | null;
   verification_state: ApiVerificationState;
   citation: ApiCitation;
@@ -359,8 +381,35 @@ export interface ApiArgument {
   para_to: number | null;
   source_scope: "direct_source" | "court_summary" | "source_missing";
   underlying_source_ref: string | null;
+  party_attribution: string | null;
   verification_state: ApiVerificationState;
   citation: ApiCitation | null;
+}
+
+export interface ApiEvidenceMatrixRow {
+  id: string;
+  relation:
+    | ApiFindingLinkType
+    | "court_finding"
+    | "party_position"
+    | "court_treatment"
+    | "witness_testimony"
+    | "document_exhibit"
+    | "human_note";
+  source_category: string;
+  title: string;
+  exact_text: string;
+  party: ApiParty | null;
+  party_attribution: string | null;
+  source_scope: "direct_source" | "court_summary" | "source_missing" | null;
+  classification_origin: "source_derived" | "human_defined" | "ai_suggested";
+  review_process: string | null;
+  review_status: "verified_source_relation" | "human_reviewed" | "review_required" | "ai_suggested";
+  verification_state: ApiVerificationState;
+  citation: ApiCitation | null;
+  source_anchor: ApiSourceAnchor | null;
+  path_from_node_id: string | null;
+  path_to_node_id: string | null;
 }
 
 export interface ApiArgumentResponse {
@@ -420,6 +469,23 @@ export interface ApiFindingDetail extends ApiFindingSummary {
   };
   corroboration_categories: Record<string, number>;
   corroboration_note: string;
+  matrix_rows: ApiEvidenceMatrixRow[];
+  matrix_total: number;
+  matrix_limit: number;
+  matrix_offset: number;
+  matrix_coverage: {
+    rows: number;
+    court_findings: number;
+    court_reliance: number;
+    court_citations: number;
+    party_arguments: number;
+    supporting_classifications: number;
+    qualifying_classifications: number;
+    contrary_classifications: number;
+    witness_passages: number;
+    exhibit_links: number;
+    source_anchors: number;
+  };
 }
 
 export interface ApiEvent {

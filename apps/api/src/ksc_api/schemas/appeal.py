@@ -9,6 +9,7 @@ from pydantic import Field
 from ksc_api.models.enums import VerificationState
 from ksc_api.schemas.citation import CitationRead
 from ksc_api.schemas.common import ReadModel
+from ksc_api.schemas.records import EvidenceMatrixCoverageRead, EvidenceMatrixRowRead
 
 IssueCategory = Literal[
     "error_of_law",
@@ -44,6 +45,12 @@ class AppealSourceRead(ReadModel):
     note: str | None
     verification_state: VerificationState
     citation: CitationRead
+    classification_origin: Literal["source_derived", "human_defined", "ai_suggested"]
+    review_process: str | None
+    review_status: Literal[
+        "verified_source_relation", "human_reviewed", "review_required", "ai_suggested"
+    ]
+    source_anchor_id: uuid.UUID | None
 
 
 class MissingMaterialRead(ReadModel):
@@ -98,6 +105,7 @@ class AppealIssueSummary(ReadModel):
     verification_state: VerificationState
     verified_by: str | None
     verified_at: datetime | None
+    definition_origin: Literal["human_defined", "source_derived", "ai_suggested"]
 
 
 class AppealIssueDetail(AppealIssueSummary):
@@ -107,6 +115,16 @@ class AppealIssueDetail(AppealIssueSummary):
     statement_comparisons: list[StatementComparisonRead]
     red_team_reviews: list[RedTeamReviewRead]
     citation_audit: CitationAuditRead
+
+
+class IssueMatrixRead(ReadModel):
+    issue: AppealIssueSummary
+    items: list[EvidenceMatrixRowRead]
+    total: int = Field(ge=0)
+    limit: int = Field(ge=1, le=100)
+    offset: int = Field(ge=0)
+    coverage: EvidenceMatrixCoverageRead
+    missing_material: list[MissingMaterialRead]
 
 
 class AppealCoverageRead(ReadModel):

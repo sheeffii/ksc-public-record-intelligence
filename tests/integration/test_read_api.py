@@ -110,7 +110,10 @@ def test_finding_detail_exposes_structured_matrix_and_source_audit(demo_client):
     assert all(link["citation"]["resolved"] for link in body["evidence_links"])
     court_cited = [link for link in body["evidence_links"] if link["court_cited"]]
     assert all(link["court_cited_para"] == 13 for link in court_cited)
-    assert all(link["relationship_basis"] == "explicit_court_citation" for link in court_cited)
+    assert {link["link_type"]: link["relationship_basis"] for link in court_cited} == {
+        "court_relies_on": "explicit_court_reliance",
+        "court_cites": "explicit_court_citation",
+    }
     parties = {a["party"] for a in body["arguments"]}
     assert parties == {"spo", "defence", "court"}
     assert body["judgment"]["version_ref"] == "F-DEMO-001/RED"
@@ -122,6 +125,25 @@ def test_finding_detail_exposes_structured_matrix_and_source_audit(demo_client):
     assert body["corroboration_note"].startswith("No additional corroborating source")
     matrix = demo_client.get(f"{V1}/findings/FD-DEMO-001/matrix")
     assert matrix.status_code == 200 and matrix.json() == body
+    assert body["matrix_coverage"] == {
+        "rows": 7,
+        "court_findings": 1,
+        "court_reliance": 1,
+        "court_citations": 1,
+        "party_arguments": 2,
+        "supporting_classifications": 0,
+        "qualifying_classifications": 0,
+        "contrary_classifications": 0,
+        "witness_passages": 1,
+        "exhibit_links": 1,
+        "source_anchors": 0,
+    }
+    filtered = demo_client.get(
+        f"{V1}/findings/FD-DEMO-001/matrix",
+        params={"relationship": "court_relies_on", "limit": 1},
+    ).json()
+    assert filtered["matrix_total"] == 1
+    assert [row["relation"] for row in filtered["matrix_rows"]] == ["court_relies_on"]
     listing = demo_client.get(f"{V1}/findings").json()
     assert listing["total"] == 1 and "evidence_links" not in listing["items"][0]
 

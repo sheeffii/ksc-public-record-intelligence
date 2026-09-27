@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type { FindingCitationView, FindingView } from "@/data";
+import type { EvidenceMatrixRowView, FindingCitationView, FindingView } from "@/data";
 import { EmptyState } from "@/components/primitives/States";
 import { Panel } from "@/components/primitives/Panel";
 import { CitationChip, RecordBlock, VerificationBadge } from "@/components/provenance";
@@ -34,6 +34,34 @@ function SourceLink({ source, label }: { source?: FindingCitationView; label: st
   );
 }
 
+function MatrixSourceLink({ row }: { row: EvidenceMatrixRowView }) {
+  const t = useTranslations("phase10");
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      {row.sourceAnchor ? (
+        <Link className="text-accent text-[10px] font-semibold" href={row.sourceAnchor.targetPath}>
+          {t("openExactSource")}
+        </Link>
+      ) : (
+        <span className="text-unresolved text-[10px]">{t("anchorUnavailable")}</span>
+      )}
+      {row.citation?.targetPath && row.citation.targetPath !== row.sourceAnchor?.targetPath ? (
+        <Link className="text-fg-secondary text-[10px]" href={row.citation.targetPath}>
+          {t("openCitedMaterial")}
+        </Link>
+      ) : null}
+      {row.pathFromNodeId && row.pathToNodeId ? (
+        <Link
+          className="text-fg-secondary text-[10px]"
+          href={`/network/path?from=${row.pathFromNodeId}&to=${row.pathToNodeId}`}
+        >
+          {t("viewEvidencePath")}
+        </Link>
+      ) : null}
+    </span>
+  );
+}
+
 export function RealFindingDetailScreen({ finding }: { finding: FindingView }) {
   const t = useTranslations("phase10");
   const paraRange = finding.paraTo
@@ -44,6 +72,8 @@ export function RealFindingDetailScreen({ finding }: { finding: FindingView }) {
     new Map(finding.courtResponses.map((response) => [response.response.key, response])).values(),
   );
   const relationshipGroups = ["supports", "qualifies", "contrary", "context"] as const;
+  const matrixRows = finding.matrix.rows;
+  const witnessRows = matrixRows.filter((row) => row.sourceCategory === "witness_testimony");
 
   return (
     <AppShell
@@ -106,34 +136,45 @@ export function RealFindingDetailScreen({ finding }: { finding: FindingView }) {
                   <tr>
                     <th className="px-2 py-2">{t("relationship")}</th>
                     <th className="px-2 py-2">{t("sourceCategory")}</th>
-                    <th className="px-2 py-2">{t("courtTreatment")}</th>
+                    <th className="px-2 py-2">{t("matrixPassage")}</th>
                     <th className="px-2 py-2">{t("exactSource")}</th>
                     <th className="px-2 py-2">{t("verification")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-border-faint divide-y">
-                  {finding.evidence.map((link) => (
-                    <tr key={`${link.linkType}-${link.source.citation.ref}`}>
-                      <td className="px-2 py-3">{t(`linkTypes.${link.linkType}`)}</td>
-                      <td className="px-2 py-3">{t(`sourceCategories.${link.sourceCategory}`)}</td>
+                  {matrixRows.map((row) => (
+                    <tr key={row.id}>
+                      <td className="px-2 py-3">{t(`linkTypes.${row.relation}`)}</td>
+                      <td className="px-2 py-3">{t(`sourceCategories.${row.sourceCategory}`)}</td>
                       <td className="px-2 py-3">
-                        {link.courtCited ? t("explicitCourtCitation") : t("relatedNotExplicit")}
-                        {link.courtCitedPara ? ` · ¶${link.courtCitedPara}` : ""}
+                        <p className="line-clamp-3 font-serif">{row.exactText}</p>
+                        {row.sourceScope === "court_summary" ? (
+                          <p className="text-unresolved mt-1 text-[10px]">
+                            {t("courtSummaryPassage")}
+                          </p>
+                        ) : null}
                       </td>
                       <td className="px-2 py-3">
-                        <SourceLink source={link.source} label={t("openExactSource")} />
+                        <MatrixSourceLink row={row} />
                       </td>
                       <td className="px-2 py-3">
-                        <VerificationBadge state={link.verification} size="sm" />
+                        <p className="text-[10px]">{t(`reviewStatuses.${row.reviewStatus}`)}</p>
+                        <VerificationBadge state={row.verification} size="sm" />
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            {finding.evidence.length === 0 ? (
+            {matrixRows.length === 0 ? (
               <EmptyState title={t("noExplicitEvidence")} reason={finding.corroborationNote} />
             ) : null}
+            <p className="text-fg-secondary mt-3 text-[10px]">
+              {t("matrixCoverage", {
+                rows: finding.matrix.coverage.rows,
+                anchors: finding.matrix.coverage.sourceAnchors,
+              })}
+            </p>
           </SectionCard>
 
           <SectionCard id="other-material" number="04" title={t("otherMaterial")}>
@@ -174,7 +215,22 @@ export function RealFindingDetailScreen({ finding }: { finding: FindingView }) {
             </div>
           </SectionCard>
 
-          <SectionCard id="court-response" number="06" title={t("courtResponse")}>
+          <SectionCard id="witness-testimony" number="06" title={t("witnessTestimony")}>
+            {witnessRows.length ? (
+              <div className="space-y-3">
+                {witnessRows.map((row) => (
+                  <RecordBlock key={row.id} sourceType="witness" title={row.title}>
+                    <p className="font-serif">{row.exactText}</p>
+                    <MatrixSourceLink row={row} />
+                  </RecordBlock>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title={t("noWitnessPassages")} reason={t("noWitnessInference")} />
+            )}
+          </SectionCard>
+
+          <SectionCard id="court-response" number="07" title={t("courtResponse")}>
             <div className="space-y-3">
               {responses.map((response) => (
                 <RecordBlock
@@ -191,7 +247,7 @@ export function RealFindingDetailScreen({ finding }: { finding: FindingView }) {
             </div>
           </SectionCard>
 
-          <SectionCard id="human-notes" number="07" title={t("humanNotes")}>
+          <SectionCard id="human-notes" number="08" title={t("humanNotes")}>
             {finding.humanNotes.length ? (
               finding.humanNotes.map((note) => (
                 <Panel key={`${note.author}-${note.title}`} title={note.title}>

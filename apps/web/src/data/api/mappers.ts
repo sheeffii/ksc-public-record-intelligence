@@ -47,6 +47,7 @@ import type {
   PersonDossier,
   WitnessDossier,
   SearchResult,
+  SourceAnchorView,
   TimelineItem,
   StatementComparisonView,
 } from "../contract";
@@ -86,6 +87,7 @@ import type {
   ApiExhibitStatusEvent,
   ApiProvenance,
   ApiWitnessAppearance,
+  ApiSourceAnchor,
 } from "./types";
 import { withExactSource } from "@/lib/exact-source";
 
@@ -449,6 +451,32 @@ function findingCitation(citation: ApiCitation): FindingCitationView {
   };
 }
 
+export function toSourceAnchor(anchor: ApiSourceAnchor): SourceAnchorView {
+  return {
+    id: anchor.id,
+    officialVersionRef: anchor.official_version_ref,
+    documentRef: anchor.document_ref,
+    targetPath: anchor.target_path,
+    pdfPageIndex: anchor.pdf_page_index ?? undefined,
+    pageNumber: anchor.page_number ?? undefined,
+    paragraphNumber: anchor.paragraph_number ?? undefined,
+    lineFrom: anchor.line_from ?? undefined,
+    lineTo: anchor.line_to ?? undefined,
+    exactText: anchor.exact_text ?? undefined,
+    extractionMethod: anchor.extraction_method,
+    extractorVersion: anchor.extractor_version,
+    processingRunId: anchor.processing_run_id ?? undefined,
+    precision: anchor.precision,
+    state: anchor.state,
+    failureReason: anchor.failure_reason ?? undefined,
+    pageWidth: anchor.page_width ?? undefined,
+    pageHeight: anchor.page_height ?? undefined,
+    pageRotation: anchor.page_rotation ?? undefined,
+    transcriptSegmentId: anchor.transcript_segment_id ?? undefined,
+    regions: anchor.regions,
+  };
+}
+
 function findingArgument(argument: ApiFindingDetail["arguments"][number]): FindingArgumentView {
   return {
     key: argument.argument_key,
@@ -461,6 +489,7 @@ function findingArgument(argument: ApiFindingDetail["arguments"][number]): Findi
     paraTo: argument.para_to ?? undefined,
     sourceScope: argument.source_scope,
     underlyingSourceRef: argument.underlying_source_ref ?? undefined,
+    partyAttribution: argument.party_attribution ?? undefined,
     verification: toVerification(argument.verification_state) ?? "unreviewed",
     source: argument.citation ? findingCitation(argument.citation) : undefined,
   };
@@ -534,6 +563,42 @@ export function toFinding(finding: ApiFindingDetail): FindingView {
     },
     corroborationCategories: finding.corroboration_categories,
     corroborationNote: finding.corroboration_note,
+    matrix: {
+      rows: finding.matrix_rows.map((row) => ({
+        id: row.id,
+        relation: row.relation,
+        sourceCategory: row.source_category,
+        title: row.title,
+        exactText: row.exact_text,
+        party: row.party ?? undefined,
+        partyAttribution: row.party_attribution ?? undefined,
+        sourceScope: row.source_scope ?? undefined,
+        classificationOrigin: row.classification_origin,
+        reviewProcess: row.review_process ?? undefined,
+        reviewStatus: row.review_status,
+        verification: toVerification(row.verification_state) ?? "unreviewed",
+        citation: row.citation ? findingCitation(row.citation) : undefined,
+        sourceAnchor: row.source_anchor ? toSourceAnchor(row.source_anchor) : undefined,
+        pathFromNodeId: row.path_from_node_id ?? undefined,
+        pathToNodeId: row.path_to_node_id ?? undefined,
+      })),
+      total: finding.matrix_total,
+      limit: finding.matrix_limit,
+      offset: finding.matrix_offset,
+      coverage: {
+        rows: finding.matrix_coverage.rows,
+        courtFindings: finding.matrix_coverage.court_findings,
+        courtReliance: finding.matrix_coverage.court_reliance,
+        courtCitations: finding.matrix_coverage.court_citations,
+        partyArguments: finding.matrix_coverage.party_arguments,
+        supportingClassifications: finding.matrix_coverage.supporting_classifications,
+        qualifyingClassifications: finding.matrix_coverage.qualifying_classifications,
+        contraryClassifications: finding.matrix_coverage.contrary_classifications,
+        witnessPassages: finding.matrix_coverage.witness_passages,
+        exhibitLinks: finding.matrix_coverage.exhibit_links,
+        sourceAnchors: finding.matrix_coverage.source_anchors,
+      },
+    },
   };
 }
 

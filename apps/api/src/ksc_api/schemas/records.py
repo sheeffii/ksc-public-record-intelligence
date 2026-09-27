@@ -132,6 +132,8 @@ class SourceAnchorRead(ReadModel):
     verification_state: str
     document_version_id: uuid.UUID
     official_version_ref: str
+    document_ref: str
+    target_path: str
     pdf_page_index: int | None
     page_number: int | None
     paragraph_number: int | None
@@ -282,11 +284,21 @@ class ClaimRead(ReadModel):
 
 
 class FindingEvidenceLinkRead(ReadModel):
+    id: uuid.UUID
     link_type: FindingLinkType
     court_cited: bool
     court_cited_para: int | None
-    relationship_basis: Literal["explicit_court_citation", "related_public_record"]
+    relationship_basis: Literal[
+        "explicit_court_reliance",
+        "explicit_court_citation",
+        "explicit_party_citation",
+        "human_classification",
+        "ai_suggestion",
+        "related_public_record",
+    ]
     source_category: str
+    classification_origin: Literal["source_derived", "human_defined", "ai_suggested"]
+    review_process: str | None
     note: str | None
     verification_state: VerificationState
     citation: CitationRead
@@ -303,6 +315,7 @@ class ArgumentRead(ReadModel):
     para_to: int | None
     source_scope: Literal["direct_source", "court_summary", "source_missing"]
     underlying_source_ref: str | None
+    party_attribution: str | None
     verification_state: VerificationState
     citation: CitationRead | None
 
@@ -312,6 +325,73 @@ class ArgumentResponseRead(ReadModel):
     argument: ArgumentRead
     verification_state: VerificationState
     citation: CitationRead | None
+
+
+MatrixRelation = Literal[
+    "court_finding",
+    "court_relies_on",
+    "court_cites",
+    "party_cites",
+    "supports",
+    "qualifies",
+    "contrary",
+    "context",
+    "party_position",
+    "court_treatment",
+    "witness_testimony",
+    "document_exhibit",
+    "human_note",
+]
+MatrixSourceCategory = Literal[
+    "court_finding",
+    "witness_testimony",
+    "spo_argument",
+    "defence_argument",
+    "victims_counsel_argument",
+    "document_exhibit",
+    "court_response",
+    "human_note",
+    "ai_analysis",
+    "external_public_source",
+    "public_authority",
+    "other",
+]
+MatrixReviewStatus = Literal[
+    "verified_source_relation", "human_reviewed", "review_required", "ai_suggested"
+]
+
+
+class EvidenceMatrixRowRead(ReadModel):
+    id: str
+    relation: MatrixRelation
+    source_category: MatrixSourceCategory
+    title: str
+    exact_text: str
+    party: Party | None
+    party_attribution: str | None
+    source_scope: Literal["direct_source", "court_summary", "source_missing"] | None
+    classification_origin: Literal["source_derived", "human_defined", "ai_suggested"]
+    review_process: str | None
+    review_status: MatrixReviewStatus
+    verification_state: VerificationState
+    citation: CitationRead | None
+    source_anchor: SourceAnchorRead | None
+    path_from_node_id: uuid.UUID | None = None
+    path_to_node_id: uuid.UUID | None = None
+
+
+class EvidenceMatrixCoverageRead(ReadModel):
+    rows: int = Field(ge=0)
+    court_findings: int = Field(ge=0)
+    court_reliance: int = Field(ge=0)
+    court_citations: int = Field(ge=0)
+    party_arguments: int = Field(ge=0)
+    supporting_classifications: int = Field(ge=0)
+    qualifying_classifications: int = Field(ge=0)
+    contrary_classifications: int = Field(ge=0)
+    witness_passages: int = Field(ge=0)
+    exhibit_links: int = Field(ge=0)
+    source_anchors: int = Field(ge=0)
 
 
 class JudgmentSectionRead(ReadModel):
@@ -393,6 +473,11 @@ class FindingDetail(FindingSummary):
     source_audit: FindingSourceAuditRead
     corroboration_categories: dict[str, int]
     corroboration_note: str
+    matrix_rows: list[EvidenceMatrixRowRead]
+    matrix_total: int = Field(ge=0)
+    matrix_limit: int = Field(ge=1, le=100)
+    matrix_offset: int = Field(ge=0)
+    matrix_coverage: EvidenceMatrixCoverageRead
 
 
 class TranscriptSegmentRead(ReadModel):

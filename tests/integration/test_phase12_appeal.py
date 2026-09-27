@@ -155,12 +155,14 @@ def test_appeal_api_is_source_backed_and_distinguishes_not_located(
     workspace = demo_client.get("/api/v1/appeal/issues").json()
     item = next(issue for issue in workspace["issues"] if issue["issue_key"] == key)
     assert item["court_treatment"] == "not_located"
+    assert item["definition_origin"] == "human_defined"
     assert "ignored" in item["court_treatment_note"]
     assert not ({"probability", "likelihood", "strength", "rank"} & item.keys())
 
     detail = demo_client.get(f"/api/v1/appeal/issues/{key}").json()
     assert len(detail["sources"]) == 1
     assert detail["sources"][0]["citation"]["resolved"] is True
+    assert detail["sources"][0]["review_status"] == "verified_source_relation"
     assert detail["citation_audit"]["ready_for_human_review"] is False
     assert detail["missing_material"][0]["reference"] == "F-DEMO-MISSING"
     assert detail["red_team_reviews"][0]["result"] == "insufficient_record"
@@ -168,6 +170,14 @@ def test_appeal_api_is_source_backed_and_distinguishes_not_located(
         "defence_analyst",
         "neutral_reviewer",
     }
+    matrix = demo_client.get(
+        f"/api/v1/appeal/issues/{key}/matrix",
+        params={"relationship": "court_finding", "limit": 1},
+    ).json()
+    assert matrix["total"] == 1
+    assert matrix["items"][0]["relation"] == "court_finding"
+    assert matrix["coverage"]["court_findings"] == 1
+    assert matrix["missing_material"][0]["reference"] == "F-DEMO-MISSING"
 
 
 def test_argument_lab_and_comparison_keep_exact_citations(

@@ -16,6 +16,7 @@ from ksc_api.schemas.appeal import (
     AppealIssueSummary,
     AppealWorkspaceRead,
     ArgumentLabRead,
+    IssueMatrixRead,
     ResearchNoteCreate,
     ResearchNoteCreated,
     ReviewStateUpdate,
@@ -55,6 +56,27 @@ def read_appeal_issue(issue_key: str, service: Service) -> AppealIssueDetail:
     if issue is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "appeal issue not found")
     return issue
+
+
+@router.get("/appeal/issues/{issue_key}/matrix", response_model=IssueMatrixRead)
+def read_issue_matrix(
+    issue_key: str,
+    service: Service,
+    relationship: Annotated[str | None, Query(max_length=32)] = None,
+    source_category: Annotated[str | None, Query(max_length=32)] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> IssueMatrixRead:
+    matrix = service.issue_matrix(
+        issue_key,
+        relationship=relationship,
+        source_category=source_category,
+        limit=limit,
+        offset=offset,
+    )
+    if matrix is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "appeal issue not found")
+    return matrix
 
 
 @router.patch("/appeal/issues/{issue_key}/review", response_model=AppealIssueSummary)

@@ -153,7 +153,11 @@ class ClaimStance(enum.StrEnum):
 
 
 class FindingLinkType(enum.StrEnum):
-    RELIES_ON = "relies_on"
+    """Evidence-matrix semantics with research directions scoped to a claim."""
+
+    COURT_RELIES_ON = "court_relies_on"
+    COURT_CITES = "court_cites"
+    PARTY_CITES = "party_cites"
     SUPPORTS = "supports"
     QUALIFIES = "qualifies"
     CONTRARY = "contrary"
