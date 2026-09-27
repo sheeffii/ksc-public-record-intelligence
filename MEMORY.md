@@ -6,8 +6,9 @@ Live checkpoint. Repository state wins over this note.
 
 - Current branch: `feat/phase-21-design-parity-research-ux`, created from clean
   `main` at Phase 20 closeout `1473ce6`.
-- Current milestone: **Phase 21 IN PROGRESS (2026-09-25)**; **21B IMPLEMENTATION
-  CHECKPOINT**.
+- Current milestone: **Phase 21 COMPLETE (2026-09-27)**; annotated tag
+  `phase-21-complete`. The feature branch is intentionally unmerged and no
+  later phase is authorized.
   Phase 20 is complete at tag `phase-20-complete`. Phase
   19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
   are pushed. Phase 18 is COMPLETE (tag `phase-18-complete`). Phase
@@ -27,14 +28,17 @@ Live checkpoint. Repository state wins over this note.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. Both are
   contained in `main`.
-- Latest completion tag: annotated `phase-20-complete`.
+- Latest completion tag: annotated `phase-21-complete`.
 - Phase 21 is registered in
   `docs/roadmap/PHASE_21_DESIGN_PARITY_AND_RESEARCH_UX.md`. The actual Home,
   Search, command-search, Evidence Explorer, Document Reader, Mobile and System
   artboards in `Design.html` were rendered and reviewed. The 21A implementation
-  is `253085c`; the parity audit and focused browser suite are `0a3092c`. Phase
-  21 remains in progress; the 21B implementation checkpoint is recorded and
-  its acceptance gate remains for the next step.
+  is `253085c`; its parity audit and focused browser suite are `0a3092c`. The
+  Pass B implementation is `70ad8cf` and
+  the final Search parity refinement is `852adcb`. The 18-surface Pass C audit
+  accepted Phase 21 complete. Frontend lint/typecheck, 260 component tests and
+  the production build pass; constrained closeout did not rerun backend, full
+  repository, broad browser or broad accessibility suites.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
@@ -419,9 +423,9 @@ Do not close Phase 16.
 
 ## Phase 21A checkpoint
 
-Phase 21 remains IN PROGRESS. 21A is complete on
-`feat/phase-21-design-parity-research-ux`; 21B was subsequently authorized and
-its implementation checkpoint is recorded below.
+At this checkpoint, Phase 21 remained in progress. Passes B and C were later
+authorized and the phase is now complete on
+`feat/phase-21-design-parity-research-ux`.
 
 - The shared shell, navigation and case stripe align with the approved system
   artboard while retaining every supported real route.
@@ -440,10 +444,10 @@ its implementation checkpoint is recorded below.
 - Full gates pass: lint/format, mypy/TypeScript, 353 backend tests and 260
   frontend tests.
 - Commits: implementation `253085c`; audit/test `0a3092c`.
-- Known differences are documented and carried into the later, unauthorized
-  checkpoints. No schema, ingestion or source-native Reader contract changed.
+- Known differences were documented and carried into the later checkpoints.
+  No schema, ingestion or source-native Reader contract changed.
 
-## Phase 21B implementation checkpoint
+## Phase 21B–C completion
 
 - Remaining real workflows were compared with the actual Person, Witness,
   Finding, Network, Timeline, Incident, Appeal, AI, Reader and Evidence Path
@@ -457,13 +461,17 @@ its implementation checkpoint is recorded below.
   bounded; Evidence Path contains no real-mode demo wording.
 - No document-level horizontal overflow was found. Protected-witness,
   citation, exhibit, external-source and Phase 20 Reader safeguards are intact.
-- Focused lint/typecheck, production web build and 31 relevant component tests
-  pass. Full flow/axe and repository-wide regression gates were explicitly
-  deferred to the next step.
+- Pass C rechecked all 18 surfaces and captured the seven representative
+  workflows plus command search. Search's category rail now uses the approved
+  compact vertical hierarchy. Representative 1024px and Pixel 7 checks found
+  no structural break.
+- Frontend lint/typecheck, 260 component tests and the production web build
+  pass. Backend, repository-wide, broad browser and broad accessibility suites
+  were not rerun under the constrained closeout instruction.
 - Audit: `docs/design/PHASE21B_DESIGN_PARITY_AUDIT.md`.
-- Implementation commit: `70ad8cf`.
-- Do not mark 21B complete or start 21C until the deferred acceptance gate is
-  run.
+- Implementation commits: `70ad8cf` and `852adcb`.
+- Phase 21 is complete at annotated tag `phase-21-complete`. Do not merge the
+  feature branch or start a later phase without explicit authorization.
 
 ## Non-negotiable rules
 

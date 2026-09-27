@@ -88,7 +88,7 @@ The original core roadmap contains **13 numbered phases**. Eight additional mile
 | 18 | Research Experience & Visual Excellence | **COMPLETE (2026-09-24)** — tag `phase-18-complete` |
 | 19 | Corpus Depth & Verified Entity Intelligence | **COMPLETE (2026-09-25)** — tag `phase-19-complete` |
 | 20 | Source-Native Intelligent PDF & Transcript Reader | **COMPLETE (2026-09-25)** — tag `phase-20-complete` |
-| 21 | Design Parity & Research UX | **IN PROGRESS (2026-09-25)** — 21B implementation checkpoint |
+| 21 | Design Parity & Research UX | **COMPLETE (2026-09-27)** — tag `phase-21-complete` |
 
 ## Recommended execution order from now
 
@@ -123,7 +123,7 @@ Phase 15
        ↓
      Phase 20 (COMPLETE 2026-09-25)
        ↓
-     Phase 21 (IN PROGRESS — 21B implementation checkpoint)
+     Phase 21 (COMPLETE 2026-09-27)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -141,9 +141,10 @@ is **COMPLETE (2026-09-25)**, tag `phase-20-complete`. The source-native Reader
 renders the exact stored PDF, and highlights come only from version-bound
 validated geometry: 74,013 real SourceAnchors, 22,645 of them exact. The
 transcript-native Reader syncs two ways with the PDF. The 20C source-fidelity
-audit passed. Phase 21 is **IN PROGRESS (2026-09-25)** with 21A complete and
-the 21B implementation checkpoint recorded. Acceptance verification remains;
-21C is unauthorized.
+audit passed. Phase 21 is **COMPLETE (2026-09-27)**, tag
+`phase-21-complete`: all 18 real research surfaces were visually audited
+against `Design.html`, with honest data limitations retained. The feature
+branch remains unmerged and no later phase is authorized.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

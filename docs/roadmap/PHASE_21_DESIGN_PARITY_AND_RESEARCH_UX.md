@@ -1,9 +1,11 @@
 # Phase 21 — Design Parity & Research UX
 
-**Status:** IN PROGRESS
-**Current checkpoint:** 21B IN PROGRESS — implementation checkpoint
+**Status:** COMPLETE (2026-09-27)
+**Current checkpoint:** 21C COMPLETE — visual parity closeout
 **Started:** 2026-09-25
+**Completed:** 2026-09-27
 **Branch:** `feat/phase-21-design-parity-research-ux`
+**Tag:** `phase-21-complete`
 
 ## Objective
 
@@ -96,7 +98,7 @@ design are never production data.
   and 260 frontend tests).
 - Phase 21 remains **IN PROGRESS**. No tag was created and 21B was not started.
 
-## 21B — In progress (2026-09-25)
+## 21B — Complete (2026-09-27)
 
 People / Witnesses; Findings; Network / Timeline; Appeal / AI / External
 Sources; Reader and remaining workflow parity.
@@ -118,16 +120,30 @@ Implementation checkpoint:
   1024px and Pixel 7 with no document-level horizontal overflow;
 - audit: `docs/design/PHASE21B_DESIGN_PARITY_AUDIT.md`.
 
-Acceptance is not yet recorded. The focused full-route interaction/axe gate and
-the one-time repository regression suite are deferred to the next authorized
-step. Do not start 21C.
+Acceptance was recorded by the authorized 21C visual closeout. The Pass B route
+matrix remains the evidence for these workflows.
 
-## 21C — Not started
+## 21C — Complete (2026-09-27)
 
-Full route-by-route desktop, laptop and mobile parity audit, regression gate
-and Phase 21 closeout.
+The final audit compared all 18 research surfaces with the rendered
+`Design.html` references. Home, Search, Evidence, Person, Witness, Network,
+Reader and command search received final representative captures; Search's
+desktop category rail was corrected to the approved vertical hierarchy.
+Representative 1024px and Pixel 7 checks found no new clipping or structural
+breaks. The Reader remains source-first and no Phase 20 source behavior changed.
+
+Light closeout verification, as explicitly requested for Pass C:
+
+- frontend lint and TypeScript pass;
+- 260 frontend component tests pass;
+- the production web build passes;
+- no full repository, backend, broad browser or accessibility suite was rerun.
+
+Implementation commits: `70ad8cf` (Pass B) and `852adcb` (Pass C Search
+refinement). Audit: `docs/design/PHASE21B_DESIGN_PARITY_AUDIT.md`.
 
 ## Closeout rule
 
-Phase 21 is not complete at the end of 21A. Do not tag, merge to `main` or
-begin 21B without explicit authorization.
+Phase 21 is complete at tag `phase-21-complete`. The feature branch remains
+unmerged. Do not merge to `main` or begin Phase 22 without explicit
+authorization.

@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-25 (Phase 21 IN PROGRESS; 21B implementation checkpoint)
+Last updated: 2026-09-27 (Phase 21 COMPLETE; tag `phase-21-complete`)
 
 ## Milestones
 
@@ -28,7 +28,7 @@ Last updated: 2026-09-25 (Phase 21 IN PROGRESS; 21B implementation checkpoint)
 | **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
 | **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
-| **21** | **Design parity and research UX**                                                                         | **IN PROGRESS (2026-09-25)** — 21B implementation checkpoint                                             |
+| **21** | **Design parity and research UX**                                                                         | ✅ **COMPLETE (2026-09-27)** — tag `phase-21-complete`                                                   |
 
 ## Roadmap
 
@@ -57,9 +57,10 @@ SourceAnchor/SourceSpan and the source-first original PDF Reader are implemented
 and audited. The 20B checkpoint adds transcript-segment anchors with
 validated line geometry, printed page-header context, page-scoped Reader reads
 and the three-layer source-native Reader. Phase 20 is complete: the 20C
-source-fidelity audit passed and the tag is `phase-20-complete`. Phase 21 has
-started on `feat/phase-21-design-parity-research-ux`; 21A is complete and the
-21B implementation checkpoint is recorded. Phase 21 remains in progress.
+source-fidelity audit passed and the tag is `phase-20-complete`. Phase 21 is
+complete on `feat/phase-21-design-parity-research-ux`: Passes A–C align all
+real research workflows with `Design.html` while preserving the source-native
+Reader and evidence-integrity boundaries. The tag is `phase-21-complete`.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Phase 21A checkpoint (2026-09-25)
@@ -85,7 +86,7 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
   frontend tests). Phase 21 was not complete at this checkpoint; 21B was
   subsequently authorized.
 
-## Phase 21B implementation checkpoint (2026-09-25)
+## Phase 21B–C completion (2026-09-27)
 
 - Audited the remaining real research workflows against the rendered Person,
   Witness, Finding, Network, Timeline, Incident, Appeal, AI, Reader and Evidence
@@ -100,12 +101,17 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
   matched the approved structural pattern and retained their source contracts.
 - Captured the changed workflow matrix at 1440px, 1024px and Pixel 7; no
   document-level horizontal overflow was found.
-- Focused frontend lint/typecheck and 31 relevant component tests pass. The
-  production web build passes. Per the session instruction, the broader route
-  flow/axe gate and full repository suite are deferred.
+- Pass C rechecked all 18 surfaces and captured Home, Search, Evidence, Person,
+  Witness, Network, Reader and command search, plus representative 1024px and
+  Pixel 7 views. Search's category rail was corrected to a compact vertical
+  hierarchy; no responsive structural break was found.
+- Frontend lint/typecheck, 260 component tests and the production web build
+  pass. Per the Pass C instruction, backend, full repository, broad browser and
+  broad accessibility suites were not rerun.
 - Audit: `docs/design/PHASE21B_DESIGN_PARITY_AUDIT.md`.
-- Implementation commit: `70ad8cf`.
-- Phase 21B is not yet accepted complete; 21C has not started.
+- Implementation commits: `70ad8cf` and `852adcb`.
+- Phase 21 is complete at tag `phase-21-complete`; the feature branch remains
+  unmerged and Phase 22 has not started.
 
 ## Completed features (Phase 4)
 

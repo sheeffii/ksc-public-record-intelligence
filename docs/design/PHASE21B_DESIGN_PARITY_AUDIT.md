@@ -1,7 +1,7 @@
-# Phase 21B Design Parity Audit
+# Phase 21B–C Design Parity Audit
 
-Date: 2026-09-25
-Status: implementation checkpoint; final 21B acceptance deferred
+Date: 2026-09-27
+Status: complete
 Design source: `docs/design/Design.html`
 
 ## Comparison method
@@ -51,9 +51,24 @@ identifier, count, quotation, relationship or status was copied into the app.
   court record.
 - Counts remain occurrence/reference counts, never scores or rankings.
 
-## Deferred acceptance work
+## Phase 21C closeout
 
-This is the implementation checkpoint requested for the constrained session.
-The full Phase 21B route-by-route interaction/axe flow gate and repository-wide
-regression suite were deliberately deferred to the next step. Phase 21B and
-Phase 21 remain in progress; 21C has not started.
+The final visual pass rechecked 18 surfaces: Home, Search, command search,
+Documents, Evidence, People, Person, Witnesses, Witness, Findings, Finding,
+Network, Timeline, Appeal, AI, External Sources, Reader and Evidence Path.
+Representative final captures cover Home, Search, Evidence, Person, Witness,
+Network and Reader at 1440px, with Network/Evidence at 1024px and
+Home/Search/Person/Reader at Pixel 7 size. The Search record-category rail was
+changed from an overflowing segmented row to the approved compact vertical
+hierarchy. No document-level responsive break was observed.
+
+Remaining differences are data-honest: real result density and labels differ
+from prototype examples; unsupported incidents and relationships remain empty;
+command search shows no match when the real endpoint supplies none; the Reader
+does not synthesize prototype summaries, entities or highlights; and External
+Sources has no dedicated design artboard. These are not parity defects.
+
+Closeout used frontend lint, TypeScript, component tests and a production web
+build only, per the constrained Pass C instruction. Backend, full repository,
+broad browser and broad accessibility suites were not rerun. Phase 21 is
+accepted complete without weakening any Phase 19 or Phase 20 integrity rule.
