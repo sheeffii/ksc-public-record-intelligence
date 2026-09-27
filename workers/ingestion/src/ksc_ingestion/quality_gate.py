@@ -237,7 +237,9 @@ def run_gate(
             version.source_url == nv.source_url
             and classify(nv.source_url).kind.value == "pcr_artifact"
         )
-        c["version_fetch_method"] = version.fetch_method == "operator_browser_capture"
+        c["version_fetch_method"] = version.fetch_method == (
+            nv.artifact.fetch_method or "operator_browser_capture"
+        )
         c["version_fetched_at"] = version.fetched_at is not None
         declared_sha = nv.artifact.declared_sha256
         c["declared_sha256_equals_stored"] = (

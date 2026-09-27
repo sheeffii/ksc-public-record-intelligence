@@ -140,4 +140,8 @@ fallback (ADR-011) and the only path used.
 Public-only. Never bypass authentication, access controls or robots rules;
 never guess confidential URLs; never reconstruct redactions; never infer a
 protected witness's identity. Search engines and third-party copies may help a
-human find an official page; they are never provenance.
+human find an official page; they are never provenance. The one exception is the
+Legal Tools Database (ADR-030): with CILRAP's written permission it may supply
+the bytes of a record whose official URL it recorded. The official URL stays
+the record's identity, and `fetch_method = legal_tools_mirror` says where the
+bytes came from.
