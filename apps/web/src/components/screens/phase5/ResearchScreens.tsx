@@ -980,34 +980,38 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
     testimony: t("testimonyDate"),
     decision: t("decision"),
   };
-  const itemYears = items
-    .map((item) => Number(item.date.slice(0, 4)))
-    .filter((year) => Number.isFinite(year));
-  const itemTimes = items
-    .map((item) => Date.parse(item.date))
-    .filter((time) => Number.isFinite(time));
-  const minTime = itemTimes.length ? Math.min(...itemTimes) : 0;
-  const maxTime = itemTimes.length ? Math.max(...itemTimes) : minTime + 1;
-  const timelinePosition = (item: MockTimelineItem) => {
-    const time = Date.parse(item.date);
-    if (!Number.isFinite(time) || maxTime === minTime) return 50;
-    return 4 + ((time - minTime) / (maxTime - minTime)) * 88;
+  const historicalItems = items.filter((item) => Number(item.date.slice(0, 4)) < 2020);
+  const proceedingsItems = items.filter((item) => Number(item.date.slice(0, 4)) >= 2020);
+  const eraRange = (eraItems: readonly MockTimelineItem[]) => {
+    const years = eraItems
+      .map((item) => Number(item.date.slice(0, 4)))
+      .filter((year) => Number.isFinite(year));
+    return years.length ? `${Math.min(...years)} — ${Math.max(...years)}` : "—";
   };
-  const timelineRange = itemYears.length
-    ? `${Math.min(...itemYears)} — ${Math.max(...itemYears)}`
-    : "—";
+  const timelinePosition = (item: MockTimelineItem) => {
+    const historical = Number(item.date.slice(0, 4)) < 2020;
+    const eraItems = historical ? historicalItems : proceedingsItems;
+    const times = eraItems.map((entry) => Date.parse(entry.date)).filter(Number.isFinite);
+    const time = Date.parse(item.date);
+    const minTime = times.length ? Math.min(...times) : time;
+    const maxTime = times.length ? Math.max(...times) : time;
+    const historicalShare = zoom.historical / (zoom.historical + zoom.proceedings);
+    const eraStart = historical ? 0 : historicalShare;
+    const eraShare = historical ? historicalShare : 1 - historicalShare;
+    const progress =
+      !Number.isFinite(time) || maxTime === minTime ? 0.5 : (time - minTime) / (maxTime - minTime);
+    return (eraStart + eraShare * (0.14 + progress * 0.72)) * 100;
+  };
   const orderedItems = [...items]
     .filter((item) => visible.has(LANE_FOR[item.dateType]))
     .sort((a, b) => a.date.localeCompare(b.date));
   return (
     <AppShell footer={t("sequenceNote")}>
-      <ScreenHeader
-        realData={realData}
-        eyebrow={t("allRecords")}
-        title={ts("timeline")}
-        description={tb("dateMergeNote")}
-      />
-      <Toolbar>
+      <Toolbar className="min-h-11">
+        <div className="mr-2 flex items-baseline gap-2">
+          <h1 className="text-fg text-[15px] font-semibold">{ts("timeline")}</h1>
+          <span className="text-fg-muted hidden text-[9px] lg:inline">{t("allRecords")}</span>
+        </div>
         <ActiveFilters
           filters={filters}
           onRemove={(id) => setFilters((f) => f.filter((x) => x.id !== id))}
@@ -1035,7 +1039,8 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
           ))}
         </div>
       </Toolbar>
-      <div className="border-border-subtle flex flex-wrap gap-3 border-b px-4 py-1.5 text-[10px]">
+      <div className="border-border-subtle flex flex-wrap items-center gap-3 border-b px-4 py-1.5 text-[10px]">
+        <span className="section-label">{t("dateTypes")}</span>
         {(Object.keys(dateLabel) as DateType[]).map((d) => (
           <span key={d} className={`rounded-badge px-1.5 py-0.5 date-${d}`}>
             {dateLabel[d]}
@@ -1045,7 +1050,7 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
       <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_314px]">
         <div className="min-w-0 space-y-3">
           {realData ? <NoteStrip>{tb("realDataNotice")}</NoteStrip> : <DemoNotice />}
-          <div className="border-border-subtle bg-surface rounded-card hidden overflow-x-auto border md:block">
+          <div className="border-border-subtle bg-surface rounded-card hidden min-h-[520px] overflow-x-auto border md:block">
             <div className="grid grid-cols-[140px_minmax(0,1fr)]">
               <div className="border-border-faint border-r border-b p-2 text-[10px]">
                 {tb("layers")}
@@ -1056,17 +1061,21 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
               >
                 <div className="border-border-faint border-r p-2">
                   <span className="text-fg-secondary">{tb("eraHistorical")}</span>{" "}
-                  <span className="tabular text-fg-muted">{realData ? "—" : "1998 — 2000"}</span>
+                  <span className="tabular text-fg-muted">
+                    {realData ? eraRange(historicalItems) : "1998 — 2000"}
+                  </span>
                 </div>
                 <div className="p-2">
                   <span className="text-fg-secondary">{tb("eraProceedings")}</span>{" "}
                   <span className="tabular text-fg-muted">
-                    {realData ? timelineRange : "2020 — 2025"}
+                    {realData ? eraRange(proceedingsItems) : "2020 — 2025"}
                   </span>
                 </div>
               </div>
               {LANES.map((lane) => {
-                const laneItems = items.filter((i) => LANE_FOR[i.dateType] === lane);
+                const laneItems = items
+                  .filter((i) => LANE_FOR[i.dateType] === lane)
+                  .sort((a, b) => a.date.localeCompare(b.date));
                 const overviewItems = laneItems.filter(
                   (_, index) => index % Math.max(1, Math.ceil(laneItems.length / 7)) === 0,
                 );
@@ -1093,7 +1102,7 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
                       </span>
                     </button>
                     <div
-                      className="border-border-faint relative min-h-11 border-b"
+                      className="border-border-faint relative min-h-[68px] border-b"
                       style={{
                         display: "grid",
                         gridTemplateColumns: `${zoom.historical}fr ${zoom.proceedings}fr`,
@@ -1107,15 +1116,16 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
                         </span>
                       ) : null}
                       {on
-                        ? overviewItems.map((item) => (
+                        ? overviewItems.map((item, index) => (
                             <button
                               key={item.id}
                               type="button"
                               onClick={() => setSelected(item)}
                               aria-pressed={selected?.id === item.id}
-                              className={`rounded-badge bg-surface absolute top-1/2 max-w-36 -translate-x-1/2 -translate-y-1/2 truncate px-1.5 py-0.5 text-[10px] date-${item.dateType}`}
+                              className={`rounded-badge bg-surface absolute z-10 max-w-36 -translate-x-1/2 truncate px-1.5 py-0.5 text-[10px] date-${item.dateType} ${selected?.id === item.id ? "ring-accent ring-1" : ""}`}
                               style={{
                                 left: `${timelinePosition(item)}%`,
+                                top: `${8 + (index % 3) * 20}px`,
                               }}
                             >
                               {item.label}
@@ -1152,7 +1162,7 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
           </ol>
           <NoteStrip>{t("sequenceNote")}</NoteStrip>
         </div>
-        <aside className="min-w-0 space-y-3">
+        <aside className="min-w-0 space-y-3 xl:sticky xl:top-3 xl:self-start">
           <Panel title={tb("cardDetail")}>
             {selected ? (
               <>

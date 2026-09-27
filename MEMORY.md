@@ -41,6 +41,10 @@ Live checkpoint. Repository state wins over this note.
   Search received only the remaining scope-control wrapping polish. Final
   captures cover ordinary, long and transcript Readers plus Search at 1440px,
   1024px and Pixel 7 under `artifacts/reader-design-sync/`.
+- Timeline parity follow-up replaces the oversized hero with the approved dense
+  research toolbar, keeps records inside their correct historical/proceedings
+  era, distributes dense cards across readable tracks, and preserves the honest
+  empty historical state. Timeline captures cover 1440px, 1024px and Pixel 7.
 - Phase 21 is registered in
   `docs/roadmap/PHASE_21_DESIGN_PARITY_AND_RESEARCH_UX.md`. The actual Home,
   Search, command-search, Evidence Explorer, Document Reader, Mobile and System

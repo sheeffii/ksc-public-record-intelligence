@@ -84,6 +84,9 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
   Source/Text/Context modes; the mobile toolbar is reduced to page/source actions.
 - Context rows use progressive provenance disclosure and Search scope controls
   no longer wrap labels awkwardly on narrow screens.
+- Timeline now follows the approved compact research workspace hierarchy. Its
+  era-aware positioning prevents proceedings records from appearing in the
+  historical half, and dense lane cards use staggered tracks instead of overlap.
 - Visual captures for ordinary filing, long filing, transcript and Search at
   1440px, 1024px and Pixel 7 are in `artifacts/reader-design-sync/`.
 - Focused Reader data tests (4), frontend lint, TypeScript and the production

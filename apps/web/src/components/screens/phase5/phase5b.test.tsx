@@ -112,7 +112,7 @@ describe("Phase 5B visual-parity remediation", () => {
       "aria-pressed",
       "false",
     );
-    expect(screen.getAllByText(tb.dateMergeNote).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText(tb.dateMergeNote)).toBeInTheDocument();
     expect(screen.getByText(tb.attachedDates)).toBeInTheDocument();
   });
 
@@ -135,6 +135,34 @@ describe("Phase 5B visual-parity remediation", () => {
     expect(screen.getByText(/≈ 2024-05-01 \(approximate\)/)).toBeInTheDocument();
     expect(screen.getByText(tb.realDataNotice)).toBeInTheDocument();
     expect(screen.queryByText(messagesEn.phase5.mockNotice)).toBeNull();
+  });
+
+  it("positions historical and proceedings records inside their own eras", () => {
+    renderWithProviders(
+      <TimelineScreen
+        initialItems={[
+          {
+            id: "historical",
+            label: "Historical record",
+            date: "1999-04-28",
+            dateType: "event",
+            datePrecision: "exact",
+            href: "/timeline",
+          },
+          {
+            id: "proceedings",
+            label: "Proceedings record",
+            date: "2024-03-14",
+            dateType: "testimony",
+            datePrecision: "exact",
+            href: "/timeline",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Historical record" })).toHaveStyle({ left: "25%" });
+    expect(screen.getByRole("button", { name: "Proceedings record" })).toHaveStyle({ left: "75%" });
   });
 
   it("incident matrix filters by direction and court-cited and carries the required notes", async () => {
