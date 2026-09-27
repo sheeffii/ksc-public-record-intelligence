@@ -134,7 +134,9 @@ describe("Phase 19A verified mentions", () => {
       />,
     );
     expect(screen.getByText("VERIFIED MENTION")).toBeInTheDocument();
-    expect(screen.getByText("Showing 1 of 120 recorded mentions")).toBeInTheDocument();
+    expect(
+      screen.getByText(/1 document, 1 occurrence · Showing 1 of 120 recorded mentions/),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Search matches")).toBeNull();
   });
 });

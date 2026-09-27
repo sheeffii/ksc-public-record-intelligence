@@ -14,3 +14,4 @@ export {
   ProvenanceSource,
   type IntelligenceState,
 } from "./IntelligenceLabels";
+export { GroupedSourceList } from "./GroupedSourceList";

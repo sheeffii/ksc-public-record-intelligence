@@ -1,5 +1,6 @@
 "use client";
 
+import { groupBySource } from "@/lib/source-groups";
 import type { DateType, Direction } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -376,17 +377,45 @@ export function NetworkScreen({
       </Panel>
       <Panel title={t("graphTextAlternative")}>
         <ul className="space-y-1 text-[10px]">
-          {visibleEdges.slice(0, 100).map((e) => (
-            <li key={e.id}>
-              <button
-                type="button"
-                onClick={() => setSelectedEdge(e)}
-                className="text-left hover:underline"
-              >
-                {nodeLabel(e.from)} → {nodeLabel(e.to)} · {relationshipLabel(e.relation)}
-              </button>
-            </li>
-          ))}
+          {groupBySource(visibleEdges.slice(0, 100), (e) => {
+            const versionRef = e.provenance?.versionRef ?? e.citation.ref;
+            return {
+              key: [e.from, e.to, e.relation, e.verification, versionRef].join("|"),
+              versionRef,
+              title: `${nodeLabel(e.from)} → ${nodeLabel(e.to)} · ${relationshipLabel(e.relation)}`,
+              documentHref: "",
+              page: e.provenance?.page ?? e.citation.page,
+            };
+          }).map((group) => {
+            const [first, ...more] = group.items;
+            if (!first) return null;
+            return (
+              <li key={group.key}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedEdge(first)}
+                  className="text-left hover:underline"
+                >
+                  {group.title}
+                  {more.length ? ` ×${group.items.length}` : ""}
+                </button>
+                {more.length
+                  ? group.items.map((edge, index) => (
+                      <button
+                        key={edge.id}
+                        type="button"
+                        onClick={() => setSelectedEdge(edge)}
+                        className="text-accent ml-1.5 font-mono hover:underline"
+                      >
+                        {(edge.provenance?.page ?? edge.citation.page) !== undefined
+                          ? `p.${edge.provenance?.page ?? edge.citation.page}`
+                          : `#${index + 1}`}
+                      </button>
+                    ))
+                  : null}
+              </li>
+            );
+          })}
         </ul>
       </Panel>
     </div>

@@ -1385,5 +1385,18 @@
     "selectRecord": "Select a row to inspect its source-backed metadata.",
     "selectedRecord": "Selected record",
     "unknownField": "Not established in the held public record"
+  },
+  "sourceGroups": {
+    "show": "{count, plural, one {Show # occurrence} other {Show # occurrences}}",
+    "hide": "Hide occurrences",
+    "withoutPage": "{count} without page",
+    "documents": "{documents, plural, one {# document} other {# documents}}, {occurrences, plural, one {# occurrence} other {# occurrences}}",
+    "verifiedCount": "{count, plural, one {# verified mention} other {# verified mentions}}",
+    "reviewCount": "{count, plural, one {# mention requiring review} other {# mentions requiring review}}",
+    "matchCount": "{count, plural, one {# search match} other {# search matches}}",
+    "appearanceCount": "{count, plural, one {# appearance} other {# appearances}}",
+    "eventCount": "{count, plural, one {# status event} other {# status events}}",
+    "relationshipCount": "{count, plural, one {# source occurrence} other {# source occurrences}}",
+    "moreInVersion": "{count, plural, one {# more match in {version}} other {# more matches in {version}}}"
   }
 }

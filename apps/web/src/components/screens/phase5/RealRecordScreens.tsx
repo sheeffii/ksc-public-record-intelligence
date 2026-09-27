@@ -10,6 +10,7 @@ import {
   ProvenanceSource,
   SourceBadge,
   VerificationBadge,
+  GroupedSourceList,
 } from "@/components/provenance";
 import { AppShell } from "@/components/shell/AppShell";
 import type {
@@ -26,6 +27,7 @@ import type {
   WitnessDossier,
 } from "@/data";
 import type { DirectoryKind, DirectoryRow } from "@/data";
+import { groupBySource, versionHref, type SourceGroup } from "@/lib/source-groups";
 import { ActionLink, ScreenHeader } from "./ScreenChrome";
 import { KeyValue, NoteStrip, StatStrip } from "./Workspace";
 
@@ -263,17 +265,36 @@ export function RealWitnessScreen({
   );
 }
 
-function MentionList({ mentions }: { mentions: readonly EntityMention[] }) {
+function groupMentions(mentions: readonly EntityMention[]): SourceGroup<EntityMention>[] {
+  return groupBySource(mentions, (mention) => ({
+    versionRef: mention.citation.ref,
+    title: mention.documentTitle,
+    documentHref: versionHref(mention.href),
+    page: mention.citation.page,
+  }));
+}
+
+function countItems(groups: readonly SourceGroup<unknown>[]): number {
+  return groups.reduce((sum, group) => sum + group.items.length, 0);
+}
+
+function MentionList({
+  groups,
+  countLabel,
+}: {
+  groups: readonly SourceGroup<EntityMention>[];
+  countLabel: (count: number) => string;
+}) {
   const t18 = useTranslations("phase18");
   const t19 = useTranslations("phase19");
   return (
-    <ul className="divide-border-faint divide-y">
-      {mentions.map((mention) => (
-        <li key={mention.id} className="py-2 first:pt-0 last:pb-0">
-          <Link href={mention.href} className="text-accent text-[11px] font-semibold">
-            {mention.documentTitle}
-          </Link>
-          <p className="text-fg mt-1 font-mono text-[11px] break-words">{mention.occurrenceText}</p>
+    <GroupedSourceList
+      groups={groups}
+      countLabel={countLabel}
+      itemKey={(mention) => mention.id}
+      renderItem={(mention) => (
+        <>
+          <p className="text-fg font-mono text-[11px] break-words">{mention.occurrenceText}</p>
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <span className="text-fg-secondary font-mono text-[10px] font-semibold">
               {t19(`matchClass.${mention.matchClass}`)}
@@ -285,9 +306,9 @@ function MentionList({ mentions }: { mentions: readonly EntityMention[] }) {
             ) : null}
             <ActionLink href={mention.href}>{t18("openExactSource")}</ActionLink>
           </div>
-        </li>
-      ))}
-    </ul>
+        </>
+      )}
+    />
   );
 }
 
@@ -407,30 +428,48 @@ function ResearchTrail({
   const t = useTranslations("phase5");
   const t18 = useTranslations("phase18");
   const t19 = useTranslations("phase19");
-  const verified = mentions.items
-    .filter((mention) => mention.matchClass === "VERIFIED_MENTION")
-    .slice(0, 8);
-  const reviewRequired = mentions.items
-    .filter((mention) => mention.matchClass === "REVIEW_REQUIRED")
-    .slice(0, 6);
-  const sources = occurrences
-    .filter(
-      (row, index, all) =>
-        (row.category === "documents" || row.category === "transcripts") &&
-        // Only coordinate-bearing hits are exact occurrences; title-only matches stay in Search.
-        (row.citation?.page !== undefined ||
-          row.citation?.paraFrom !== undefined ||
-          row.citation?.lineFrom !== undefined) &&
-        all.findIndex((candidate) => candidate.href === row.href) === index,
-    )
-    .slice(0, 6);
+  const tg = useTranslations("sourceGroups");
+  // Every loaded occurrence stays reachable; repeated rows from one version
+  // collapse into one group. Verified and review-required never share a group.
+  const verified = groupMentions(
+    mentions.items.filter((mention) => mention.matchClass === "VERIFIED_MENTION"),
+  );
+  const reviewRequired = groupMentions(
+    mentions.items.filter((mention) => mention.matchClass === "REVIEW_REQUIRED"),
+  );
+  const sources = occurrences.filter(
+    (row, index, all) =>
+      (row.category === "documents" || row.category === "transcripts") &&
+      // Only coordinate-bearing hits are exact occurrences; title-only matches stay in Search.
+      (row.citation?.page !== undefined ||
+        row.citation?.paraFrom !== undefined ||
+        row.citation?.lineFrom !== undefined) &&
+      all.findIndex((candidate) => candidate.href === row.href) === index,
+  );
+  const sourceGroups = groupBySource(sources, (row) => ({
+    versionRef: row.citation?.ref ?? row.href,
+    title: row.title,
+    documentHref: versionHref(row.href),
+    page: row.citation?.page,
+  }));
   const focusNode = network.nodes.find((node) => node.ref === entityRef);
   const edges = focusNode
-    ? network.edges
-        .filter((edge) => edge.from === focusNode.id || edge.to === focusNode.id)
-        .slice(0, 8)
+    ? network.edges.filter((edge) => edge.from === focusNode.id || edge.to === focusNode.id)
     : [];
   const nodeLabel = (id: string) => network.nodes.find((node) => node.id === id)?.label ?? "—";
+  // The same relation to the same record, evidenced several times in one
+  // version (e.g. cited on p.236 and p.454), is one row with its occurrences.
+  const edgeGroups = groupBySource(edges, (edge) => {
+    const other = edge.from === focusNode?.id ? edge.to : edge.from;
+    const versionRef = edge.provenance?.versionRef ?? edge.citation.ref;
+    return {
+      key: [edge.relation, other, versionRef, edge.verification].join("|"),
+      versionRef,
+      title: `${edge.relation.replaceAll("_", " ")} · ${nodeLabel(other)}`,
+      documentHref: versionHref(edge.sourcePath ?? `/documents/${edge.citation.docId}`),
+      page: edge.provenance?.page ?? edge.citation.page,
+    };
+  });
   if (!mentions.items.length && !sources.length && !edges.length) return null;
   return (
     <div className="space-y-3">
@@ -438,12 +477,19 @@ function ResearchTrail({
         <div className="grid gap-3 lg:grid-cols-2">
           {verified.length ? (
             <Panel title={t19("verifiedMentions")}>
-              {mentions.total > mentions.items.length ? (
-                <p className="text-fg-tertiary mb-2 text-[10px]">
-                  {t19("mentionTotal", { shown: verified.length, total: mentions.total })}
-                </p>
-              ) : null}
-              <MentionList mentions={verified} />
+              <p className="text-fg-tertiary mb-2 text-[10px]">
+                {tg("documents", {
+                  documents: verified.length,
+                  occurrences: countItems(verified),
+                })}
+                {mentions.total > mentions.items.length
+                  ? ` · ${t19("mentionTotal", { shown: mentions.items.length, total: mentions.total })}`
+                  : ""}
+              </p>
+              <MentionList
+                groups={verified}
+                countLabel={(n) => tg("verifiedCount", { count: n })}
+              />
             </Panel>
           ) : null}
           {reviewRequired.length ? (
@@ -451,7 +497,10 @@ function ResearchTrail({
               <p className="text-fg-secondary mb-2 text-[11px] leading-relaxed">
                 {t19("reviewRequiredNote")}
               </p>
-              <MentionList mentions={reviewRequired} />
+              <MentionList
+                groups={reviewRequired}
+                countLabel={(n) => tg("reviewCount", { count: n })}
+              />
             </Panel>
           ) : null}
         </div>
@@ -462,14 +511,14 @@ function ResearchTrail({
             <p className="text-fg-secondary mb-2 text-[11px] leading-relaxed">
               {t19("searchMatchesNote")}
             </p>
-            <ul className="divide-border-faint divide-y">
-              {sources.map((row) => (
-                <li key={row.href} className="py-2 first:pt-0 last:pb-0">
-                  <Link href={row.href} className="text-accent text-[11px] font-semibold">
-                    {row.title}
-                  </Link>
+            <GroupedSourceList
+              groups={sourceGroups}
+              countLabel={(n) => tg("matchCount", { count: n })}
+              itemKey={(row) => row.href}
+              renderItem={(row) => (
+                <>
                   {row.context ? (
-                    <p className="text-fg-secondary mt-1 line-clamp-3 text-[11px] leading-relaxed">
+                    <p className="text-fg-secondary line-clamp-3 text-[11px] leading-relaxed">
                       {row.context}
                     </p>
                   ) : null}
@@ -485,9 +534,9 @@ function ResearchTrail({
                     ) : null}
                     <ActionLink href={row.href}>{t18("openExactSource")}</ActionLink>
                   </div>
-                </li>
-              ))}
-            </ul>
+                </>
+              )}
+            />
           </Panel>
         ) : null}
         {edges.length ? (
@@ -503,33 +552,30 @@ function ResearchTrail({
                 </Link>
               </p>
             ) : null}
-            <ul className="divide-border-faint divide-y">
-              {edges.map((edge) => {
-                const other = edge.from === focusNode?.id ? edge.to : edge.from;
-                return (
-                  <li key={edge.id} className="space-y-1.5 py-2 first:pt-0 last:pb-0">
-                    <p className="text-fg text-[11px] font-medium">
-                      {edge.relation.replaceAll("_", " ")} · {nodeLabel(other)}
-                    </p>
+            <GroupedSourceList
+              groups={edgeGroups}
+              countLabel={(n) => tg("relationshipCount", { count: n })}
+              itemKey={(edge) => edge.id}
+              renderItem={(edge) => (
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <SourceBadge type={edge.sourceType} size="sm" />
+                    <VerificationBadge state={edge.verification} size="sm" />
+                    <EvidenceBasis kind={edge.evidenceKind} count={edge.evidenceCount} />
+                  </div>
+                  {edge.provenance ? (
+                    <ProvenanceSource provenance={edge.provenance} />
+                  ) : (
                     <div className="flex flex-wrap items-center gap-2">
-                      <SourceBadge type={edge.sourceType} size="sm" />
-                      <VerificationBadge state={edge.verification} size="sm" />
-                      <EvidenceBasis kind={edge.evidenceKind} count={edge.evidenceCount} />
+                      <CitationChip citation={edge.citation} size="sm" />
+                      {edge.sourcePath ? (
+                        <ActionLink href={edge.sourcePath}>{t("openSource")}</ActionLink>
+                      ) : null}
                     </div>
-                    {edge.provenance ? (
-                      <ProvenanceSource provenance={edge.provenance} />
-                    ) : (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <CitationChip citation={edge.citation} size="sm" />
-                        {edge.sourcePath ? (
-                          <ActionLink href={edge.sourcePath}>{t("openSource")}</ActionLink>
-                        ) : null}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+                  )}
+                </div>
+              )}
+            />
           </Panel>
         ) : null}
       </div>

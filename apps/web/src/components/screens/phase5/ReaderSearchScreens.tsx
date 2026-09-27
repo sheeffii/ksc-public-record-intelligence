@@ -23,6 +23,7 @@ import {
   VerificationBadge,
 } from "@/components/provenance";
 import { exactSourcePattern, splitExactSource } from "@/lib/exact-source";
+import { groupBySource, pageTally } from "@/lib/source-groups";
 import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/shell/AppShell";
 import {
@@ -739,6 +740,7 @@ export function SearchScreen({
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
+  const tg = useTranslations("sourceGroups");
   const t15 = useTranslations("phase15");
   const t18 = useTranslations("phase18");
   const t21 = useTranslations("phase21");
@@ -756,13 +758,22 @@ export function SearchScreen({
       (category === "all" || r.category === category) &&
       (sources.size === 0 || (r.citation && sources.has(r.citation.sourceType))),
   );
+  // Several matches in one exact version are one result with its matches
+  // listed under it; different versions and categories never merge.
+  const sourceGroups = groupBySource(filtered, (r) => ({
+    key: `${r.category}|${r.citation?.ref ?? r.id}`,
+    versionRef: r.citation?.ref ?? r.id,
+    title: r.title,
+    documentHref: r.href,
+    page: r.citation?.page,
+  }));
   const pageSize = 12;
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageCount = Math.max(1, Math.ceil(sourceGroups.length / pageSize));
   const safePage = Math.min(page, pageCount);
-  const visible = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const visible = sourceGroups.slice((safePage - 1) * pageSize, safePage * pageSize);
   const groups = CATEGORIES.map((key) => ({
     key,
-    rows: visible.filter((r) => r.category === key),
+    rows: visible.filter((g) => g.items[0]?.category === key),
   })).filter((g) => g.rows.length > 0);
   const pattern = PATTERNS.find((p) => p.re.test(query.trim()));
   const categoryOptions: readonly { key: Category | "all"; label: string; count: number }[] = [
@@ -950,16 +961,40 @@ export function SearchScreen({
                     <h2 id={`group-${group.key}`} className="section-label">
                       {group.key === "external" ? t15("externalSources") : tb(group.key)}
                     </h2>
-                    <span className="tabular text-fg-muted text-[10px]">{group.rows.length}</span>
+                    <span className="tabular text-fg-muted text-[10px]">
+                      {group.rows.reduce((sum, g) => sum + g.items.length, 0)}
+                    </span>
                   </header>
-                  {group.rows.map((row) => (
-                    <ResultRow key={row.id} row={row} query={query} />
-                  ))}
+                  {group.rows.map((source) => {
+                    const [first, ...more] = source.items;
+                    if (!first) return null;
+                    return (
+                      <div key={source.key}>
+                        <ResultRow row={first} query={query} />
+                        {more.length ? (
+                          <details className="group border-border-faint border-b px-3 py-1.5">
+                            <summary className="text-accent cursor-pointer text-[10px] font-semibold select-none">
+                              {tg("moreInVersion", {
+                                count: more.length,
+                                version: source.versionRef,
+                              })}
+                              {pageTally(source.pages) ? ` · ${pageTally(source.pages)}` : ""}
+                            </summary>
+                            <div className="mt-1">
+                              {more.map((row) => (
+                                <ResultRow key={row.id} row={row} query={query} />
+                              ))}
+                            </div>
+                          </details>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </section>
               ))}
             </div>
           )}
-          {filtered.length > pageSize ? (
+          {sourceGroups.length > pageSize ? (
             <nav aria-label={t18("pagination")} className="flex items-center justify-between gap-3">
               <ToolButton
                 onClick={() => setPage((value) => Math.max(1, value - 1))}

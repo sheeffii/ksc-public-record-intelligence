@@ -1385,5 +1385,18 @@
     "selectRecord": "Zgjidhni një rresht për të parë metadatat e tij të mbështetura në burim.",
     "selectedRecord": "Regjistri i zgjedhur",
     "unknownField": "Nuk është përcaktuar në regjistrin publik të mbajtur"
+  },
+  "sourceGroups": {
+    "show": "{count, plural, one {Shfaq # rast} other {Shfaq # raste}}",
+    "hide": "Fshih rastet",
+    "withoutPage": "{count} pa faqe",
+    "documents": "{documents, plural, one {# dokument} other {# dokumente}}, {occurrences, plural, one {# rast} other {# raste}}",
+    "verifiedCount": "{count, plural, one {# përmendje e verifikuar} other {# përmendje të verifikuara}}",
+    "reviewCount": "{count, plural, one {# përmendje që kërkon rishikim} other {# përmendje që kërkojnë rishikim}}",
+    "matchCount": "{count, plural, one {# përputhje kërkimi} other {# përputhje kërkimi}}",
+    "appearanceCount": "{count, plural, one {# paraqitje} other {# paraqitje}}",
+    "eventCount": "{count, plural, one {# ngjarje statusi} other {# ngjarje statusi}}",
+    "relationshipCount": "{count, plural, one {# rast në burim} other {# raste në burim}}",
+    "moreInVersion": "{count, plural, one {# përputhje tjetër në {version}} other {# përputhje të tjera në {version}}}"
   }
 }
