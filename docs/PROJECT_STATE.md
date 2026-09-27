@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-27 (Phase 21 COMPLETE; tag `phase-21-complete`)
+Last updated: 2026-09-27 (Phase 22 IN PROGRESS; 22A NEXT)
 
 ## Milestones
 
@@ -29,6 +29,7 @@ Last updated: 2026-09-27 (Phase 21 COMPLETE; tag `phase-21-complete`)
 | **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
 | **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
 | **21** | **Design parity and research UX**                                                                         | ✅ **COMPLETE (2026-09-27)** — tag `phase-21-complete`                                                   |
+| **22** | **Evidence Matrix, Witness Comparison & Legal Issue Intelligence**                                        | **IN PROGRESS** — 22A NEXT                                                                               |
 
 ## Roadmap
 
@@ -61,6 +62,10 @@ source-fidelity audit passed and the tag is `phase-20-complete`. Phase 21 is
 complete on `feat/phase-21-design-parity-research-ux`: Passes A–C align all
 real research workflows with `Design.html` while preserving the source-native
 Reader and evidence-integrity boundaries. The tag is `phase-21-complete`.
+Phase 21 is merged into synchronized `main` at `f25cfe0`. Phase 22 is
+registered and **IN PROGRESS** on
+`feat/phase-22-evidence-matrix-legal-intelligence`; 22A is **NEXT**. No Phase 22
+functionality has been implemented.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
 ## Phase 21A checkpoint (2026-09-25)
@@ -111,7 +116,20 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
 - Audit: `docs/design/PHASE21B_DESIGN_PARITY_AUDIT.md`.
 - Implementation commits: `70ad8cf` and `852adcb`.
 - Phase 21 is complete at tag `phase-21-complete`; the feature branch remains
-  unmerged and Phase 22 has not started.
+  preserved. Its closeout is merged into `main` at `f25cfe0`.
+
+## Phase 22 setup (2026-09-27)
+
+- Preconditions passed after refreshing `origin`: annotated tag
+  `phase-21-complete`, local `main` and `origin/main` all resolve to the Phase
+  21 completion commit `f25cfe0`; the starting tree was clean.
+- Created `feat/phase-22-evidence-matrix-legal-intelligence` from synchronized
+  `main`.
+- Registered
+  `docs/roadmap/PHASE_22_EVIDENCE_MATRIX_WITNESS_COMPARISON_AND_LEGAL_ISSUE_INTELLIGENCE.md`.
+- Phase 22 is **IN PROGRESS**; 22A is **NEXT**.
+- Setup only: no schema, ingestion, API, UI or test functionality changed. Do
+  not begin 22A without explicit authorization.
 
 ## Completed features (Phase 4)
 

@@ -51,7 +51,7 @@ When anything conflicts, use this order:
 
 ## Roadmap structure
 
-The original core roadmap contains **13 numbered phases**. Eight additional milestones are included without changing the core numbering:
+The original core roadmap contains **13 numbered phases**. Ten additional milestones are included without changing the core numbering:
 
 - **Phase 5B** — UI/UX Visual Parity Remediation. This was added after a detailed design audit found that Phase 5 was functionally complete but visually simplified on several screens.
 - **Phase 14** — External Media & Public Statements Intelligence. This is a **post-core feature** and must happen only after the core court-record platform is stable.
@@ -62,6 +62,7 @@ The original core roadmap contains **13 numbered phases**. Eight additional mile
 - **Phase 19** — Corpus Depth & Verified Entity Intelligence (`PHASE_19_CORPUS_DEPTH_AND_VERIFIED_ENTITY_INTELLIGENCE.md`).
 - **Phase 20** — Source-Native Intelligent PDF & Transcript Reader (`PHASE_20_SOURCE_NATIVE_INTELLIGENT_PDF_AND_TRANSCRIPT_READER.md`).
 - **Phase 21** — Design Parity & Research UX (`PHASE_21_DESIGN_PARITY_AND_RESEARCH_UX.md`).
+- **Phase 22** — Evidence Matrix, Witness Comparison & Legal Issue Intelligence (`PHASE_22_EVIDENCE_MATRIX_WITNESS_COMPARISON_AND_LEGAL_ISSUE_INTELLIGENCE.md`).
 
 ### Current sequence
 
@@ -89,6 +90,7 @@ The original core roadmap contains **13 numbered phases**. Eight additional mile
 | 19 | Corpus Depth & Verified Entity Intelligence | **COMPLETE (2026-09-25)** — tag `phase-19-complete` |
 | 20 | Source-Native Intelligent PDF & Transcript Reader | **COMPLETE (2026-09-25)** — tag `phase-20-complete` |
 | 21 | Design Parity & Research UX | **COMPLETE (2026-09-27)** — tag `phase-21-complete` |
+| 22 | Evidence Matrix, Witness Comparison & Legal Issue Intelligence | **IN PROGRESS** — 22A NEXT |
 
 ## Recommended execution order from now
 
@@ -124,6 +126,8 @@ Phase 15
      Phase 20 (COMPLETE 2026-09-25)
        ↓
      Phase 21 (COMPLETE 2026-09-27)
+       ↓
+     Phase 22 (IN PROGRESS; 22A NEXT)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -143,8 +147,10 @@ validated geometry: 74,013 real SourceAnchors, 22,645 of them exact. The
 transcript-native Reader syncs two ways with the PDF. The 20C source-fidelity
 audit passed. Phase 21 is **COMPLETE (2026-09-27)**, tag
 `phase-21-complete`: all 18 real research surfaces were visually audited
-against `Design.html`, with honest data limitations retained. The feature
-branch remains unmerged and no later phase is authorized.
+against `Design.html`, with honest data limitations retained. Phase 21 is
+merged into synchronized `main` at `f25cfe0`. Phase 22 is **IN PROGRESS** on
+`feat/phase-22-evidence-matrix-legal-intelligence`; 22A is **NEXT** and has not
+started.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

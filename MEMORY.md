@@ -4,11 +4,12 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-21-design-parity-research-ux`, created from clean
-  `main` at Phase 20 closeout `1473ce6`.
-- Current milestone: **Phase 21 COMPLETE (2026-09-27)**; annotated tag
-  `phase-21-complete`. The feature branch is intentionally unmerged and no
-  later phase is authorized.
+- Current branch: `feat/phase-22-evidence-matrix-legal-intelligence`, created
+  from clean, synchronized `main` at Phase 21 closeout `f25cfe0`.
+- Current milestone: **Phase 22 IN PROGRESS**; **22A NEXT**. Setup is complete,
+  but no Phase 22 functionality has been implemented and 22A must not begin
+  without explicit authorization. Phase 21 is complete, merged into `main` and
+  tagged `phase-21-complete`.
   Phase 20 is complete at tag `phase-20-complete`. Phase
   19 is COMPLETE and its annotated `phase-19-complete` tag and feature branch
   are pushed. Phase 18 is COMPLETE (tag `phase-18-complete`). Phase
@@ -39,6 +40,13 @@ Live checkpoint. Repository state wins over this note.
   accepted Phase 21 complete. Frontend lint/typecheck, 260 component tests and
   the production build pass; constrained closeout did not rerun backend, full
   repository, broad browser or broad accessibility suites.
+- Phase 22 is registered in
+  `docs/roadmap/PHASE_22_EVIDENCE_MATRIX_WITNESS_COMPARISON_AND_LEGAL_ISSUE_INTELLIGENCE.md`.
+  It preserves strict Court/testimony/party/document/human/AI/external-source
+  separation and the original-source authority hierarchy. Phase structure:
+  22A Evidence Matrix and legal-issue/finding architecture; 22B witness
+  comparison, party-position mapping and research intelligence; 22C deep
+  legal/source fidelity audit and closeout.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
@@ -470,8 +478,21 @@ authorized and the phase is now complete on
   were not rerun under the constrained closeout instruction.
 - Audit: `docs/design/PHASE21B_DESIGN_PARITY_AUDIT.md`.
 - Implementation commits: `70ad8cf` and `852adcb`.
-- Phase 21 is complete at annotated tag `phase-21-complete`. Do not merge the
-  feature branch or start a later phase without explicit authorization.
+- Phase 21 is complete at annotated tag `phase-21-complete` and merged into
+  `main` at `f25cfe0`.
+
+## Phase 22 setup
+
+- Preconditions passed after `git fetch --prune origin`: annotated tag
+  `phase-21-complete`, local `main` and `origin/main` resolve to `f25cfe0`; the
+  starting tree was clean.
+- Branch: `feat/phase-22-evidence-matrix-legal-intelligence`.
+- Roadmap:
+  `docs/roadmap/PHASE_22_EVIDENCE_MATRIX_WITNESS_COMPARISON_AND_LEGAL_ISSUE_INTELLIGENCE.md`.
+- Status: **Phase 22 IN PROGRESS**; **22A NEXT**.
+- Setup only. No schema, ingestion, API, UI or test functionality changed.
+- Next action: obtain explicit authorization, then execute 22A only. Do not
+  begin 22B automatically.
 
 ## Non-negotiable rules
 
