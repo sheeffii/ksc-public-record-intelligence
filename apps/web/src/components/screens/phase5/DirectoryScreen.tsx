@@ -3,7 +3,7 @@
 import type { VerificationState } from "@ksc/shared";
 import type { MockDirectory, MockDirectoryRow } from "@/mock";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   DataTable,
@@ -63,6 +63,49 @@ export function DirectoryScreen({
   const [sortBy, setSortBy] = useState(kind === "findings" ? "id" : "title");
   const [states, setStates] = useState<Set<VerificationState>>(new Set());
   const [protectedOnly, setProtectedOnly] = useState(false);
+  const tf = useTranslations("directoryFacets");
+  const tv = useTranslations("versionLabels");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Facet filters live in the URL (`/people?role=accused`) so a filtered view
+  // can be shared and reloaded.
+  const [facetFilters, setFacetFilters] = useState<Record<string, string[]>>(() => {
+    const initial: Record<string, string[]> = {};
+    for (const key of FACET_ORDER) {
+      const values = searchParams?.getAll(key) ?? [];
+      if (values.length) initial[key] = values;
+    }
+    return initial;
+  });
+  function updateFacets(next: Record<string, string[]>) {
+    setFacetFilters(next);
+    setPage(1);
+    const params = new URLSearchParams();
+    for (const [key, values] of Object.entries(next)) {
+      for (const value of values) params.append(key, value);
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
+  function toggleFacet(key: string, value: string) {
+    const current = facetFilters[key] ?? [];
+    const values = current.includes(value)
+      ? current.filter((item) => item !== value)
+      : [...current, value];
+    const next = { ...facetFilters, [key]: values };
+    if (!values.length) delete next[key];
+    updateFacets(next);
+  }
+  function facetValueLabel(key: string, value: string): string {
+    if (key === "role" && ROLE_KEYS.includes(value)) return tp(`roles.${value}`);
+    if (key === "protection") return tf(`values.${value}`);
+    if (key === "language" && ["en", "sq", "sr"].includes(value)) {
+      return tv(`language.${value}`);
+    }
+    if (UPPERCASE_VALUES.includes(value)) return value.toUpperCase();
+    const text = value.replaceAll("_", " ");
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [selectedId, setSelectedId] = useState<string>();
@@ -75,7 +118,10 @@ export function DirectoryScreen({
       (row) =>
         (!needle || `${row.id} ${row.title} ${row.description}`.toLowerCase().includes(needle)) &&
         (states.size === 0 || states.has(row.verification)) &&
-        (!protectedOnly || row.protected === true),
+        (!protectedOnly || row.protected === true) &&
+        Object.entries(facetFilters).every(
+          ([key, values]) => !values.length || values.includes(row.facets?.[key] ?? ""),
+        ),
     );
     const descending = sortBy.startsWith("-");
     const key = sortBy.replace(/^-/, "") as keyof MockDirectoryRow;
@@ -88,7 +134,27 @@ export function DirectoryScreen({
           : String(av ?? "").localeCompare(String(bv ?? ""));
       return cmp * (descending ? -1 : 1);
     });
-  }, [all, query, states, protectedOnly, sortBy]);
+  }, [all, query, states, protectedOnly, sortBy, facetFilters]);
+  // Counts per facet value over the rows matching the search box: a count of
+  // records, never a ranking.
+  const facetOptions = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const base = all.filter(
+      (row) =>
+        !needle || `${row.id} ${row.title} ${row.description}`.toLowerCase().includes(needle),
+    );
+    return FACET_ORDER.map((key) => {
+      const counts = new Map<string, number>();
+      for (const row of base) {
+        const value = row.facets?.[key];
+        if (value) counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
+      return {
+        key,
+        values: [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+      };
+    }).filter((facet) => facet.values.length > 1 || (facetFilters[facet.key]?.length ?? 0) > 0);
+  }, [all, query, facetFilters]);
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const current = Math.min(page, pageCount);
   const visible = rows.slice((current - 1) * pageSize, current * pageSize);
@@ -97,11 +163,21 @@ export function DirectoryScreen({
     ...[...states].map((s) => ({ id: `state:${s}`, label: `${tb("verification")}: ${s}` })),
     ...(protectedOnly ? [{ id: "protected", label: tb("protectedOnly") }] : []),
     ...(query ? [{ id: "q", label: `${t("search")}: ${query}` }] : []),
+    ...Object.entries(facetFilters).flatMap(([key, values]) =>
+      values.map((value) => ({
+        id: `facet:${key}:${value}`,
+        label: `${tf(`keys.${key}`)}: ${facetValueLabel(key, value)}`,
+      })),
+    ),
   ];
   function removeFilter(id: string) {
     if (id === "q") setQuery("");
     else if (id === "protected") setProtectedOnly(false);
-    else setStates((prev) => new Set([...prev].filter((s) => `state:${s}` !== id)));
+    else if (id.startsWith("facet:")) {
+      const [, key, ...rest] = id.split(":");
+      toggleFacet(key!, rest.join(":"));
+      return;
+    } else setStates((prev) => new Set([...prev].filter((s) => `state:${s}` !== id)));
     setPage(1);
   }
   const csv = useMemo(() => {
@@ -203,11 +279,18 @@ export function DirectoryScreen({
             minWidth: 150,
             cell: (row) =>
               row.description ? (
-                <span className="rounded-badge border-border text-fg-secondary border px-1.5 py-0.5 text-[10px] font-semibold uppercase">
-                  {ROLE_KEYS.includes(row.description)
-                    ? tp(`roles.${row.description}`)
-                    : row.description.replaceAll("_", " ")}
-                </span>
+                <button
+                  type="button"
+                  aria-pressed={facetFilters.role?.includes(row.description) ?? false}
+                  title={tf("filterBy", { value: facetValueLabel("role", row.description) })}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggleFacet("role", row.description);
+                  }}
+                  className="rounded-badge border-border text-fg-secondary hover:border-accent hover:text-accent border px-1.5 py-0.5 text-[10px] font-semibold uppercase"
+                >
+                  {facetValueLabel("role", row.description)}
+                </button>
               ) : (
                 "—"
               ),
@@ -317,28 +400,30 @@ export function DirectoryScreen({
               className="border-border bg-surface text-fg rounded-control h-8 w-full border pr-3 pl-9 text-[11px]"
             />
           </label>
-          <label className="text-fg-secondary inline-flex items-center gap-1 text-[10.5px]">
-            <span className="sr-only">{tb("verification")}</span>
-            <select
-              value={[...states][0] ?? "all"}
-              onChange={(event) => {
-                setStates(
-                  event.target.value === "all"
-                    ? new Set()
-                    : new Set([event.target.value as VerificationState]),
-                );
-                setPage(1);
-              }}
-              className="border-border bg-surface-raised text-fg rounded-control h-8 border px-2"
-            >
-              <option value="all">{tb("allCategories")}</option>
-              {STATES.map((state) => (
-                <option key={state} value={state}>
-                  {state}
-                </option>
-              ))}
-            </select>
-          </label>
+          {kind === "findings" ? (
+            <label className="text-fg-secondary inline-flex items-center gap-1 text-[10.5px]">
+              <span className="sr-only">{tb("verification")}</span>
+              <select
+                value={[...states][0] ?? "all"}
+                onChange={(event) => {
+                  setStates(
+                    event.target.value === "all"
+                      ? new Set()
+                      : new Set([event.target.value as VerificationState]),
+                  );
+                  setPage(1);
+                }}
+                className="border-border bg-surface-raised text-fg rounded-control h-8 border px-2"
+              >
+                <option value="all">{tb("allCategories")}</option>
+                {STATES.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           {kind === "witnesses" ? (
             <label className="border-border bg-surface-raised text-fg-secondary rounded-control inline-flex h-8 items-center gap-2 border px-2 text-[10.5px]">
               <input
@@ -360,6 +445,43 @@ export function DirectoryScreen({
           >
             {tb("exportCsv")}
           </a>
+          {facetOptions.length ? (
+            <div
+              className="flex basis-full flex-wrap items-center gap-x-4 gap-y-1.5"
+              data-facet-bar
+            >
+              {facetOptions.map((facet) => (
+                <div
+                  key={facet.key}
+                  role="group"
+                  aria-label={tf(`keys.${facet.key}`)}
+                  className="flex flex-wrap items-center gap-1"
+                >
+                  <span className="section-label mr-1">{tf(`keys.${facet.key}`)}</span>
+                  {facet.values.map(([value, count]) => {
+                    const on = facetFilters[facet.key]?.includes(value) ?? false;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => toggleFacet(facet.key, value)}
+                        className={cn(
+                          "rounded-chip inline-flex h-6 items-center gap-1.5 border px-2 text-[10.5px]",
+                          on
+                            ? "border-accent bg-accent/15 text-fg"
+                            : "border-border bg-surface-raised text-fg-secondary hover:text-fg",
+                        )}
+                      >
+                        {facetValueLabel(facet.key, value)}
+                        <span className="tabular text-fg-muted text-[9.5px]">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ) : null}
           {activeFilters.length ? (
             <ActiveFilters
               className="basis-full"
@@ -368,6 +490,7 @@ export function DirectoryScreen({
               onClearAll={() => {
                 setQuery("");
                 setStates(new Set());
+                updateFacets({});
               }}
             />
           ) : null}
@@ -640,6 +763,40 @@ export function DirectoryScreen({
           options={PAGE_SIZES.map((n) => ({ key: String(n), label: String(n) }))}
         />
         {kind === "findings" ? <ToolButton pressed>{tb("sortJudgmentOrder")}</ToolButton> : null}
+        {facetOptions.length ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5" data-facet-bar>
+            {facetOptions.map((facet) => (
+              <div
+                key={facet.key}
+                role="group"
+                aria-label={tf(`keys.${facet.key}`)}
+                className="flex flex-wrap items-center gap-1"
+              >
+                <span className="section-label mr-1">{tf(`keys.${facet.key}`)}</span>
+                {facet.values.map(([value, count]) => {
+                  const on = facetFilters[facet.key]?.includes(value) ?? false;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => toggleFacet(facet.key, value)}
+                      className={cn(
+                        "rounded-chip inline-flex h-6 items-center gap-1.5 border px-2 text-[10.5px]",
+                        on
+                          ? "border-accent bg-accent/15 text-fg"
+                          : "border-border bg-surface-raised text-fg-secondary hover:text-fg",
+                      )}
+                    >
+                      {facetValueLabel(facet.key, value)}
+                      <span className="tabular text-fg-muted text-[9.5px]">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        ) : null}
         <ActiveFilters
           filters={activeFilters}
           onRemove={removeFilter}
@@ -647,6 +804,7 @@ export function DirectoryScreen({
             setQuery("");
             setStates(new Set());
             setProtectedOnly(false);
+            updateFacets({});
             setPage(1);
           }}
         />
@@ -822,6 +980,9 @@ export function DirectoryScreen({
 }
 
 const ROLE_KEYS = ["accused", "witness", "counsel_or_participant", "judge", "victim"];
+// Party and body acronyms as the record writes them.
+const UPPERCASE_VALUES = ["spo", "ksc", "icc"];
+const FACET_ORDER = ["role", "protection", "type", "language", "party", "status"] as const;
 
 function PersonInitials({ name }: { name: string }) {
   const words = name.split(/\s+/u).filter((word) => /^\p{L}/u.test(word));

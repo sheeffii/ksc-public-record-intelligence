@@ -1448,5 +1448,22 @@
     "document": "Document",
     "networkView": "Network view",
     "officialSource": "Official source"
+  },
+  "directoryFacets": {
+    "keys": {
+      "role": "Role",
+      "protection": "Protection",
+      "type": "Type",
+      "language": "Language",
+      "party": "Filed by",
+      "status": "Status"
+    },
+    "values": {
+      "protected": "Protected",
+      "public": "Public identity"
+    },
+    "filterBy": "Show only {value}",
+    "filters": "Filter",
+    "clear": "Clear filters"
   }
 }

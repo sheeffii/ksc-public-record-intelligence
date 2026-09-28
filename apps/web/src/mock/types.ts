@@ -27,6 +27,9 @@ export interface MockDirectoryRow {
   relatedWitness?: string;
   counts?: ReferenceCounts;
   relationshipCount?: number;
+  /** Record fields a directory can be filtered by (e.g. `role: "accused"`),
+   * copied from the record — never derived or scored. */
+  facets?: Record<string, string>;
 }
 
 export interface MockPerson {

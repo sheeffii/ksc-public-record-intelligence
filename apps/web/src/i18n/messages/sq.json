@@ -1448,5 +1448,22 @@
     "document": "Dokumenti",
     "networkView": "Pamja e rrjetit",
     "officialSource": "Burimi zyrtar"
+  },
+  "directoryFacets": {
+    "keys": {
+      "role": "Roli",
+      "protection": "Mbrojtja",
+      "type": "Lloji",
+      "language": "Gjuha",
+      "party": "Paraqitur nga",
+      "status": "Statusi"
+    },
+    "values": {
+      "protected": "I mbrojtur",
+      "public": "Identitet publik"
+    },
+    "filterBy": "Shfaq vetëm {value}",
+    "filters": "Filtro",
+    "clear": "Pastro filtrat"
   }
 }

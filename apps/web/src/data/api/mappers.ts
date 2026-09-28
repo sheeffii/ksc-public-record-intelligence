@@ -305,8 +305,16 @@ function partySource(party: ApiParty | null): Citation["sourceType"] {
 
 const NO_DATE = "—";
 
+function pickFacets(values: Record<string, string | null | undefined>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(values).filter((entry): entry is [string, string] => Boolean(entry[1])),
+  );
+}
+
 export function documentRow(document: ApiDocumentSummary): DirectoryRow {
-  const id = document.filing_number ?? documentRouteId(document.official_ref);
+  // The official reference is the identity: annexes share their filing's
+  // number (F00002, F00002/A01, F00002/A03), so the number alone is not unique.
+  const id = documentRouteId(document.official_ref);
   return {
     id,
     title: document.title,
@@ -323,6 +331,11 @@ export function documentRow(document: ApiDocumentSummary): DirectoryRow {
     references: references(document.counts),
     verification: "unreviewed",
     href: documentHref(document.official_ref),
+    facets: pickFacets({
+      type: document.document_type,
+      language: document.language,
+      party: document.filing_party,
+    }),
   };
 }
 
@@ -338,6 +351,7 @@ export function personRow(person: ApiPerson): DirectoryRow {
     href: `/people/${person.slug}`,
     counts: toCounts(person.counts),
     relationshipCount: person.counts.relationships,
+    facets: pickFacets({ role: person.public_role }),
   };
 }
 
@@ -355,6 +369,7 @@ export function witnessRow(witness: ApiWitness): DirectoryRow {
     ...(mapped.protected ? { protected: true } : {}),
     counts: toCounts(witness.counts),
     relationshipCount: witness.counts.relationships,
+    facets: { protection: mapped.protected ? "protected" : "public" },
   };
 }
 
@@ -370,6 +385,7 @@ export function exhibitRow(exhibit: ApiExhibit): DirectoryRow {
     href: `/exhibits/${encodeURIComponent(exhibit.official_exhibit_id)}`,
     status: exhibit.status,
     party: exhibit.tendered_by ?? undefined,
+    facets: pickFacets({ status: exhibit.status, party: exhibit.tendered_by }),
     relatedWitness: exhibit.through_witness_code ?? undefined,
     counts: toCounts(exhibit.counts),
     relationshipCount: exhibit.counts.relationships,
