@@ -1574,3 +1574,46 @@ Files:
 `scripts/ksc_operator_browser_capture.mjs`,
 `docs/ingestion/LEGAL_TOOLS_MIRROR.md`,
 `tests/unit/ingestion/test_legal_tools.py`
+
+## ADR-032 — Phase 23 mirror pilot fails closed on transcript language and identity
+
+Date: 2026-09-29
+
+Status: Accepted (Phase 23A)
+
+Context:
+The fresh 5,049-record Legal Tools inventory confirmed two unsafe transcript
+patterns before the first corpus pilot. Two Serbian trial transcripts are tagged
+with the mirror's English language id. Separately, seven date/language groups
+contain distinct official transcript artifacts: per-accused Initial/Further
+Appearances and a superseded/revised transcript. The existing canonical key
+`case/T/<hearing-date>[/<language>]` cannot distinguish those artifacts.
+
+Decision:
+
+1. Strong Serbian transcript markers in the title or page-one text reject the
+   candidate even when mirror metadata says English or Albanian. The bytes do
+   not enter a trusted bundle.
+2. Mirror transcript planning groups distinct official artifact URLs by
+   hearing date and language. Every member of a multi-artifact group is
+   `REVIEW_REQUIRED` and excluded before download; no artifact is allowed to
+   claim the date-only canonical key. Explicitly superseded transcripts are
+   also excluded pending a reviewed version model.
+3. Phase 23A's 100-record pilot contains strongly identified filings only.
+   Multi-session transcript identity remains a separate model decision; this
+   phase does not derive identity from a person's name, translated title,
+   ordering, or mirror slug.
+4. Pilot selection is deterministic and stratified by mirror category for
+   research coverage, with EN/SQ pairs preferred. Those categories select the
+   sample only; they never populate canonical filing-party or court fields.
+
+Consequences:
+The pilot may import fewer transcripts (zero in 23A) but cannot silently merge
+two hearings or store Serbian text as English. Later transcript expansion needs
+an official, language-independent session/version discriminator and explicit
+authorization; import counts are not grounds to weaken this rule.
+
+Files:
+`workers/ingestion/src/ksc_ingestion/legal_tools.py`,
+`scripts/ksc_legal_tools_harvest.py`,
+`tests/unit/ingestion/test_legal_tools.py`

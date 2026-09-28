@@ -63,6 +63,7 @@ The original core roadmap contains **13 numbered phases**. Ten additional milest
 - **Phase 20** — Source-Native Intelligent PDF & Transcript Reader (`PHASE_20_SOURCE_NATIVE_INTELLIGENT_PDF_AND_TRANSCRIPT_READER.md`).
 - **Phase 21** — Design Parity & Research UX (`PHASE_21_DESIGN_PARITY_AND_RESEARCH_UX.md`).
 - **Phase 22** — Evidence Matrix, Witness Comparison & Legal Issue Intelligence (`PHASE_22_EVIDENCE_MATRIX_WITNESS_COMPARISON_AND_LEGAL_ISSUE_INTELLIGENCE.md`).
+- **Phase 23** — Corpus Expansion & Research Coverage (`PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`).
 
 ### Current sequence
 
@@ -91,6 +92,7 @@ The original core roadmap contains **13 numbered phases**. Ten additional milest
 | 20 | Source-Native Intelligent PDF & Transcript Reader | **COMPLETE (2026-09-25)** — tag `phase-20-complete` |
 | 21 | Design Parity & Research UX | **COMPLETE (2026-09-27)** — tag `phase-21-complete` |
 | 22 | Evidence Matrix, Witness Comparison & Legal Issue Intelligence | **COMPLETE (2026-09-27)** — tag `phase-22-complete` |
+| 23 | Corpus Expansion & Research Coverage | **IN PROGRESS (2026-09-29)** — 23A Legal Tools readiness and controlled pilot |
 
 ## Recommended execution order from now
 
@@ -128,6 +130,8 @@ Phase 15
      Phase 21 (COMPLETE 2026-09-27)
        ↓
      Phase 22 (COMPLETE 2026-09-27)
+       ↓
+     Phase 23 (IN PROGRESS; 23A CURRENT)
 ```
 
 Phase 5B happens after Phase 6 because the UI can be visually remediated without interfering with schema design, but it should happen before real-data ingestion so the first genuine KSC data enters a UI we are satisfied with.
@@ -151,7 +155,9 @@ against `Design.html`, with honest data limitations retained. Phase 21 is
 merged into synchronized `main` at `f25cfe0`. Phase 22 is **IN PROGRESS** on
 `feat/phase-22-evidence-matrix-legal-intelligence`; Phase 22 is **COMPLETE** at
 tag `phase-22-complete`. The final deterministic AI relevance gate leaves zero
-unsupported answered runs. Phase 23 has not started.
+unsupported answered runs. Phase 23 is **IN PROGRESS** on
+`feat/phase-23-corpus-expansion`; 23A is the current pass and must stop after
+the controlled pilot before any 23B expansion.
 
 ## How to use these files with Claude Code, Codex, or another coding agent
 

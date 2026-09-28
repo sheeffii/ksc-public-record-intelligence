@@ -81,6 +81,19 @@ def test_out_of_scope_or_unusable_hits_are_skipped_with_a_reason() -> None:
     assert isinstance(off_host, lt.Skip) and "not a Legal Tools URL" in off_host.reason
 
 
+def test_serbian_transcript_mislabeled_english_is_rejected() -> None:
+    parsed = lt.parse_hit(
+        hit(
+            title="Zasedanje u prvostepenom postupku - 18. maj 2023.",
+            externalId=CASE,
+            documentOrigin={"kscPdfUrlEncoded": TRANSCRIPT_URL},
+        ),
+        case_number=CASE,
+    )
+    assert isinstance(parsed, lt.Skip)
+    assert parsed.reason == "Serbian transcript mislabeled as supported language"
+
+
 def test_published_document_id_from_mirror_external_id() -> None:
     assert lt.published_document_id(f"{CASE}/F02246", CASE) == "F02246"
     assert lt.published_document_id(f"{CASE}/F01603/RED", CASE) == "F01603RED"
@@ -107,6 +120,64 @@ def test_plan_skips_held_and_duplicate_official_urls() -> None:
         "already held (official URL)",
         "mirror duplicate (official URL)",
     ]
+
+
+def test_plan_refuses_same_date_transcript_collision() -> None:
+    first = hit(
+        slug="first",
+        externalId=CASE,
+        title="Initial Appearance of A",
+        dateCreated="2020-11-09T00:00:00.000Z",
+        documentOrigin={"kscPdfUrlEncoded": TRANSCRIPT_URL.replace("Closing", "First")},
+    )
+    second = hit(
+        slug="second",
+        externalId=CASE,
+        title="Initial Appearance of B",
+        dateCreated="2020-11-09T00:00:00.000Z",
+        documentOrigin={"kscPdfUrlEncoded": TRANSCRIPT_URL.replace("Closing", "Second")},
+    )
+    planned = lt.plan([first, second], case_number=CASE)
+    assert planned.selected == []
+    assert {row.reason for row in planned.skipped} == {
+        "same-date transcript identity collision (date-only key refused)"
+    }
+
+
+def test_pilot_is_deterministic_stratified_and_prefers_language_pairs() -> None:
+    hits = []
+    sources = ["Defence", "Prosecution", "Trial Chamber", "Appeals Chamber", "Registry", "Victim"]
+    for index in range(24):
+        source = sources[index % len(sources)]
+        external = f"{CASE}/F{index + 100:05d}"
+        for language in ([ENG, SQI] if index < 12 else [ENG]):
+            hits.append(
+                hit(
+                    slug=f"s{index}{language[-2:]}",
+                    externalId=external,
+                    languageIds=[language],
+                    source=source,
+                    documentOrigin={
+                        "kscPdfUrlEncoded": FILING_URL.replace(
+                            "0b10c8e18026f7b2", f"{index:016x}"
+                        ).replace("Veseli", f"{language}-{index}-Veseli")
+                    },
+                )
+            )
+    records = lt.plan(hits, case_number=CASE).selected
+    first = lt.select_pilot(records, size=18)
+    second = lt.select_pilot(reversed(records), size=18)
+    assert [r.official_url for r in first] == [r.official_url for r in second]
+    assert len(first) == 18
+    assert {lt.pilot_category(r) for r in first} >= {
+        "Defence",
+        "SPO",
+        "Trial Chamber",
+        "Appeals",
+        "Registry",
+        "Victims' Counsel",
+    }
+    assert sum(r.language_code == "sqi" for r in first) >= 6
 
 
 def test_external_record_id_is_the_official_artifact() -> None:

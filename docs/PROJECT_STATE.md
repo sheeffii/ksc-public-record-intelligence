@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-28 (Reader design/synchronization polish)
+Last updated: 2026-09-29 (Phase 23A setup)
 
 ## Milestones
 
@@ -30,6 +30,7 @@ Last updated: 2026-09-28 (Reader design/synchronization polish)
 | **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
 | **21** | **Design parity and research UX**                                                                         | ✅ **COMPLETE (2026-09-27)** — tag `phase-21-complete`                                                   |
 | **22** | **Evidence Matrix, Witness Comparison & Legal Issue Intelligence**                                        | ✅ **COMPLETE (2026-09-27)** — tag `phase-22-complete`                                                    |
+| **23** | **Corpus Expansion & Research Coverage**                                                                  | **IN PROGRESS (2026-09-29)** — 23A Legal Tools readiness and controlled pilot                            |
 
 ## Roadmap
 
@@ -65,8 +66,23 @@ Reader and evidence-integrity boundaries. The tag is `phase-21-complete`.
 Phase 21 is merged into synchronized `main` at `f25cfe0`. Phase 22 is
 **COMPLETE** at tag `phase-22-complete` and is contained in `main`. The
 deterministic AI relevance gate resolves the final fail-closed blocker. The
-Reader/Timeline parity follow-up is also merged; Phase 23 has not begun.
+Reader/Timeline parity follow-up is also merged. Phase 23 is **IN PROGRESS** on
+`feat/phase-23-corpus-expansion`; 23A is current and stops after its controlled
+pilot before any separately authorized 23B expansion.
 Repository code, migrations, tests and Git state win over stale roadmap text.
+
+## Phase 23A setup (2026-09-29)
+
+- Created `feat/phase-23-corpus-expansion` from clean synchronized `main` at
+  `5fd7be0` and registered
+  `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
+- Integrated the existing Legal Tools acquisition implementation into current
+  main while preserving the newer parser-v4, failure-isolation and UI work.
+- ADR-030 records written CILRAP permission dated 2026-09-27. Legal Tools is a
+  permitted byte mirror only; official KSC identity and URLs remain
+  authoritative. No PDF was downloaded during setup.
+- 23A is **CURRENT**. Readiness must close Serbian-language and same-date
+  transcript identity risks before the approximately 100-document pilot.
 
 ## Reader design and synchronization polish (2026-09-28)
 

@@ -4,14 +4,16 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `main`, after fast-forwarding the completed
-  `feat/reader-design-sync-polish` work. The original Phase 22 / Legal Tools
-  workspace was not modified.
-- Current milestone: **Phase 22 COMPLETE** at annotated tag
+- Current branch: `feat/phase-23-corpus-expansion`, created from synchronized
+  `main` at `5fd7be0`.
+- Current milestone: **Phase 23 IN PROGRESS; 23A CURRENT**. The Phase 23
+  roadmap is `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
+  It integrates the permitted Legal Tools byte-mirror path, closes concrete
+  readiness blockers, and stops after an approximately 100-document pilot.
+  Phase 22 is complete at annotated tag
   `phase-22-complete`. The deterministic AI relevance gate resolves the final
   fail-closed blocker with 0 unsupported answered runs. Phase 22 and the
-  Reader/Timeline parity follow-up are merged into `main`; Phase 23 has not
-  started. Phase 21 is complete, merged
+  Reader/Timeline parity follow-up are merged into `main`. Phase 21 is complete, merged
   into `main` and
   tagged `phase-21-complete`.
   Phase 20 is complete at tag `phase-20-complete`. Phase
@@ -89,6 +91,19 @@ Live checkpoint. Repository state wins over this note.
   `~/Downloads/ksc-bc-2020-06-phase13-corpus-02` and imported bundle
   `data/captures/2026-09-21-corpus-02` (git-ignored).
 - Never push unless explicitly instructed.
+
+## Phase 23A setup (2026-09-29)
+
+- ADR-030's acquisition gate passes: CILRAP gave written permission on
+  2026-09-27; the owner retains the email. Legal Tools remains an acquisition
+  mirror, never the authoritative court source.
+- Existing Legal Tools implementation commit `847567f` was integrated onto the
+  Phase 23 branch as `ffd4d2d`; current-main parser/UI changes were preserved.
+- Initial focused Legal Tools/importer verification passes: 24 tests.
+- Metadata-only inventory is permitted and precedes any PDF download. Before
+  the pilot, fix Serbian transcripts mislabeled EN and same-date transcript
+  identity collisions, then report the non-random pilot distribution.
+- Do not download beyond the pilot or begin 23B without explicit authorization.
 
 ## Phase 8 result
 

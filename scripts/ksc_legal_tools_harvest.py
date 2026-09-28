@@ -47,7 +47,7 @@ import httpx
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from check_capture_pdfs import check  # type: ignore[import-not-found]  # noqa: E402
+from check_capture_pdfs import check, page1_text  # type: ignore[import-not-found]  # noqa: E402
 from ksc_ingestion import legal_tools as lt  # noqa: E402
 from ksc_ingestion.fetch import (  # noqa: E402
     DEFAULT_USER_AGENT,
@@ -266,6 +266,13 @@ def quarantine(root: Path, args: argparse.Namespace) -> tuple[int, list[dict[str
             flagged.setdefault(row["record_id"], {**row, "problems": []})["problems"].append(
                 f"page-1 classification {stamp!r} contradicts mirror language {lang!r}"
             )
+        record = by_id[row["record_id"]]
+        if record["record_type"].lower() == "transcript":
+            text = page1_text((root / record["local_file"]).read_bytes())
+            if lt.looks_serbian(f"{record['title']} {text}"):
+                flagged.setdefault(row["record_id"], {**row, "problems": []})["problems"].append(
+                    "Serbian transcript content is outside the EN/SQ acquisition scope"
+                )
     if flagged:
         qdir = root / "quarantine"
         qdir.mkdir(exist_ok=True)
@@ -303,12 +310,19 @@ def main() -> int:
     parser.add_argument("--permission", required=True, help="the written CILRAP permission, cited")
     parser.add_argument("--captured-by", default="Shefqet Salihu")
     parser.add_argument("--limit", type=int, help="download at most N new records")
+    parser.add_argument(
+        "--pilot-size",
+        type=int,
+        help="deterministically select a stratified filing pilot of this size",
+    )
     parser.add_argument("--batch-size", type=int, default=BATCH_LIMIT)
     parser.add_argument("--api-interval", type=float, default=10.0)
     parser.add_argument("--pdf-interval", type=float, default=3.0)
     parser.add_argument("--inventory-only", action="store_true", help="list and plan; no PDFs")
     parser.add_argument("--reuse-inventory", action="store_true")
     args = parser.parse_args()
+    if args.limit and args.pilot_size:
+        parser.error("--limit and --pilot-size are mutually exclusive")
     if not 1 <= args.batch_size <= BATCH_LIMIT:
         parser.error(f"--batch-size must be 1..{BATCH_LIMIT}")
 
@@ -327,6 +341,7 @@ def main() -> int:
         held_paths = args.held or sorted((ROOT / "data" / "captures").glob("*/manifest.json"))
         held_urls, held_shas = held_from_manifests(held_paths)
         planned = lt.plan(hits, case_number=args.case, held_official_urls=held_urls)
+        pilot = lt.select_pilot(planned.selected, size=args.pilot_size) if args.pilot_size else []
         skip_counts = Counter(s.reason for s in planned.skipped)
         (out / "plan.json").write_text(
             json.dumps(
@@ -345,6 +360,21 @@ def main() -> int:
                     ],
                     "skipped_counts": dict(skip_counts),
                     "skipped": [s.__dict__ for s in planned.skipped],
+                    "pilot": [
+                        {
+                            "slug": r.slug,
+                            "external_id": r.external_id,
+                            "title": r.title,
+                            "language": r.language_code,
+                            "category": lt.pilot_category(r),
+                            "official_url": r.official_url,
+                        }
+                        for r in pilot
+                    ],
+                    "pilot_distribution": {
+                        "categories": dict(Counter(lt.pilot_category(r) for r in pilot)),
+                        "languages": dict(Counter(r.language_code for r in pilot)),
+                    },
                 },
                 indent=2,
                 ensure_ascii=False,
@@ -361,7 +391,7 @@ def main() -> int:
         entries: list[tuple[dict[str, Any], Path]] = []
         failures: list[dict[str, str]] = []
         seen_shas = set(held_shas)
-        todo = planned.selected[: args.limit] if args.limit else planned.selected
+        todo = pilot or (planned.selected[: args.limit] if args.limit else planned.selected)
         for index, record in enumerate(todo, 1):
             result = download(client, record, cache)
             if isinstance(result, str):

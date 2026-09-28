@@ -17,6 +17,9 @@ This runbook is for whoever runs an acquisition batch. It assumes the repo's
 - It skips Serbian records (out of scope), records we already hold (by official
   URL or SHA-256), mirror duplicates, and anything without an official
   repository URL.
+- It also rejects strong Serbian transcript markers even when the mirror labels
+  the record English, and excludes same-date/language transcript collisions or
+  superseded transcripts rather than assigning a date-only identity (ADR-032).
 - It decides public status from the PDF's own page-1 stamp, as for browser
   captures. It quarantines a record whose page-1 wording contradicts the
   mirror's language tag.
@@ -43,11 +46,14 @@ skipped. Paging the API takes about 8 minutes, at the robots.txt
 ```bash
 .venv/bin/python scripts/ksc_legal_tools_harvest.py --reuse-inventory \
   --permission "CILRAP written permission to <owner>, <date of email>" \
-  [--limit 200] [--bundle-prefix 2026-09-27-ltd]
+  [--pilot-size 100] [--limit 200] [--bundle-prefix 2026-09-27-ltd]
 ```
 
 - PDFs are cached in `_pdfs/<slug>.pdf`. An interrupted run resumes without
   downloading anything twice.
+- `--pilot-size 100` selects a deterministic, stratified filing pilot with
+  EN/SQ pairs preferred and writes its category/language distribution to
+  `plan.json`; it is mutually exclusive with the unstratified `--limit`.
 - The script writes `<prefix>-01`, `<prefix>-02`, … bundles of at most 99
   records each, runs `check_capture_pdfs.py` on each one, and moves flagged
   records to `quarantine/`.

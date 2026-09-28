@@ -24,6 +24,8 @@ Public status is still decided by the PDF's own page-1 markings
 from __future__ import annotations
 
 import re
+import unicodedata
+from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -58,6 +60,22 @@ _ANNEX_TITLE_RE = re.compile(
     r"^(?:public\s+redacted\s+version\s+of\s+)?(?:ANNEX|SHTOJC[ËE])\s+\d+\b", re.IGNORECASE
 )
 _FILING_ID_IN_PATH_RE = re.compile(r"^/LW/Published/Filing/([0-9a-f]{16})/")
+_SERBIAN_TRANSCRIPT_RE = re.compile(
+    r"\b(?:zasedanje|statusna\s+konferencija|inicijalno\s+pojavljivanje|"
+    r"ponovno\s+pristupanje|su[đd]enje|javna\s+sednica|svedok)\b",
+    re.IGNORECASE,
+)
+_TRANSCRIPT_VERSION_REVIEW_RE = re.compile(r"\b(?:superseded|zamenjen[ao]?)\b", re.IGNORECASE)
+
+PILOT_CATEGORY_QUOTAS: tuple[tuple[str, int], ...] = (
+    ("Defence", 20),
+    ("SPO", 20),
+    ("Trial Chamber", 15),
+    ("Appeals", 10),
+    ("Registry", 10),
+    ("Victims' Counsel", 10),
+    ("Other", 15),
+)
 
 
 class MirrorError(ValueError):
@@ -106,6 +124,13 @@ class Skip:
     slug: str | None
     title: str | None
     reason: str
+
+
+def looks_serbian(text: str) -> bool:
+    """Strong Serbian transcript markers used only to reject mislabeled input."""
+
+    folded = unicodedata.normalize("NFKC", " ".join(text.split()))
+    return bool(_SERBIAN_TRANSCRIPT_RE.search(folded))
 
 
 def _official_url(hit: Mapping[str, Any]) -> str | None:
@@ -157,7 +182,7 @@ def parse_hit(hit: Mapping[str, Any], *, case_number: str) -> MirrorRecord | Ski
         return Skip(slug, title, str(exc))
     code, name = LANGUAGES[languages[0]]
     created = str(hit.get("dateCreated") or "")[:10] or None
-    return MirrorRecord(
+    record = MirrorRecord(
         slug=slug,
         purl=f"https://www.legal-tools.org/doc/{slug}/",
         external_id=str(hit.get("externalId") or ""),
@@ -172,6 +197,11 @@ def parse_hit(hit: Mapping[str, Any], *, case_number: str) -> MirrorRecord | Ski
         mirror_source=hit.get("source"),
         raw=dict(hit),
     )
+    if record.is_transcript and looks_serbian(record.title):
+        return Skip(slug, title, "Serbian transcript mislabeled as supported language")
+    if record.is_transcript and _TRANSCRIPT_VERSION_REVIEW_RE.search(record.title):
+        return Skip(slug, title, "transcript version semantics require review")
+    return record
 
 
 def published_document_id(external_id: str, case_number: str) -> str | None:
@@ -267,7 +297,108 @@ def plan(
             continue
         seen.add(key)
         selected.append(parsed)
-    return Plan(selected, skipped)
+    collision_counts: Counter[tuple[str | None, str]] = Counter(
+        (record.date, record.language_code)
+        for record in selected
+        if record.is_transcript and record.date
+    )
+    safe: list[MirrorRecord] = []
+    for record in selected:
+        collision_key = (record.date, record.language_code)
+        if record.is_transcript and collision_counts[collision_key] > 1:
+            skipped.append(
+                Skip(
+                    record.slug,
+                    record.title,
+                    "same-date transcript identity collision (date-only key refused)",
+                )
+            )
+        else:
+            safe.append(record)
+    return Plan(safe, skipped)
+
+
+def pilot_category(record: MirrorRecord) -> str:
+    """Research mix used only for pilot selection, never canonical attribution."""
+
+    source = (record.mirror_source or "").strip().lower()
+    if source == "defence":
+        return "Defence"
+    if source == "prosecution":
+        return "SPO"
+    if source == "trial chamber":
+        return "Trial Chamber"
+    if source == "appeals chamber":
+        return "Appeals"
+    if source == "registry":
+        return "Registry"
+    if source == "victim":
+        return "Victims' Counsel"
+    return "Other"
+
+
+def select_pilot(records: Iterable[MirrorRecord], *, size: int = 100) -> list[MirrorRecord]:
+    """Deterministic, stratified filing pilot with EN/SQ pairs preferred.
+
+    The mirror category is used only to make a useful research sample. Canonical
+    filing-party and court attribution remain blank until source-backed later.
+    """
+
+    if size < 1:
+        raise ValueError("pilot size must be positive")
+    eligible = [
+        record
+        for record in records
+        if not record.is_transcript
+        and published_document_id(record.external_id, record.case_number) is not None
+    ]
+    by_category: dict[str, list[MirrorRecord]] = {}
+    for record in eligible:
+        by_category.setdefault(pilot_category(record), []).append(record)
+
+    quota_total = sum(quota for _, quota in PILOT_CATEGORY_QUOTAS)
+    quotas = {
+        category: (size * quota // quota_total) for category, quota in PILOT_CATEGORY_QUOTAS
+    }
+    for category, _ in PILOT_CATEGORY_QUOTAS:
+        if sum(quotas.values()) >= size:
+            break
+        quotas[category] += 1
+
+    selected: list[MirrorRecord] = []
+    chosen: set[str] = set()
+    for category, _ in PILOT_CATEGORY_QUOTAS:
+        candidates = by_category.get(category, [])
+        grouped: dict[str, list[MirrorRecord]] = {}
+        for record in candidates:
+            grouped.setdefault(record.external_id, []).append(record)
+        groups = sorted(
+            grouped.values(),
+            key=lambda group: (
+                -len({r.language_code for r in group}),
+                min(r.date or "9999-99-99" for r in group),
+                min(r.external_id for r in group),
+            ),
+        )
+        target = quotas[category]
+        for group in groups:
+            ordered = sorted(group, key=lambda r: (r.language_code != "sqi", r.official_url))
+            for record in ordered:
+                if len([r for r in selected if pilot_category(r) == category]) >= target:
+                    break
+                if record.official_url not in chosen:
+                    selected.append(record)
+                    chosen.add(record.official_url)
+            if len([r for r in selected if pilot_category(r) == category]) >= target:
+                break
+
+    if len(selected) < size:
+        remainder = sorted(
+            (r for r in eligible if r.official_url not in chosen),
+            key=lambda r: (r.language_code != "sqi", r.date or "9999-99-99", r.official_url),
+        )
+        selected.extend(remainder[: size - len(selected)])
+    return selected[:size]
 
 
 def record_type_for(record: MirrorRecord) -> str:
