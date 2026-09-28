@@ -179,8 +179,11 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
         # then each direction as a plain equality join: the cost follows the
         # page's own edges, not the size of the whole graph.
         page_nodes = list(self.session.scalars(select(GraphNode.id).where(node_fk.in_(id_list))))
+        # The same public-evidence rule as `/network/edges`: a resolved
+        # citation, a verified rule-lineaged mention or a header-backed
+        # appearance — so a dossier's relationship count matches its network.
         edges = (
-            self._public_edges_stmt()
+            self._typed_edges_stmt()[0]
             .where(
                 or_(
                     Relationship.from_node_id.in_(page_nodes),

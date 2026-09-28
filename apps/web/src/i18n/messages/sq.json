@@ -1412,5 +1412,27 @@
       "corrected": "I korrigjuar",
       "reclassified": "I riklasifikuar si publik"
     }
+  },
+  "personDossier": {
+    "recordedIn": "Emërtohet në regjistrin publik gjyqësor të KSC-BC-2020-06. Çdo shifër më poshtë është numër referencash të mbështetura në burime.",
+    "alsoRecordedAs": "Regjistruar edhe si",
+    "verifiedMentions": "Ku e përmend regjistri këtë person",
+    "loadedOf": "{shown} nga {total} përmendje të regjistruara të ngarkuara",
+    "noVerifiedMentions": "Ende nuk është regjistruar asnjë përmendje e verifikuar.",
+    "judgmentOrder": "Vetëm sipas renditjes së aktgjykimit — kurrë i renditur sipas rëndësisë",
+    "findingsLinked": "{count, plural, one {# konstatim gjyqësor i referohet} other {# konstatime gjyqësore i referohen}} këtij personi.",
+    "noFindings": "Ende asnjë konstatim gjyqësor nuk është i lidhur me këtë person në regjistrin e shqyrtuar.",
+    "openFindings": "Hap konstatimet gjyqësore",
+    "noDates": "Nuk është regjistruar asnjë paraqitje në seancë për këtë person.",
+    "relationships": "Marrëdhënie të mbështetura në burime",
+    "keyReferencesNote": "Versionet që e përmendin më shpesh këtë person ndër përmendjet e ngarkuara — një numërim, jo masë e rëndësisë.",
+    "appearsRarely": "Ky person shfaqet rrallë në regjistrin publik.",
+    "roles": {
+      "accused": "I akuzuar",
+      "witness": "Dëshmitar",
+      "counsel_or_participant": "Avokat ose pjesëmarrës",
+      "judge": "Gjyqtar",
+      "victim": "Viktimë"
+    }
   }
 }

@@ -3,6 +3,7 @@
 import type { VerificationState } from "@ksc/shared";
 import type { MockDirectory, MockDirectoryRow } from "@/mock";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   DataTable,
@@ -54,6 +55,8 @@ export function DirectoryScreen({
   const tFooter = useTranslations("footer");
   const t15 = useTranslations("phase15");
   const t18 = useTranslations("phase18");
+  const tp = useTranslations("personDossier");
+  const router = useRouter();
   const t21 = useTranslations("phase21");
   const [query, setQuery] = useState("");
   const [density, setDensity] = useState<Density>("compact");
@@ -177,8 +180,38 @@ export function DirectoryScreen({
   const columns: readonly Column<MockDirectoryRow>[] =
     kind === "people"
       ? [
-          ...identityColumns.slice(0, 2),
-          { ...identityColumns[2]!, header: t18("role") },
+          {
+            key: "title",
+            header: screenTitle,
+            minWidth: 220,
+            sortable: true,
+            cell: (row) => (
+              <span className="flex min-w-0 items-center gap-2.5">
+                <PersonInitials name={row.title} />
+                <span className="min-w-0">
+                  <span className="text-fg block truncate font-medium">{row.title}</span>
+                  <span className="identifier text-fg-muted block truncate text-[10px]">
+                    {row.id}
+                  </span>
+                </span>
+              </span>
+            ),
+          },
+          {
+            key: "description",
+            header: t18("role"),
+            minWidth: 150,
+            cell: (row) =>
+              row.description ? (
+                <span className="rounded-badge border-border text-fg-secondary border px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+                  {ROLE_KEYS.includes(row.description)
+                    ? tp(`roles.${row.description}`)
+                    : row.description.replaceAll("_", " ")}
+                </span>
+              ) : (
+                "—"
+              ),
+          },
           countColumn("documents", t18("documents"), (row) => row.counts?.documentMentions),
           countColumn(
             "transcripts",
@@ -381,10 +414,8 @@ export function DirectoryScreen({
                         ? "border-l-court"
                         : "border-l-accent"
                 }
-                onSelect={(row) => {
-                  setSelectedId(row.id);
-                  setMobileInspectorOpen(true);
-                }}
+                onSelect={(row) => router.push(row.href)}
+                onPreview={(row) => setSelectedId(row.id)}
               />
             )}
             <div className="border-border-subtle mt-auto border-t">
@@ -697,7 +728,8 @@ export function DirectoryScreen({
                   setPage(1);
                 }}
                 selectedId={selected?.id}
-                onSelect={(row) => setSelectedId(row.id)}
+                onSelect={(row) => router.push(row.href)}
+                onPreview={(row) => setSelectedId(row.id)}
               />
             )}
             <Pager
@@ -786,5 +818,23 @@ export function DirectoryScreen({
         </aside>
       </div>
     </AppShell>
+  );
+}
+
+const ROLE_KEYS = ["accused", "witness", "counsel_or_participant", "judge", "victim"];
+
+function PersonInitials({ name }: { name: string }) {
+  const words = name.split(/\s+/u).filter((word) => /^\p{L}/u.test(word));
+  const initials = (
+    words.length > 1 ? `${words[0]![0]}${words[words.length - 1]![0]}` : name.slice(0, 2)
+  ).toUpperCase();
+  return (
+    <span
+      aria-hidden
+      className="border-accent/60 bg-surface-raised text-fg inline-flex size-7 shrink-0 items-center justify-center border text-[9px] font-semibold"
+      style={{ clipPath: "polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%)" }}
+    >
+      {initials}
+    </span>
   );
 }

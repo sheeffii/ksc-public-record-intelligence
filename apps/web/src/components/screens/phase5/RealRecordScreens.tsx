@@ -28,8 +28,8 @@ import type {
 } from "@/data";
 import type { DirectoryKind, DirectoryRow } from "@/data";
 import { groupBySource, versionHref, type SourceGroup } from "@/lib/source-groups";
-import { ActionLink, ScreenHeader } from "./ScreenChrome";
-import { KeyValue, NoteStrip, StatStrip } from "./Workspace";
+import { ActionLink, ScreenHeader, TabStrip } from "./ScreenChrome";
+import { HexAvatar, KeyValue, NoteStrip, SectionCard, StatStrip } from "./Workspace";
 
 const countKeys = [
   "documentMentions",
@@ -42,6 +42,9 @@ const countKeys = [
 ] as const;
 
 const NO_MENTIONS: EntityMentionsView = { total: 0, items: [] };
+// Relationship groups shown inline; every relationship stays one click away
+// in the focused Network view, which pages through all of them.
+const MAX_EDGE_GROUPS = 8;
 
 export function RealPersonScreen({
   person,
@@ -58,95 +61,301 @@ export function RealPersonScreen({
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
-  const t15 = useTranslations("phase15");
   const tr = useTranslations("referenceCounts");
-  const t18 = useTranslations("phase18");
+  const tp = useTranslations("personDossier");
+  const tg = useTranslations("sourceGroups");
+  const name = encodeURIComponent(person.displayName);
+  const slug = encodeURIComponent(person.slug);
+  const counts = person.counts;
+  const verified = groupMentions(
+    mentions.items.filter((mention) => mention.matchClass === "VERIFIED_MENTION"),
+  );
+  // The versions that mention this person most, among the mentions loaded
+  // here — a count of occurrences, never a ranking of importance.
+  const keyReferences = [...verified]
+    .sort((a, b) => b.items.length - a.items.length || a.versionRef.localeCompare(b.versionRef))
+    .slice(0, 5);
+  const rare = counts.documentMentions + counts.transcriptMentions <= 3;
+  const stats = countKeys.map((key) => ({
+    key,
+    label: tr(key),
+    value: counts[key],
+    href:
+      key === "findings"
+        ? "/findings"
+        : key === "incidents"
+          ? "/incidents"
+          : key === "witnessesWhoReferred"
+            ? "/witnesses"
+            : key === "exhibitRefs"
+              ? "/exhibits"
+              : `/search?q=${name}`,
+  }));
   return (
     <AppShell crumbs={[{ label: tb("people"), href: "/people" }, { label: person.displayName }]}>
-      <ScreenHeader
-        realData
-        eyebrow={t15("verifiedPublicRecord")}
-        title={person.displayName}
-        description={t15("sourceBacked")}
-        actions={
-          <div className="flex gap-2">
-            <ActionLink href={`/network?focus=${encodeURIComponent(person.slug)}`}>
-              {t("viewNetwork")}
-            </ActionLink>
-            <ActionLink href={`/search?q=${encodeURIComponent(person.displayName)}`}>
-              {t("search")}
-            </ActionLink>
-          </div>
-        }
-      />
-      <div className="mx-auto w-full max-w-[1440px] space-y-3 p-3 md:p-4">
-        <StatStrip
-          label={t15("referenceCounts")}
-          disclaimer={tr("disclaimer")}
-          items={countKeys.map((key) => ({ key, label: tr(key), value: person.counts[key] }))}
-        />
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <Panel title={t18("recordActivity")}>
-            <div className="grid gap-2 lg:grid-cols-2">
-              <RecordActivity
-                href={`/search?q=${encodeURIComponent(person.displayName)}`}
-                label={t18("openDocuments")}
-                value={person.counts.documentMentions}
-              />
-              <RecordActivity
-                href={`/search?q=${encodeURIComponent(person.displayName)}`}
-                label={t18("openTranscripts")}
-                value={person.counts.transcriptMentions}
-              />
-              <RecordActivity
-                href={`/search?q=${encodeURIComponent(person.displayName)}`}
-                label={t18("openFindings")}
-                value={person.counts.findings}
-              />
-              <RecordActivity
-                href={`/network?focus=${encodeURIComponent(person.slug)}`}
-                label={t18("openRelationships")}
-                value={person.relationshipCount ?? 0}
-              />
+      <header className="border-border-subtle bg-bg-deep border-b px-4 py-4">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-wrap items-start gap-4">
+          <HexAvatar initials={initialsOf(person.displayName)} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-fg text-[24px] leading-tight font-bold tracking-[-0.02em]">
+                {person.displayName}
+              </h1>
+              {person.role ? (
+                <span className="rounded-badge border-accent/40 text-accent border px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+                  {roleLabel(tp, person.role)}
+                </span>
+              ) : null}
             </div>
-          </Panel>
-          <Panel title={t("metadata")}>
-            <KeyValue rows={[{ key: "role", label: t15("role"), value: person.role || "—" }]} />
-            <p className="section-label mt-3 mb-1">{t15("aliases")}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {person.aliases.length ? (
-                person.aliases.slice(0, 6).map((alias) => (
+            <p className="text-fg-secondary mt-1 text-[11px]">{tp("recordedIn")}</p>
+            {person.aliases.length ? (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className="text-fg-muted text-[10px]">{tp("alsoRecordedAs")}</span>
+                {person.aliases.map((alias) => (
                   <span
                     key={alias}
-                    className="rounded-chip border-border bg-surface-raised text-fg-secondary border px-2 py-1 text-[10px]"
+                    className="rounded-chip border-border bg-surface-raised text-fg-secondary border px-2 py-0.5 text-[10px]"
                   >
                     {alias}
                   </span>
-                ))
-              ) : (
-                <span className="text-fg-muted text-[11px]">—</span>
-              )}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <ActionLink href={`/search?q=${encodeURIComponent(person.displayName)}`}>
-                {t("search")}
-              </ActionLink>
-              <ActionLink href={`/network?focus=${encodeURIComponent(person.slug)}`}>
-                {t("viewNetwork")}
-              </ActionLink>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <ActionLink href={`/network?focus=${slug}`}>{t("viewNetwork")}</ActionLink>
+            <ActionLink href={`/timeline?person=${slug}`}>{t("viewTimeline")}</ActionLink>
+            <ActionLink href={`/network/path?from=${slug}`}>{t("findConnection")}</ActionLink>
+            <ActionLink href={`/ai?q=${name}`} primary>
+              {t("askAi")}
+            </ActionLink>
+          </div>
+        </div>
+      </header>
+      <div className="mx-auto w-full max-w-[1440px] px-3 pt-3 md:px-4">
+        <StatStrip label={tb("recordReferences")} disclaimer={tr("disclaimer")} items={stats} />
+      </div>
+      <TabStrip
+        tabs={(["overview", "documents", "testimony", "findings", "network"] as const).map(
+          (key) => ({ key, label: tb(`tabs.${key}`), href: `#${key}` }),
+        )}
+        active="overview"
+      />
+      <div
+        id="overview"
+        className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 lg:grid-cols-[minmax(0,1fr)_300px]"
+      >
+        <div className="min-w-0 space-y-3">
+          {rare ? <NoteStrip>{tp("appearsRarely")}</NoteStrip> : null}
+          <SectionCard
+            id="documents"
+            title={tp("verifiedMentions")}
+            aside={
+              <span className="text-fg-muted text-[10px]">
+                {tg("documents", { documents: verified.length, occurrences: countItems(verified) })}
+                {mentions.total > mentions.items.length
+                  ? ` · ${tp("loadedOf", { shown: mentions.items.length, total: mentions.total })}`
+                  : ""}
+              </span>
+            }
+          >
+            {verified.length ? (
+              <MentionList
+                groups={verified}
+                countLabel={(n) => tg("verifiedCount", { count: n })}
+              />
+            ) : (
+              <p className="text-fg-muted text-[11px]">{tp("noVerifiedMentions")}</p>
+            )}
+          </SectionCard>
+          <SectionCard
+            id="findings"
+            title={t("courtFindings")}
+            aside={<span className="text-fg-muted text-[10px]">{tp("judgmentOrder")}</span>}
+          >
+            <p className="text-fg-secondary text-[11px]">
+              {counts.findings
+                ? tp("findingsLinked", { count: counts.findings })
+                : tp("noFindings")}
+            </p>
+            {counts.findings ? (
+              <div className="mt-2">
+                <ActionLink href="/findings">{tp("openFindings")}</ActionLink>
+              </div>
+            ) : null}
+          </SectionCard>
+          <SectionCard id="testimony" title={tb("typedDates")}>
+            {appearances.length ? (
+              <ol className="space-y-1.5">
+                {[...appearances]
+                  .sort((a, b) => a.hearingDate.localeCompare(b.hearingDate))
+                  .map((row) => (
+                    <li
+                      key={`${row.versionRef}-${row.pageFrom ?? 0}`}
+                      className="grid grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-2 text-[11px]"
+                    >
+                      <span className="tabular text-fg-secondary">{row.hearingDate}</span>
+                      <span className="text-fg min-w-0 truncate">
+                        {row.sessionLabel ?? row.versionRef}
+                      </span>
+                      <span className="rounded-badge date-testimony px-1.5 py-0.5 text-[10px]">
+                        {t("testimonyDate")}
+                      </span>
+                    </li>
+                  ))}
+              </ol>
+            ) : (
+              <p className="text-fg-muted text-[11px]">{tp("noDates")}</p>
+            )}
+            <NoteStrip className="mt-3">{t("dateTypes")}</NoteStrip>
+          </SectionCard>
+          <ResearchTrail
+            entityRef={person.slug}
+            occurrences={occurrences}
+            mentions={{
+              total: mentions.total,
+              items: mentions.items.filter((m) => m.matchClass === "REVIEW_REQUIRED"),
+            }}
+            network={network}
+          />
+        </div>
+        <aside id="network" className="min-w-0 space-y-3">
+          <Panel title={tb("networkPreview")}>
+            <NetworkPreviewReal focusRef={person.slug} network={network} />
+            <div className="mt-2">
+              <ActionLink href={`/network?focus=${slug}`}>{tb("openInNetwork")}</ActionLink>
             </div>
           </Panel>
-        </div>
-        {appearances.length ? <AppearancesPanel appearances={appearances} /> : null}
-        <ResearchTrail
-          entityRef={person.slug}
-          occurrences={occurrences}
-          mentions={mentions}
-          network={network}
-        />
-        <NoteStrip tone="legal">{tb("noScore")}</NoteStrip>
+          <Panel title={tb("referenceBreakdown")}>
+            <KeyValue
+              rows={[
+                { key: "d", label: tr("documentMentions"), value: counts.documentMentions },
+                { key: "t", label: tr("transcriptMentions"), value: counts.transcriptMentions },
+                { key: "e", label: tr("exhibitRefs"), value: counts.exhibitRefs },
+                { key: "c", label: tr("citationsResolved"), value: counts.citationsResolved },
+                {
+                  key: "r",
+                  label: tp("relationships"),
+                  value: person.relationshipCount ?? 0,
+                },
+              ]}
+            />
+          </Panel>
+          <Panel title={tb("keyReferences")}>
+            {keyReferences.length ? (
+              <ul className="space-y-2">
+                {keyReferences.map((group) => (
+                  <li
+                    key={group.key}
+                    className="border-border-subtle rounded-card border p-2 text-[11px]"
+                  >
+                    <Link
+                      href={group.documentHref}
+                      className="text-fg line-clamp-3 block font-medium hover:underline"
+                    >
+                      {group.title}
+                    </Link>
+                    <span className="identifier text-fg-tertiary mt-1 block text-[10px] break-all">
+                      {group.versionRef}
+                    </span>
+                    <span className="text-fg-secondary mt-0.5 block text-[10px]">
+                      {tg("verifiedCount", { count: group.items.length })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-fg-muted text-[11px]">—</p>
+            )}
+            <p className="text-fg-muted mt-2 text-[10px]">{tp("keyReferencesNote")}</p>
+          </Panel>
+          <NoteStrip tone="legal">{tb("noScore")}</NoteStrip>
+        </aside>
       </div>
     </AppShell>
+  );
+}
+
+function initialsOf(name: string): string {
+  const words = name.split(/\s+/u).filter((word) => /^\p{L}/u.test(word));
+  return (
+    words.length > 1 ? `${words[0]![0]}${words[words.length - 1]![0]}` : name.slice(0, 2)
+  ).toUpperCase();
+}
+
+function roleLabel(tp: (key: string) => string, role: string): string {
+  const known = ["accused", "witness", "counsel_or_participant", "judge", "victim"];
+  return known.includes(role) ? tp(`roles.${role}`) : role.replaceAll("_", " ");
+}
+
+/** Depth-1 neighbourhood of the focus, laid out on a circle — the edges are
+ * the record's own relationships, drawn without weight or ranking. */
+function NetworkPreviewReal({ focusRef, network }: { focusRef: string; network: NetworkView }) {
+  const tb = useTranslations("phase5b");
+  const focus = network.nodes.find((node) => node.ref === focusRef);
+  if (!focus) return <p className="text-fg-muted text-[11px]">—</p>;
+  const neighbourIds = [
+    ...new Set(
+      network.edges
+        .filter((edge) => edge.from === focus.id || edge.to === focus.id)
+        .map((edge) => (edge.from === focus.id ? edge.to : edge.from)),
+    ),
+  ].slice(0, 8);
+  const neighbours = neighbourIds
+    .map((id) => network.nodes.find((node) => node.id === id))
+    .filter((node): node is NonNullable<typeof node> => Boolean(node));
+  const point = (index: number) => {
+    const angle = (index / Math.max(1, neighbours.length)) * Math.PI * 2 - Math.PI / 2;
+    return { x: 50 + Math.cos(angle) * 36, y: 32 + Math.sin(angle) * 22 };
+  };
+  const graph = (
+    <svg
+      viewBox="0 0 100 64"
+      role="img"
+      aria-label={tb("networkPreview")}
+      className="bg-bg-graph rounded-card h-40 w-full"
+    >
+      {neighbours.map((node, index) => {
+        const p = point(index);
+        return (
+          <line
+            key={`l-${node.id}`}
+            x1={50}
+            y1={32}
+            x2={p.x}
+            y2={p.y}
+            stroke="var(--border)"
+            strokeWidth="0.5"
+          />
+        );
+      })}
+      {neighbours.map((node, index) => {
+        return (
+          <circle
+            key={node.id}
+            cx={point(index).x}
+            cy={point(index).y}
+            r={2.4}
+            fill="var(--surface-high)"
+            stroke="var(--border)"
+            strokeWidth="0.5"
+          />
+        );
+      })}
+      <circle cx={50} cy={32} r={4} fill="var(--accent)" />
+    </svg>
+  );
+  return (
+    <div>
+      {graph}
+      <ul className="mt-2 space-y-0.5 text-[10px]">
+        {neighbours.map((node) => (
+          <li key={node.id} className="text-fg-secondary truncate" title={node.label}>
+            {node.label}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -541,9 +750,15 @@ function ResearchTrail({
         ) : null}
         {edges.length ? (
           <Panel title={t18("relationships")}>
-            {network.page && network.page.total > edges.length ? (
+            {edgeGroups.length > MAX_EDGE_GROUPS ||
+            (network.page && network.page.total > edges.length) ? (
               <p className="text-fg-tertiary mb-2 text-[10px]">
-                {t19("relationshipTotal", { shown: edges.length, total: network.page.total })}{" "}
+                {t19("relationshipTotal", {
+                  shown: edgeGroups
+                    .slice(0, MAX_EDGE_GROUPS)
+                    .reduce((sum, group) => sum + group.items.length, 0),
+                  total: network.page?.total ?? edges.length,
+                })}{" "}
                 <Link
                   href={`/network?focus=${encodeURIComponent(entityRef)}`}
                   className="text-accent font-semibold"
@@ -553,7 +768,7 @@ function ResearchTrail({
               </p>
             ) : null}
             <GroupedSourceList
-              groups={edgeGroups}
+              groups={edgeGroups.slice(0, MAX_EDGE_GROUPS)}
               countLabel={(n) => tg("relationshipCount", { count: n })}
               itemKey={(edge) => edge.id}
               renderItem={(edge) => (

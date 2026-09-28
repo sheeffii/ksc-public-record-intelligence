@@ -1412,5 +1412,27 @@
       "corrected": "Corrected",
       "reclassified": "Reclassified as public"
     }
+  },
+  "personDossier": {
+    "recordedIn": "Named in the public court record of KSC-BC-2020-06. Every figure below is a count of source-backed references.",
+    "alsoRecordedAs": "Also recorded as",
+    "verifiedMentions": "Where the record names this person",
+    "loadedOf": "{shown} of {total} recorded mentions loaded",
+    "noVerifiedMentions": "No verified mention is recorded yet.",
+    "judgmentOrder": "Judgment order only — never ranked",
+    "findingsLinked": "{count, plural, one {# court finding references} other {# court findings reference}} this person.",
+    "noFindings": "No court finding is linked to this person in the reviewed record yet.",
+    "openFindings": "Open court findings",
+    "noDates": "No hearing appearance is recorded for this person.",
+    "relationships": "Source-backed relationships",
+    "keyReferencesNote": "The versions that name this person most often among the mentions loaded — a count, not a measure of importance.",
+    "appearsRarely": "This person appears rarely in the public record.",
+    "roles": {
+      "accused": "Accused",
+      "witness": "Witness",
+      "counsel_or_participant": "Counsel or participant",
+      "judge": "Judge",
+      "victim": "Victim"
+    }
   }
 }

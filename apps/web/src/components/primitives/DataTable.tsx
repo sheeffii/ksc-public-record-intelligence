@@ -30,6 +30,8 @@ export interface DataTableProps<Row> {
   onSort?: (key: string) => void;
   selectedId?: string;
   onSelect?: (row: Row) => void;
+  /** Hover or keyboard focus on a row (e.g. to preview it in an inspector). */
+  onPreview?: (row: Row) => void;
   /** Source-coloured 3px left border on the selected row. */
   selectedAccentClass?: string;
   caption?: string;
@@ -54,6 +56,7 @@ export function DataTable<Row>({
   onSort,
   selectedId,
   onSelect,
+  onPreview,
   selectedAccentClass = "border-l-accent",
   caption,
   className,
@@ -123,6 +126,8 @@ export function DataTable<Row>({
                   data-row-id={id}
                   aria-selected={onSelect ? selected : undefined}
                   onClick={onSelect ? () => onSelect(row) : undefined}
+                  onMouseEnter={onPreview ? () => onPreview(row) : undefined}
+                  onFocus={onPreview ? () => onPreview(row) : undefined}
                   className={cn(
                     "border-border-faint border-b border-l-[3px] border-l-transparent",
                     compact ? "h-8 text-[11px] leading-none" : "h-11 text-[12px]",

@@ -110,7 +110,8 @@ describe("Phase 19A verified mentions", () => {
         ]}
       />,
     );
-    const verified = screen.getByText("Verified mentions").closest("section") ?? document.body;
+    const verified =
+      screen.getByText("Where the record names this person").closest("section") ?? document.body;
     expect(within(verified as HTMLElement).getByText("JUDGE SMITH")).toBeInTheDocument();
     expect(within(verified as HTMLElement).queryByText("MR. SMITH")).toBeNull();
     const review = screen.getByText("Mentions requiring review").closest("section");
