@@ -1434,5 +1434,19 @@
       "judge": "Gjyqtar",
       "victim": "Viktimë"
     }
+  },
+  "timelineDesign": {
+    "recordCount": "{count} regjistrime me datë",
+    "dateTypesShown": "Llojet e datave të shfaqura",
+    "eventsEra": "Ngjarjet",
+    "proceedingsEra": "Procedurat",
+    "noHistorical": "Ende nuk ka ngjarje historike me datë në korpusin publik",
+    "markersNote": "Aty ku etiketat do të mbivendoseshin, regjistrimet e tjera vizatohen si shenja të llojit të datës në datën e tyre të saktë — kaloni miun ose zgjidhni një për ta parë. Asgjë nuk fshihet.",
+    "selectedCard": "Karta e zgjedhur e kronologjisë",
+    "datesAttached": "Datat e bashkëngjitura kësaj karte",
+    "oneCardManyDates": "Një kartë vizatohet në shtegun e llojit të vet të datës; çdo datë tjetër që mbart renditet këtu.",
+    "document": "Dokumenti",
+    "networkView": "Pamja e rrjetit",
+    "officialSource": "Burimi zyrtar"
   }
 }

@@ -113,7 +113,7 @@ describe("Phase 5B visual-parity remediation", () => {
       "false",
     );
     expect(screen.getByText(tb.dateMergeNote)).toBeInTheDocument();
-    expect(screen.getByText(tb.attachedDates)).toBeInTheDocument();
+    expect(screen.getByText(messagesEn.timelineDesign.datesAttached)).toBeInTheDocument();
   });
 
   it("renders real timeline uncertainty without inventing an exact date", () => {
@@ -132,7 +132,7 @@ describe("Phase 5B visual-parity remediation", () => {
         ]}
       />,
     );
-    expect(screen.getByText(/≈ 2024-05-01 \(approximate\)/)).toBeInTheDocument();
+    expect(screen.getAllByText(/≈ 2024-05-01 \(approximate\)/).length).toBeGreaterThan(0);
     expect(screen.getByText(tb.realDataNotice)).toBeInTheDocument();
     expect(screen.queryByText(messagesEn.phase5.mockNotice)).toBeNull();
   });
@@ -161,8 +161,13 @@ describe("Phase 5B visual-parity remediation", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Historical record" })).toHaveStyle({ left: "25%" });
-    expect(screen.getByRole("button", { name: "Proceedings record" })).toHaveStyle({ left: "75%" });
+    // Each record is drawn inside its own era's column, on that era's scale.
+    expect(
+      screen.getByRole("button", { name: "Historical record" }).closest("[data-era]"),
+    ).toHaveAttribute("data-era", "historical");
+    expect(
+      screen.getByRole("button", { name: "Proceedings record" }).closest("[data-era]"),
+    ).toHaveAttribute("data-era", "proceedings");
   });
 
   it("incident matrix filters by direction and court-cited and carries the required notes", async () => {

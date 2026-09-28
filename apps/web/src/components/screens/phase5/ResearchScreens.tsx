@@ -1,6 +1,7 @@
 "use client";
 
 import { groupBySource } from "@/lib/source-groups";
+import { cn } from "@/lib/utils";
 import type { DateType, Direction } from "@ksc/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -982,21 +983,120 @@ const LANES = [
   "judgment",
   "appeal",
 ] as const;
-const LANE_FOR: Record<DateType, (typeof LANES)[number]> = {
+type Lane = (typeof LANES)[number];
+const LANE_FOR: Record<DateType, Lane> = {
   event: "events",
   document: "documents",
   filing: "documents",
   testimony: "testimony",
   decision: "decisions",
 };
+/** Lane glyph colours — the source palette, never a severity. */
+const LANE_TONE: Record<Lane, string> = {
+  events: "text-incident",
+  documents: "text-doc",
+  hearings: "text-accent",
+  testimony: "text-witness",
+  decisions: "text-court",
+  judgment: "text-court",
+  appeal: "text-court",
+};
+// Labelled chips per lane before further records become exact-date markers.
+const MAX_TRACKS = 3;
+
+/** A transcript is the record of a hearing: its official reference carries a
+ * `/T/` segment. Read from the reference, never guessed from a title. */
+function laneOf(item: MockTimelineItem): Lane {
+  if (item.dateType === "document" && item.documentRef && /\/T\//u.test(item.documentRef)) {
+    return "hearings";
+  }
+  return LANE_FOR[item.dateType];
+}
+
+function DateGlyph({ type, className }: { type: DateType; className?: string }) {
+  const tone =
+    type === "event"
+      ? "text-incident"
+      : type === "testimony"
+        ? "text-witness"
+        : type === "decision"
+          ? "text-court"
+          : "text-doc";
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "inline-block size-2 shrink-0",
+        tone,
+        type === "event" && "rotate-45 bg-current",
+        type === "testimony" && "rounded-full bg-current",
+        type === "filing" && "border border-current",
+        (type === "document" || type === "decision") && "bg-current",
+        className,
+      )}
+    />
+  );
+}
+
+interface Era {
+  key: "historical" | "proceedings";
+  start: number;
+  end: number;
+  ticks: { at: number; label: string }[];
+  empty: boolean;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function buildEra(key: Era["key"], dates: number[]): Era {
+  if (!dates.length) {
+    return { key, start: 0, end: 1, ticks: [], empty: true };
+  }
+  const first = new Date(Math.min(...dates));
+  const last = new Date(Math.max(...dates));
+  if (key === "proceedings" || last.getUTCFullYear() - first.getUTCFullYear() > 3) {
+    const y0 = first.getUTCFullYear();
+    const y1 = last.getUTCFullYear() + 1;
+    const ticks = [];
+    for (let y = y0; y < y1; y += 1) ticks.push({ at: Date.UTC(y, 0, 1), label: String(y) });
+    return { key, start: Date.UTC(y0, 0, 1), end: Date.UTC(y1, 0, 1), ticks, empty: false };
+  }
+  const m0 = Date.UTC(first.getUTCFullYear(), first.getUTCMonth() - (first.getUTCMonth() % 3), 1);
+  const end = Date.UTC(last.getUTCFullYear(), last.getUTCMonth() + 1, 1);
+  const ticks = [];
+  for (let t = m0; t < end;) {
+    const d = new Date(t);
+    ticks.push({
+      at: t,
+      label: `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCFullYear()).slice(2)}`,
+    });
+    t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 3, 1);
+  }
+  return { key, start: m0, end, ticks, empty: false };
+}
+
+/** The date as recorded, with its precision stated — an uncertain date is
+ * never shown as if it were exact. */
+function formatDate(item: MockTimelineItem): string {
+  const approximate = item.datePrecision === "approximate";
+  const range = `${item.date}${item.dateTo ? ` — ${item.dateTo}` : ""}`;
+  const precision =
+    item.datePrecision && item.datePrecision !== "exact" ? ` (${item.datePrecision})` : "";
+  return `${approximate ? "≈ " : ""}${range}${precision}`;
+}
+
+function pct(era: Era, time: number): number {
+  return ((time - era.start) / (era.end - era.start)) * 100;
+}
 
 export function TimelineScreen({ initialItems }: { initialItems?: readonly TimelineItem[] }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
+  const tt = useTranslations("timelineDesign");
   const ts = useTranslations("screens");
   const realData = initialItems !== undefined;
   const items = initialItems ?? mockRepository.getTimeline();
-  const [visible, setVisible] = useState<Set<(typeof LANES)[number]>>(new Set(LANES));
+  const [visible, setVisible] = useState<Set<Lane>>(new Set(LANES));
   const [selected, setSelected] = useState<MockTimelineItem | null>(items[0] ?? null);
   const [zoom, setZoom] = useState({ historical: 1, proceedings: 1 });
   const [filters, setFilters] = useState<{ id: string; label: string }[]>(
@@ -1009,37 +1109,29 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
     testimony: t("testimonyDate"),
     decision: t("decision"),
   };
-  const historicalItems = items.filter((item) => Number(item.date.slice(0, 4)) < 2020);
-  const proceedingsItems = items.filter((item) => Number(item.date.slice(0, 4)) >= 2020);
-  const eraRange = (eraItems: readonly MockTimelineItem[]) => {
-    const years = eraItems
-      .map((item) => Number(item.date.slice(0, 4)))
-      .filter((year) => Number.isFinite(year));
-    return years.length ? `${Math.min(...years)} — ${Math.max(...years)}` : "—";
-  };
-  const timelinePosition = (item: MockTimelineItem) => {
-    const historical = Number(item.date.slice(0, 4)) < 2020;
-    const eraItems = historical ? historicalItems : proceedingsItems;
-    const times = eraItems.map((entry) => Date.parse(entry.date)).filter(Number.isFinite);
-    const time = Date.parse(item.date);
-    const minTime = times.length ? Math.min(...times) : time;
-    const maxTime = times.length ? Math.max(...times) : time;
-    const historicalShare = zoom.historical / (zoom.historical + zoom.proceedings);
-    const eraStart = historical ? 0 : historicalShare;
-    const eraShare = historical ? historicalShare : 1 - historicalShare;
-    const progress =
-      !Number.isFinite(time) || maxTime === minTime ? 0.5 : (time - minTime) / (maxTime - minTime);
-    return (eraStart + eraShare * (0.14 + progress * 0.72)) * 100;
-  };
+  const timeOf = (item: MockTimelineItem) => Date.parse(item.date);
+  const dated = items.filter((item) => Number.isFinite(timeOf(item)));
+  const isHistorical = (item: MockTimelineItem) => Number(item.date.slice(0, 4)) < 2020;
+  const eras: Era[] = [
+    buildEra("historical", dated.filter(isHistorical).map(timeOf)),
+    buildEra("proceedings", dated.filter((item) => !isHistorical(item)).map(timeOf)),
+  ];
+  // An era without records keeps a narrow column (it is never removed).
+  const eraWeight = (era: Era) => (era.empty ? 0.22 : era.key === "historical" ? 0.8 : 1.6);
+  const columns = eras.map((era) => `${eraWeight(era) * zoom[era.key]}fr`).join(" ");
+  const chipPct = (era: Era) => 19 / (eraWeight(era) * zoom[era.key]);
   const orderedItems = [...items]
-    .filter((item) => visible.has(LANE_FOR[item.dateType]))
+    .filter((item) => visible.has(laneOf(item)))
     .sort((a, b) => a.date.localeCompare(b.date));
+  const selectedLane = selected ? laneOf(selected) : null;
   return (
     <AppShell footer={t("sequenceNote")}>
       <Toolbar className="min-h-11">
         <div className="mr-2 flex items-baseline gap-2">
           <h1 className="text-fg text-[15px] font-semibold">{ts("timeline")}</h1>
-          <span className="text-fg-muted hidden text-[9px] lg:inline">{t("allRecords")}</span>
+          <span className="text-fg-muted hidden text-[9px] lg:inline">
+            {tt("recordCount", { count: items.length })}
+          </span>
         </div>
         <ActiveFilters
           filters={filters}
@@ -1047,20 +1139,25 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
           onClearAll={() => setFilters([])}
         />
         <div className="ml-auto flex flex-wrap items-center gap-1">
-          {(["historical", "proceedings"] as const).map((e) => (
-            <span key={e} className="inline-flex items-center gap-1 text-[10px]">
+          {!realData ? <DemoNotice /> : null}
+          {eras.map((era) => (
+            <span key={era.key} className="inline-flex items-center gap-1 text-[10px]">
               <span className="text-fg-secondary">
-                {tb(e === "historical" ? "eraHistorical" : "eraProceedings")}
+                {tb(era.key === "historical" ? "eraHistorical" : "eraProceedings")}
               </span>
               <ToolButton
-                ariaLabel={`${tb("zoomEra", { era: e })} −`}
-                onClick={() => setZoom((z) => ({ ...z, [e]: Math.max(0.5, z[e] - 0.25) }))}
+                ariaLabel={`${tb("zoomEra", { era: era.key })} −`}
+                onClick={() =>
+                  setZoom((z) => ({ ...z, [era.key]: Math.max(0.5, z[era.key] - 0.25) }))
+                }
               >
                 −
               </ToolButton>
               <ToolButton
-                ariaLabel={`${tb("zoomEra", { era: e })} +`}
-                onClick={() => setZoom((z) => ({ ...z, [e]: Math.min(2, z[e] + 0.25) }))}
+                ariaLabel={`${tb("zoomEra", { era: era.key })} +`}
+                onClick={() =>
+                  setZoom((z) => ({ ...z, [era.key]: Math.min(3, z[era.key] + 0.25) }))
+                }
               >
                 +
               </ToolButton>
@@ -1068,52 +1165,77 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
           ))}
         </div>
       </Toolbar>
-      <div className="border-border-subtle flex flex-wrap items-center gap-3 border-b px-4 py-1.5 text-[10px]">
-        <span className="section-label">{t("dateTypes")}</span>
+      <div className="border-border-subtle flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-4 py-1.5 text-[10px]">
+        <span className="section-label">{tt("dateTypesShown")}</span>
         {(Object.keys(dateLabel) as DateType[]).map((d) => (
-          <span key={d} className={`rounded-badge px-1.5 py-0.5 date-${d}`}>
+          <span key={d} className="text-fg-secondary inline-flex items-center gap-1.5">
+            <DateGlyph type={d} />
             {dateLabel[d]}
           </span>
         ))}
+        <span className="text-fg-muted ml-auto hidden text-[10px] lg:inline">
+          {tb("dateMergeNote")}
+        </span>
       </div>
-      <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 xl:grid-cols-[minmax(0,1fr)_314px]">
-        <div className="min-w-0 space-y-3">
-          {realData ? <NoteStrip>{tb("realDataNotice")}</NoteStrip> : <DemoNotice />}
-          <div className="border-border-subtle bg-surface rounded-card hidden min-h-[520px] overflow-x-auto border md:block">
-            <div className="grid grid-cols-[140px_minmax(0,1fr)]">
-              <div className="border-border-faint border-r border-b p-2 text-[10px]">
+      <div className="grid min-h-0 w-full min-w-0 flex-1 xl:grid-cols-[minmax(0,1fr)_314px]">
+        <div className="min-w-0">
+          <div className="hidden overflow-x-auto md:block">
+            <div className="grid min-w-[880px] grid-cols-[170px_minmax(0,1fr)]">
+              <div className="section-label border-border-faint flex items-end border-r border-b px-3 pb-2">
                 {tb("layers")}
               </div>
               <div
-                className="border-border-faint grid border-b text-[10px]"
-                style={{ gridTemplateColumns: `${zoom.historical}fr ${zoom.proceedings}fr` }}
+                className="border-border-faint grid border-b"
+                style={{ gridTemplateColumns: columns }}
               >
-                <div className="border-border-faint border-r p-2">
-                  <span className="text-fg-secondary">{tb("eraHistorical")}</span>{" "}
-                  <span className="tabular text-fg-muted">
-                    {realData ? eraRange(historicalItems) : "1998 — 2000"}
-                  </span>
-                </div>
-                <div className="p-2">
-                  <span className="text-fg-secondary">{tb("eraProceedings")}</span>{" "}
-                  <span className="tabular text-fg-muted">
-                    {realData ? eraRange(proceedingsItems) : "2020 — 2025"}
-                  </span>
-                </div>
+                {eras.map((era) => (
+                  <div
+                    key={era.key}
+                    className={cn(
+                      "relative min-w-0 px-2 pt-2 pb-5",
+                      era.key === "historical" && "border-border border-r border-dashed",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "truncate text-[10px] font-semibold tracking-wide uppercase",
+                        era.key === "historical" ? "text-incident" : "text-court",
+                      )}
+                    >
+                      {tt(era.key === "historical" ? "eventsEra" : "proceedingsEra")}
+                      {era.empty
+                        ? ""
+                        : ` · ${new Date(era.start).getUTCFullYear()} – ${new Date(era.end - 1).getUTCFullYear()}`}
+                    </div>
+                    {era.empty ? (
+                      <div className="text-fg-muted mt-0.5 text-[9px] leading-tight">
+                        {tt("noHistorical")}
+                      </div>
+                    ) : (
+                      era.ticks.map((tick) => (
+                        <span
+                          key={tick.at}
+                          className="tabular text-fg-muted absolute bottom-1 text-[9px]"
+                          style={{ left: `${pct(era, tick.at)}%` }}
+                        >
+                          {tick.label}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                ))}
               </div>
               {LANES.map((lane) => {
-                const laneItems = items
-                  .filter((i) => LANE_FOR[i.dateType] === lane)
+                const laneItems = dated
+                  .filter((item) => laneOf(item) === lane)
                   .sort((a, b) => a.date.localeCompare(b.date));
-                const overviewItems = laneItems.filter(
-                  (_, index) => index % Math.max(1, Math.ceil(laneItems.length / 7)) === 0,
-                );
                 const on = visible.has(lane);
                 return (
                   <div key={lane} className="contents">
                     <button
                       type="button"
                       aria-label={tb(`lanes.${lane}`)}
+                      aria-pressed={on}
                       onClick={() =>
                         setVisible((v) => {
                           const n = new Set(v);
@@ -1122,139 +1244,243 @@ export function TimelineScreen({ initialItems }: { initialItems?: readonly Timel
                           return n;
                         })
                       }
-                      aria-pressed={on}
-                      className={`border-border-faint border-r border-b p-2 text-left text-[11px] ${on ? "text-fg" : "text-fg-muted line-through"}`}
+                      className={cn(
+                        "border-border-faint flex items-center gap-2 border-r border-b px-3 text-left text-[11px]",
+                        selectedLane === lane && "bg-surface-raised",
+                        on ? "text-fg" : "text-fg-muted line-through",
+                      )}
                     >
-                      <span>{tb(`lanes.${lane}`)}</span>
-                      <span className="text-fg-muted tabular ml-1 text-[9px]">
+                      <span
+                        aria-hidden
+                        className={cn("inline-block size-2 bg-current", LANE_TONE[lane])}
+                      />
+                      <span className="font-medium">{tb(`lanes.${lane}`)}</span>
+                      <span className="tabular text-fg-muted ml-auto text-[9px]">
                         {laneItems.length}
                       </span>
                     </button>
                     <div
-                      className="border-border-faint relative min-h-[68px] border-b"
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: `${zoom.historical}fr ${zoom.proceedings}fr`,
-                      }}
+                      className="border-border-faint grid min-h-12 border-b"
+                      style={{ gridTemplateColumns: columns }}
                     >
-                      <div className="border-border-faint border-r" />
-                      <div />
-                      {on && laneItems.length === 0 ? (
-                        <span className="text-fg-muted absolute inset-y-0 left-2 flex items-center text-[10px]">
-                          {tb("emptyLane")}
-                        </span>
-                      ) : null}
-                      {on
-                        ? overviewItems.map((item, index) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => setSelected(item)}
-                              aria-pressed={selected?.id === item.id}
-                              className={`rounded-badge bg-surface absolute z-10 max-w-36 -translate-x-1/2 truncate px-1.5 py-0.5 text-[10px] date-${item.dateType} ${selected?.id === item.id ? "ring-accent ring-1" : ""}`}
-                              style={{
-                                left: `${timelinePosition(item)}%`,
-                                top: `${8 + (index % 3) * 20}px`,
-                              }}
-                            >
-                              {item.label}
-                            </button>
-                          ))
-                        : null}
+                      {eras.map((era) => {
+                        const eraItems = laneItems.filter((item) =>
+                          era.key === "historical" ? isHistorical(item) : !isHistorical(item),
+                        );
+                        // Greedy packing: a chip takes the first track whose
+                        // last chip ends before it; the rest are markers at
+                        // their exact date — every record stays drawn.
+                        const trackEnds: number[] = [];
+                        const chips: { item: MockTimelineItem; x: number; track: number }[] = [];
+                        const markers: { item: MockTimelineItem; x: number }[] = [];
+                        for (const item of eraItems) {
+                          const x = pct(era, timeOf(item));
+                          const track = trackEnds.findIndex((end) => end <= x);
+                          if (track >= 0) {
+                            trackEnds[track] = x + chipPct(era);
+                            chips.push({ item, x, track });
+                          } else if (trackEnds.length < MAX_TRACKS) {
+                            trackEnds.push(x + chipPct(era));
+                            chips.push({ item, x, track: trackEnds.length - 1 });
+                          } else {
+                            markers.push({ item, x });
+                          }
+                        }
+                        const height =
+                          10 + Math.max(1, trackEnds.length) * 22 + (markers.length ? 14 : 0);
+                        return (
+                          <div
+                            key={era.key}
+                            data-era={era.key}
+                            className={cn(
+                              "relative min-w-0 overflow-hidden",
+                              era.key === "historical" && "border-border border-r border-dashed",
+                            )}
+                            style={{ height }}
+                          >
+                            {era.ticks.map((tick) => (
+                              <span
+                                key={tick.at}
+                                aria-hidden
+                                className="border-border-faint absolute inset-y-0 border-l"
+                                style={{ left: `${pct(era, tick.at)}%` }}
+                              />
+                            ))}
+                            {on && era.key === "proceedings" && laneItems.length === 0 ? (
+                              <span className="text-fg-muted absolute inset-y-0 left-2 flex items-center text-[10px]">
+                                {tb("emptyLane")}
+                              </span>
+                            ) : null}
+                            {on
+                              ? chips.map(({ item, x, track }) => (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    title={`${item.date} · ${item.label}`}
+                                    onClick={() => setSelected(item)}
+                                    aria-pressed={selected?.id === item.id}
+                                    className={cn(
+                                      "rounded-badge bg-surface-raised absolute z-10 flex items-center gap-1.5 overflow-hidden px-1.5 py-0.5 text-[10px]",
+                                      `date-${item.dateType}`,
+                                      selected?.id === item.id &&
+                                        "ring-accent bg-surface-high ring-1",
+                                    )}
+                                    style={{
+                                      // Exactly the track slot: chips never
+                                      // overlap, and ones at the era's end
+                                      // stay inside it (the title keeps the date).
+                                      left: `${Math.min(x, 100 - chipPct(era))}%`,
+                                      width: `${chipPct(era) - 0.4}%`,
+                                      top: 6 + track * 22,
+                                    }}
+                                  >
+                                    <DateGlyph type={item.dateType} />
+                                    <span className="truncate">{item.label}</span>
+                                  </button>
+                                ))
+                              : null}
+                            {on
+                              ? markers.map(({ item, x }) => (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    title={`${item.date} · ${item.label}`}
+                                    aria-label={`${item.date} · ${item.label}`}
+                                    onClick={() => setSelected(item)}
+                                    className={cn(
+                                      "absolute z-10 -translate-x-1/2 p-0.5",
+                                      selected?.id === item.id && "ring-accent rounded ring-1",
+                                    )}
+                                    style={{ left: `${x}%`, bottom: 3 }}
+                                  >
+                                    <DateGlyph type={item.dateType} />
+                                  </button>
+                                ))
+                              : null}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
               })}
             </div>
+            <p className="text-fg-muted px-3 pt-2 text-[10px]">{tt("markersNote")}</p>
+            {realData ? (
+              <p className="text-fg-muted px-3 pb-2 text-[10px]">{tb("realDataNotice")}</p>
+            ) : null}
           </div>
-          <ol className="space-y-2 md:hidden">
+          <ol className="space-y-2 p-3 md:hidden">
             {orderedItems.map((item) => (
               <li key={item.id}>
                 <button
                   type="button"
                   onClick={() => setSelected(item)}
-                  className="border-border-subtle bg-surface hover:bg-surface-raised rounded-card grid w-full gap-2 border p-3 text-left text-[11px] sm:grid-cols-[110px_minmax(0,1fr)_auto] sm:items-center"
+                  className="border-border-subtle bg-surface hover:bg-surface-raised rounded-card grid w-full gap-1 border p-3 text-left text-[11px]"
                 >
-                  <span
-                    className={`rounded-badge mr-2 px-1.5 py-0.5 text-[10px] date-${item.dateType}`}
-                  >
-                    {dateLabel[item.dateType]}
+                  <span className="flex items-center gap-2">
+                    <DateGlyph type={item.dateType} />
+                    <span className="text-fg-secondary text-[10px]">
+                      {dateLabel[item.dateType]} · {tb(`lanes.${laneOf(item)}`)}
+                    </span>
                   </span>
                   <span className="text-fg font-medium">{item.label}</span>
-                  <span className="text-fg-muted tabular block text-[10px] sm:text-right">
+                  <span className="text-fg-muted tabular text-[10px]">
                     {item.date}
-                    {item.dateTo ? ` — ${item.dateTo}` : ""} · {item.datePrecision}
+                    {item.dateTo ? ` — ${item.dateTo}` : ""}
                   </span>
                 </button>
               </li>
             ))}
           </ol>
-          <NoteStrip>{t("sequenceNote")}</NoteStrip>
         </div>
-        <aside className="min-w-0 space-y-3 xl:sticky xl:top-3 xl:self-start">
-          <Panel title={tb("cardDetail")}>
-            {selected ? (
-              <>
-                <h2 className="text-fg text-[13px] font-semibold">{selected.label}</h2>
-                <p className="text-fg-muted text-[10px]">
-                  {tb("drawnOn")}: {tb(`lanes.${LANE_FOR[selected.dateType]}`)}
+        <aside className="border-border-subtle bg-bg-deep flex min-w-0 flex-col gap-3 border-l p-3 xl:sticky xl:top-0 xl:self-start">
+          <p className="section-label">{tt("selectedCard")}</p>
+          {selected ? (
+            <div className="border-accent/40 bg-surface rounded-card space-y-2 border p-3">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "rounded-badge px-1.5 py-0.5 text-[9px] font-semibold uppercase",
+                    `date-${selected.dateType}`,
+                  )}
+                >
+                  {dateLabel[selected.dateType]}
+                </span>
+                <span className="tabular text-fg-secondary text-[11px]">
+                  {formatDate(selected)}
+                </span>
+              </div>
+              <h2 className="text-fg text-[13px] leading-snug font-semibold">{selected.label}</h2>
+              {selected.description ? (
+                <p className="text-fg-secondary text-[11px] leading-relaxed">
+                  {selected.description}
                 </p>
-                <h3 className="section-label mt-3">{tb("attachedDates")}</h3>
-                <ul className="mt-1 space-y-1 text-[11px]">
-                  <li className="flex justify-between">
-                    <span className={`rounded-badge px-1.5 date-${selected.dateType}`}>
-                      {dateLabel[selected.dateType]}
-                    </span>
-                    <span className="tabular">
-                      {selected.datePrecision === "approximate" ? "≈ " : ""}
-                      {selected.date}
-                      {selected.dateTo ? ` — ${selected.dateTo}` : ""}
-                      {selected.datePrecision && selected.datePrecision !== "exact"
-                        ? ` (${selected.datePrecision})`
-                        : ""}
-                    </span>
-                  </li>
-                  {!realData && selected.dateType === "filing" ? (
-                    <li className="flex justify-between">
-                      <span className="rounded-badge date-document px-1.5">
-                        {dateLabel.document}
-                      </span>
-                      <span className="tabular">Demo document date</span>
-                    </li>
-                  ) : null}
-                </ul>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {!realData ? <CitationChip citation={courtCitation} size="sm" /> : null}
-                  <ActionLink href={selected.href}>{t("open")}</ActionLink>
-                  {selected.sourceUrl ? (
-                    <a className="text-accent text-[11px] underline" href={selected.sourceUrl}>
-                      {t("openSource")}
-                    </a>
-                  ) : null}
-                </div>
-                {!realData ? (
-                  <>
-                    <h3 className="section-label mt-3">{tb("linkedFrom")}</h3>
-                    <ul className="mt-1 text-[11px]">
-                      <li>
-                        <Link href="/witnesses/W01234" className="text-accent identifier">
-                          W01234
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/incidents/I-DEMO-01" className="text-accent">
-                          I-DEMO-01
-                        </Link>
-                      </li>
-                    </ul>
-                  </>
+              ) : null}
+              <p className="text-fg-muted text-[10px]">
+                {tb("drawnOn")}: {tb(`lanes.${laneOf(selected)}`)}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {selected.documentRef ? (
+                  <Link
+                    href={selected.href}
+                    className="rounded-badge identifier border-doc/50 text-doc border px-1.5 py-0.5 text-[10px]"
+                  >
+                    {selected.documentRef} →
+                  </Link>
                 ) : null}
-              </>
-            ) : (
-              <p className="text-fg-secondary text-[11px]">{tb("selectCard")}</p>
-            )}
-          </Panel>
-          <NoteStrip tone="legal">{tb("dateMergeNote")}</NoteStrip>
+                {!realData ? <CitationChip citation={courtCitation} size="sm" /> : null}
+              </div>
+            </div>
+          ) : (
+            <p className="text-fg-secondary text-[11px]">{tb("selectCard")}</p>
+          )}
+          {selected ? (
+            <>
+              <p className="section-label">{tt("datesAttached")}</p>
+              <div className="border-border-subtle rounded-card border">
+                <div className="bg-surface flex items-center justify-between px-3 py-1.5 text-[11px]">
+                  <span className="flex items-center gap-1.5">
+                    <DateGlyph type={selected.dateType} />
+                    {dateLabel[selected.dateType]}
+                  </span>
+                  <span className="tabular text-fg">{formatDate(selected)}</span>
+                </div>
+              </div>
+              <p className="text-fg-muted text-[10px]">{tt("oneCardManyDates")}</p>
+              <p className="section-label">{tb("linkedFrom")}</p>
+              <ul className="space-y-1.5 text-[11px]">
+                {selected.documentRef ? (
+                  <li className="border-border-subtle rounded-card flex items-center justify-between border px-3 py-1.5">
+                    <span className="text-fg-secondary">{tt("document")}</span>
+                    <Link href={selected.href} className="text-accent">
+                      {t("open")} →
+                    </Link>
+                  </li>
+                ) : null}
+                <li className="border-border-subtle rounded-card flex items-center justify-between border px-3 py-1.5">
+                  <span className="text-fg-secondary">{tt("networkView")}</span>
+                  <Link
+                    href={`/network${selected.documentRef ? `?focus=${encodeURIComponent(selected.documentRef)}` : ""}`}
+                    className="text-accent"
+                  >
+                    {t("open")} →
+                  </Link>
+                </li>
+                {selected.sourceUrl ? (
+                  <li className="border-border-subtle rounded-card flex items-center justify-between border px-3 py-1.5">
+                    <span className="text-fg-secondary">{tt("officialSource")}</span>
+                    <a href={selected.sourceUrl} className="text-accent">
+                      {t("open")} ↗
+                    </a>
+                  </li>
+                ) : null}
+              </ul>
+            </>
+          ) : null}
+          <p className="text-fg-muted border-border-subtle mt-auto border-t pt-2 text-[10px] leading-relaxed">
+            {t("sequenceNote")}
+          </p>
         </aside>
       </div>
     </AppShell>

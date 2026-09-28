@@ -841,6 +841,9 @@ export function toTimelineItem(event: ApiEvent): TimelineItem {
     sourceUrl: event.source_url ?? undefined,
     sourceSystem: event.source_system ?? undefined,
     extractionOrigin: event.extraction_origin,
+    description: event.description ?? undefined,
+    documentRef: event.document_ref ?? undefined,
+    hearingRef: event.hearing_ref ?? undefined,
   };
 }
 

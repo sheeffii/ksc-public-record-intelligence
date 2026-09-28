@@ -1434,5 +1434,19 @@
       "judge": "Judge",
       "victim": "Victim"
     }
+  },
+  "timelineDesign": {
+    "recordCount": "{count} dated records",
+    "dateTypesShown": "Date types shown",
+    "eventsEra": "Events",
+    "proceedingsEra": "Proceedings",
+    "noHistorical": "No dated historical event in the public corpus yet",
+    "markersNote": "Where labels would overlap, further records are drawn as date-type markers at their exact date — hover or select one to see it. Nothing is hidden.",
+    "selectedCard": "Selected timeline card",
+    "datesAttached": "Dates attached to this card",
+    "oneCardManyDates": "A card is drawn on the lane of its own date type; any other date it carries is listed here.",
+    "document": "Document",
+    "networkView": "Network view",
+    "officialSource": "Official source"
   }
 }

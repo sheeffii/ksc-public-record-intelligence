@@ -132,6 +132,11 @@ export interface MockTimelineItem {
   sourceUrl?: string;
   sourceSystem?: string;
   extractionOrigin?: string;
+  /** Source note recorded with the date (e.g. which document's date it is). */
+  description?: string;
+  /** Official reference of the record the date belongs to. */
+  documentRef?: string;
+  hearingRef?: string;
 }
 
 export interface MockEvidenceRow {
