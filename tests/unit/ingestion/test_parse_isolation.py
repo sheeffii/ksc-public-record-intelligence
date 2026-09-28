@@ -36,3 +36,18 @@ def test_a_failing_version_is_recorded_and_the_batch_continues() -> None:
     assert pipeline.parsed == [ids[0], ids[2], ids[4]]
     assert [v for v, _ in pipeline.failures] == [ids[1], ids[3]]
     assert [bool(r.error) for r in results] == [False, True, False, True, False]
+
+
+def test_excerpt_match_is_verbatim_and_tolerates_a_split_heading() -> None:
+    from ksc_ingestion.parse_pipeline import _holds_excerpt
+
+    chunk = (
+        "Pursuant to Rule 86(4) of the Rules, to determine whether a well-grounded suspicion exists"
+    )
+    # The excerpt opens on a heading that parser v4 keeps in its own chunk.
+    assert _holds_excerpt(
+        chunk, "Scope of the Review Pursuant to Rule 86(4) of the Rules, to determine"
+    )
+    assert not _holds_excerpt(
+        chunk, "An entirely different passage about detention review hearings"
+    )

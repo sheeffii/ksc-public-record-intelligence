@@ -1398,5 +1398,19 @@
     "eventCount": "{count, plural, one {# ngjarje statusi} other {# ngjarje statusi}}",
     "relationshipCount": "{count, plural, one {# rast në burim} other {# raste në burim}}",
     "moreInVersion": "{count, plural, one {# përputhje tjetër në {version}} other {# përputhje të tjera në {version}}}"
+  },
+  "versionLabels": {
+    "language": {
+      "en": "Anglisht",
+      "sq": "Shqip",
+      "sr": "Serbisht"
+    },
+    "status": {
+      "public": "Publik",
+      "publicRedacted": "Publik i redaktuar",
+      "publicRedactedV2": "Publik i redaktuar (v2)",
+      "corrected": "I korrigjuar",
+      "reclassified": "I riklasifikuar si publik"
+    }
   }
 }

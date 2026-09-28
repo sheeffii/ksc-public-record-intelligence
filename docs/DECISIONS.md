@@ -1417,3 +1417,72 @@ Consequences:
 Wrong-version highlights are impossible by construction. Links to a bare
 filing number shared only by annexes (e.g. `F00002`) now return 404; product
 links already use the official-reference route ID, so none of them change.
+
+## ADR-031 — Page-local segmentation (parser v4) and audited structure repair
+
+Date: 2026-09-28
+
+Status: Accepted
+
+Context:
+Readers of F00026/RED saw the synchronized text for PDF page 58 hold printed
+pages 57–189: one "¶359" record of 301,323 characters. The corpus had 26
+versions with paragraph chunks spanning more than 3 PDF pages. The worst was
+the trial judgment F03667/COR/RED, with one chunk of 621 pages (1.43 M
+characters). Three causes:
+
+1. In several public-redacted filings the paragraph numbers are images, so no
+   text extractor sees them (pypdf, pdftotext and pdfminer all miss them).
+2. Once any number was accepted, only a higher one could open the next
+   paragraph. A wrapped footnote reference ("…infra paras 169, 271, 359."),
+   a year ("1999.") or a numbered heading then blocked every real paragraph
+   after it.
+3. Chunks were built one per paragraph, so a runaway paragraph became a
+   runaway chunk, and the Reader showed it on every page it touched.
+
+Decision (parser `ksc-native-pdf/4`):
+
+1. **Chunks are page-local.** A paragraph continuing onto the next page is one
+   chunk per page. Body text outside a numbered paragraph and the page's
+   footnotes are separate `page` chunks. Page furniture (running header,
+   PUBLIC stamp, dates, footer) stays in the page text only.
+2. **¶ numbers are read, never inferred.** A visible `N.` opens ¶N only in
+   sequence: the first must be ≤ 5, and each later one must be the previous
+   plus 1–3. A structural paragraph start whose number is not in the text
+   layer (an indented first line) closes the open paragraph, and its text
+   stays page body. Numbered headings (title-case, ending before the right
+   margin of the justified text, followed by a paragraph start or a lettered
+   sub-heading) become sections, not paragraphs. A paragraph may not exceed 5
+   PDF pages: it is closed and the version is flagged for review.
+3. **Footnotes** start at a line "n text" whose n equals the first superscript
+   reference glued to a word in the body above, with no numbered paragraph
+   after it. A footnote continued from the previous page without a number is
+   still read as body text; that is a known limitation.
+4. **Repair is explicit and audited.** A parser-version upgrade may
+   restructure chunks and sections. A version's citable paragraph set may
+   change only when that version is named with
+   `ksc-ingest parse --repair-structure <version-ref>`, which writes
+   `document_version.structure_repaired`. Every other version still fails
+   closed. AI retrieval rows linked to changed text are re-pointed, by their
+   verbatim excerpt, to the page-local chunk that holds it
+   (`ksc-ingest repoint-ai-sources`; idempotent; previous ids are kept in
+   `source_metadata.structure_repair`). Nothing in AI history is deleted.
+
+Consequences (live corpus, 2026-09-28, 157 filing versions compared
+old/new before the repair):
+
+- Cross-page chunks went from 1,939 to 0; the largest chunk is 5.8 k
+  characters.
+- 133 versions kept an identical ¶ set. 24 were repaired, gaining real
+  numbers (e.g. F03668/RED2 127 → 855, F01534/A02/RED 208 → 734,
+  F03664/RED2 286 → 694) and losing only fakes (1999, 2711, 359, 218, 153,
+  and numbered headings). Paragraphs total 5,818 → 7,741.
+- F00026/RED and F03667/COR/RED now have no numbered paragraphs, because their
+  numbers exist only as images. Their text is complete and page-local, and no
+  ¶ number is invented.
+- Citations: 10 moved from invalid to resolved. Relationships 12,132 →
+  12,142. SourceAnchors and occurrences were rebuilt with unchanged counts.
+  All 116 AI retrieval links now point at a chunk containing their excerpt.
+- `project-legal-matrix` is not re-runnable after the Phase 22C audit
+  rewrote some of its rows' notes. This is pre-existing and tracked
+  separately; the matrix rows are intact.

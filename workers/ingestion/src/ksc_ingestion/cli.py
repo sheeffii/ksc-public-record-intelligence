@@ -496,7 +496,7 @@ def cmd_parse(args: argparse.Namespace) -> int:
     settings = get_settings()
     store = MinioObjectStore(settings)
     result = Phase8Pipeline(get_sessionmaker(), store, case_number=settings.case_id).run(
-        force=args.force
+        force=args.force, repair_structure=frozenset(args.repair_structure or ())
     )
     for version in result.versions:
         if version.error:
@@ -527,6 +527,19 @@ def cmd_reresolve(args: argparse.Namespace) -> int:
         f"ambiguous={result['ambiguous']} unresolved={result['unresolved']} "
         f"invalid={result['invalid']} retired={result['retired']}"
     )
+    return 0
+
+
+def cmd_repoint_ai_sources(args: argparse.Namespace) -> int:
+    """Re-check AI retrieval links against their verbatim excerpts; re-point stale ones."""
+    settings = get_settings()
+    store = MinioObjectStore(settings)
+    counts = Phase8Pipeline(
+        get_sessionmaker(), store, case_number=settings.case_id
+    ).repoint_ai_sources()
+    for ref, count in sorted(counts.items()):
+        print(f"  {ref:48} repointed={count}")
+    print(f"repointed={sum(counts.values())} versions={len(counts)}")
     return 0
 
 
@@ -842,7 +855,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_parse.add_argument(
         "--force", action="store_true", help="deterministically rebuild all held parser output"
     )
+    p_parse.add_argument(
+        "--repair-structure",
+        action="append",
+        metavar="VERSION_REF",
+        help="allow this version's citable paragraph set to change (segmentation repair); "
+        "repeatable; audited",
+    )
     p_parse.set_defaults(func=cmd_parse)
+
+    p_repoint = sub.add_parser(
+        "repoint-ai-sources", help="re-point AI retrieval links whose excerpt left their chunk"
+    )
+    p_repoint.set_defaults(func=cmd_repoint_ai_sources)
     p_reresolve = sub.add_parser(
         "reresolve", help="rebuild the identifier index and re-resolve all held citations"
     )

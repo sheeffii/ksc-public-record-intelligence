@@ -39,6 +39,7 @@ import {
   type TranscriptSegmentView,
 } from "@/data/reader";
 import { exactSourcePattern, splitExactSource } from "@/lib/exact-source";
+import { versionFacets } from "@/lib/version-label";
 
 type Pane = "source" | "text" | "context";
 type ContextTab = "summary" | "mentions" | "people" | "exhibits" | "findings" | "citations";
@@ -949,10 +950,15 @@ export function SourceReader(props: SourceReaderProps) {
             {
               key: "version",
               label: tb("docMeta.version"),
-              value:
-                [document.versionRef, document.versionType, document.versionLabel]
-                  .filter(Boolean)
-                  .join(" · ") || "—",
+              value: document.versionRef ? (
+                <VersionName
+                  versionRef={document.versionRef}
+                  documentLanguage={document.language}
+                  versionType={document.versionType}
+                />
+              ) : (
+                "—"
+              ),
             },
             {
               key: "parser",
@@ -967,31 +973,38 @@ export function SourceReader(props: SourceReaderProps) {
       {document.versions && document.versions.length > 1 ? (
         <Panel title={t20("versions")}>
           <ul className="space-y-1 text-[11px]" data-version-switcher>
-            {document.versions.map((version) => (
-              <li key={version.ref}>
-                {version.ref === versionRef ? (
-                  <span className="identifier text-fg break-all" aria-current="true">
-                    {version.ref} · {t20("currentVersion")}
-                  </span>
-                ) : version.fetched ? (
-                  <Link
-                    className="identifier text-accent break-all"
-                    href={`${routeId === "transcript" ? `/documents/transcript?document=${encodeURIComponent(document.citation.docId ?? document.id)}&` : `/documents/${encodeURIComponent(routeId)}?`}version=${encodeURIComponent(version.ref)}&pdfPage=0`}
-                  >
-                    {version.ref}
-                  </Link>
-                ) : (
-                  <span className="identifier text-fg-muted break-all">
-                    {version.ref} · {tb("notAvailable")}
-                  </span>
-                )}
-                {version.label || version.type ? (
-                  <span className="text-fg-tertiary ml-1">
-                    {[version.type, version.label].filter(Boolean).join(" · ")}
-                  </span>
-                ) : null}
-              </li>
-            ))}
+            {document.versions.map((version) => {
+              const name = (
+                <VersionName
+                  versionRef={version.ref}
+                  documentLanguage={document.language}
+                  versionType={version.type}
+                />
+              );
+              return (
+                <li key={version.ref}>
+                  {version.ref === versionRef ? (
+                    <span className="text-fg block" aria-current="true">
+                      {name}
+                      <span className="text-accent ml-1 text-[10px] font-semibold">
+                        {t20("currentVersion")}
+                      </span>
+                    </span>
+                  ) : version.fetched ? (
+                    <Link
+                      className="text-accent block hover:underline"
+                      href={`${routeId === "transcript" ? `/documents/transcript?document=${encodeURIComponent(document.citation.docId ?? document.id)}&` : `/documents/${encodeURIComponent(routeId)}?`}version=${encodeURIComponent(version.ref)}&pdfPage=0`}
+                    >
+                      {name}
+                    </Link>
+                  ) : (
+                    <span className="text-fg-muted block">
+                      {name} · {tb("notAvailable")}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
           <p className="text-fg-tertiary mt-2 text-[10px]">{t20("versionSwitchNote")}</p>
         </Panel>
@@ -1643,5 +1656,33 @@ function OverlayRow({
         ) : null}
       </div>
     </li>
+  );
+}
+
+/** "Shqip · Public Redacted · Corrected" with the exact official reference
+ * underneath — the label is read from the reference, never instead of it. */
+function VersionName({
+  versionRef,
+  documentLanguage,
+  versionType,
+}: {
+  versionRef: string;
+  documentLanguage?: string;
+  versionType?: string;
+}) {
+  const t = useTranslations("versionLabels");
+  const facets = versionFacets(versionRef, documentLanguage, versionType);
+  return (
+    <span className="block min-w-0">
+      <span className="font-medium">
+        {[
+          facets.language ? t(`language.${facets.language}`) : null,
+          ...facets.statuses.map((status) => t(`status.${status}`)),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      </span>
+      <span className="identifier text-fg-tertiary block text-[10px] break-all">{versionRef}</span>
+    </span>
   );
 }

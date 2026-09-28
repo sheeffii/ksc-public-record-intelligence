@@ -8,10 +8,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import exists, select
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import exists, or_, select
+from sqlalchemy.orm import Session, object_session, sessionmaker
 
 from ksc_api.models import (
+    AiRetrievalSource,
     ArtifactQuarantine,
     ArtifactStatus,
     AuditLog,
@@ -100,6 +101,25 @@ class Phase8RunResult:
     invalid: int
 
 
+def _normalized(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _holds_excerpt(text: str, excerpt: str) -> bool:
+    """Whether `text` holds the excerpt verbatim. The excerpt may open on text
+    parser v4 keeps apart (a heading, the previous page), so a 60-character
+    window slides forward word by word; the first window found decides."""
+    haystack = _normalized(text)
+    full = _normalized(excerpt)[:400]
+    for start in [0] + [i + 1 for i, ch in enumerate(full) if ch == " "]:
+        window = full[start : start + 60]
+        if len(window) < 40:
+            return False
+        if window in haystack:
+            return True
+    return False
+
+
 class Phase8Pipeline:
     def __init__(
         self,
@@ -113,8 +133,15 @@ class Phase8Pipeline:
         self.case_number = case_number
         # Stale citations retired by the most recent extract-and-resolve pass.
         self.retired_citations = 0
+        self.repair_structure: frozenset[str] = frozenset()
 
-    def run(self, *, force: bool = False) -> Phase8RunResult:
+    def run(
+        self, *, force: bool = False, repair_structure: frozenset[str] = frozenset()
+    ) -> Phase8RunResult:
+        """`repair_structure` names versions whose paragraph/chunk structure may
+        change (a segmentation repair). Every other version still fails closed
+        on a structural change."""
+        self.repair_structure = repair_structure
         with self.sessions() as session:
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
@@ -300,7 +327,22 @@ class Phase8Pipeline:
             document = version.document
             data = self.store.get(version.storage_key)
             parsed = parse_pdf(data, transcript=document.document_type == "transcript")
-            self._replace_parse(session, version, parsed)
+            repair = version.official_version_ref in self.repair_structure
+            unlinked = self._replace_parse(session, version, parsed, repair=repair)
+            if repair:
+                session.add(
+                    AuditLog(
+                        actor="ksc-ingest-phase8",
+                        action="document_version.structure_repaired",
+                        entity_type="document_version",
+                        entity_id=str(version.id),
+                        detail={
+                            "official_version_ref": version.official_version_ref,
+                            "parser": f"{PARSER_NAME}/{PARSER_VERSION}",
+                            "ai_retrieval_sources_repointed": unlinked,
+                        },
+                    )
+                )
             session.add(
                 AuditLog(
                     actor="ksc-ingest-phase8",
@@ -329,15 +371,24 @@ class Phase8Pipeline:
             )
 
     @staticmethod
-    def _replace_parse(session: Session, version: DocumentVersion, parsed: ParsedPdf) -> None:
+    def _replace_parse(
+        session: Session, version: DocumentVersion, parsed: ParsedPdf, *, repair: bool = False
+    ) -> int:
         """Reconcile stable parser rows without breaking downstream lineage.
 
         Once citations/findings/graph rows reference parser output, delete and
         reinsert is unsafe even when UUIDs are deterministic. Text and coordinate
         improvements update rows in place. A structural ID-set change fails
         closed and requires an explicit projection migration/review.
+
+        Citable paragraph identity (¶ numbers) may change only under an explicit
+        `repair`. Chunks and sections are derived search/display units: a new
+        parser version may restructure them. Either way, AI retrieval rows that
+        pointed at changed text are detached first and the count returned.
         """
 
+        upgrade = version.parser_version != PARSER_VERSION
+        removed: list[Any] = []
         transcript = session.scalar(
             select(Transcript).where(Transcript.document_version_id == version.id)
         )
@@ -423,6 +474,8 @@ class Phase8Pipeline:
                 "text",
             ),
             label="paragraphs",
+            removed=removed,
+            allow_structure_change=repair,
         )
         Phase8Pipeline._reconcile_rows(
             version.sections,
@@ -437,6 +490,8 @@ class Phase8Pipeline:
                 "para_to",
             ),
             label="sections",
+            removed=removed,
+            allow_structure_change=repair or upgrade,
         )
         Phase8Pipeline._reconcile_rows(
             version.chunks,
@@ -454,6 +509,8 @@ class Phase8Pipeline:
                 "char_count",
             ),
             label="chunks",
+            removed=removed,
+            allow_structure_change=repair or upgrade,
         )
         if transcript is not None:
             transcript.page_from = parsed.page_from
@@ -501,10 +558,28 @@ class Phase8Pipeline:
             {"review_reasons": parsed.review_reasons} if parsed.review_reasons else None
         )
         version.document.ingestion_state = DocumentIngestionState.PARSED
+        session.flush()
+        # New rows exist now: re-point AI retrieval rows that cited changed or
+        # removed rows, then delete the removed rows.
+        repointed = (
+            Phase8Pipeline._repoint_ai_sources(session, version, removed)
+            if repair or upgrade
+            else 0
+        )
+        for row in removed:
+            session.delete(row)
+        session.flush()
+        return repointed
 
     @staticmethod
     def _reconcile_rows(
-        existing: list[Any], incoming: list[Any], *, fields: tuple[str, ...], label: str
+        existing: list[Any],
+        incoming: list[Any],
+        *,
+        fields: tuple[str, ...],
+        label: str,
+        removed: list[Any] | None = None,
+        allow_structure_change: bool = False,
     ) -> None:
         if not existing:
             existing.extend(incoming)
@@ -512,13 +587,119 @@ class Phase8Pipeline:
         current = {row.id: row for row in existing}
         proposed = {row.id: row for row in incoming}
         if current.keys() != proposed.keys():
-            raise RuntimeError(
-                f"reprocessing changes stable {label} identity; review/projection migration required"
-            )
+            if not allow_structure_change:
+                raise RuntimeError(
+                    f"reprocessing changes stable {label} identity; "
+                    "review/projection migration required"
+                )
+            # Park existing sequence numbers so updates and inserts never
+            # collide with (version, sequence) uniqueness mid-flush.
+            for index, row in enumerate(existing):
+                if hasattr(row, "sequence"):
+                    row.sequence = 1_000_000 + index
+            session = object_session(existing[0])
+            if session is not None:
+                session.flush()
+            if removed is not None:
+                removed.extend(row for row in existing if row.id not in proposed)
         for row_id, candidate in proposed.items():
-            row = current[row_id]
+            row = current.get(row_id)
+            if row is None:
+                existing.append(candidate)
+                continue
             for field in fields:
                 setattr(row, field, getattr(candidate, field))
+
+    @staticmethod
+    def _repoint_ai_sources(session: Session, version: DocumentVersion, removed: list[Any]) -> int:
+        """State-based and idempotent: every AI retrieval row linked to this
+        version's paragraphs or chunks must point at a row whose text contains
+        its verbatim excerpt. One that does not (the text changed, or the row is
+        being removed) is re-pointed to the page-local chunk holding that exact
+        excerpt, preferring the recorded PDF page; the previous ids and the
+        reason go to its metadata. No match → the version fails closed."""
+
+        removed_ids = {row.id for row in removed}
+        chunks = [row for row in version.chunks if row.id not in removed_ids]
+        rows: dict[uuid.UUID, DocumentChunk | DocumentParagraph] = {
+            **{row.id: row for row in version.chunks},
+            **{row.id: row for row in version.paragraphs},
+        }
+        repointed = 0
+        for source in session.scalars(
+            select(AiRetrievalSource).where(
+                or_(
+                    AiRetrievalSource.document_paragraph_id.in_(rows),
+                    AiRetrievalSource.document_chunk_id.in_(rows),
+                )
+            )
+        ):
+            linked_id = source.document_chunk_id or source.document_paragraph_id
+            linked = rows.get(linked_id) if linked_id is not None else None
+            if (
+                linked is not None
+                and linked.id not in removed_ids
+                and _holds_excerpt(linked.text, source.excerpt)
+            ):
+                continue
+            matches = [chunk for chunk in chunks if _holds_excerpt(chunk.text, source.excerpt)]
+            if not matches:
+                raise RuntimeError(
+                    f"AI retrieval source {source.id} excerpt not found in "
+                    f"{version.official_version_ref}; review required"
+                )
+            target = next(
+                (c for c in matches if c.pdf_page_index_from == source.pdf_page_index), matches[0]
+            )
+            source.source_metadata = {
+                **(source.source_metadata or {}),
+                "structure_repair": {
+                    "parser": f"{PARSER_NAME}/{PARSER_VERSION}",
+                    "previous_document_paragraph_id": str(source.document_paragraph_id)
+                    if source.document_paragraph_id
+                    else None,
+                    "previous_document_chunk_id": str(source.document_chunk_id)
+                    if source.document_chunk_id
+                    else None,
+                    "reason": "segmentation repaired; re-pointed by exact excerpt",
+                },
+            }
+            source.document_paragraph_id = None
+            source.document_chunk_id = target.id
+            source.pdf_page_index = target.pdf_page_index_from
+            repointed += 1
+        session.flush()
+        return repointed
+
+    def repoint_ai_sources(self, version_refs: frozenset[str] | None = None) -> dict[str, int]:
+        """Re-check every AI retrieval link of the held versions (or the named
+        ones) against its excerpt; re-point stale links. Audited."""
+
+        counts: dict[str, int] = {}
+        with self.sessions() as session:
+            case = session.scalar(select(Case).where(Case.case_number == self.case_number))
+            if case is None:
+                raise LookupError(f"case {self.case_number} is not seeded")
+            for version in session.scalars(select_processable_versions(case.id, parsed_only=True)):
+                if version_refs and version.official_version_ref not in version_refs:
+                    continue
+                n = self._repoint_ai_sources(session, version, [])
+                if n:
+                    counts[version.official_version_ref] = n
+                    session.add(
+                        AuditLog(
+                            actor="ksc-ingest-phase8",
+                            action="ai_retrieval_sources.repointed",
+                            entity_type="document_version",
+                            entity_id=str(version.id),
+                            detail={
+                                "official_version_ref": version.official_version_ref,
+                                "count": n,
+                            },
+                        )
+                    )
+            session.commit()
+        return counts
 
     @staticmethod
     def _citation_text(text: str, version_ref: str) -> str:

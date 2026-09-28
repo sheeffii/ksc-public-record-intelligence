@@ -24,7 +24,9 @@ def test_filing_parser_preserves_pdf_printed_page_and_numbered_paragraphs() -> N
     assert parsed.pages[0].printed_page_label == "1 of 1"
     assert [p.paragraph_number for p in parsed.paragraphs] == [1, 2]
     assert parsed.paragraphs[0].text.endswith("continued text")
-    assert parsed.chunks[0].chunk_kind == "paragraph"
+    # The heading before ¶1 is kept as page text; ¶1 is its own page-local chunk.
+    assert [c.chunk_kind for c in parsed.chunks if c.para_from == 1] == ["paragraph"]
+    assert parsed.chunks[0].text == "I. PROCEDURAL BACKGROUND"
     assert parsed.sections[0].heading == "I. PROCEDURAL BACKGROUND"
 
 

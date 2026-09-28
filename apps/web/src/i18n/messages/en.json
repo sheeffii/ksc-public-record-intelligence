@@ -1398,5 +1398,19 @@
     "eventCount": "{count, plural, one {# status event} other {# status events}}",
     "relationshipCount": "{count, plural, one {# source occurrence} other {# source occurrences}}",
     "moreInVersion": "{count, plural, one {# more match in {version}} other {# more matches in {version}}}"
+  },
+  "versionLabels": {
+    "language": {
+      "en": "English",
+      "sq": "Shqip",
+      "sr": "Serbian"
+    },
+    "status": {
+      "public": "Public",
+      "publicRedacted": "Public Redacted",
+      "publicRedactedV2": "Public Redacted (v2)",
+      "corrected": "Corrected",
+      "reclassified": "Reclassified as public"
+    }
   }
 }
