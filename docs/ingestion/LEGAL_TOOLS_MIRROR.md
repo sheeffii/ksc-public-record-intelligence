@@ -20,6 +20,9 @@ This runbook is for whoever runs an acquisition batch. It assumes the repo's
 - It also rejects strong Serbian transcript markers even when the mirror labels
   the record English, and excludes same-date/language transcript collisions or
   superseded transcripts rather than assigning a date-only identity (ADR-032).
+- Filing source-record keys use the official folder plus a digest of the full
+  official artifact path, so EN/SQ files sharing a folder remain separate
+  source records and canonical versions.
 - It decides public status from the PDF's own page-1 stamp, as for browser
   captures. It quarantines a record whose page-1 wording contradicts the
   mirror's language tag.

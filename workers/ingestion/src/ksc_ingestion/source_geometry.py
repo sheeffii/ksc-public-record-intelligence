@@ -50,7 +50,7 @@ from ksc_api.models import (
 from ksc_ingestion.storage import ObjectStore
 
 PROCESSOR = "phase20a-source-geometry"
-PROCESSOR_VERSION = "1"
+PROCESSOR_VERSION = "2"
 GEOMETRY_EXTRACTOR = "ksc-native-pdf-geometry"
 _NAMESPACE = uuid.UUID("cf13158f-60f1-49f2-9d08-283ba78cdfaa")
 _PUBLIC = (Visibility.PUBLIC, Visibility.PUBLIC_REDACTED)
@@ -111,7 +111,12 @@ def _line_words(line: LTTextLine, page_height: float) -> list[GeometryWord]:
             y0 = min(char.y0 for char in chars)
             x1 = max(char.x1 for char in chars)
             y1 = max(char.y1 for char in chars)
-            words.append(GeometryWord(value, x0, page_height - y1, x1 - x0, y1 - y0))
+            word = GeometryWord(value, x0, page_height - y1, x1 - x0, y1 - y0)
+            # Some public PDFs expose standalone combining marks with a
+            # zero-width glyph box. Such a box cannot be rendered or stored as
+            # a canonical rectangle, so omit it without failing the document.
+            if _is_usable_word(word):
+                words.append(word)
         chars.clear()
 
     for child in line:
@@ -125,6 +130,12 @@ def _line_words(line: LTTextLine, page_height: float) -> list[GeometryWord]:
                 flush()
     flush()
     return words
+
+
+def _is_usable_word(word: GeometryWord) -> bool:
+    """Return whether a word survives canonical four-decimal box storage."""
+
+    return round(word.width, 4) > 0 and round(word.height, 4) > 0
 
 
 def extract_native_geometry(data: bytes) -> list[GeometryPage]:

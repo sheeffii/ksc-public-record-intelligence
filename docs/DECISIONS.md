@@ -1536,7 +1536,7 @@ Decision:
    `legal_tools_mirror`. `raw_metadata.metadata.extra.mirror` keeps the Legal
    Tools PURL (attribution, as the terms ask), the mirror's object URL, its
    id and the permission citation. The source record key is the official
-   artifact: `artifact:<folder id>` for filings and
+   artifact: `artifact:<folder id>:<official-path digest>` for filings and
    `artifact-path:<official path>` for transcripts. The mirror never saw the
    repository's detail-page `doc_id`.
 4. **Scope.** English and Albanian only; Serbian is skipped. Records already
@@ -1606,6 +1606,11 @@ Decision:
 4. Pilot selection is deterministic and stratified by mirror category for
    research coverage, with EN/SQ pairs preferred. Those categories select the
    sample only; they never populate canonical filing-party or court fields.
+5. A mirror filing source-record key includes both the official repository
+   folder id and a deterministic digest of its full official artifact path.
+   KSC commonly publishes EN/SQ files in the same folder; the folder alone
+   silently collapsed the second language during the first dry run. The
+   version identity still comes only from the PDF header.
 
 Consequences:
 The pilot may import fewer transcripts (zero in 23A) but cannot silently merge

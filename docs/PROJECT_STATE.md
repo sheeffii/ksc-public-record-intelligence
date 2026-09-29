@@ -71,6 +71,22 @@ Reader/Timeline parity follow-up is also merged. Phase 23 is **IN PROGRESS** on
 pilot before any separately authorized 23B expansion.
 Repository code, migrations, tests and Git state win over stale roadmap text.
 
+### Phase 23A pilot completion (2026-09-29)
+
+- Pilot: 100 Legal Tools mirror documents downloaded; 93 accepted, 7
+  quarantined. Parse (parser v4), citation resolution, entity/evidence/
+  relationship reconciliation completed with 0 failed versions.
+- Zero-width combining-mark glyph boxes are now dropped from native geometry
+  (`source_geometry` processor v2) instead of failing the document; v1 had 1
+  failed version. Geometry v2 run: 294/294 versions, 0 failed, 61,461 anchors.
+- Transcript sync re-ran on v2 geometry: 44/44 versions, 0 failed.
+- All 93 mirror versions have v2 page geometry; 92 carry SourceAnchors
+  (2,516: 694 exact geometry, 1,822 page-only). The remaining version has no
+  citation/entity objects to anchor.
+- EN/SQ filings sharing an official folder now get distinct source-record
+  keys (folder id + official-path digest).
+- 23A is complete pending review. 23B is NOT started.
+
 ## Phase 23A setup (2026-09-29)
 
 - Created `feat/phase-23-corpus-expansion` from clean synchronized `main` at

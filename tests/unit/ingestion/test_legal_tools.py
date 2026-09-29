@@ -181,7 +181,7 @@ def test_pilot_is_deterministic_stratified_and_prefers_language_pairs() -> None:
 
 
 def test_external_record_id_is_the_official_artifact() -> None:
-    assert lt.external_record_id(FILING_URL) == "artifact:0b10c8e18026f7b2"
+    assert lt.external_record_id(FILING_URL) == "artifact:0b10c8e18026f7b2:1bf9332c643e2db1"
     assert lt.external_record_id(TRANSCRIPT_URL).startswith(
         "artifact-path:/LW/Published/Transcript/KSC-BC-2020-06/Closing Statements"
     )
@@ -257,11 +257,11 @@ def test_mirror_bundle_imports_with_provenance(tmp_path: Path) -> None:
     metadata = written["records"][0]["metadata"]
     assert artifact["fetch_method"] == lt.FETCH_METHOD
     assert artifact["url"] == FILING_URL
-    assert metadata["external_record_id"] == "artifact:0b10c8e18026f7b2"
+    assert metadata["external_record_id"] == "artifact:0b10c8e18026f7b2:1bf9332c643e2db1"
     assert metadata["extra"]["mirror"]["purl"] == record.purl
 
     (discovered,) = discover(load_bundle(dest))
     assert isinstance(discovered, DiscoveredRecord)
-    assert discovered.external_record_id == "artifact:0b10c8e18026f7b2"
+    assert discovered.external_record_id == "artifact:0b10c8e18026f7b2:1bf9332c643e2db1"
     assert discovered.artifacts[0].fetch_method == lt.FETCH_METHOD
     assert discovered.artifacts[0].declared_sha256 == digest

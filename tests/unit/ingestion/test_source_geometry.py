@@ -3,7 +3,12 @@ import io
 from pypdf import PdfReader, PdfWriter
 
 from ksc_api.models import PageTextGeometry, TextExtractionMethod
-from ksc_ingestion.source_geometry import _matches, extract_native_geometry
+from ksc_ingestion.source_geometry import (
+    GeometryWord,
+    _is_usable_word,
+    _matches,
+    extract_native_geometry,
+)
 from support.synthetic import make_pdf
 
 
@@ -41,6 +46,12 @@ def test_geometry_match_requires_one_exact_token_sequence() -> None:
     assert [[word.text for word in match] for match in _matches(words, "W01234 said")] == [
         ["W01234", "said"]
     ]
+
+
+def test_zero_width_combining_mark_is_not_usable_geometry() -> None:
+    assert not _is_usable_word(GeometryWord("\N{COMBINING ACUTE ACCENT}", 0, 0, 0, 10))
+    assert not _is_usable_word(GeometryWord("thin", 0, 0, 0.00001, 10))
+    assert _is_usable_word(GeometryWord("word", 0, 0, 12.5, 10))
 
 
 def test_rotated_page_keeps_valid_version_specific_coordinates() -> None:

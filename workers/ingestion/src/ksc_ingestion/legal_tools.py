@@ -23,6 +23,7 @@ Public status is still decided by the PDF's own page-1 markings
 
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
 from collections import Counter
@@ -245,12 +246,15 @@ def public_status_for(document_id: str | None, title: str) -> str:
 def external_record_id(official_url: str) -> str:
     """Stable id for the source record. The mirror does not know the
     repository's detail-page `doc_id`, so the official artifact is the key:
-    its folder id for filings, its decoded path for transcripts."""
+    its folder id plus a digest of the full official path for filings, or its
+    decoded path for transcripts. The digest keeps EN/SQ artifacts in the same
+    official folder as separate source records."""
 
     path = unquote(urlsplit(official_url).path)
     m = _FILING_ID_IN_PATH_RE.match(path)
     if m:
-        return f"artifact:{m.group(1)}"
+        digest = hashlib.sha256(path.encode()).hexdigest()[:16]
+        return f"artifact:{m.group(1)}:{digest}"
     key = f"artifact-path:{path}"
     if len(key) > 256:
         raise MirrorError(f"official artifact path too long for a record id: {path!r}")
