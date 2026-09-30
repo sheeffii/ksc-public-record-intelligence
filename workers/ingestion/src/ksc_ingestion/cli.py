@@ -19,6 +19,7 @@ import argparse
 import json
 import logging
 import sys
+import uuid
 from datetime import date
 from pathlib import Path
 
@@ -236,7 +237,9 @@ def cmd_project_source_geometry(args: argparse.Namespace) -> int:
     """Extract geometry from held bytes and project reusable source anchors."""
     settings = get_settings()
     store = MinioObjectStore(settings)
-    result = SourceGeometryProjector(get_sessionmaker(), store, case_number=settings.case_id).run()
+    result = SourceGeometryProjector(get_sessionmaker(), store, case_number=settings.case_id).run(
+        full=args.full, version_ids=frozenset(args.version_id or [])
+    )
     print(
         json.dumps(
             {
@@ -776,6 +779,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_source_geometry = sub.add_parser(
         "project-source-geometry",
         help="extract native geometry from held PDFs and project SourceAnchors",
+    )
+    source_scope = p_source_geometry.add_mutually_exclusive_group()
+    source_scope.add_argument("--full", action="store_true", help="reconcile every parsed version")
+    source_scope.add_argument(
+        "--version-id", type=uuid.UUID, action="append", help="process only this document version"
     )
     p_source_geometry.set_defaults(func=cmd_project_source_geometry)
     p_transcript_sync = sub.add_parser(

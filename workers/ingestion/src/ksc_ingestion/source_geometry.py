@@ -22,7 +22,7 @@ import pypdf
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LTAnno, LTChar, LTContainer, LTPage, LTTextLine
 from pypdf import PdfReader
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, exists, func, or_, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from ksc_api.models import (
@@ -201,13 +201,15 @@ class SourceGeometryProjector:
         self.store = store
         self.case_number = case_number
 
-    def run(self) -> ProjectionResult:
+    def run(
+        self, *, full: bool = False, version_ids: frozenset[uuid.UUID] = frozenset()
+    ) -> ProjectionResult:
         started = datetime.now(UTC)
         with self.sessions() as session:
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
                 raise LookupError(f"case {self.case_number} is not seeded")
-            versions = session.scalars(
+            statement = (
                 select(DocumentVersion)
                 .join(Document)
                 .where(
@@ -217,8 +219,21 @@ class SourceGeometryProjector:
                     DocumentVersion.artifact_status == ArtifactStatus.FETCHED,
                     DocumentVersion.parsed_at.is_not(None),
                 )
-                .order_by(DocumentVersion.official_version_ref)
-            ).all()
+            )
+            if version_ids:
+                statement = statement.where(DocumentVersion.id.in_(version_ids))
+            elif not full:
+                has_pages = exists().where(DocumentPage.document_version_id == DocumentVersion.id)
+                stale_geometry = exists().where(
+                    DocumentPage.document_version_id == DocumentVersion.id,
+                    or_(
+                        DocumentPage.geometry_extractor != GEOMETRY_EXTRACTOR,
+                        DocumentPage.geometry_extractor_version != PROCESSOR_VERSION,
+                        DocumentPage.geometry_state == "unavailable",
+                    ),
+                )
+                statement = statement.where(or_(~has_pages, stale_geometry))
+            versions = session.scalars(statement.order_by(DocumentVersion.official_version_ref)).all()
             run = ProcessingRun(
                 case_id=case.id,
                 processor=PROCESSOR,
@@ -325,7 +340,9 @@ class SourceGeometryProjector:
                         ocr_required += added_ocr
                         word_count += added_words
                         submit_next()
-            anchors, precision, by_type = self._project_anchors(run_id, case_id)
+            anchors, precision, by_type = self._project_anchors(
+                run_id, case_id, frozenset(version.id for version in versions)
+            )
         except Exception:
             with self.sessions() as session:
                 failed = session.get(ProcessingRun, run_id)
@@ -453,7 +470,7 @@ class SourceGeometryProjector:
         return native_pages, ocr_required, word_count
 
     def _project_anchors(
-        self, run_id: uuid.UUID, case_id: uuid.UUID
+        self, run_id: uuid.UUID, case_id: uuid.UUID, version_ids: frozenset[uuid.UUID]
     ) -> tuple[int, dict[str, int], dict[str, int]]:
         """Re-project this case's anchors. Another case's spans and anchors are
         never deleted or rewritten."""
@@ -469,9 +486,7 @@ class SourceGeometryProjector:
             owned = select(SourceAnchor.source_span_id).where(
                 SourceAnchor.object_type != "transcript_segment"
             )
-            case_versions = (
-                select(DocumentVersion.id).join(Document).where(Document.case_id == case_id)
-            )
+            case_versions = select(DocumentVersion.id).where(DocumentVersion.id.in_(version_ids))
             session.execute(
                 delete(SourceSpan).where(
                     SourceSpan.id.in_(owned), SourceSpan.document_version_id.in_(case_versions)
@@ -481,7 +496,11 @@ class SourceGeometryProjector:
 
             occurrences = session.scalars(
                 select(EntityOccurrence)
-                .where(EntityOccurrence.case_id == case_id, EntityOccurrence.rule_id.is_not(None))
+                .where(
+                    EntityOccurrence.case_id == case_id,
+                    EntityOccurrence.rule_id.is_not(None),
+                    EntityOccurrence.document_version_id.in_(version_ids),
+                )
                 .order_by(EntityOccurrence.document_version_id, EntityOccurrence.pdf_page_index)
             ).all()
             for occurrence in occurrences:
@@ -514,7 +533,8 @@ class SourceGeometryProjector:
             citations = session.scalars(
                 select(Citation)
                 .where(
-                    Citation.case_id == case_id, Citation.source_document_version_id.is_not(None)
+                    Citation.case_id == case_id,
+                    Citation.source_document_version_id.in_(version_ids),
                 )
                 .order_by(Citation.source_document_version_id, Citation.source_pdf_page_index)
             ).all()
@@ -601,7 +621,7 @@ class SourceGeometryProjector:
 
             findings = session.scalars(
                 select(Finding).where(
-                    Finding.case_id == case_id, Finding.judgment_version_id.is_not(None)
+                    Finding.case_id == case_id, Finding.judgment_version_id.in_(version_ids)
                 )
             ).all()
             for finding in findings:
