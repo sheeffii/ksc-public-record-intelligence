@@ -210,14 +210,24 @@ def run_gate(
             # translation's own detail URL is on its source record (checked above).
             # A permitted mirror record has no observed detail page, so ADR-030
             # stores the original-language official artifact URL here instead.
-            expected_kind = (
-                "pcr_artifact"
-                if nv.artifact.fetch_method == "legal_tools_mirror"
-                else "pcr_detail"
+            expected_kinds = {"pcr_detail"}
+            if nv.artifact.fetch_method == "legal_tools_mirror":
+                expected_kinds = {"pcr_artifact"}
+                # A mirror translation joining an original that the official
+                # browser workflow captured keeps that observed detail page.
+                if session.scalar(
+                    select(DocumentVersion.id)
+                    .where(
+                        DocumentVersion.document_id == document.id,
+                        DocumentVersion.fetch_method == "operator_browser_capture",
+                    )
+                    .limit(1)
+                ):
+                    expected_kinds.add("pcr_detail")
+            c["document_source_url_official"] = (
+                bool(document.source_url)
+                and classify(document.source_url or "").kind.value in expected_kinds
             )
-            c["document_source_url_official"] = bool(document.source_url) and classify(
-                document.source_url or ""
-            ).kind.value == expected_kind
         else:
             c["document_source_url"] = document.source_url == canonicalize(record.detail_page_url)
         c["source_record_linked_to_document"] = (

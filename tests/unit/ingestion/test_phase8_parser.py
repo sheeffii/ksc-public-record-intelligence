@@ -113,3 +113,11 @@ def test_blank_private_session_line_grid_is_not_a_review_reason() -> None:
     # A broken grid (missing line 2) is not recognised as a blank page.
     broken = parse_pdf(make_pdf(["KSC-OFFICIAL", "Page 113", " 1", " 3", " 4"]), transcript=True)
     assert broken.requires_review is True
+
+
+def test_parser_strips_nul_bytes_postgresql_text_cannot_hold() -> None:
+    parsed = parse_pdf(
+        make_pdf(["KSC-OFFICIAL", "Page 1", "1. Source\x00 text."]), transcript=False
+    )
+    assert all("\x00" not in page.text for page in parsed.pages)
+    assert "Source text." in parsed.pages[0].text

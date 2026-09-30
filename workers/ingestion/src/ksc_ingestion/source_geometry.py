@@ -105,7 +105,7 @@ def _line_words(line: LTTextLine, page_height: float) -> list[GeometryWord]:
     def flush() -> None:
         if not chars:
             return
-        value = "".join(char.get_text() for char in chars)
+        value = "".join(char.get_text() for char in chars).replace("\x00", "")
         if value.strip():
             x0 = min(char.x0 for char in chars)
             y0 = min(char.y0 for char in chars)

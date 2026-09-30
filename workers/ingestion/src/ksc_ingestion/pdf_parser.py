@@ -596,7 +596,8 @@ def parse_pdf(data: bytes, *, transcript: bool) -> ParsedPdf:
     pages: list[ParsedPage] = []
     reasons: list[str] = []
     for pdf_page_index, source_page in enumerate(reader.pages):
-        text = source_page.extract_text(extraction_mode="layout") or ""
+        # PostgreSQL text cannot hold NUL; some public PDFs emit it for unmapped glyphs.
+        text = (source_page.extract_text(extraction_mode="layout") or "").replace("\x00", "")
         page_number, label = _page_coordinate(text, transcript=transcript)
         if page_number is None:
             reasons.append(f"pdf page {pdf_page_index}: printed page not found")
