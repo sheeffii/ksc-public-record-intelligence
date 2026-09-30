@@ -136,7 +136,8 @@ class Phase8Pipeline:
         self.repair_structure: frozenset[str] = frozenset()
 
     def run(
-        self, *, force: bool = False, repair_structure: frozenset[str] = frozenset()
+        self, *, force: bool = False, repair_structure: frozenset[str] = frozenset(),
+        version_ids: frozenset[uuid.UUID] = frozenset(),
     ) -> Phase8RunResult:
         """`repair_structure` names versions whose paragraph/chunk structure may
         change (a segmentation repair). Every other version still fails closed
@@ -146,9 +147,13 @@ class Phase8Pipeline:
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
                 raise LookupError(f"case {self.case_number} is not seeded")
-            version_ids = [
+            selected_ids = [
                 version.id
-                for version in session.scalars(select_processable_versions(case.id)).all()
+                for version in session.scalars(
+                    select_processable_versions(case.id).where(
+                        DocumentVersion.id.in_(version_ids) if version_ids else True
+                    )
+                ).all()
             ]
             run = ProcessingRun(
                 case_id=case.id,
@@ -156,7 +161,7 @@ class Phase8Pipeline:
                 processor_version=PARSER_VERSION,
                 status="running",
                 forced=force,
-                selected_count=len(version_ids),
+                selected_count=len(selected_ids),
                 started_at=datetime.now(UTC),
             )
             session.add(run)
@@ -164,7 +169,7 @@ class Phase8Pipeline:
             run_id = run.id
 
         try:
-            results = self._parse_all(run_id, version_ids, force=force)
+            results = self._parse_all(run_id, selected_ids, force=force)
             failed = sum(1 for r in results if r.error)
 
             with self.sessions() as session:
@@ -174,7 +179,7 @@ class Phase8Pipeline:
                 identifiers = rebuild_identifier_index(session, case)
                 session.commit()
 
-            citation_counts = self._extract_and_resolve()
+            citation_counts = self._extract_and_resolve(frozenset(selected_ids))
             result = Phase8RunResult(
                 versions=results,
                 identifiers=identifiers,
@@ -713,14 +718,19 @@ class Phase8Pipeline:
                 lines.append(line)
         return "\n".join(lines)
 
-    def _extract_and_resolve(self) -> dict[str, int]:
+    def _extract_and_resolve(
+        self, version_ids: frozenset[uuid.UUID] = frozenset()
+    ) -> dict[str, int]:
         counts = {"resolved": 0, "ambiguous": 0, "unresolved": 0, "invalid": 0}
         retired: list[uuid.UUID] = []
         with self.sessions() as session:
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
                 raise LookupError(f"case {self.case_number} is not seeded")
-            versions = session.scalars(select_processable_versions(case.id, parsed_only=True)).all()
+            statement = select_processable_versions(case.id, parsed_only=True)
+            if version_ids:
+                statement = statement.where(DocumentVersion.id.in_(version_ids))
+            versions = session.scalars(statement).all()
             for version in versions:
                 existing_citations = {
                     citation.id: citation
@@ -789,10 +799,24 @@ class Phase8Pipeline:
                         citation.source_char_end = extracted.source_end
                         citation.source_url = version.source_url
                         citation.target_page = extracted.target_page
-                        citation.target_para_from = extracted.target_para_from
-                        citation.target_para_to = extracted.target_para_to
-                        citation.target_line_from = extracted.target_line_from
-                        citation.target_line_to = extracted.target_line_to
+                        valid_para_range = not (
+                            extracted.target_para_from is not None
+                            and extracted.target_para_to is not None
+                            and extracted.target_para_to < extracted.target_para_from
+                        )
+                        citation.target_para_from = (
+                            extracted.target_para_from if valid_para_range else None
+                        )
+                        citation.target_para_to = extracted.target_para_to if valid_para_range else None
+                        valid_line_range = not (
+                            extracted.target_line_from is not None
+                            and extracted.target_line_to is not None
+                            and extracted.target_line_to < extracted.target_line_from
+                        )
+                        citation.target_line_from = (
+                            extracted.target_line_from if valid_line_range else None
+                        )
+                        citation.target_line_to = extracted.target_line_to if valid_line_range else None
                         apply_resolution(citation, resolution)
                         counts[resolution.state.value] += 1
                 retired.extend(

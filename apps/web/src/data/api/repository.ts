@@ -7,6 +7,7 @@
  */
 
 import type { AnswerBlock } from "@ksc/shared";
+import { documentApiPath } from "@/lib/document-route";
 import type {
   DirectoryKind,
   DirectoryRow,
@@ -138,7 +139,7 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
       sourcePage?: number,
       pdfPageIndex?: number,
     ): Promise<DocumentView | null> {
-      const document = await client.get<ApiDocumentDetail>(`/documents/${id}`);
+      const document = await client.get<ApiDocumentDetail>(documentApiPath(id));
       if (!document) return null;
       const version = versionRef
         ? document.versions.find((candidate) => candidate.official_version_ref === versionRef)

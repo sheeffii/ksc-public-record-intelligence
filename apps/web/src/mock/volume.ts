@@ -25,9 +25,9 @@ const PREFIX: Record<MockDirectory, string> = {
 const ROUTE: Record<MockDirectory, (id: string) => string> = {
   people: (id) => `/people/${id}`,
   witnesses: (id) => `/witnesses/${id}`,
-  documents: (id) => `/documents/${id}`,
+  documents: (id) => documentHref(id),
   findings: (id) => `/findings/${id}`,
-  exhibits: (id) => `/documents/${id}?page=1`,
+  exhibits: (id) => `${documentHref(id)}?page=1`,
   incidents: (id) => `/incidents/${id}`,
 };
 
@@ -51,3 +51,4 @@ export function generatedRows(kind: MockDirectory, count = DEMO_VOLUME): MockDir
     };
   });
 }
+import { documentHref } from "@/lib/document-route";

@@ -23,6 +23,7 @@ import {
   VerificationBadge,
 } from "@/components/provenance";
 import { exactSourcePattern, splitExactSource } from "@/lib/exact-source";
+import { documentHref } from "@/lib/document-route";
 import { groupBySource, pageTally } from "@/lib/source-groups";
 import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/shell/AppShell";
@@ -186,7 +187,7 @@ export function DocumentReaderScreen({
             <ToolButton
               href={
                 isReal
-                  ? `/documents/${encodeURIComponent(id)}?${coordinateKind}=${Math.max(coordinateKind === "pdfPage" ? 0 : 1, page - 1)}${document.versionRef ? `&version=${encodeURIComponent(document.versionRef)}` : ""}`
+                  ? `${documentHref(id)}?${coordinateKind}=${Math.max(coordinateKind === "pdfPage" ? 0 : 1, page - 1)}${document.versionRef ? `&version=${encodeURIComponent(document.versionRef)}` : ""}`
                   : undefined
               }
               onClick={isReal ? undefined : () => setPage((p) => Math.max(1, p - 1))}
@@ -200,7 +201,7 @@ export function DocumentReaderScreen({
             <ToolButton
               href={
                 isReal
-                  ? `/documents/${encodeURIComponent(id)}?${coordinateKind}=${Math.min(coordinateLast, page + 1)}${document.versionRef ? `&version=${encodeURIComponent(document.versionRef)}` : ""}`
+                  ? `${documentHref(id)}?${coordinateKind}=${Math.min(coordinateLast, page + 1)}${document.versionRef ? `&version=${encodeURIComponent(document.versionRef)}` : ""}`
                   : undefined
               }
               onClick={isReal ? undefined : () => setPage((p) => Math.min(total ?? 52, p + 1))}

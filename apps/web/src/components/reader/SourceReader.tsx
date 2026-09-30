@@ -39,6 +39,7 @@ import {
   type TranscriptSegmentView,
 } from "@/data/reader";
 import { exactSourcePattern, splitExactSource } from "@/lib/exact-source";
+import { documentHref } from "@/lib/document-route";
 import { versionFacets } from "@/lib/version-label";
 
 type Pane = "source" | "text" | "context";
@@ -993,7 +994,7 @@ export function SourceReader(props: SourceReaderProps) {
                   ) : version.fetched ? (
                     <Link
                       className="text-accent block hover:underline"
-                      href={`${routeId === "transcript" ? `/documents/transcript?document=${encodeURIComponent(document.citation.docId ?? document.id)}&` : `/documents/${encodeURIComponent(routeId)}?`}version=${encodeURIComponent(version.ref)}&pdfPage=0`}
+                      href={`${routeId === "transcript" ? `/documents/transcript?document=${encodeURIComponent(document.citation.docId ?? document.id)}&` : `${documentHref(routeId)}?`}version=${encodeURIComponent(version.ref)}&pdfPage=0`}
                     >
                       {name}
                     </Link>

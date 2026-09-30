@@ -581,6 +581,8 @@ class SourceGeometryProjector:
                     appearance = session.get(WitnessAppearance, relationship.witness_appearance_id)
                     if appearance is None or appearance.document_version_id is None:
                         continue
+                    if appearance.document_version_id not in version_ids:
+                        continue
                     span_id, span_precision = self._add_anchor(
                         session,
                         run_id,

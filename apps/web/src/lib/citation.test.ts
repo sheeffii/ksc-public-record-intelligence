@@ -50,7 +50,7 @@ describe("citationHref — deep links into the Document Reader", () => {
 
   it("uses the record's own identifier verbatim", () => {
     expect(citationHref({ docId: "KSC-BC-2020-06/F01234/RED" })).toBe(
-      "/documents/KSC-BC-2020-06%2FF01234%2FRED",
+      "/documents/F01234%2FRED",
     );
   });
 });

@@ -9,11 +9,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const int = (value: string | undefined) =>
   value && /^\d+$/.test(value) ? Number(value) : undefined;
 
-export default async function Page({
-  params,
+export async function DocumentPage({
+  id,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  id: string;
   searchParams: Promise<{
     document?: string;
     version?: string;
@@ -26,9 +26,8 @@ export default async function Page({
     anchor?: string;
   }>;
 }) {
-  const { id } = await params;
   const query = await searchParams;
-  const decoded = query.document ?? decodeURIComponent(id);
+  const decoded = query.document ?? id;
   const sourcePage = int(query.page);
   const pdfPageIndex = int(query.pdfPage);
   const para = int(query.para);
@@ -131,4 +130,15 @@ export default async function Page({
       initialContext={initialContext}
     />
   );
+}
+
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Parameters<typeof DocumentPage>[0]["searchParams"];
+}) {
+  const { id } = await params;
+  return <DocumentPage id={id} searchParams={searchParams} />;
 }

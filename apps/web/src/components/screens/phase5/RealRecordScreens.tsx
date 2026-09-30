@@ -28,6 +28,7 @@ import type {
 } from "@/data";
 import type { DirectoryKind, DirectoryRow } from "@/data";
 import { groupBySource, versionHref, type SourceGroup } from "@/lib/source-groups";
+import { documentHref } from "@/lib/document-route";
 import { ActionLink, ScreenHeader, TabStrip } from "./ScreenChrome";
 import { HexAvatar, KeyValue, NoteStrip, SectionCard, StatStrip } from "./Workspace";
 
@@ -675,7 +676,7 @@ function ResearchTrail({
       key: [edge.relation, other, versionRef, edge.verification].join("|"),
       versionRef,
       title: `${edge.relation.replaceAll("_", " ")} · ${nodeLabel(other)}`,
-      documentHref: versionHref(edge.sourcePath ?? `/documents/${edge.citation.docId}`),
+      documentHref: versionHref(edge.sourcePath ?? documentHref(edge.citation.docId)),
       page: edge.provenance?.page ?? edge.citation.page,
     };
   });

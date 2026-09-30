@@ -23,12 +23,12 @@ import uuid
 from datetime import date
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import exists, or_, select
 
 from ksc_api.config import get_settings
 from ksc_api.db.session import get_sessionmaker
 from ksc_api.logging_config import configure_logging
-from ksc_api.models import Case
+from ksc_api.models import ArtifactStatus, Case, DocumentPage, DocumentVersion
 from ksc_api.repositories.ingestion import IngestionStatusRepository
 from ksc_ingestion.acquisition import (
     AcquisitionQueue,
@@ -54,6 +54,7 @@ from ksc_ingestion.findings_pipeline import Phase10Pipeline
 from ksc_ingestion.findings_quality_gate import run_phase10_gate, write_phase10_report
 from ksc_ingestion.legal_matrix import Phase22ALegalMatrixProjector
 from ksc_ingestion.parse_pipeline import Phase8Pipeline
+from ksc_ingestion.pdf_parser import PARSER_NAME, PARSER_VERSION
 from ksc_ingestion.phase13_quality_gate import run_phase13_gate, write_phase13_report
 from ksc_ingestion.phase17_report import build_phase17_pass_a_report, write_phase17_pass_a_report
 from ksc_ingestion.phase19b import Phase19BPipeline
@@ -519,6 +520,45 @@ def cmd_parse(args: argparse.Namespace) -> int:
     return 0 if not any(version.requires_review for version in result.versions) else 1
 
 
+def cmd_process_new(args: argparse.Namespace) -> int:
+    """Parse and geometrically project only missing/outdated held versions."""
+    settings = get_settings()
+    store = MinioObjectStore(settings)
+    with get_sessionmaker()() as session:
+        version_ids = frozenset(
+            session.scalars(
+                select(DocumentVersion.id).where(
+                    DocumentVersion.artifact_status == ArtifactStatus.FETCHED,
+                    or_(
+                        DocumentVersion.parsed_at.is_(None),
+                        DocumentVersion.parser_name != PARSER_NAME,
+                        DocumentVersion.parser_version != PARSER_VERSION,
+                        exists().where(
+                            DocumentPage.document_version_id == DocumentVersion.id,
+                            or_(
+                                DocumentPage.geometry_extractor.is_(None),
+                                DocumentPage.geometry_extractor_version != "2",
+                            ),
+                        ),
+                    ),
+                )
+            ).all()
+        )
+    parsed = Phase8Pipeline(get_sessionmaker(), store, case_number=settings.case_id).run(
+        version_ids=version_ids
+    )
+    geometry = SourceGeometryProjector(
+        get_sessionmaker(), store, case_number=settings.case_id
+    ).run(version_ids=version_ids)
+    failed = sum(result.error is not None for result in parsed.versions)
+    print(
+        f"selected={len(version_ids)} parsed={len(parsed.versions) - failed} failed={failed} "
+        f"citations={parsed.citations} geometry_versions={geometry.versions} "
+        f"anchors={geometry.anchors}"
+    )
+    return 0 if failed == 0 else 1
+
+
 def cmd_reresolve(args: argparse.Namespace) -> int:
     """Rebuild identifier mappings and re-resolve held citations without network access."""
 
@@ -871,6 +911,11 @@ def build_parser() -> argparse.ArgumentParser:
         "repeatable; audited",
     )
     p_parse.set_defaults(func=cmd_parse)
+
+    p_process_new = sub.add_parser(
+        "process-new", help="process held versions with missing/outdated parser output"
+    )
+    p_process_new.set_defaults(func=cmd_process_new)
 
     p_repoint = sub.add_parser(
         "repoint-ai-sources", help="re-point AI retrieval links whose excerpt left their chunk"

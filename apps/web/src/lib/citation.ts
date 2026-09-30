@@ -11,6 +11,7 @@
  */
 
 import type { Citation } from "@ksc/shared";
+import { documentHref } from "./document-route";
 
 const SEP = " · ";
 const RANGE = "–";
@@ -65,5 +66,5 @@ export function citationHref(
     );
   }
   const query = params.toString();
-  return `/documents/${encodeURIComponent(citation.docId)}${query ? `?${query}` : ""}`;
+  return `${documentHref(citation.docId)}${query ? `?${query}` : ""}`;
 }

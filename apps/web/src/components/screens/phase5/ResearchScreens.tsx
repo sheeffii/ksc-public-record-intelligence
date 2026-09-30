@@ -1,6 +1,7 @@
 "use client";
 
 import { groupBySource } from "@/lib/source-groups";
+import { documentHref } from "@/lib/document-route";
 import { cn } from "@/lib/utils";
 import type { DateType, Direction } from "@ksc/shared";
 import { useTranslations } from "next-intl";
@@ -367,7 +368,7 @@ export function NetworkScreen({
             ) : null}
             <div className="mt-3">
               <ActionLink
-                href={selectedEdge.sourcePath ?? `/documents/${selectedEdge.citation.docId}`}
+                href={selectedEdge.sourcePath ?? documentHref(selectedEdge.citation.docId)}
               >
                 {t("openSource")}
               </ActionLink>
@@ -899,7 +900,7 @@ export function EvidencePathScreen({
                         >
                           {hop.date} · {hop.dateType}
                         </span>
-                        <ActionLink href={hop.sourcePath ?? `/documents/${hop.citation.docId}`}>
+                        <ActionLink href={hop.sourcePath ?? documentHref(hop.citation.docId)}>
                           {t("openSource")}
                         </ActionLink>
                       </div>

@@ -18,6 +18,7 @@ import type {
   VerificationState,
   Witness,
 } from "@ksc/shared";
+import { documentHref, documentRouteId } from "@/lib/document-route";
 import type {
   DirectoryKind,
   DirectoryRow,
@@ -254,15 +255,7 @@ export function toArgumentLab(lab: ApiArgumentLab): ArgumentLabView {
   };
 }
 
-/** Route id of a document: the official reference without the case prefix. */
-export function documentRouteId(officialRef: string): string {
-  const [, ...rest] = officialRef.split("/");
-  return rest.length ? rest.join("/") : officialRef;
-}
-
-function documentHref(officialRef: string | null): string {
-  return officialRef ? `/documents/${documentRouteId(officialRef)}` : "/documents";
-}
+export { documentRouteId };
 
 export function toCitation(citation: ApiCitation): Citation {
   const resolved = citation.resolved && citation.resolution_state === "resolved";
@@ -686,7 +679,7 @@ export function toDocument(
       ? document.visibility
       : "not_public";
   const isPublic = visibility !== "not_public";
-  const ref = document.filing_number ?? routeId;
+  const ref = routeId;
   return {
     id: ref,
     title: document.title,
