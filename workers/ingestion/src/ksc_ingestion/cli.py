@@ -28,7 +28,13 @@ from sqlalchemy import exists, or_, select
 from ksc_api.config import get_settings
 from ksc_api.db.session import get_sessionmaker
 from ksc_api.logging_config import configure_logging
-from ksc_api.models import ArtifactStatus, Case, DocumentPage, DocumentVersion
+from ksc_api.models import (
+    ArtifactStatus,
+    Case,
+    DocumentPage,
+    DocumentVersion,
+    IngestionJobItem,
+)
 from ksc_api.repositories.ingestion import IngestionStatusRepository
 from ksc_ingestion.acquisition import (
     AcquisitionQueue,
@@ -194,7 +200,9 @@ def cmd_phase17_report(args: argparse.Namespace) -> int:
 
 def cmd_build_structured(args: argparse.Namespace) -> int:
     settings = get_settings()
-    result = Phase17StructuredPipeline(get_sessionmaker(), case_number=settings.case_id).run()
+    result = Phase17StructuredPipeline(get_sessionmaker(), case_number=settings.case_id).run(
+        version_ids=frozenset(args.version_id or []), full=args.full
+    )
     print(
         f"people={result.people} witnesses={result.witnesses} "
         f"organizations={result.organizations} exhibits={result.exhibits} "
@@ -223,7 +231,9 @@ def cmd_gate_phase17c(args: argparse.Namespace) -> int:
 
 def cmd_project_mentions(args: argparse.Namespace) -> int:
     settings = get_settings()
-    result = Phase19MentionProjector(get_sessionmaker(), case_number=settings.case_id).run()
+    result = Phase19MentionProjector(get_sessionmaker(), case_number=settings.case_id).run(
+        version_ids=frozenset(args.version_id or []), full=args.full
+    )
     states = " ".join(f"{key}={value}" for key, value in result.by_kind_state.items())
     print(
         f"run={result.run_id} rows={result.rows} {states} "
@@ -303,7 +313,9 @@ def cmd_project_legal_matrix(args: argparse.Namespace) -> int:
 
 def cmd_build_intelligence(args: argparse.Namespace) -> int:
     settings = get_settings()
-    result = Phase19BPipeline(get_sessionmaker(), case_number=settings.case_id).run()
+    result = Phase19BPipeline(get_sessionmaker(), case_number=settings.case_id).run(
+        version_ids=frozenset(args.version_id or []), full=args.full
+    )
     print(json.dumps({"run_id": str(result.run_id), **result.detail}, indent=2, default=str))
     return 0
 
@@ -521,42 +533,110 @@ def cmd_parse(args: argparse.Namespace) -> int:
 
 
 def cmd_process_new(args: argparse.Namespace) -> int:
-    """Parse and geometrically project only missing/outdated held versions."""
+    """Run each ingestion stage only for selected imported versions."""
     settings = get_settings()
-    store = MinioObjectStore(settings)
     with get_sessionmaker()() as session:
-        version_ids = frozenset(
+        selected = set(args.version_id or [])
+        if args.ingestion_job:
+            selected.update(
+                session.scalars(
+                    select(IngestionJobItem.document_version_id).where(
+                        IngestionJobItem.job_id.in_(args.ingestion_job),
+                        IngestionJobItem.document_version_id.is_not(None),
+                    )
+                ).all()
+            )
+        if not selected:
+            selected.update(
+                session.scalars(
+                    select(DocumentVersion.id).where(
+                        DocumentVersion.artifact_status == ArtifactStatus.FETCHED,
+                        or_(
+                            DocumentVersion.parsed_at.is_(None),
+                            DocumentVersion.parser_name != PARSER_NAME,
+                            DocumentVersion.parser_version != PARSER_VERSION,
+                            exists().where(
+                                DocumentPage.document_version_id == DocumentVersion.id,
+                                or_(
+                                    DocumentPage.geometry_extractor.is_(None),
+                                    DocumentPage.geometry_extractor_version != "2",
+                                ),
+                            ),
+                        ),
+                    )
+                ).all()
+            )
+        version_ids = frozenset(selected)
+        if not version_ids:
+            print(
+                "selected=0 parsed=0 failed=0 citations=0 structured=0 mentions=0 "
+                "evidence_edges=0 relationships=0 geometry_versions=0 anchors=0"
+            )
+            return 0
+        parse_ids = frozenset(
             session.scalars(
                 select(DocumentVersion.id).where(
-                    DocumentVersion.artifact_status == ArtifactStatus.FETCHED,
+                    DocumentVersion.id.in_(version_ids),
                     or_(
                         DocumentVersion.parsed_at.is_(None),
                         DocumentVersion.parser_name != PARSER_NAME,
                         DocumentVersion.parser_version != PARSER_VERSION,
-                        exists().where(
-                            DocumentPage.document_version_id == DocumentVersion.id,
-                            or_(
-                                DocumentPage.geometry_extractor.is_(None),
-                                DocumentPage.geometry_extractor_version != "2",
-                            ),
+                    ),
+                )
+            ).all()
+        )
+        geometry_ids = frozenset(
+            session.scalars(
+                select(DocumentVersion.id).where(
+                    DocumentVersion.id.in_(version_ids),
+                    exists().where(
+                        DocumentPage.document_version_id == DocumentVersion.id,
+                        or_(
+                            DocumentPage.geometry_extractor.is_(None),
+                            DocumentPage.geometry_extractor_version != "2",
                         ),
                     ),
                 )
             ).all()
         )
-    parsed = Phase8Pipeline(get_sessionmaker(), store, case_number=settings.case_id).run(
+
+    parsed_count = parse_failed = citations = 0
+    if parse_ids:
+        parsed = Phase8Pipeline(
+            get_sessionmaker(), MinioObjectStore(settings), case_number=settings.case_id
+        ).run(version_ids=parse_ids)
+        parse_failed = sum(result.error is not None for result in parsed.versions)
+        parsed_count = len(parsed.versions) - parse_failed
+        citations = parsed.citations
+
+    structured = Phase17StructuredPipeline(get_sessionmaker(), case_number=settings.case_id).run(
         version_ids=version_ids
     )
-    geometry = SourceGeometryProjector(
-        get_sessionmaker(), store, case_number=settings.case_id
-    ).run(version_ids=version_ids)
-    failed = sum(result.error is not None for result in parsed.versions)
-    print(
-        f"selected={len(version_ids)} parsed={len(parsed.versions) - failed} failed={failed} "
-        f"citations={parsed.citations} geometry_versions={geometry.versions} "
-        f"anchors={geometry.anchors}"
+    mentions = Phase19MentionProjector(get_sessionmaker(), case_number=settings.case_id).run(
+        version_ids=version_ids
     )
-    return 0 if failed == 0 else 1
+    evidence = Phase9Pipeline(get_sessionmaker(), case_number=settings.case_id).run(
+        version_ids=version_ids
+    )
+    intelligence = Phase19BPipeline(get_sessionmaker(), case_number=settings.case_id).run(
+        version_ids=version_ids, include_mentions=False
+    )
+
+    geometry_versions = anchors = 0
+    if geometry_ids:
+        geometry = SourceGeometryProjector(
+            get_sessionmaker(), MinioObjectStore(settings), case_number=settings.case_id
+        ).run(version_ids=geometry_ids)
+        geometry_versions = geometry.versions
+        anchors = geometry.anchors
+    print(
+        f"selected={len(version_ids)} parsed={parsed_count} failed={parse_failed} "
+        f"citations={citations} structured={structured.occurrences} mentions={mentions.rows} "
+        f"evidence_edges={evidence.edges} relationships="
+        f"{intelligence.detail['typed_edges']['testified_at'] + intelligence.detail['typed_edges']['mentioned_in']} "
+        f"geometry_versions={geometry_versions} anchors={anchors}"
+    )
+    return 0 if parse_failed == 0 else 1
 
 
 def cmd_reresolve(args: argparse.Namespace) -> int:
@@ -589,7 +669,9 @@ def cmd_repoint_ai_sources(args: argparse.Namespace) -> int:
 def cmd_build_evidence(args: argparse.Namespace) -> int:
     """Project already-resolved citations and source dates; performs no network access."""
     settings = get_settings()
-    result = Phase9Pipeline(get_sessionmaker(), case_number=settings.case_id).run()
+    result = Phase9Pipeline(get_sessionmaker(), case_number=settings.case_id).run(
+        version_ids=frozenset(args.version_id or []), full=args.full
+    )
     print(
         f"nodes={result.nodes} edges={result.edges} events={result.events} "
         f"self_citations_skipped={result.skipped_self_citations}"
@@ -805,6 +887,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_structured = sub.add_parser(
         "build-structured", help="build deterministic Phase 17 actor and exhibit projections"
     )
+    structured_scope = p_structured.add_mutually_exclusive_group(required=True)
+    structured_scope.add_argument("--full", action="store_true")
+    structured_scope.add_argument("--version-id", type=uuid.UUID, action="append")
     p_structured.set_defaults(func=cmd_build_structured)
     p_structured_gate = sub.add_parser(
         "gate-phase17c", help="audit structured projections and exact provenance"
@@ -815,6 +900,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_mentions = sub.add_parser(
         "project-mentions", help="project Phase 19A deterministic verified entity mentions"
     )
+    mentions_scope = p_mentions.add_mutually_exclusive_group(required=True)
+    mentions_scope.add_argument("--full", action="store_true")
+    mentions_scope.add_argument("--version-id", type=uuid.UUID, action="append")
     p_mentions.set_defaults(func=cmd_project_mentions)
     p_source_geometry = sub.add_parser(
         "project-source-geometry",
@@ -840,6 +928,9 @@ def build_parser() -> argparse.ArgumentParser:
         "build-intelligence",
         help="project Phase 19B aliases, appearances, exhibit status events, mentions and typed edges",
     )
+    intelligence_scope = p_intelligence.add_mutually_exclusive_group(required=True)
+    intelligence_scope.add_argument("--full", action="store_true")
+    intelligence_scope.add_argument("--version-id", type=uuid.UUID, action="append")
     p_intelligence.set_defaults(func=cmd_build_intelligence)
     p_phase19b = sub.add_parser(
         "report-phase19b", help="Phase 19B corpus-depth analysis and reconciliation gate"
@@ -915,6 +1006,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_process_new = sub.add_parser(
         "process-new", help="process held versions with missing/outdated parser output"
     )
+    p_process_new.add_argument("--version-id", type=uuid.UUID, action="append")
+    p_process_new.add_argument(
+        "--ingestion-job",
+        type=uuid.UUID,
+        action="append",
+        help="process document versions imported by this job; repeatable",
+    )
     p_process_new.set_defaults(func=cmd_process_new)
 
     p_repoint = sub.add_parser(
@@ -928,6 +1026,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_evidence = sub.add_parser(
         "build-evidence", help="build citation-backed graph edges and source-backed timeline events"
     )
+    evidence_scope = p_evidence.add_mutually_exclusive_group(required=True)
+    evidence_scope.add_argument("--full", action="store_true")
+    evidence_scope.add_argument("--version-id", type=uuid.UUID, action="append")
     p_evidence.set_defaults(func=cmd_build_evidence)
     p_findings = sub.add_parser(
         "build-findings",

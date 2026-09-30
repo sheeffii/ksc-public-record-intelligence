@@ -4,9 +4,8 @@ Live checkpoint. Repository state wins over this note.
 
 ## Current status
 
-- Current branch: `feat/phase-23-corpus-expansion`, created from synchronized
-  `main` at `5fd7be0`.
-- Current milestone: **Phase 23 IN PROGRESS; 23A CURRENT**. The Phase 23
+- Current branch: `main`.
+- Current milestone: **Phase 23 IN PROGRESS; 23B CURRENT**. The Phase 23
   roadmap is `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
   It integrates the permitted Legal Tools byte-mirror path, closes concrete
   readiness blockers, and stops after an approximately 100-document pilot.
@@ -106,7 +105,22 @@ Live checkpoint. Repository state wins over this note.
   citation/entity objects to anchor.
 - EN/SQ filings sharing an official folder now get distinct source-record
   keys (folder id + official-path digest).
-- 23A is complete pending review. 23B is NOT started.
+- 23A is complete. Phase 23B imported and processed 494 new versions.
+
+### Phase 23B incremental processing (2026-09-30)
+
+- Six prepared bundles imported 494 versions. Parser v4, scoped citation
+  reconciliation, geometry v2 and SourceAnchors completed before the final
+  projection pass, with zero parse failures.
+- `process-new` accepts explicit version IDs or ingestion-job IDs and skips
+  parser/geometry work that is already current.
+- Structured entities, verified mentions, evidence, witness appearances,
+  exhibit-status intelligence and typed relationships now reconcile by
+  affected `document_version_id`; shared entities and unaffected provenance
+  are preserved. Each maintenance command retains an explicit `--full` mode.
+- The 494-version scoped projection completed with 10,392 structured
+  occurrences, 16,835 verified-mention rows, 4,015 citation evidence edges,
+  and 2,368 refreshed typed relationships; no stage failed.
 
 ## Phase 23A setup (2026-09-29)
 

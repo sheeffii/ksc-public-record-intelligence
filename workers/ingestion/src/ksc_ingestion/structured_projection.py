@@ -6,7 +6,7 @@ import re
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, true
 from sqlalchemy.orm import Session, sessionmaker
 
 from ksc_api.models import (
@@ -84,18 +84,24 @@ class Phase17StructuredPipeline:
         self.sessions = sessions
         self.case_number = case_number
 
-    def run(self) -> StructuredProjectionResult:
+    def run(
+        self, *, version_ids: frozenset[uuid.UUID] = frozenset(), full: bool = False
+    ) -> StructuredProjectionResult:
+        scoped = bool(version_ids) and not full
         with self.sessions() as session, session.begin():
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
                 raise RuntimeError(f"case {self.case_number} is not seeded")
 
-            session.execute(
-                delete(EntityOccurrence).where(
-                    EntityOccurrence.case_id == case.id,
-                    EntityOccurrence.extraction_origin == "phase17c",
-                )
+            occurrence_delete = delete(EntityOccurrence).where(
+                EntityOccurrence.case_id == case.id,
+                EntityOccurrence.extraction_origin == "phase17c",
             )
+            if scoped:
+                occurrence_delete = occurrence_delete.where(
+                    EntityOccurrence.document_version_id.in_(version_ids)
+                )
+            session.execute(occurrence_delete)
             segments = session.execute(
                 select(TranscriptSegment, Transcript)
                 .join(Transcript, Transcript.id == TranscriptSegment.transcript_id)
@@ -103,6 +109,7 @@ class Phase17StructuredPipeline:
                     Transcript.visibility.in_(tuple(PUBLIC_VISIBILITIES)),
                     Transcript.document_version_id.is_not(None),
                     TranscriptSegment.closed_session.is_(False),
+                    Transcript.document_version_id.in_(version_ids) if scoped else true(),
                 )
                 .order_by(TranscriptSegment.id)
             ).all()
@@ -225,6 +232,7 @@ class Phase17StructuredPipeline:
                         [ResolutionState.UNRESOLVED, ResolutionState.RESOLVED]
                     ),
                     Citation.source_document_version_id.is_not(None),
+                    Citation.source_document_version_id.in_(version_ids) if scoped else true(),
                 )
                 .order_by(Citation.id)
             ).all()

@@ -19,7 +19,7 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, insert, select
+from sqlalchemy import delete, insert, select, true
 from sqlalchemy.orm import Session, sessionmaker
 
 from ksc_api.models import (
@@ -334,7 +334,9 @@ def _paragraph_spans(
     return tuple(spans)
 
 
-def public_anchors(session: Session, case: Case) -> Iterator[Anchor]:
+def public_anchors(
+    session: Session, case: Case, version_ids: frozenset[uuid.UUID] | None = None
+) -> Iterator[Anchor]:
     public = tuple(PUBLIC_VISIBILITIES)
     segment_rows = session.execute(
         select(TranscriptSegment, Transcript, DocumentVersion.official_version_ref)
@@ -347,6 +349,7 @@ def public_anchors(session: Session, case: Case) -> Iterator[Anchor]:
             DocumentVersion.visibility.in_(public),
             Transcript.visibility.in_(public),
             TranscriptSegment.closed_session.is_(False),
+            Transcript.document_version_id.in_(version_ids) if version_ids is not None else true(),
         )
         .order_by(Transcript.id, TranscriptSegment.sequence)
     ).all()
@@ -375,7 +378,12 @@ def public_anchors(session: Session, case: Case) -> Iterator[Anchor]:
             DocumentParagraph.pdf_page_index_from,
             DocumentParagraph.paragraph_number,
             DocumentParagraph.text,
-        ).where(DocumentParagraph.pdf_page_index_from == DocumentParagraph.pdf_page_index_to)
+        ).where(
+            DocumentParagraph.pdf_page_index_from == DocumentParagraph.pdf_page_index_to,
+            DocumentParagraph.document_version_id.in_(version_ids)
+            if version_ids is not None
+            else true(),
+        )
     ).all():
         paragraphs.setdefault((version_id, page_index), []).append((number, text))
 
@@ -388,6 +396,9 @@ def public_anchors(session: Session, case: Case) -> Iterator[Anchor]:
             Document.visibility.in_(public),
             DocumentVersion.visibility.in_(public),
             DocumentPage.text.is_not(None),
+            DocumentPage.document_version_id.in_(version_ids)
+            if version_ids is not None
+            else true(),
         )
         .order_by(DocumentPage.document_version_id, DocumentPage.pdf_page_index)
     ).all()
@@ -444,7 +455,10 @@ class Phase19MentionProjector:
         self.sessions = sessions
         self.case_number = case_number
 
-    def run(self) -> MentionProjectionResult:
+    def run(
+        self, *, version_ids: frozenset[uuid.UUID] = frozenset(), full: bool = False
+    ) -> MentionProjectionResult:
+        scoped = bool(version_ids) and not full
         with self.sessions() as session, session.begin():
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
@@ -472,25 +486,31 @@ class Phase19MentionProjector:
             session.flush()
 
             # Pre-19 Phase 17C rows carry no rule lineage; they are superseded.
-            legacy = session.execute(
-                delete(EntityOccurrence).where(
-                    EntityOccurrence.case_id == case.id,
-                    EntityOccurrence.extraction_origin == "phase17c",
-                )
+            legacy_delete = delete(EntityOccurrence).where(
+                EntityOccurrence.case_id == case.id,
+                EntityOccurrence.extraction_origin == "phase17c",
             )
+            if scoped:
+                legacy_delete = legacy_delete.where(
+                    EntityOccurrence.document_version_id.in_(version_ids)
+                )
+            legacy = session.execute(legacy_delete)
             removed_legacy = int(getattr(legacy, "rowcount", 0) or 0)
-            session.execute(
-                delete(EntityOccurrence).where(
-                    EntityOccurrence.case_id == case.id,
-                    EntityOccurrence.rule_id.in_(list(RULES)),
-                )
+            mention_delete = delete(EntityOccurrence).where(
+                EntityOccurrence.case_id == case.id,
+                EntityOccurrence.rule_id.in_(list(RULES)),
             )
+            if scoped:
+                mention_delete = mention_delete.where(
+                    EntityOccurrence.document_version_id.in_(version_ids)
+                )
+            session.execute(mention_delete)
 
             rows: dict[uuid.UUID, dict[str, object]] = {}
             unregistered_codes = 0
             unregistered_exhibits = 0
             unregistered_labels = 0
-            for anchor in public_anchors(session, case):
+            for anchor in public_anchors(session, case, version_ids if scoped else None):
                 if anchor.kind == SPEAKER_LABEL:
                     unregistered_labels += int(
                         speaker_label_identity(anchor.text) is not None

@@ -13,7 +13,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, true
 from sqlalchemy.orm import Session
 
 from ksc_api.models import (
@@ -39,7 +39,14 @@ class AliasResult:
     aliases: int
 
 
-def project_caption_aliases(session: Session, case: Case) -> AliasResult:
+def project_caption_aliases(
+    session: Session,
+    case: Case,
+    *,
+    version_ids: frozenset[uuid.UUID] = frozenset(),
+    full: bool = False,
+) -> AliasResult:
+    scoped = bool(version_ids) and not full
     accused_by_key: dict[str, uuid.UUID] = {}
     for person_id, slug in session.execute(
         select(Person.id, Person.slug).where(Person.case_id == case.id)
@@ -47,12 +54,13 @@ def project_caption_aliases(session: Session, case: Case) -> AliasResult:
         role, key = slug_role_and_key(slug)
         if role == "accused":
             accused_by_key[key] = person_id
-    session.execute(
-        delete(PersonAlias).where(
-            PersonAlias.rule_id == CAPTION_RULE,
-            PersonAlias.person_id.in_(list(accused_by_key.values()) or [uuid.uuid4()]),
-        )
+    alias_delete = delete(PersonAlias).where(
+        PersonAlias.rule_id == CAPTION_RULE,
+        PersonAlias.person_id.in_(list(accused_by_key.values()) or [uuid.uuid4()]),
     )
+    if scoped:
+        alias_delete = alias_delete.where(PersonAlias.source_document_version_id.in_(version_ids))
+    session.execute(alias_delete)
     public = tuple(PUBLIC_VISIBILITIES)
     pages = session.execute(
         select(DocumentPage, DocumentVersion.official_version_ref, Document.language)
@@ -63,6 +71,7 @@ def project_caption_aliases(session: Session, case: Case) -> AliasResult:
             Document.visibility.in_(public),
             DocumentVersion.visibility.in_(public),
             DocumentPage.text.ilike("%Specialist Prosecutor%"),
+            DocumentPage.document_version_id.in_(version_ids) if scoped else true(),
         )
         .order_by(DocumentVersion.official_version_ref, DocumentPage.pdf_page_index)
     ).all()

@@ -19,7 +19,7 @@ import uuid
 from collections import Counter
 from dataclasses import dataclass, field
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, true
 from sqlalchemy.orm import Session
 
 from ksc_api.models import (
@@ -129,20 +129,31 @@ def _id(*parts: object) -> uuid.UUID:
     return uuid.uuid5(_NS, ":".join(str(part) for part in parts))
 
 
-def project_appearances(session: Session, case: Case, run_id: uuid.UUID) -> AppearanceResult:
-    """Replace header-backed appearances for the case (idempotent ids)."""
+def project_appearances(
+    session: Session,
+    case: Case,
+    run_id: uuid.UUID,
+    *,
+    version_ids: frozenset[uuid.UUID] = frozenset(),
+    full: bool = False,
+) -> AppearanceResult:
+    """Replace header-backed appearances for selected versions (idempotent ids)."""
+    scoped = bool(version_ids) and not full
     witness_ids = {
         code: witness_id
         for code, witness_id in session.execute(
             select(Witness.code, Witness.id).where(Witness.case_id == case.id)
         ).all()
     }
-    session.execute(
-        delete(WitnessAppearance).where(
-            WitnessAppearance.rule_id == RULE_ID,
-            WitnessAppearance.hearing_id.in_(select(Hearing.id).where(Hearing.case_id == case.id)),
-        )
+    appearance_delete = delete(WitnessAppearance).where(
+        WitnessAppearance.rule_id == RULE_ID,
+        WitnessAppearance.hearing_id.in_(select(Hearing.id).where(Hearing.case_id == case.id)),
     )
+    if scoped:
+        appearance_delete = appearance_delete.where(
+            WitnessAppearance.document_version_id.in_(version_ids)
+        )
+    session.execute(appearance_delete)
     public = tuple(PUBLIC_VISIBILITIES)
     rows = session.execute(
         select(DocumentPage, Transcript, Hearing, DocumentVersion)
@@ -156,6 +167,7 @@ def project_appearances(session: Session, case: Case, run_id: uuid.UUID) -> Appe
             DocumentVersion.visibility.in_(public),
             Transcript.visibility.in_(public),
             DocumentPage.text.is_not(None),
+            DocumentPage.document_version_id.in_(version_ids) if scoped else true(),
         )
         .order_by(DocumentVersion.official_version_ref, DocumentPage.pdf_page_index)
     ).all()

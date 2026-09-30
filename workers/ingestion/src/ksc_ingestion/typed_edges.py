@@ -21,7 +21,7 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, true
 from sqlalchemy.orm import Session
 
 from ksc_api.models import (
@@ -39,6 +39,7 @@ from ksc_api.models import (
     Relationship,
     RelationshipOrigin,
     RelationshipType,
+    Transcript,
     Witness,
     WitnessAppearance,
 )
@@ -82,13 +83,31 @@ class _Nodes:
         return node
 
 
-def project_typed_edges(session: Session, case: Case) -> TypedEdgeResult:
-    session.execute(
-        delete(Relationship).where(
-            Relationship.case_id == case.id,
-            Relationship.extraction_origin == RelationshipOrigin.DETERMINISTIC_OCCURRENCE,
-        )
+def project_typed_edges(
+    session: Session,
+    case: Case,
+    *,
+    version_ids: frozenset[uuid.UUID] = frozenset(),
+    full: bool = False,
+) -> TypedEdgeResult:
+    scoped = bool(version_ids) and not full
+    affected_documents = select(DocumentVersion.document_id).where(
+        DocumentVersion.id.in_(version_ids)
     )
+    affected_hearings = select(Transcript.hearing_id).where(
+        Transcript.document_version_id.in_(version_ids)
+    )
+    edge_delete = delete(Relationship).where(
+        Relationship.case_id == case.id,
+        Relationship.extraction_origin == RelationshipOrigin.DETERMINISTIC_OCCURRENCE,
+    )
+    if scoped:
+        affected_targets = select(GraphNode.id).where(
+            (GraphNode.document_id.in_(affected_documents))
+            | (GraphNode.hearing_id.in_(affected_hearings))
+        )
+        edge_delete = edge_delete.where(Relationship.to_node_id.in_(affected_targets))
+    session.execute(edge_delete)
     nodes = _Nodes(session, case)
 
     # TESTIFIED_AT from header-backed appearances.
@@ -96,7 +115,11 @@ def project_typed_edges(session: Session, case: Case) -> TypedEdgeResult:
         select(WitnessAppearance, Hearing, DocumentVersion)
         .join(Hearing, Hearing.id == WitnessAppearance.hearing_id)
         .join(DocumentVersion, DocumentVersion.id == WitnessAppearance.document_version_id)
-        .where(Hearing.case_id == case.id, WitnessAppearance.rule_id.is_not(None))
+        .where(
+            Hearing.case_id == case.id,
+            WitnessAppearance.rule_id.is_not(None),
+            Hearing.id.in_(affected_hearings) if scoped else true(),
+        )
         .order_by(DocumentVersion.official_version_ref)
     ).all()
     by_subject: dict[tuple[uuid.UUID, uuid.UUID], list[WitnessAppearance]] = defaultdict(list)
@@ -160,6 +183,7 @@ def project_typed_edges(session: Session, case: Case) -> TypedEdgeResult:
             EntityOccurrence.exhibit_id.is_(None),
             Document.visibility.in_(tuple(PUBLIC_VISIBILITIES)),
             DocumentVersion.visibility.in_(tuple(PUBLIC_VISIBILITIES)),
+            Document.id.in_(affected_documents) if scoped else true(),
         )
         .order_by(
             DocumentVersion.official_version_ref,

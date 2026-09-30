@@ -289,7 +289,6 @@ def test_pipeline_is_idempotent_source_backed_and_fail_closed(phase19b) -> None:
                 continue
             span = COVER[alias.source_char_start : alias.source_char_end]  # type: ignore[index]
             assert " ".join(span.split()) == alias.alias
-
         # Appearances: header-backed only, per transcript version, exact signal.
         appearances = session.scalars(
             select(WitnessAppearance).where(WitnessAppearance.hearing_id == _id("hearing"))
@@ -342,6 +341,17 @@ def test_pipeline_is_idempotent_source_backed_and_fail_closed(phase19b) -> None:
         report = run_phase19b_report(session, case, date(2026, 9, 24))
     assert report["passed"], report["checks"]
     assert all(value == 0 for value in report["checks"].values())
+
+
+def test_scoped_refresh_preserves_unaffected_intelligence(phase19b) -> None:
+    sessions = phase19b
+    pipeline = Phase19BPipeline(sessions, case_number=CASE_NUMBER)
+    pipeline.run()
+    before = _snapshot(sessions)
+
+    pipeline.run(version_ids=frozenset({_id("filing-v")}))
+
+    assert _snapshot(sessions) == before
 
 
 def test_resolver_rules_are_deterministic_and_record_how(phase19b) -> None:

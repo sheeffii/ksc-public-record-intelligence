@@ -28,7 +28,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import date
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select, true, update
 from sqlalchemy.orm import Session
 
 from ksc_api.models import (
@@ -174,15 +174,45 @@ def _id(*parts: object) -> uuid.UUID:
     return uuid.uuid5(_NS, ":".join(str(part) for part in parts))
 
 
-def project_status_events(session: Session, case: Case, run_id: uuid.UUID) -> StatusResult:
+def project_status_events(
+    session: Session,
+    case: Case,
+    run_id: uuid.UUID,
+    *,
+    version_ids: frozenset[uuid.UUID] = frozenset(),
+    full: bool = False,
+) -> StatusResult:
+    scoped = bool(version_ids) and not full
     registry = {
         official: exhibit_id
         for official, exhibit_id in session.execute(
             select(Exhibit.official_exhibit_id, Exhibit.id).where(Exhibit.case_id == case.id)
         ).all()
     }
-    session.execute(update(Exhibit).where(Exhibit.case_id == case.id).values(status_event_id=None))
-    session.execute(delete(ExhibitStatusEvent).where(ExhibitStatusEvent.case_id == case.id))
+    affected_event_ids = select(ExhibitStatusEvent.id).where(ExhibitStatusEvent.case_id == case.id)
+    affected_exhibit_ids = select(ExhibitStatusEvent.exhibit_id).where(
+        ExhibitStatusEvent.case_id == case.id,
+        ExhibitStatusEvent.exhibit_id.is_not(None),
+    )
+    if scoped:
+        affected_event_ids = affected_event_ids.where(
+            ExhibitStatusEvent.document_version_id.in_(version_ids)
+        )
+        affected_exhibit_ids = affected_exhibit_ids.where(
+            ExhibitStatusEvent.document_version_id.in_(version_ids)
+        )
+    impacted_exhibits = (
+        set(session.scalars(affected_exhibit_ids).all()) if scoped else set(registry.values())
+    )
+    session.execute(
+        update(Exhibit)
+        .where(Exhibit.status_event_id.in_(affected_event_ids))
+        .values(status_event_id=None)
+    )
+    event_delete = delete(ExhibitStatusEvent).where(ExhibitStatusEvent.case_id == case.id)
+    if scoped:
+        event_delete = event_delete.where(ExhibitStatusEvent.document_version_id.in_(version_ids))
+    session.execute(event_delete)
     public = tuple(PUBLIC_VISIBILITIES)
     rows = session.execute(
         select(TranscriptSegment, Transcript, Hearing, DocumentVersion)
@@ -196,6 +226,7 @@ def project_status_events(session: Session, case: Case, run_id: uuid.UUID) -> St
             DocumentVersion.visibility.in_(public),
             Transcript.visibility.in_(public),
             TranscriptSegment.closed_session.is_(False),
+            Transcript.document_version_id.in_(version_ids) if scoped else true(),
         )
         .order_by(DocumentVersion.official_version_ref, TranscriptSegment.sequence)
     ).all()
@@ -233,15 +264,30 @@ def project_status_events(session: Session, case: Case, run_id: uuid.UUID) -> St
             )
             session.add(event)
             events.append(event)
+            if exhibit_id is not None:
+                impacted_exhibits.add(exhibit_id)
     session.flush()
 
     # Derive current status from the history; unknown stays unknown.
     changes: dict[str, int] = {}
+    status_events = session.scalars(
+        select(ExhibitStatusEvent)
+        .where(
+            ExhibitStatusEvent.case_id == case.id,
+            ExhibitStatusEvent.exhibit_id.in_(impacted_exhibits or [uuid.uuid4()]),
+        )
+        .order_by(ExhibitStatusEvent.event_date, ExhibitStatusEvent.id)
+    ).all()
     admitted: dict[uuid.UUID, ExhibitStatusEvent] = {}
-    for event in sorted(events, key=lambda row: (row.event_date or date.min, str(row.id))):
+    for event in sorted(status_events, key=lambda row: (row.event_date or date.min, str(row.id))):
         if event.event_type == "admitted" and event.exhibit_id is not None:
             admitted.setdefault(event.exhibit_id, event)
-    for exhibit in session.scalars(select(Exhibit).where(Exhibit.case_id == case.id)):
+    for exhibit in session.scalars(
+        select(Exhibit).where(
+            Exhibit.case_id == case.id,
+            Exhibit.id.in_(impacted_exhibits or [uuid.uuid4()]),
+        )
+    ):
         admission = admitted.get(exhibit.id)
         new_status = "admitted" if admission is not None else "unknown"
         if exhibit.status != new_status:

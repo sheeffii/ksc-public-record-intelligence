@@ -10,7 +10,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, exists, select, true
 from sqlalchemy.orm import Session, sessionmaker
 
 from ksc_api.models import (
@@ -56,23 +56,36 @@ class Phase9Pipeline:
         self.sessions = sessions
         self.case_number = case_number
 
-    def run(self) -> EvidenceBuildResult:
+    def run(
+        self, *, version_ids: frozenset[uuid.UUID] = frozenset(), full: bool = False
+    ) -> EvidenceBuildResult:
+        scoped = bool(version_ids) and not full
         with self.sessions() as session, session.begin():
             case = session.scalar(select(Case).where(Case.case_number == self.case_number))
             if case is None:
                 raise RuntimeError(f"case {self.case_number} is not seeded")
 
-            session.execute(
-                delete(Relationship).where(
-                    Relationship.case_id == case.id,
-                    Relationship.extraction_origin == RelationshipOrigin.DETERMINISTIC_CITATION,
-                )
+            affected_citations = select(Citation.id).where(
+                Citation.source_document_version_id.in_(version_ids)
             )
-            session.execute(
-                delete(Event).where(
-                    Event.case_id == case.id, Event.extraction_origin == "source_metadata"
-                )
+            relationship_delete = delete(Relationship).where(
+                Relationship.case_id == case.id,
+                Relationship.extraction_origin == RelationshipOrigin.DETERMINISTIC_CITATION,
             )
+            if scoped:
+                relationship_delete = relationship_delete.where(
+                    Relationship.citation_id.in_(affected_citations)
+                )
+            session.execute(relationship_delete)
+            affected_documents = select(DocumentVersion.document_id).where(
+                DocumentVersion.id.in_(version_ids)
+            )
+            event_delete = delete(Event).where(
+                Event.case_id == case.id, Event.extraction_origin == "source_metadata"
+            )
+            if scoped:
+                event_delete = event_delete.where(Event.document_id.in_(affected_documents))
+            session.execute(event_delete)
             session.flush()
             existing_edge_keys: set[tuple[uuid.UUID, uuid.UUID, RelationshipType, uuid.UUID]] = {
                 (from_id, to_id, relationship_type, citation_id)
@@ -159,6 +172,7 @@ class Phase9Pipeline:
                     Citation.case_id == case.id,
                     Citation.resolution_state == ResolutionState.RESOLVED,
                     Citation.source_document_version_id.is_not(None),
+                    Citation.source_document_version_id.in_(version_ids) if scoped else true(),
                 )
                 .order_by(Citation.id)
             ).all()
@@ -219,6 +233,7 @@ class Phase9Pipeline:
                     Document.case_id == case.id,
                     Document.visibility.in_(tuple(PUBLIC_VISIBILITIES)),
                     Document.document_date.is_not(None),
+                    Document.id.in_(affected_documents) if scoped else true(),
                 )
                 .order_by(Document.official_ref)
             ).all()
@@ -258,6 +273,12 @@ class Phase9Pipeline:
                 .where(
                     Hearing.case_id == case.id,
                     Hearing.visibility.in_(tuple(PUBLIC_VISIBILITIES)),
+                    exists().where(
+                        Transcript.hearing_id == Hearing.id,
+                        Transcript.document_version_id.in_(version_ids),
+                    )
+                    if scoped
+                    else true(),
                 )
                 .order_by(Hearing.hearing_date, Hearing.session_sequence)
             ).all()

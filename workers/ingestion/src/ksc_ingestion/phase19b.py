@@ -52,7 +52,14 @@ class Phase19BPipeline:
             raise RuntimeError(f"case {self.case_number} is not seeded")
         return case
 
-    def run(self) -> IntelligenceResult:
+    def run(
+        self,
+        *,
+        version_ids: frozenset[uuid.UUID] = frozenset(),
+        full: bool = False,
+        include_mentions: bool = True,
+    ) -> IntelligenceResult:
+        rebuild_all = full or not version_ids
         detail: dict[str, Any] = {}
         with self.sessions() as session, session.begin():
             case = self._case(session)
@@ -67,20 +74,35 @@ class Phase19BPipeline:
             session.add(run)
             session.flush()
             run_id = run.id
-            detail["aliases"] = asdict(project_caption_aliases(session, case))
-            detail["appearances"] = asdict(project_appearances(session, case, run_id))
-            detail["exhibit_status"] = asdict(project_status_events(session, case, run_id))
+            detail["aliases"] = asdict(
+                project_caption_aliases(session, case, version_ids=version_ids, full=rebuild_all)
+            )
+            detail["appearances"] = asdict(
+                project_appearances(
+                    session, case, run_id, version_ids=version_ids, full=rebuild_all
+                )
+            )
+            detail["exhibit_status"] = asdict(
+                project_status_events(
+                    session, case, run_id, version_ids=version_ids, full=rebuild_all
+                )
+            )
 
-        mentions = Phase19MentionProjector(self.sessions, case_number=self.case_number).run()
-        detail["mentions"] = {
-            "run_id": str(mentions.run_id),
-            "by_kind_state": mentions.by_kind_state,
-            "by_rule": mentions.by_rule,
-        }
+        if include_mentions:
+            mentions = Phase19MentionProjector(self.sessions, case_number=self.case_number).run(
+                version_ids=version_ids, full=rebuild_all
+            )
+            detail["mentions"] = {
+                "run_id": str(mentions.run_id),
+                "by_kind_state": mentions.by_kind_state,
+                "by_rule": mentions.by_rule,
+            }
 
         with self.sessions() as session, session.begin():
             case = self._case(session)
-            detail["typed_edges"] = asdict(project_typed_edges(session, case))
+            detail["typed_edges"] = asdict(
+                project_typed_edges(session, case, version_ids=version_ids, full=rebuild_all)
+            )
             finished = session.get(ProcessingRun, run_id)
             assert finished is not None
             finished.status = "completed"
