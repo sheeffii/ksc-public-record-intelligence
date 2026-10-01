@@ -1067,6 +1067,179 @@ def test_ambiguous_imported_reference_is_quarantined_and_gate_reports_it(
     assert len(validate_manifest_file(out).refused) == 1
 
 
+def _wrong_case_artifact_bundle(tmp_path: Path) -> Path:
+    import hashlib
+
+    b = BundleBuilder(tmp_path / "bundle", "artifact-refusal")
+    good_pdf = make_pdf([f"{DEMO_CASE}/F00016", "Synthetic filing"])
+    wrong_pdf = make_pdf(["KSC-BC-2020-06/F00017", "names a different case"])
+    for rid, doc_id, ref, name, data in (
+        ("r01", "00000000000000e1", "F00016", "F00016.pdf", good_pdf),
+        ("r02", "00000000000000e2", "F00017", "F00017.pdf", wrong_pdf),
+    ):
+        md = metadata(record_type="filing", official_ref=f"{DEMO_CASE}/{ref}", title=f"t {ref}")
+        md["extra"] = {"source_record_id": rid}
+        b.add_record(
+            doc_id,
+            md,
+            [
+                {
+                    "url": artifact_url("Filing", name),
+                    "file": b.file(name, data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                    "byte_size": len(data),
+                }
+            ],
+        )
+    return b.write()
+
+
+def test_artifact_refusal_is_listed_as_refused_only_with_linked_quarantine(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings
+) -> None:
+    """A record that normalizes but whose artifact is refused (page 1 names
+    another case) has no version. The gate and the corpus manifest accept it
+    as a refusal through the open review row linked to its ingestion item."""
+    from ksc_ingestion.corpus_manifest import build_manifest
+    from ksc_ingestion.quality_gate import report_to_json, run_gate
+
+    bundle = load_bundle(_wrong_case_artifact_bundle(tmp_path))
+    outcome = ingestor.run_bundle(bundle)
+    refused = next(i for i in outcome.items if i.item_key.endswith("00000000000000e2"))
+    assert refused.status is IngestionItemStatus.INVALID_METADATA
+    row = session.scalar(select(ArtifactQuarantine).where(ArtifactQuarantine.state == "open"))
+    assert row is not None and not row.reason.startswith(refused.item_key)
+
+    report = run_gate(session, demo_settings, bundle, bucket=TEST_BUCKET)
+    gate_row = next(r for r in report.rows if r.record_id == "r02")
+    assert gate_row.checks["refusal_quarantined"] and gate_row.checks["nothing_stored"]
+    assert "version_exists" not in gate_row.checks
+    assert report.passed
+
+    gate_path = tmp_path / "gate.json"
+    gate_path.write_text(report_to_json(report))
+    manifest = build_manifest(session, bundle, gate_report=gate_path)
+    assert manifest.record_count == 1
+    assert [(r.record_id, r.reason_code) for r in manifest.refused] == [("r02", "invalid_metadata")]
+
+
+def test_artifact_refusal_without_open_quarantine_fails_closed(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings
+) -> None:
+    from ksc_ingestion.corpus_manifest import ManifestBuildError, build_manifest
+    from ksc_ingestion.quality_gate import report_to_json, run_gate
+
+    bundle = load_bundle(_wrong_case_artifact_bundle(tmp_path))
+    ingestor.run_bundle(bundle)
+    for row in session.scalars(select(ArtifactQuarantine)).all():
+        row.state = "released"
+    session.commit()
+
+    report = run_gate(session, demo_settings, bundle, bucket=TEST_BUCKET)
+    gate_row = next(r for r in report.rows if r.record_id == "r02")
+    assert gate_row.checks["version_exists"] is False
+    assert "refusal_quarantined" not in gate_row.checks
+    assert not report.passed
+
+    gate_path = tmp_path / "gate.json"
+    gate_path.write_text(report_to_json(report))
+    with pytest.raises(ManifestBuildError, match="not persisted"):
+        build_manifest(session, bundle, gate_report=gate_path)
+
+
+_ORIGINAL_TITLE = "Synthetic annex"
+_REDACTED_TITLE = "Annex to Public Redacted Version of synthetic filing"
+
+
+def _original_and_redacted_bundle(tmp_path: Path, *, redacted_first: bool) -> Path:
+    """One document published as two records: the original and its public
+    redacted version, each with its own title and detail page."""
+    import hashlib
+
+    b = BundleBuilder(tmp_path / "bundle", "original-and-redacted")
+    records = [
+        ("r01", "00000000000000d1", _ORIGINAL_TITLE, "F00018", "original", "F00018.pdf"),
+        (
+            "r02",
+            "00000000000000d2",
+            _REDACTED_TITLE,
+            "F00018/RED",
+            "public_redacted",
+            "F00018R.pdf",
+        ),
+    ]
+    if redacted_first:
+        records.reverse()
+    for rid, doc_id, title, ref, vtype, name in records:
+        data = make_pdf([f"{DEMO_CASE}/{ref}", title])
+        md = metadata(record_type="filing", official_ref=f"{DEMO_CASE}/F00018", title=title)
+        md["extra"] = {"source_record_id": rid}
+        b.add_record(
+            doc_id,
+            md,
+            [
+                {
+                    "url": artifact_url("Filing", name),
+                    "file": b.file(name, data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                    "byte_size": len(data),
+                    "official_version_ref": f"{DEMO_CASE}/{ref}",
+                    "version_type": vtype,
+                }
+            ],
+        )
+    return b.write()
+
+
+@pytest.mark.parametrize("redacted_first", [True, False])
+def test_original_owns_document_identity_beside_redacted_record(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings, redacted_first: bool
+) -> None:
+    from ksc_ingestion.quality_gate import run_gate
+    from ksc_ingestion.sources import canonicalize
+    from support.synthetic import detail_url
+
+    bundle = load_bundle(_original_and_redacted_bundle(tmp_path, redacted_first=redacted_first))
+    ingestor.run_bundle(bundle)
+
+    doc = _doc(session, "F00018")
+    assert doc.title == _ORIGINAL_TITLE
+    assert doc.source_url == canonicalize(detail_url("00000000000000d1", "eng"))
+    assert set(_versions(session, "F00018")) == {f"{DEMO_CASE}/F00018", f"{DEMO_CASE}/F00018/RED"}
+    redacted_source = session.scalar(
+        select(SourceRecord).where(SourceRecord.external_record_id.like("%00000000000000d2"))
+    )
+    assert redacted_source is not None and redacted_source.title == _REDACTED_TITLE
+
+    report = run_gate(session, demo_settings, bundle, bucket=TEST_BUCKET)
+    assert report.passed, report.summary
+    red_row = next(r for r in report.rows if r.record_id == "r02")
+    assert red_row.checks["source_record_title"] and red_row.checks["document_source_url_official"]
+
+
+def test_redacted_record_beside_original_fails_on_its_own_wrong_provenance(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings
+) -> None:
+    from ksc_ingestion.quality_gate import run_gate
+
+    bundle = load_bundle(_original_and_redacted_bundle(tmp_path, redacted_first=True))
+    ingestor.run_bundle(bundle)
+    redacted_source = session.scalar(
+        select(SourceRecord).where(SourceRecord.external_record_id.like("%00000000000000d2"))
+    )
+    assert redacted_source is not None
+    redacted_source.title = "a different title"
+    red = _versions(session, "F00018")[f"{DEMO_CASE}/F00018/RED"]
+    red.source_url = artifact_url("Filing", "elsewhere.pdf")
+    session.commit()
+
+    report = run_gate(session, demo_settings, bundle, bucket=TEST_BUCKET)
+    red_row = next(r for r in report.rows if r.record_id == "r02")
+    assert red_row.checks["source_record_title"] is False
+    assert red_row.checks["version_source_url_is_official_pdf"] is False
+    assert not report.passed
+
+
 def test_quality_gate_fails_on_declared_hash_mismatch(
     tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings
 ) -> None:

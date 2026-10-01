@@ -35,6 +35,7 @@ from ksc_api.models import (
 )
 from ksc_ingestion.capture import CaptureBundle, discover
 from ksc_ingestion.discovery import DiscoveredRecord
+from ksc_ingestion.quality_gate import linked_open_quarantine
 from ksc_ingestion.sources import CASE_NUMBER_PATTERN, require_official
 
 SCHEMA_VERSION = 1
@@ -282,7 +283,7 @@ def _open_refusal(
     if not gate_row or not gate_row.get("checks", {}).get("refusal_quarantined"):
         return None
     prefix = f"{discovered.item_key}: "
-    return session.scalar(
+    by_reason = session.scalar(
         select(ArtifactQuarantine)
         .where(
             ArtifactQuarantine.case_id == case.id,
@@ -291,6 +292,9 @@ def _open_refusal(
         )
         .order_by(ArtifactQuarantine.created_at)
     )
+    # Artifact-level refusals (e.g. page 1 names another case) carry no item
+    # key in their reason; the pipeline links them to the ingestion item.
+    return by_reason or linked_open_quarantine(session, case, discovered.item_key)
 
 
 def write_manifest(manifest: CorpusManifest, path: Path) -> None:

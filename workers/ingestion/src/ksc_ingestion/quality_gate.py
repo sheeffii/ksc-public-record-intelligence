@@ -31,6 +31,7 @@ from ksc_api.models import (
     Case,
     Document,
     DocumentVersion,
+    DocumentVersionType,
     Hearing,
     IngestionItemStatus,
     IngestionJob,
@@ -42,6 +43,7 @@ from ksc_ingestion.artifacts import UnsupportedArtifactError, inspect, sha256_he
 from ksc_ingestion.capture import CaptureBundle, discover
 from ksc_ingestion.discovery import DiscoveredRecord, visibility_from_classification
 from ksc_ingestion.normalize import NormalizationError, normalize
+from ksc_ingestion.pipeline import has_original_version
 from ksc_ingestion.sources import canonicalize, classify
 
 
@@ -72,6 +74,27 @@ class GateReport:
     @property
     def passed(self) -> bool:
         return all(row.passed for row in self.rows) and bool(self.rows)
+
+
+def linked_open_quarantine(
+    session: Session, case: Case, item_key: str, artifact_sha256: str | None = None
+) -> ArtifactQuarantine | None:
+    """The open review row the pipeline linked to an ingestion item of
+    `item_key` (optionally for one artifact hash), oldest first."""
+
+    query = (
+        select(ArtifactQuarantine)
+        .join(IngestionJobItem, ArtifactQuarantine.ingestion_job_item_id == IngestionJobItem.id)
+        .where(
+            ArtifactQuarantine.case_id == case.id,
+            ArtifactQuarantine.state == "open",
+            IngestionJobItem.item_key == item_key,
+        )
+        .order_by(ArtifactQuarantine.created_at)
+    )
+    if artifact_sha256 is not None:
+        query = query.where(ArtifactQuarantine.artifact_sha256 == artifact_sha256)
+    return session.scalars(query).first()
 
 
 def _stored_bytes(client: Minio, bucket: str, key: str) -> bytes | None:
@@ -202,7 +225,23 @@ def run_gate(
         c["document_type"] = document.document_type == normalized.document_type
         c["document_visibility_public"] = document.visibility in PUBLIC_VISIBILITIES
         is_translation = nv.version_type.value == "translation"
-        c["document_title"] = True if is_translation else document.title == normalized.title
+        redacted_beside_original = (
+            nv.version_type is DocumentVersionType.PUBLIC_REDACTED
+            and has_original_version(session, document.id)
+        )
+        if redacted_beside_original:
+            # The original owns the shared document's title and source URL; the
+            # redacted record is held to its own SourceRecord (URL checked above)
+            # and DocumentVersion (checked below).
+            row.notes.append("redacted record: document identity stays with the original")
+            c["source_record_title"] = (
+                source is not None and " ".join((source.title or "").split()) == normalized.title
+            )
+        c["document_title"] = (
+            True
+            if is_translation or redacted_beside_original
+            else document.title == normalized.title
+        )
         if is_translation:
             row.notes.append("translation record: document title stays in the original language")
         if is_translation:
@@ -228,6 +267,10 @@ def run_gate(
                 bool(document.source_url)
                 and classify(document.source_url or "").kind.value in expected_kinds
             )
+        elif redacted_beside_original:
+            c["document_source_url_official"] = bool(document.source_url) and classify(
+                document.source_url or ""
+            ).kind.value in {"pcr_detail", "pcr_artifact"}
         else:
             c["document_source_url"] = document.source_url == canonicalize(record.detail_page_url)
         c["source_record_linked_to_document"] = (
@@ -240,10 +283,36 @@ def run_gate(
                 DocumentVersion.official_version_ref == nv.official_version_ref,
             )
         )
-        c["version_exists"] = version is not None
         if version is None:
+            declared = nv.artifact.declared_sha256
+            refusal = (
+                linked_open_quarantine(session, case, record.item_key, declared)
+                if declared
+                else None
+            )
+            if refusal is None:
+                c["version_exists"] = False
+            else:
+                # Normalized, but the artifact itself was refused (e.g. its page 1
+                # names another case). Passes only on the persisted review row
+                # linked to this record's ingestion item, as for normalization
+                # refusals above.
+                c["refusal_quarantined"] = True
+                c["nothing_stored"] = (
+                    session.scalar(
+                        select(DocumentVersion.id)
+                        .join(Document)
+                        .where(
+                            Document.case_id == case.id,
+                            DocumentVersion.source_url == nv.source_url,
+                        )
+                    )
+                    is None
+                )
+                row.notes.append(f"not accepted: {refusal.reason}")
             rows.append(row)
             continue
+        c["version_exists"] = True
         c["version_type"] = version.version_type is nv.version_type
         c["version_visibility"] = (
             version.visibility is nv.visibility and version.visibility in PUBLIC_VISIBILITIES

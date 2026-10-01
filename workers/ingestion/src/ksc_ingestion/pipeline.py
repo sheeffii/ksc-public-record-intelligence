@@ -135,6 +135,20 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+def has_original_version(session: Session, document_id: uuid.UUID) -> bool:
+    return (
+        session.scalar(
+            select(DocumentVersion.id)
+            .where(
+                DocumentVersion.document_id == document_id,
+                DocumentVersion.version_type == DocumentVersionType.ORIGINAL,
+            )
+            .limit(1)
+        )
+        is not None
+    )
+
+
 class Ingestor:
     def __init__(
         self,
@@ -724,6 +738,14 @@ class Ingestor:
             if incoming_is_translation:
                 for key in ("title", "language", "source_url"):
                     values.pop(key)
+        if all(
+            version.version_type is DocumentVersionType.PUBLIC_REDACTED
+            for version in normalized.versions
+        ) and has_original_version(session, document.id):
+            # The original owns the document's title and source URL; the
+            # redacted record keeps its own on its SourceRecord and version.
+            for key in ("title", "source_url"):
+                values.pop(key, None)
         changed = [k for k, v in values.items() if v is not None and getattr(document, k) != v]
         for k in changed:
             setattr(document, k, values[k])
