@@ -764,7 +764,7 @@ class Ingestor:
             # When the translation happened to arrive first, the original-language
             # record takes the identity over on arrival (audited below).
             if incoming_is_translation:
-                for key in ("title", "language", "source_url"):
+                for key in ("title", "language", "source_url", "document_type"):
                     values.pop(key)
         if normalized.versions and all(
             outranked_by_sibling(session, document.id, v.version_type, v.official_version_ref)

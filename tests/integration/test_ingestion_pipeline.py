@@ -1293,6 +1293,105 @@ def test_outranked_redaction_fails_on_its_own_wrong_provenance(
     assert not report.passed
 
 
+_LANGUAGE_VARIANTS = {
+    "EN": ("r01", "00000000000000c1", "Synthetic decision", "filing", "en", "F00019", "original"),
+    "SQ": (
+        "r02",
+        "00000000000000c2",
+        "Vendim sintetik",
+        "decision",
+        "sq",
+        "F00019/ALB",
+        "translation",
+    ),
+}
+
+
+def _language_bundle(root: Path, bundle_id: str, order: list[str]) -> Path:
+    """One document published as an English record and an Albanian
+    translation whose mirror record type disagrees with the original's."""
+    import hashlib
+
+    b = BundleBuilder(root, bundle_id)
+    for variant in order:
+        rid, doc_id, title, rtype, language, ref, vtype = _LANGUAGE_VARIANTS[variant]
+        name = ref.replace("/", "-") + ".pdf"
+        data = make_pdf([f"{DEMO_CASE}/F00019", title])
+        md = metadata(
+            record_type=rtype, official_ref=f"{DEMO_CASE}/F00019", title=title, language=language
+        )
+        md["extra"] = {"source_record_id": rid}
+        b.add_record(
+            doc_id,
+            md,
+            [
+                {
+                    "url": artifact_url("Filing", name),
+                    "file": b.file(name, data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                    "byte_size": len(data),
+                    "official_version_ref": f"{DEMO_CASE}/{ref}",
+                    "version_type": vtype,
+                }
+            ],
+            lang="eng" if language == "en" else "alb",
+        )
+    return b.write()
+
+
+def _language_source(session: Session, variant: str) -> SourceRecord:
+    doc_id = _LANGUAGE_VARIANTS[variant][1]
+    source = session.scalar(
+        select(SourceRecord).where(SourceRecord.external_record_id.like(f"%{doc_id}"))
+    )
+    assert source is not None
+    return source
+
+
+@pytest.mark.parametrize("order", [["EN", "SQ"], ["SQ", "EN"]])
+def test_translation_never_changes_original_document_type(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings, order: list[str]
+) -> None:
+    """Whatever the arrival order, the original-language record owns the
+    document type; the translation keeps its own type and title."""
+    from ksc_ingestion.quality_gate import run_gate
+
+    bundle = load_bundle(_language_bundle(tmp_path / "bundle", "languages", order))
+    ingestor.run_bundle(bundle)
+
+    doc = _doc(session, "F00019")
+    assert (doc.document_type, doc.title, doc.language) == ("filing", "Synthetic decision", "en")
+    translation = _language_source(session, "SQ")
+    assert (translation.record_type, translation.title) == ("decision", "Vendim sintetik")
+    assert set(_versions(session, "F00019")) == {f"{DEMO_CASE}/F00019", f"{DEMO_CASE}/F00019/ALB"}
+
+    report = run_gate(session, demo_settings, bundle, bucket=TEST_BUCKET)
+    assert report.passed, report.summary["failed_checks"]
+    row = next(r for r in report.rows if r.record_id == "r02")
+    assert row.checks["source_record_type"] and "document_type" not in row.checks
+
+
+@pytest.mark.parametrize("corruption", ["source_type", "source_missing"])
+def test_translation_fails_on_its_own_wrong_provenance(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings, corruption: str
+) -> None:
+    from ksc_ingestion.quality_gate import run_gate
+
+    bundle = load_bundle(_language_bundle(tmp_path / "bundle", "languages", ["EN", "SQ"]))
+    ingestor.run_bundle(bundle)
+    if corruption == "source_type":
+        _language_source(session, "SQ").record_type = "order"
+    else:
+        session.delete(_language_source(session, "SQ"))
+    session.commit()
+
+    report = run_gate(session, demo_settings, bundle, bucket=TEST_BUCKET)
+    row = next(r for r in report.rows if r.record_id == "r02")
+    expected = "source_record_type" if corruption == "source_type" else "source_record_exists"
+    assert row.checks[expected] is False
+    assert not report.passed
+
+
 def test_quality_gate_fails_on_declared_hash_mismatch(
     tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings
 ) -> None:

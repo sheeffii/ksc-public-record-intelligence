@@ -221,9 +221,16 @@ def run_gate(
         if document is None:
             rows.append(row)
             continue
-        c["document_type"] = document.document_type == normalized.document_type
-        c["document_visibility_public"] = document.visibility in PUBLIC_VISIBILITIES
         is_translation = nv.version_type.value == "translation"
+        if is_translation and document.language != normalized.language:
+            # The original-language record owns the document type; the
+            # translation is held to the type on its own SourceRecord.
+            c["source_record_type"] = (
+                source is not None and source.record_type == normalized.document_type
+            )
+        else:
+            c["document_type"] = document.document_type == normalized.document_type
+        c["document_visibility_public"] = document.visibility in PUBLIC_VISIBILITIES
         outranked = outranked_by_sibling(
             session, document.id, nv.version_type, nv.official_version_ref
         )
