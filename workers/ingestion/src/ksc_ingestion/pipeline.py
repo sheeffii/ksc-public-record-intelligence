@@ -23,6 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 import uuid
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
@@ -135,17 +136,44 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def has_original_version(session: Session, document_id: uuid.UUID) -> bool:
-    return (
-        session.scalar(
-            select(DocumentVersion.id)
-            .where(
-                DocumentVersion.document_id == document_id,
-                DocumentVersion.version_type == DocumentVersionType.ORIGINAL,
-            )
-            .limit(1)
+_REDACTION_RE = re.compile(r"^RED(\d*)$")
+
+
+def metadata_rank(version_type: DocumentVersionType, official_version_ref: str) -> int | None:
+    """Precedence for owning a document's title and source URL: the original
+    (0), then the basic redaction RED (1), RED2 (2), … Other types: None."""
+
+    if version_type is DocumentVersionType.ORIGINAL:
+        return 0
+    if version_type is not DocumentVersionType.PUBLIC_REDACTED:
+        return None
+    for segment in official_version_ref.split("/"):
+        m = _REDACTION_RE.match(segment)
+        if m:
+            return int(m.group(1) or 1)
+    return 1
+
+
+def outranked_by_sibling(
+    session: Session,
+    document_id: uuid.UUID,
+    version_type: DocumentVersionType,
+    official_version_ref: str,
+) -> bool:
+    """True when the document holds another version with a strictly higher
+    claim on its title and source URL than this one."""
+
+    rank = metadata_rank(version_type, official_version_ref)
+    if rank is None or rank == 0:
+        return False
+    siblings = session.execute(
+        select(DocumentVersion.version_type, DocumentVersion.official_version_ref).where(
+            DocumentVersion.document_id == document_id,
+            DocumentVersion.official_version_ref != official_version_ref,
         )
-        is not None
+    ).all()
+    return any(
+        (other := metadata_rank(vtype, ref)) is not None and other < rank for vtype, ref in siblings
     )
 
 
@@ -738,12 +766,13 @@ class Ingestor:
             if incoming_is_translation:
                 for key in ("title", "language", "source_url"):
                     values.pop(key)
-        if all(
-            version.version_type is DocumentVersionType.PUBLIC_REDACTED
-            for version in normalized.versions
-        ) and has_original_version(session, document.id):
-            # The original owns the document's title and source URL; the
-            # redacted record keeps its own on its SourceRecord and version.
+        if normalized.versions and all(
+            outranked_by_sibling(session, document.id, v.version_type, v.official_version_ref)
+            for v in normalized.versions
+        ):
+            # The original (else the basic redaction RED over RED2, …) owns the
+            # document's title and source URL whatever the arrival order; this
+            # record keeps its own on its SourceRecord and version.
             for key in ("title", "source_url"):
                 values.pop(key, None)
         changed = [k for k, v in values.items() if v is not None and getattr(document, k) != v]

@@ -1147,30 +1147,34 @@ def test_artifact_refusal_without_open_quarantine_fails_closed(
         build_manifest(session, bundle, gate_report=gate_path)
 
 
-_ORIGINAL_TITLE = "Synthetic annex"
-_REDACTED_TITLE = "Annex to Public Redacted Version of synthetic filing"
+_VARIANTS = {
+    "ORIGINAL": ("r01", "00000000000000d1", "Synthetic filing", "F00018", "original"),
+    "RED": (
+        "r02",
+        "00000000000000d2",
+        "Public Redacted Version of Synthetic filing",
+        "F00018/RED",
+        "public_redacted",
+    ),
+    "RED2": (
+        "r03",
+        "00000000000000d3",
+        "Further Public Redacted Version of Synthetic filing",
+        "F00018/RED2",
+        "public_redacted",
+    ),
+}
 
 
-def _original_and_redacted_bundle(tmp_path: Path, *, redacted_first: bool) -> Path:
-    """One document published as two records: the original and its public
-    redacted version, each with its own title and detail page."""
+def _variant_bundle(root: Path, bundle_id: str, order: list[str]) -> Path:
+    """One document published as separate records (original / RED / RED2),
+    each with its own title, detail page and artifact, in the given order."""
     import hashlib
 
-    b = BundleBuilder(tmp_path / "bundle", "original-and-redacted")
-    records = [
-        ("r01", "00000000000000d1", _ORIGINAL_TITLE, "F00018", "original", "F00018.pdf"),
-        (
-            "r02",
-            "00000000000000d2",
-            _REDACTED_TITLE,
-            "F00018/RED",
-            "public_redacted",
-            "F00018R.pdf",
-        ),
-    ]
-    if redacted_first:
-        records.reverse()
-    for rid, doc_id, title, ref, vtype, name in records:
+    b = BundleBuilder(root, bundle_id)
+    for variant in order:
+        rid, doc_id, title, ref, vtype = _VARIANTS[variant]
+        name = ref.replace("/", "-") + ".pdf"
         data = make_pdf([f"{DEMO_CASE}/{ref}", title])
         md = metadata(record_type="filing", official_ref=f"{DEMO_CASE}/F00018", title=title)
         md["extra"] = {"source_record_id": rid}
@@ -1191,52 +1195,101 @@ def _original_and_redacted_bundle(tmp_path: Path, *, redacted_first: bool) -> Pa
     return b.write()
 
 
-@pytest.mark.parametrize("redacted_first", [True, False])
-def test_original_owns_document_identity_beside_redacted_record(
-    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings, redacted_first: bool
-) -> None:
-    from ksc_ingestion.quality_gate import run_gate
+def _assert_document_owned_by(session: Session, owner: str) -> None:
     from ksc_ingestion.sources import canonicalize
     from support.synthetic import detail_url
 
-    bundle = load_bundle(_original_and_redacted_bundle(tmp_path, redacted_first=redacted_first))
+    _, doc_id, title, _, _ = _VARIANTS[owner]
+    doc = _doc(session, "F00018")
+    assert (doc.title, doc.source_url) == (title, canonicalize(detail_url(doc_id, "eng")))
+
+
+def _source(session: Session, variant: str) -> SourceRecord:
+    doc_id = _VARIANTS[variant][1]
+    source = session.scalar(
+        select(SourceRecord).where(SourceRecord.external_record_id.like(f"%{doc_id}"))
+    )
+    assert source is not None
+    return source
+
+
+@pytest.mark.parametrize(
+    ("order", "owner"),
+    [
+        (["RED", "RED2"], "RED"),
+        (["RED2", "RED"], "RED"),
+        (["ORIGINAL", "RED", "RED2"], "ORIGINAL"),
+        (["RED2", "RED", "ORIGINAL"], "ORIGINAL"),
+        (["RED", "ORIGINAL", "RED2"], "ORIGINAL"),
+    ],
+)
+def test_document_metadata_owner_is_order_independent(
+    tmp_path: Path,
+    ingestor: Ingestor,
+    session: Session,
+    demo_settings,
+    order: list[str],
+    owner: str,
+) -> None:
+    """The original, else the basic redaction RED over RED2, owns the shared
+    document title and source URL; every record keeps its own provenance and
+    the gate holds outranked records to it."""
+    from ksc_ingestion.quality_gate import run_gate
+
+    bundle = load_bundle(_variant_bundle(tmp_path / "bundle", "variants", order))
     ingestor.run_bundle(bundle)
 
-    doc = _doc(session, "F00018")
-    assert doc.title == _ORIGINAL_TITLE
-    assert doc.source_url == canonicalize(detail_url("00000000000000d1", "eng"))
-    assert set(_versions(session, "F00018")) == {f"{DEMO_CASE}/F00018", f"{DEMO_CASE}/F00018/RED"}
-    redacted_source = session.scalar(
-        select(SourceRecord).where(SourceRecord.external_record_id.like("%00000000000000d2"))
-    )
-    assert redacted_source is not None and redacted_source.title == _REDACTED_TITLE
+    _assert_document_owned_by(session, owner)
+    versions = _versions(session, "F00018")
+    for variant in order:
+        _, _, title, ref, _ = _VARIANTS[variant]
+        assert _source(session, variant).title == title
+        assert f"{DEMO_CASE}/{ref}" in versions
 
     report = run_gate(session, demo_settings, bundle, bucket=TEST_BUCKET)
-    assert report.passed, report.summary
-    red_row = next(r for r in report.rows if r.record_id == "r02")
-    assert red_row.checks["source_record_title"] and red_row.checks["document_source_url_official"]
+    assert report.passed, report.summary["failed_checks"]
+    for variant in order:
+        row = next(r for r in report.rows if r.record_id == _VARIANTS[variant][0])
+        assert ("source_record_title" in row.checks) is (variant != owner)
 
 
-def test_redacted_record_beside_original_fails_on_its_own_wrong_provenance(
-    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings
+def test_lower_precedence_redaction_cannot_overwrite_document_metadata(
+    tmp_path: Path, ingestor: Ingestor, session: Session
+) -> None:
+    ingestor.run_bundle(load_bundle(_variant_bundle(tmp_path / "a", "variants-a", ["RED"])))
+    ingestor.run_bundle(load_bundle(_variant_bundle(tmp_path / "b", "variants-b", ["RED2"])))
+    _assert_document_owned_by(session, "RED")
+    assert _source(session, "RED2").title == _VARIANTS["RED2"][2]
+
+    ingestor.run_bundle(load_bundle(_variant_bundle(tmp_path / "c", "variants-c", ["ORIGINAL"])))
+    _assert_document_owned_by(session, "ORIGINAL")
+
+
+@pytest.mark.parametrize("corruption", ["source_title", "version_url", "source_missing"])
+def test_outranked_redaction_fails_on_its_own_wrong_provenance(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings, corruption: str
 ) -> None:
     from ksc_ingestion.quality_gate import run_gate
 
-    bundle = load_bundle(_original_and_redacted_bundle(tmp_path, redacted_first=True))
+    bundle = load_bundle(_variant_bundle(tmp_path / "bundle", "variants", ["RED2", "RED"]))
     ingestor.run_bundle(bundle)
-    redacted_source = session.scalar(
-        select(SourceRecord).where(SourceRecord.external_record_id.like("%00000000000000d2"))
-    )
-    assert redacted_source is not None
-    redacted_source.title = "a different title"
-    red = _versions(session, "F00018")[f"{DEMO_CASE}/F00018/RED"]
-    red.source_url = artifact_url("Filing", "elsewhere.pdf")
+    if corruption == "source_title":
+        _source(session, "RED2").title = "a different title"
+    elif corruption == "version_url":
+        red2 = _versions(session, "F00018")[f"{DEMO_CASE}/F00018/RED2"]
+        red2.source_url = artifact_url("Filing", "elsewhere.pdf")
+    else:
+        session.delete(_source(session, "RED2"))
     session.commit()
 
     report = run_gate(session, demo_settings, bundle, bucket=TEST_BUCKET)
-    red_row = next(r for r in report.rows if r.record_id == "r02")
-    assert red_row.checks["source_record_title"] is False
-    assert red_row.checks["version_source_url_is_official_pdf"] is False
+    row = next(r for r in report.rows if r.record_id == "r03")
+    expected = {
+        "source_title": "source_record_title",
+        "version_url": "version_source_url_is_official_pdf",
+        "source_missing": "source_record_exists",
+    }[corruption]
+    assert row.checks[expected] is False
     assert not report.passed
 
 

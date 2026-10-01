@@ -31,7 +31,6 @@ from ksc_api.models import (
     Case,
     Document,
     DocumentVersion,
-    DocumentVersionType,
     Hearing,
     IngestionItemStatus,
     IngestionJob,
@@ -43,7 +42,7 @@ from ksc_ingestion.artifacts import UnsupportedArtifactError, inspect, sha256_he
 from ksc_ingestion.capture import CaptureBundle, discover
 from ksc_ingestion.discovery import DiscoveredRecord, visibility_from_classification
 from ksc_ingestion.normalize import NormalizationError, normalize
-from ksc_ingestion.pipeline import has_original_version
+from ksc_ingestion.pipeline import outranked_by_sibling
 from ksc_ingestion.sources import canonicalize, classify
 
 
@@ -225,22 +224,20 @@ def run_gate(
         c["document_type"] = document.document_type == normalized.document_type
         c["document_visibility_public"] = document.visibility in PUBLIC_VISIBILITIES
         is_translation = nv.version_type.value == "translation"
-        redacted_beside_original = (
-            nv.version_type is DocumentVersionType.PUBLIC_REDACTED
-            and has_original_version(session, document.id)
+        outranked = outranked_by_sibling(
+            session, document.id, nv.version_type, nv.official_version_ref
         )
-        if redacted_beside_original:
-            # The original owns the shared document's title and source URL; the
-            # redacted record is held to its own SourceRecord (URL checked above)
-            # and DocumentVersion (checked below).
-            row.notes.append("redacted record: document identity stays with the original")
+        if outranked:
+            # A higher-precedence sibling (the original, else an earlier
+            # redaction) owns the shared title and source URL; this record is held
+            # to its own SourceRecord (URL checked above) and DocumentVersion
+            # (checked below).
+            row.notes.append("redacted record: document identity stays with a sibling version")
             c["source_record_title"] = (
                 source is not None and " ".join((source.title or "").split()) == normalized.title
             )
         c["document_title"] = (
-            True
-            if is_translation or redacted_beside_original
-            else document.title == normalized.title
+            True if is_translation or outranked else document.title == normalized.title
         )
         if is_translation:
             row.notes.append("translation record: document title stays in the original language")
@@ -267,7 +264,7 @@ def run_gate(
                 bool(document.source_url)
                 and classify(document.source_url or "").kind.value in expected_kinds
             )
-        elif redacted_beside_original:
+        elif outranked:
             c["document_source_url_official"] = bool(document.source_url) and classify(
                 document.source_url or ""
             ).kind.value in {"pcr_detail", "pcr_artifact"}

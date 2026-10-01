@@ -75,10 +75,15 @@ SRC=~/Downloads/ksc-bc-2020-06-legal-tools/$B
     --pdf-dir $SRC/files --bundle-id $B --captured-by "<operator>"
 .venv/bin/ksc-ingest bundle data/captures/$B --dry-run
 .venv/bin/ksc-ingest bundle data/captures/$B
-.venv/bin/ksc-ingest gate data/captures/$B
+.venv/bin/ksc-ingest gate data/captures/$B \
+    --json data/captures/$B/quality_gate_report.json
 .venv/bin/ksc-ingest export-corpus data/captures/$B \
     --out docs/ingestion/manifests/$B.json
 ```
+
+`export-corpus` reads `data/captures/$B/quality_gate_report.json` to list
+quarantined refusals. Without `--json` on `gate` that file is missing, and
+any bundle with a refused record fails to export with "not persisted".
 
 Then run the usual downstream steps: `parse` → `reresolve` →
 `build-evidence` → `build-intelligence`.
