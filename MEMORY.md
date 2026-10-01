@@ -5,9 +5,9 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `main`.
-- Current milestone: **Phase 23 IN PROGRESS; 23D ingested, geometry
-  anchors BLOCKED** (see "Phase 23D" below). Legal Tools acquisition is
-  **not exhausted**: the 2026-10-01 inventory still selects 293. The Phase 23
+- Current milestone: **Phase 23 IN PROGRESS; Legal Tools mirror acquisition
+  exhausted except 1 record the mirror cannot serve (HTTP 404)** — see "Phase
+  23E" below. The Phase 23
   roadmap is `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
   It integrates the permitted Legal Tools byte-mirror path, closes concrete
   readiness blockers, and stops after an approximately 100-document pilot.
@@ -170,6 +170,60 @@ Live checkpoint. Repository state wins over this note.
   404). The mirror API paging is unstable: sweeps returned 4,606 and 4,431
   unique slugs (4,108 common) for the same 5,049 hits, so one sweep is never
   complete. Union of sweeps before acquiring further.
+
+### Scoped anchor fix and geometry backfill (2026-10-01, `5903041`)
+
+- `process-new` now projects geometry/SourceAnchors after parsing for the
+  whole scoped set (current geometry is reused, not re-extracted).
+- A scoped anchor run first removes the deterministic anchor/owned span of
+  every object it re-anchors (plus relationships whose evidence or existing
+  anchor is in scope), then rebuilds from current provenance; a relationship
+  without a span of its current evidence gets no anchor.
+- Backfill of 3,020 versions (23B-next 470, 23C 960, 23D 1,590): run
+  `c1bd7583` completed, 0 failed; 72,960 pages (1 OCR-required); 360,966
+  anchors (165,448 mention, 110,708 citation, 84,810 relationship). After:
+  0 scoped versions missing geometry (1 unrelated corpus version still has
+  none), 0 duplicate anchor keys, 0 relationship anchors off their evidence
+  version, all 87,509 out-of-scope anchors byte-identical. Corpus: 448,475
+  anchors, 351,147 spans.
+
+### Phase 23E final Legal Tools acquisition (2026-10-02)
+
+- Pre-existing geometry gap: the only version without geometry is the
+  synthetic demo fixture `KSC-DEMO-0000/F-DEMO-001/RED` (never parsed, state
+  `unavailable`); intentionally left untouched.
+- Mirror paging is unstable, so acquisition now unions several fresh
+  metadata-only sweeps by mirror record id (raw inventories, unions, plans and
+  exclusions kept under `~/Downloads/ksc-bc-2020-06-legal-tools/sweeps/`).
+  Pre-acquisition sweeps: 4,486 / 4,522 / 4,312 unique, union 4,984. Records
+  quarantined by an earlier harvest are excluded unless the mirror modified
+  them since (none were); all other eligibility is the existing `plan` rules
+  against `data/captures/*/manifest.json`.
+- Eligible before download: 365. Downloaded 364 (1 mirror 404, again); 7 were
+  already held by SHA-256; 357 bundled into `2026-10-02-ltd-01..04`; 2
+  quarantined by the page-1 check; 355 imported. One transient
+  `RemoteProtocolError` from the mirror's object store stopped the first run;
+  the resumed run reused the PDF cache.
+- All 4 bundles pass `gate --json` (355/355 rows). Manifests
+  `docs/ingestion/manifests/2026-10-02-ltd-01..04.json`: 351 verified records,
+  345 documents (per-bundle sum), 351 versions, 109,108,353 bytes; 4 refused
+  with open quarantine rows (3 ambiguous version reference, 1 official
+  reference missing).
+- `process-new` (with `5903041`) on the 4 jobs: 351 selected, 351 parsed, 0
+  failed; 9,597 citations, 8,311 structured, 12,762 mentions, 7,946 evidence
+  edges, 1,799 relationships; geometry 351 versions, 31,869 anchors in the
+  same run (geometry run 0 failed). New versions: 0 unparsed, 0 missing
+  geometry; corpus-wide 0 duplicate anchor keys and 0 anchors off their
+  evidence version.
+- Corpus after 23E: 3,515 documents, 4,159 versions (all parsed), 480,248
+  SourceAnchors.
+- Post-acquisition sweeps: 4,442 / 4,271 / 4,660 unique; union 5,049 = every
+  mirror hit (also the union of all six sweeps). After the existing rules and
+  38 prior quarantines, 8 remain selected: 7 byte-identical to held records
+  (SHA-256, not new) and 1 eligible record whose mirror PDF returns HTTP 404
+  ("Public Redacted Version of Joint Defence Motion Pursuant to Rule 130, with
+  Confidential Annexes 1 and 2"). Mirror acquisition is therefore exhausted
+  except that record, which needs the official-site gap fill (runbook §4).
 
 ## Phase 23A setup (2026-09-29)
 
