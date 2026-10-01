@@ -1163,6 +1163,13 @@ _VARIANTS = {
         "F00018/RED2",
         "public_redacted",
     ),
+    "COR": (
+        "r04",
+        "00000000000000d4",
+        "Corrected Version of Synthetic filing",
+        "F00018/COR",
+        "corrected",
+    ),
 }
 
 
@@ -1221,6 +1228,8 @@ def _source(session: Session, variant: str) -> SourceRecord:
         (["ORIGINAL", "RED", "RED2"], "ORIGINAL"),
         (["RED2", "RED", "ORIGINAL"], "ORIGINAL"),
         (["RED", "ORIGINAL", "RED2"], "ORIGINAL"),
+        (["COR", "ORIGINAL"], "ORIGINAL"),
+        (["ORIGINAL", "COR"], "ORIGINAL"),
     ],
 )
 def test_document_metadata_owner_is_order_independent(

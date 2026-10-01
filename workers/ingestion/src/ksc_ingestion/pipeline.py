@@ -163,15 +163,18 @@ def outranked_by_sibling(
     """True when the document holds another version with a strictly higher
     claim on its title and source URL than this one."""
 
-    rank = metadata_rank(version_type, official_version_ref)
-    if rank is None or rank == 0:
+    if version_type in (DocumentVersionType.ORIGINAL, DocumentVersionType.TRANSLATION):
         return False
+    rank = metadata_rank(version_type, official_version_ref)
     siblings = session.execute(
         select(DocumentVersion.version_type, DocumentVersion.official_version_ref).where(
             DocumentVersion.document_id == document_id,
             DocumentVersion.official_version_ref != official_version_ref,
         )
     ).all()
+    if rank is None:
+        # Corrected, reclassified and other versions yield to the original only.
+        return any(vtype is DocumentVersionType.ORIGINAL for vtype, _ in siblings)
     return any(
         (other := metadata_rank(vtype, ref)) is not None and other < rank for vtype, ref in siblings
     )

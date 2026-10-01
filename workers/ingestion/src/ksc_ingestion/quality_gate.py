@@ -239,7 +239,7 @@ def run_gate(
             # redaction) owns the shared title and source URL; this record is held
             # to its own SourceRecord (URL checked above) and DocumentVersion
             # (checked below).
-            row.notes.append("redacted record: document identity stays with a sibling version")
+            row.notes.append("document identity stays with a higher-precedence sibling version")
             c["source_record_title"] = (
                 source is not None and " ".join((source.title or "").split()) == normalized.title
             )
