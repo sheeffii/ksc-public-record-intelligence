@@ -5,7 +5,9 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `main`.
-- Current milestone: **Phase 23 IN PROGRESS; 23B CURRENT**. The Phase 23
+- Current milestone: **Phase 23 IN PROGRESS; 23D ingested, geometry
+  anchors BLOCKED** (see "Phase 23D" below). Legal Tools acquisition is
+  **not exhausted**: the 2026-10-01 inventory still selects 293. The Phase 23
   roadmap is `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
   It integrates the permitted Legal Tools byte-mirror path, closes concrete
   readiness blockers, and stops after an approximately 100-document pilot.
@@ -121,6 +123,53 @@ Live checkpoint. Repository state wins over this note.
 - The 494-version scoped projection completed with 10,392 structured
   occurrences, 16,835 verified-mention rows, 4,015 citation evidence edges,
   and 2,368 refreshed typed relationships; no stage failed.
+
+### Phase 23C 1000-document batch (2026-09-30, commit `ed1b51d`)
+
+- 11 bundles `2026-09-30-phase23c-01..11`: 960 verified records, 951
+  documents, 960 versions, 13 refused (quarantined), 413,914,236 bytes.
+- Follow-up fix `691eaa6`: NUL bytes stripped before parse; mirror
+  translations joining a browser-captured original keep its detail URL.
+- Its 960 versions (and 470 from `2026-09-30-phase23b-next-*`) have **no v2
+  page geometry/SourceAnchors**: `process-new` picks geometry targets before
+  parsing, so brand-new versions are skipped. Not yet backfilled.
+
+### Phase 23D full remaining acquisition (2026-10-01)
+
+- Harvest (prefix `2026-10-01-ltd`): 1,655 selected and attempted; 1 mirror
+  404; 7 already held by SHA-256; 1,647 bundled into 17 bundles; 36
+  quarantined by the page-1 check (confidential stamp without public
+  reclassification, or no readable classification/reference); 1,611 imported.
+- All 17 bundles pass `gate --json` (1,611/1,611 rows). Manifests
+  `docs/ingestion/manifests/2026-10-01-ltd-01..17.json`: 1,590 verified
+  records, 1,565 documents (per-bundle sum), 1,590 versions, 568,339,321
+  bytes; 21 refused, all with open quarantine rows (17 official reference
+  missing, 3 ambiguous version reference, 1 PDF naming KSC-BC-2020-07).
+- Code fixes found by this batch: `a996aa6` (artifact-level refusals match
+  their quarantine row via the ingestion item), `ae8ca30` (order-independent
+  canonical document title/URL: original, else RED over RED2 …; runbook gate
+  step writes the report), `b3da98f` (a translation never changes the
+  original-language document type), `a7cd5e4` (original also owns over
+  corrected/other versions). IA022/F00002 `document_type` restored to
+  `filing` with an `operator:phase23d` audit row.
+- `process-new` on the 17 jobs: 1,590 selected, 1,590 parsed, 0 failed;
+  61,283 citations, 61,096 structured, 85,834 mentions, 42,073 evidence edges,
+  8,171 relationships, 0 geometry (ordering gap above).
+- `project-source-geometry` scoped to the 1,590 versions wrote v2 geometry for
+  all 36,195 pages, then **failed projecting SourceAnchors** (UniqueViolation
+  on `pk_source_anchors`). Cause: document-level `mentioned_in` relationships
+  were re-pointed by `process-new` to evidence in new 23D versions; their old
+  anchor stays on a span in an out-of-scope older version, so the scoped
+  re-insert collides. 7 relationships currently have an anchor whose span
+  version differs from their evidence version. Needs a fix in scoped anchor
+  projection before 23D (and 23C) anchors can be built.
+- Corpus after 23D: 3,277 documents, 3,808 versions (all parsed); 56 open
+  quarantine rows.
+- Inventory refresh 2026-10-01: 5,049 hits; selected 293 (254 never seen in
+  the 2026-09-29 sweep, 34 re-quarantine candidates, 4 SHA-256 duplicates, 1
+  404). The mirror API paging is unstable: sweeps returned 4,606 and 4,431
+  unique slugs (4,108 common) for the same 5,049 hits, so one sweep is never
+  complete. Union of sweeps before acquiring further.
 
 ## Phase 23A setup (2026-09-29)
 
