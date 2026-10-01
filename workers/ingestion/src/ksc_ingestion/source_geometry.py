@@ -193,6 +193,73 @@ def _matches(words: list[PageTextGeometry], exact_text: str) -> list[list[PageTe
     ]
 
 
+def _chunks(ids: list[uuid.UUID], size: int = 5000) -> Iterable[list[uuid.UUID]]:
+    for start in range(0, len(ids), size):
+        yield ids[start : start + size]
+
+
+def _affected_relationships(
+    session: Session, case_id: uuid.UUID, version_ids: frozenset[uuid.UUID]
+) -> list[Relationship]:
+    """Relationships whose current evidence, or whose existing anchor, lies on
+    an in-scope version. All others keep their anchors untouched."""
+
+    anchored_here = (
+        select(SourceAnchor.object_id)
+        .join(SourceSpan, SourceSpan.id == SourceAnchor.source_span_id)
+        .where(
+            SourceAnchor.object_type == "relationship",
+            SourceSpan.document_version_id.in_(version_ids),
+        )
+    )
+    return list(
+        session.scalars(
+            select(Relationship)
+            .where(
+                Relationship.case_id == case_id,
+                or_(
+                    Relationship.entity_occurrence_id.in_(
+                        select(EntityOccurrence.id).where(
+                            EntityOccurrence.document_version_id.in_(version_ids)
+                        )
+                    ),
+                    Relationship.citation_id.in_(
+                        select(Citation.id).where(
+                            Citation.source_document_version_id.in_(version_ids)
+                        )
+                    ),
+                    Relationship.witness_appearance_id.in_(
+                        select(WitnessAppearance.id).where(
+                            WitnessAppearance.document_version_id.in_(version_ids)
+                        )
+                    ),
+                    Relationship.id.in_(anchored_here),
+                ),
+            )
+            .order_by(Relationship.id)
+        ).all()
+    )
+
+
+def _basis_span(
+    session: Session,
+    built: dict[tuple[str, uuid.UUID, str], tuple[uuid.UUID, SourcePrecision]],
+    key: tuple[str, uuid.UUID, str],
+    version_id: uuid.UUID | None,
+) -> tuple[uuid.UUID, SourcePrecision] | None:
+    """The evidence object's own span, built in this run or persisted earlier,
+    only when it lies on the evidence object's current version."""
+
+    if key in built:
+        return built[key]
+    if version_id is None:
+        return None
+    span = session.get(SourceSpan, _id("span", *key))
+    if span is None or span.document_version_id != version_id:
+        return None
+    return span.id, span.precision
+
+
 class SourceGeometryProjector:
     def __init__(
         self, sessions: sessionmaker[Session], store: ObjectStore, *, case_number: str
@@ -233,7 +300,9 @@ class SourceGeometryProjector:
                     ),
                 )
                 statement = statement.where(or_(~has_pages, stale_geometry))
-            versions = session.scalars(statement.order_by(DocumentVersion.official_version_ref)).all()
+            versions = session.scalars(
+                statement.order_by(DocumentVersion.official_version_ref)
+            ).all()
             run = ProcessingRun(
                 case_id=case.id,
                 processor=PROCESSOR,
@@ -481,8 +550,47 @@ class SourceGeometryProjector:
             tuple[tuple[uuid.UUID, int | None], DocumentPage | None, list[PageTextGeometry]] | None
         ) = None
         with self.sessions() as session:
-            # Phase 20B transcript-segment anchors own their spans and are
-            # re-projected by `transcript_sync`; leave them in place.
+            occurrences = session.scalars(
+                select(EntityOccurrence)
+                .where(
+                    EntityOccurrence.case_id == case_id,
+                    EntityOccurrence.rule_id.is_not(None),
+                    EntityOccurrence.document_version_id.in_(version_ids),
+                )
+                .order_by(EntityOccurrence.document_version_id, EntityOccurrence.pdf_page_index)
+            ).all()
+            citations = session.scalars(
+                select(Citation)
+                .where(
+                    Citation.case_id == case_id,
+                    Citation.source_document_version_id.in_(version_ids),
+                )
+                .order_by(Citation.source_document_version_id, Citation.source_pdf_page_index)
+            ).all()
+            findings = session.scalars(
+                select(Finding).where(
+                    Finding.case_id == case_id, Finding.judgment_version_id.in_(version_ids)
+                )
+            ).all()
+            relationships = _affected_relationships(session, case_id, version_ids)
+
+            # Every object re-anchored below keeps exactly one anchor (and owned
+            # span) under its deterministic id. Remove the previous ones wherever
+            # they live, so evidence that moved to another version leaves no
+            # anchor behind on the old one.
+            rebuilt = [
+                *(("entity_occurrence", o.id, "mention") for o in occurrences),
+                *(("citation", c.id, "citation_source") for c in citations),
+                *(("finding", f.id, "finding_passage") for f in findings),
+                *(("relationship", r.id, "relationship_evidence") for r in relationships),
+            ]
+            for chunk in _chunks([_id("span", *key) for key in rebuilt]):
+                session.execute(delete(SourceSpan).where(SourceSpan.id.in_(chunk)))
+            for chunk in _chunks([_id("anchor", *key) for key in rebuilt]):
+                session.execute(delete(SourceAnchor).where(SourceAnchor.id.in_(chunk)))
+            # Anchors of objects that no longer exist on in-scope versions. Phase
+            # 20B transcript-segment anchors own their spans and are re-projected
+            # by `transcript_sync`; leave them in place.
             owned = select(SourceAnchor.source_span_id).where(
                 SourceAnchor.object_type != "transcript_segment"
             )
@@ -494,15 +602,6 @@ class SourceGeometryProjector:
             )
             session.flush()
 
-            occurrences = session.scalars(
-                select(EntityOccurrence)
-                .where(
-                    EntityOccurrence.case_id == case_id,
-                    EntityOccurrence.rule_id.is_not(None),
-                    EntityOccurrence.document_version_id.in_(version_ids),
-                )
-                .order_by(EntityOccurrence.document_version_id, EntityOccurrence.pdf_page_index)
-            ).all()
             for occurrence in occurrences:
                 span_id, span_precision = self._add_anchor(
                     session,
@@ -530,14 +629,6 @@ class SourceGeometryProjector:
                     span_precision,
                 )
 
-            citations = session.scalars(
-                select(Citation)
-                .where(
-                    Citation.case_id == case_id,
-                    Citation.source_document_version_id.in_(version_ids),
-                )
-                .order_by(Citation.source_document_version_id, Citation.source_pdf_page_index)
-            ).all()
             for citation in citations:
                 assert citation.source_document_version_id is not None
                 span_id, span_precision = self._add_anchor(
@@ -568,22 +659,31 @@ class SourceGeometryProjector:
                     span_precision,
                 )
 
-            relationships = session.scalars(
-                select(Relationship).where(Relationship.case_id == case_id)
-            ).all()
             for relationship in relationships:
-                basis_key: tuple[str, uuid.UUID, str] | None = None
+                basis: tuple[uuid.UUID, SourcePrecision] | None = None
                 if relationship.entity_occurrence_id is not None:
-                    basis_key = ("entity_occurrence", relationship.entity_occurrence_id, "mention")
+                    occurrence_row = session.get(
+                        EntityOccurrence, relationship.entity_occurrence_id
+                    )
+                    basis = _basis_span(
+                        session,
+                        basis_spans,
+                        ("entity_occurrence", relationship.entity_occurrence_id, "mention"),
+                        occurrence_row.document_version_id if occurrence_row else None,
+                    )
                 elif relationship.citation_id is not None:
-                    basis_key = ("citation", relationship.citation_id, "citation_source")
+                    citation_row = session.get(Citation, relationship.citation_id)
+                    basis = _basis_span(
+                        session,
+                        basis_spans,
+                        ("citation", relationship.citation_id, "citation_source"),
+                        citation_row.source_document_version_id if citation_row else None,
+                    )
                 elif relationship.witness_appearance_id is not None:
                     appearance = session.get(WitnessAppearance, relationship.witness_appearance_id)
                     if appearance is None or appearance.document_version_id is None:
                         continue
-                    if appearance.document_version_id not in version_ids:
-                        continue
-                    span_id, span_precision = self._add_anchor(
+                    self._add_anchor(
                         session,
                         run_id,
                         "relationship",
@@ -605,9 +705,11 @@ class SourceGeometryProjector:
                         by_type,
                     )
                     continue
-                if basis_key is None or basis_key not in basis_spans:
+                if basis is None:
+                    # No span of the current evidence on its current version: no
+                    # anchor rather than one pointing elsewhere.
                     continue
-                span_id, span_precision = basis_spans[basis_key]
+                span_id, span_precision = basis
                 session.add(
                     SourceAnchor(
                         id=_id("anchor", "relationship", relationship.id, "relationship_evidence"),
@@ -621,11 +723,6 @@ class SourceGeometryProjector:
                 precision[span_precision.value] = precision.get(span_precision.value, 0) + 1
                 by_type["relationship"] = by_type.get("relationship", 0) + 1
 
-            findings = session.scalars(
-                select(Finding).where(
-                    Finding.case_id == case_id, Finding.judgment_version_id.in_(version_ids)
-                )
-            ).all()
             for finding in findings:
                 assert finding.judgment_version_id is not None
                 paragraph = session.scalar(

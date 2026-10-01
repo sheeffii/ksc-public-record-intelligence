@@ -25,6 +25,7 @@ from ksc_api.models import (
     ArtifactStatus,
     AuditLog,
     Case,
+    Citation,
     Document,
     DocumentIngestionState,
     DocumentVersion,
@@ -69,6 +70,18 @@ def _clean(session: Session) -> None:
     if case is None:
         return
     session.execute(delete(ArtifactQuarantine).where(ArtifactQuarantine.case_id == case.id))
+    test_docs = select(Document.id).where(
+        Document.case_id == case.id, Document.official_ref.notlike(f"{DEMO_CASE}/%-DEMO-%")
+    )
+    session.execute(
+        delete(Citation).where(
+            Citation.case_id == case.id,
+            Citation.target_document_id.in_(test_docs)
+            | Citation.source_document_version_id.in_(
+                select(DocumentVersion.id).where(DocumentVersion.document_id.in_(test_docs))
+            ),
+        )
+    )
     session.execute(delete(ArtifactAcquisition).where(ArtifactAcquisition.case_id == case.id))
     session.execute(delete(ProcessingRun).where(ProcessingRun.case_id == case.id))
     session.execute(delete(IngestionJob).where(IngestionJob.case_id == case.id))
@@ -1300,6 +1313,34 @@ def test_outranked_redaction_fails_on_its_own_wrong_provenance(
     }[corruption]
     assert row.checks[expected] is False
     assert not report.passed
+
+
+def test_process_new_gives_newly_parsed_version_geometry_in_the_same_run(
+    tmp_path: Path, ingestor: Ingestor, session: Session, demo_settings, monkeypatch
+) -> None:
+    from ksc_api import config
+    from ksc_api.models import DocumentPage
+    from ksc_ingestion import cli
+    from ksc_ingestion.source_geometry import GEOMETRY_EXTRACTOR, PROCESSOR_VERSION
+
+    monkeypatch.setenv("MINIO_BUCKET_DOCUMENTS", TEST_BUCKET)
+    config.get_settings.cache_clear()
+    ingestor.run_bundle(load_bundle(_variant_bundle(tmp_path / "b", "process-new", ["ORIGINAL"])))
+    version = _versions(session, "F00018")[f"{DEMO_CASE}/F00018"]
+    assert version.parsed_at is None
+
+    assert cli.main(["process-new", "--version-id", str(version.id)]) == 0
+
+    session.expire_all()
+    pages = session.scalars(
+        select(DocumentPage).where(DocumentPage.document_version_id == version.id)
+    ).all()
+    assert pages
+    assert all(
+        (p.geometry_extractor, p.geometry_extractor_version)
+        == (GEOMETRY_EXTRACTOR, PROCESSOR_VERSION)
+        for p in pages
+    )
 
 
 _LANGUAGE_VARIANTS = {

@@ -585,20 +585,6 @@ def cmd_process_new(args: argparse.Namespace) -> int:
                 )
             ).all()
         )
-        geometry_ids = frozenset(
-            session.scalars(
-                select(DocumentVersion.id).where(
-                    DocumentVersion.id.in_(version_ids),
-                    exists().where(
-                        DocumentPage.document_version_id == DocumentVersion.id,
-                        or_(
-                            DocumentPage.geometry_extractor.is_(None),
-                            DocumentPage.geometry_extractor_version != "2",
-                        ),
-                    ),
-                )
-            ).all()
-        )
 
     parsed_count = parse_failed = citations = 0
     if parse_ids:
@@ -622,13 +608,14 @@ def cmd_process_new(args: argparse.Namespace) -> int:
         version_ids=version_ids, include_mentions=False
     )
 
-    geometry_versions = anchors = 0
-    if geometry_ids:
-        geometry = SourceGeometryProjector(
-            get_sessionmaker(), MinioObjectStore(settings), case_number=settings.case_id
-        ).run(version_ids=geometry_ids)
-        geometry_versions = geometry.versions
-        anchors = geometry.anchors
+    # After parsing and the scoped projections: newly parsed versions get
+    # geometry in this run, and anchors follow the rebuilt mentions/evidence.
+    # Versions whose geometry is already current are reused, not re-extracted.
+    geometry = SourceGeometryProjector(
+        get_sessionmaker(), MinioObjectStore(settings), case_number=settings.case_id
+    ).run(version_ids=version_ids)
+    geometry_versions = geometry.versions
+    anchors = geometry.anchors
     print(
         f"selected={len(version_ids)} parsed={parsed_count} failed={parse_failed} "
         f"citations={citations} structured={structured.occurrences} mentions={mentions.rows} "
