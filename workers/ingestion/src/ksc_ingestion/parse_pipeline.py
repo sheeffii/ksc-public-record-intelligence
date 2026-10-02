@@ -136,7 +136,10 @@ class Phase8Pipeline:
         self.repair_structure: frozenset[str] = frozenset()
 
     def run(
-        self, *, force: bool = False, repair_structure: frozenset[str] = frozenset(),
+        self,
+        *,
+        force: bool = False,
+        repair_structure: frozenset[str] = frozenset(),
         version_ids: frozenset[uuid.UUID] = frozenset(),
     ) -> Phase8RunResult:
         """`repair_structure` names versions whose paragraph/chunk structure may
@@ -807,7 +810,9 @@ class Phase8Pipeline:
                         citation.target_para_from = (
                             extracted.target_para_from if valid_para_range else None
                         )
-                        citation.target_para_to = extracted.target_para_to if valid_para_range else None
+                        citation.target_para_to = (
+                            extracted.target_para_to if valid_para_range else None
+                        )
                         valid_line_range = not (
                             extracted.target_line_from is not None
                             and extracted.target_line_to is not None
@@ -816,7 +821,9 @@ class Phase8Pipeline:
                         citation.target_line_from = (
                             extracted.target_line_from if valid_line_range else None
                         )
-                        citation.target_line_to = extracted.target_line_to if valid_line_range else None
+                        citation.target_line_to = (
+                            extracted.target_line_to if valid_line_range else None
+                        )
                         apply_resolution(citation, resolution)
                         counts[resolution.state.value] += 1
                 retired.extend(

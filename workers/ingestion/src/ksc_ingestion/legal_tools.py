@@ -361,9 +361,7 @@ def select_pilot(records: Iterable[MirrorRecord], *, size: int = 100) -> list[Mi
         by_category.setdefault(pilot_category(record), []).append(record)
 
     quota_total = sum(quota for _, quota in PILOT_CATEGORY_QUOTAS)
-    quotas = {
-        category: (size * quota // quota_total) for category, quota in PILOT_CATEGORY_QUOTAS
-    }
+    quotas = {category: (size * quota // quota_total) for category, quota in PILOT_CATEGORY_QUOTAS}
     for category, _ in PILOT_CATEGORY_QUOTAS:
         if sum(quotas.values()) >= size:
             break

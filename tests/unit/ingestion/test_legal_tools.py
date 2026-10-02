@@ -150,7 +150,7 @@ def test_pilot_is_deterministic_stratified_and_prefers_language_pairs() -> None:
     for index in range(24):
         source = sources[index % len(sources)]
         external = f"{CASE}/F{index + 100:05d}"
-        for language in ([ENG, SQI] if index < 12 else [ENG]):
+        for language in [ENG, SQI] if index < 12 else [ENG]:
             hits.append(
                 hit(
                     slug=f"s{index}{language[-2:]}",
