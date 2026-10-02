@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-09-29 (Phase 23A setup)
+Last updated: 2026-10-02 (Phase 23B staged expansion complete)
 
 ## Milestones
 
@@ -30,7 +30,7 @@ Last updated: 2026-09-29 (Phase 23A setup)
 | **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
 | **21** | **Design parity and research UX**                                                                         | ✅ **COMPLETE (2026-09-27)** — tag `phase-21-complete`                                                   |
 | **22** | **Evidence Matrix, Witness Comparison & Legal Issue Intelligence**                                        | ✅ **COMPLETE (2026-09-27)** — tag `phase-22-complete`                                                    |
-| **23** | **Corpus Expansion & Research Coverage**                                                                  | **IN PROGRESS (2026-09-29)** — 23A Legal Tools readiness and controlled pilot                            |
+| **23** | **Corpus Expansion & Research Coverage**                                                                  | **IN PROGRESS (2026-10-02)** — 23A pilot and 23B expansion done; Legal Tools acquisition exhausted; 23C pending |
 
 ## Roadmap
 
@@ -66,10 +66,37 @@ Reader and evidence-integrity boundaries. The tag is `phase-21-complete`.
 Phase 21 is merged into synchronized `main` at `f25cfe0`. Phase 22 is
 **COMPLETE** at tag `phase-22-complete` and is contained in `main`. The
 deterministic AI relevance gate resolves the final fail-closed blocker. The
-Reader/Timeline parity follow-up is also merged. Phase 23 is **IN PROGRESS** on
-`feat/phase-23-corpus-expansion`; 23A is current and stops after its controlled
-pilot before any separately authorized 23B expansion.
+Reader/Timeline parity follow-up is also merged. Phase 23 is **IN PROGRESS**
+(work continued on `main`): the 23A pilot and the 23B staged expansion are done
+and Legal Tools acquisition is exhausted. 23C reconciliation and closeout
+requires explicit authorization.
 Repository code, migrations, tests and Git state win over stale roadmap text.
+
+### Phase 23B staged expansion (2026-09-30 – 2026-10-02)
+
+- Legal Tools batches (bundle series in `docs/ingestion/manifests/`):
+  `2026-09-30-phase23b-*` (494 versions), `2026-09-30-phase23c-01..11` (960),
+  `2026-10-01-ltd-01..17` (1,590), `2026-10-02-ltd-01..04` (351), plus one
+  official-site gap capture `2026-10-02-official-gap-01` (F03256/RED, whose
+  mirror PDF returns 404). Every bundle passes `gate --json`.
+- Ingestion fixes found by the expansion: artifact-level refusals match their
+  quarantine row (`a996aa6`); canonical document title/URL/type ownership is
+  order-independent — original over redactions (RED over RED2 …) and corrected
+  versions, and a translation never changes the original's metadata
+  (`ae8ca30`, `b3da98f`, `a7cd5e4`); `process-new` builds geometry after
+  parsing and scoped anchor runs rebuild from current provenance (`5903041`).
+- 3,020 earlier-batch versions were backfilled with v2 geometry and anchors;
+  all 87,509 out-of-scope anchors stayed byte-identical.
+- Acquisition is exhausted: the union of six metadata sweeps observed all
+  5,049 mirror records, and 0 genuinely eligible records remain (7 listed
+  records are byte-identical to held ones). Mirror paging is unstable, so the
+  runbook now plans over a union of sweeps.
+- Corpus (KSC-BC-2020-06): 3,516 documents, 4,160 versions, all parsed, 0
+  missing v2 geometry; 480,574 SourceAnchors; 0 duplicate anchor keys; 0
+  anchors off their evidence version.
+- Not yet verified for 23C: scale of the server-driven directory/search/
+  timeline reads at this corpus size, coverage and source-fidelity audits, and
+  the full repository gates (only focused ingestion tests ran during 23B).
 
 ### Phase 23A pilot completion (2026-09-29)
 
@@ -85,7 +112,7 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
   citation/entity objects to anchor.
 - EN/SQ filings sharing an official folder now get distinct source-record
   keys (folder id + official-path digest).
-- 23A is complete pending review. 23B is NOT started.
+- 23A is complete. 23B followed on 2026-09-30.
 
 ## Phase 23A setup (2026-09-29)
 
