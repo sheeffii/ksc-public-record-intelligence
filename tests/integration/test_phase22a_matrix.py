@@ -95,3 +95,41 @@ def test_matrix_filter_and_pagination_are_bounded(demo_client) -> None:
         demo_client.get("/api/v1/findings/FD-DEMO-001/matrix", params={"limit": 101}).status_code
         == 422
     )
+
+
+def test_matrix_projection_replaces_its_own_edges_whatever_their_note(demo_settings) -> None:
+    """A later migration (0019) rewrote the note of a projected edge; the
+    projection must still replace that edge instead of colliding with it."""
+    from sqlalchemy import select
+
+    from ksc_api.db.session import get_sessionmaker
+    from ksc_api.fixtures.demo import DEMO_CASE_NUMBER
+    from ksc_api.models import Relationship
+    from ksc_ingestion.legal_matrix import Phase22ALegalMatrixProjector
+
+    sessions = get_sessionmaker()
+    projector = Phase22ALegalMatrixProjector(sessions, case_number=DEMO_CASE_NUMBER)
+    first = projector.run()
+    assert first.graph_relationships > 0
+
+    def projected() -> list[tuple[uuid.UUID, str, str]]:
+        with sessions() as session:
+            return [
+                (r.id, r.relationship_type.value, r.verification_state.value)
+                for r in session.scalars(
+                    select(Relationship)
+                    .where(Relationship.note.like("Phase 22A matrix projection:%"))
+                    .order_by(Relationship.id)
+                )
+            ]
+
+    before = projected()
+    with sessions() as session:
+        edge = session.get(Relationship, before[0][0])
+        assert edge is not None
+        edge.note = "Phase 22C source-fidelity audit: court_cites"
+        session.commit()
+
+    second = projector.run()
+    assert second.graph_relationships == first.graph_relationships
+    assert projected() == before

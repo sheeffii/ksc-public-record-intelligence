@@ -319,10 +319,24 @@ class Phase22ALegalMatrixProjector:
             .join(AppealIssueSource.issue)
             .where(AppealIssueSource.issue.has(case_id=case_id))
         )
-        relationship_ids = select(Relationship.id).where(
-            Relationship.case_id == case_id,
+        # Edges this projection owns: by note, and by their deterministic ids, so
+        # an edge whose note a later migration rewrote (0019) is still replaced.
+        owned_ids = [
+            *(_id("relationship", link_id) for link_id in session.scalars(link_ids)),
+            *(
+                _id("argument-response", response_id)
+                for response_id in session.scalars(
+                    select(ArgumentResponse.id).where(
+                        ArgumentResponse.argument_id.in_(argument_ids)
+                    )
+                )
+            ),
+        ]
+        owned = or_(
             Relationship.note.like("Phase 22A matrix projection:%"),
+            Relationship.id.in_(owned_ids),
         )
+        relationship_ids = select(Relationship.id).where(Relationship.case_id == case_id, owned)
         legal_anchors = list(
             session.scalars(
                 select(SourceAnchor).where(
@@ -358,12 +372,7 @@ class Phase22ALegalMatrixProjector:
             )
             if still_used is None:
                 session.execute(delete(SourceSpan).where(SourceSpan.id == span_id))
-        session.execute(
-            delete(Relationship).where(
-                Relationship.case_id == case_id,
-                Relationship.note.like("Phase 22A matrix projection:%"),
-            )
-        )
+        session.execute(delete(Relationship).where(Relationship.case_id == case_id, owned))
         session.flush()
 
     @staticmethod
