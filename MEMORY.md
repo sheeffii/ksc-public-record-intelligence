@@ -8,7 +8,10 @@ Live checkpoint. Repository state wins over this note.
 - Current milestone: **Phase 23 IN PROGRESS; Legal Tools acquisition
   EXHAUSTED** (5,049/5,049 mirror records observed; 0 genuinely eligible
   remaining; the one mirror-404 record was captured from the official site) —
-  see "Phase 23E" below. The Phase 23
+  see "Phase 23E" below. **Next action:** roadmap 23C (reconciliation,
+  coverage/scale and source-fidelity audits, full gates, closeout tag) —
+  requires explicit owner authorization; do not start it automatically. The
+  Phase 23
   roadmap is `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
   It integrates the permitted Legal Tools byte-mirror path, closes concrete
   readiness blockers, and stops after an approximately 100-document pilot.
