@@ -21,20 +21,20 @@ redactions, private sessions or missing statements.
 
 ## Actual data counts
 
-| Measure | Count |
-| --- | ---: |
-| Witnesses comparison-ready | 0 |
-| Comparable passage groups | 0 |
-| Party-position rows | 2 |
-| SPO positions | 1 |
-| Defence positions | 1 |
-| Victims' Counsel positions | 0 |
-| Issues | 1 |
-| Issue/finding links | 1 |
-| Review candidates (`POTENTIAL_*` or human-reviewed `CONTRADICTION`) | 0 |
-| SourceAnchors | 74,036 |
-| AI-suggested candidates | 0 |
-| Human-reviewed comparison records | 1 |
+| Measure                                                             |  Count |
+| ------------------------------------------------------------------- | -----: |
+| Witnesses comparison-ready                                          |      0 |
+| Comparable passage groups                                           |      0 |
+| Party-position rows                                                 |      2 |
+| SPO positions                                                       |      1 |
+| Defence positions                                                   |      1 |
+| Victims' Counsel positions                                          |      0 |
+| Issues                                                              |      1 |
+| Issue/finding links                                                 |      1 |
+| Review candidates (`POTENTIAL_*` or human-reviewed `CONTRADICTION`) |      0 |
+| SourceAnchors                                                       | 74,036 |
+| AI-suggested candidates                                             |      0 |
+| Human-reviewed comparison records                                   |      1 |
 
 The one human-reviewed comparison is `NOT_COMPARABLE`; it is not counted as a
 comparable passage group or review candidate. The issue also preserves 4

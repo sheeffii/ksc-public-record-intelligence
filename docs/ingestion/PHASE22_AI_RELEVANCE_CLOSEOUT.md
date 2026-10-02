@@ -36,13 +36,13 @@ not provide sufficiently relevant evidence to answer reliably.
 The 64 stored completed-run questions were replayed through the gate without
 creating replacement runs.
 
-| Measure | Before | After |
-| --- | ---: | ---: |
-| Answered / relevance-eligible | 25 | 28 |
-| Withheld / insufficient | 39 | 36 |
-| Previously answered, now withheld | — | 0 |
-| Previously answered, still directly supported | — | 25 |
-| Unsupported answered runs | — | 0 |
+| Measure                                       | Before | After |
+| --------------------------------------------- | -----: | ----: |
+| Answered / relevance-eligible                 |     25 |    28 |
+| Withheld / insufficient                       |     39 |    36 |
+| Previously answered, now withheld             |      — |     0 |
+| Previously answered, still directly supported |      — |    25 |
+| Unsupported answered runs                     |      — |     0 |
 
 The three additional eligible instances were historical validation/provider
 failures for the same well-supported amendments question; the relevance gate

@@ -1486,6 +1486,7 @@ old/new before the repair):
 - `project-legal-matrix` is not re-runnable after the Phase 22C audit
   rewrote some of its rows' notes. This is pre-existing and tracked
   separately; the matrix rows are intact.
+
 ## ADR-030 — Legal Tools Database as a permitted byte source for public KSC records
 
 Date: 2026-09-27

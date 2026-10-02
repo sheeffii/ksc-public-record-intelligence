@@ -93,21 +93,21 @@ addressing the question, the fail-closed criterion is not yet satisfied.
 
 ## Final real-data counts
 
-| Measure | Count |
-| --- | ---: |
-| Findings in matrices | 1 |
-| Court-relied-on links | 0 |
-| Court-citation links | 1 |
-| Party positions | 2 |
-| Legal issues | 1 |
-| Supporting classifications | 0 |
-| Qualifying classifications | 0 |
-| Contrary/tension candidates | 0 |
-| Witness comparison groups | 0 |
-| Review issues | 1 |
-| Source-backed AI responses | 25 |
-| AI-suggested candidates | 0 |
-| SourceAnchors, corpus-wide | 74,036 |
+| Measure                     |  Count |
+| --------------------------- | -----: |
+| Findings in matrices        |      1 |
+| Court-relied-on links       |      0 |
+| Court-citation links        |      1 |
+| Party positions             |      2 |
+| Legal issues                |      1 |
+| Supporting classifications  |      0 |
+| Qualifying classifications  |      0 |
+| Contrary/tension candidates |      0 |
+| Witness comparison groups   |      0 |
+| Review issues               |      1 |
+| Source-backed AI responses  |     25 |
+| AI-suggested candidates     |      0 |
+| SourceAnchors, corpus-wide  | 74,036 |
 
 ## Focused verification
 
