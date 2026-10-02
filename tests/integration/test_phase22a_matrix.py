@@ -130,6 +130,17 @@ def test_matrix_projection_replaces_its_own_edges_whatever_their_note(demo_setti
         edge.note = "Phase 22C source-fidelity audit: court_cites"
         session.commit()
 
-    second = projector.run()
-    assert second.graph_relationships == first.graph_relationships
-    assert projected() == before
+    try:
+        second = projector.run()
+        assert second.graph_relationships == first.graph_relationships
+        assert projected() == before
+    finally:
+        # The demo fixture has no projected matrix; leave none behind for
+        # tests that count its relationships and anchors.
+        from ksc_api.models import Case
+
+        with sessions() as session:
+            case = session.scalar(select(Case).where(Case.case_number == DEMO_CASE_NUMBER))
+            assert case is not None
+            Phase22ALegalMatrixProjector._clear(session, case.id)
+            session.commit()

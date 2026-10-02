@@ -83,6 +83,13 @@ def test_bad_pdf_is_recorded_and_the_batch_continues(integration_settings) -> No
                     pdf_page_index=0,
                     page_number=1,
                     text="",
+                    # Re-runs reuse these ids; start from unprojected geometry.
+                    geometry_state="unavailable",
+                    geometry_extractor=None,
+                    geometry_extractor_version=None,
+                    geometry_extraction_method=None,
+                    geometry_processing_run_id=None,
+                    geometry_text=None,
                 )
             )
         session.commit()
