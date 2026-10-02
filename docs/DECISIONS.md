@@ -1623,3 +1623,30 @@ Files:
 `workers/ingestion/src/ksc_ingestion/legal_tools.py`,
 `scripts/ksc_legal_tools_harvest.py`,
 `tests/unit/ingestion/test_legal_tools.py`
+
+## ADR-033 — Canonical document metadata ownership and scoped anchor rebuilds
+
+Date: 2026-10-02 · Status: accepted · Phase 23
+
+Context: Phase 23 imported many documents as several separate records (original,
+public redacted RED/RED2, corrected, translation). Document title, source URL
+and type were last-writer-wins, so ingestion order decided them, and gates failed
+for whichever sibling lost. Scoped anchor runs left stale anchors when evidence
+moved between versions.
+
+Decision:
+
+- A document's title and source URL belong to its original version; without
+  one, to the basic redaction (RED over RED2 …). Corrected and other versions
+  yield only to the original. A translation never changes the original-language
+  record's title, language, source URL or document type. Each record keeps its
+  own metadata on its SourceRecord and DocumentVersion, and the gate checks an
+  outranked record against those.
+- A scoped anchor run removes the deterministic anchor and owned span of every
+  object it re-anchors, wherever they are, and rebuilds from current
+  provenance; evidence without a span on its current version gets no anchor.
+- `source_anchors.source_span_id` is indexed (migration 0020).
+
+Consequences: ingestion order no longer changes canonical metadata, full and
+scoped anchor rebuilds are idempotent, and a full rebuild takes about an hour
+instead of many.

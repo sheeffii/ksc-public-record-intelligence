@@ -5,12 +5,14 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `main`.
-- Current milestone: **Phase 23 IN PROGRESS; Legal Tools acquisition
-  EXHAUSTED** (5,049/5,049 mirror records observed; 0 genuinely eligible
-  remaining; the one mirror-404 record was captured from the official site) —
-  see "Phase 23E" below. **Next action:** roadmap 23C (reconciliation,
-  coverage/scale and source-fidelity audits, full gates, closeout tag) —
-  requires explicit owner authorization; do not start it automatically. The
+- Current branch for Phase 23 closeout: `feat/phase-23-closeout` (from
+  `main` `78b192c`; not pushed, not merged).
+- Current milestone: **Phase 23 IN PROGRESS; 23C reconciled, gates pass, NOT
+  tagged.** Legal Tools acquisition is exhausted (5,049/5,049 mirror records).
+  **Next action:** owner decisions on the three open issues in
+  `docs/ingestion/PHASE23_CLOSEOUT_REPORT.md` (Phase 10 findings gate, Phase 11
+  AI gate expectations, server-driven directories); do not create
+  `phase-23-complete` until they are resolved. The
   Phase 23
   roadmap is `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
   It integrates the permitted Legal Tools byte-mirror path, closes concrete
@@ -73,7 +75,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0019`.
+- Migration head and live database revision: `0020`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -190,6 +192,26 @@ Live checkpoint. Repository state wins over this note.
   none), 0 duplicate anchor keys, 0 relationship anchors off their evidence
   version, all 87,509 out-of-scope anchors byte-identical. Corpus: 448,475
   anchors, 351,147 spans.
+
+### Phase 23C closeout checkpoint (2026-10-02)
+
+- Disk: freed host space 5.1 GB → 22 GB by removing two `.next` build outputs
+  and the npm download cache; Docker build cache prune freed 43 GB inside the
+  Docker VM only (Docker Desktop does not return it to the host file).
+- A host reboot killed the first reconciliation run; logs now live in the
+  git-ignored `.tmp/phase23c/`. Interrupted processing runs are marked
+  `failed` with the reason in `detail`.
+- Reconciliation, corpus-wide in canonical order: citations resolved
+  94,697 → 119,427 (unresolved 44,077 → 19,201); relationships 113,315 →
+  138,299; anchors 480,574 → 678,936 (transcript segments 15,171 → 161,202,
+  because `process-new` does not run transcript sync).
+- Fixes: `abb7bbf` legal-matrix edge ownership; `222916b` migration 0020 index
+  on `source_anchors.source_span_id` (full anchor rebuild ~1 h, was hours);
+  ADR-033. The full geometry run clears legal-matrix anchors, so run
+  `project-legal-matrix` again after it.
+- Gates: lint, typecheck, 408 backend + 272 frontend tests pass; Phase 17C,
+  19A, 13, 14 and appeal gates pass; Phase 10 findings and Phase 11 AI gates
+  fail on controlled-corpus premises (see the closeout report).
 
 ### Phase 23E final Legal Tools acquisition (2026-10-02)
 

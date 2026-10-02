@@ -1,8 +1,9 @@
 # Phase 23 — Corpus Expansion & Research Coverage
 
 Status: **IN PROGRESS**  
-Current pass: **23A — Legal Tools readiness and controlled pilot**  
-Started: 2026-09-29
+Current pass: **23C — reconciliation and closeout (open issues remain)**  
+Started: 2026-09-29  
+Checkpoint: `docs/ingestion/PHASE23_CLOSEOUT_REPORT.md` (2026-10-02)
 
 ## Goal
 
