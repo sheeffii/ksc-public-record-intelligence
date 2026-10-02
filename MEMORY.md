@@ -5,9 +5,10 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `main`.
-- Current milestone: **Phase 23 IN PROGRESS; Legal Tools mirror acquisition
-  exhausted except 1 record the mirror cannot serve (HTTP 404)** — see "Phase
-  23E" below. The Phase 23
+- Current milestone: **Phase 23 IN PROGRESS; Legal Tools acquisition
+  EXHAUSTED** (5,049/5,049 mirror records observed; 0 genuinely eligible
+  remaining; the one mirror-404 record was captured from the official site) —
+  see "Phase 23E" below. The Phase 23
   roadmap is `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
   It integrates the permitted Legal Tools byte-mirror path, closes concrete
   readiness blockers, and stops after an approximately 100-document pilot.
@@ -224,6 +225,23 @@ Live checkpoint. Repository state wins over this note.
   ("Public Redacted Version of Joint Defence Motion Pursuant to Rule 130, with
   Confidential Annexes 1 and 2"). Mirror acquisition is therefore exhausted
   except that record, which needs the official-site gap fill (runbook §4).
+- Official-site gap fill (2026-10-02): operator-attached Chrome (collector
+  profile, no challenge encountered), strata plan
+  `docs/ingestion/manifests/2026-10-02-official-gap-01-strata.json` (filing
+  F03256 only, all held manifests excluded). Captured
+  `KSC-BC-2020-06/F03256/RED` (public redacted, English, 864,785 bytes,
+  sha256 `0a9ff908…c758`, reference confirmed by the PDF header) from
+  `https://repository.scp-ks.org/LW/Published/Filing/0b10c8e18047e6fb/…Rule%20130,%20with%20Confidential%20Annexes%201%20and%202.pdf`.
+  Bundle `2026-10-02-official-gap-01`: gate 1/1 PASS, manifest exported;
+  `process-new` on its job: parsed, 66/66 v2 pages, 326 anchors, 0 failed.
+- Final re-plan of the complete 5,049-record union: F03256/RED is held; 7
+  still listed, all byte-identical (SHA-256) to held records, so **0
+  genuinely eligible remaining; Legal Tools acquisition is exhausted**. No
+  source-unavailable gap remains.
+- Final corpus (KSC-BC-2020-06): 3,516 documents, 4,160 versions, all parsed,
+  0 missing v2 geometry; 480,574 SourceAnchors; 0 duplicate anchor keys; 0
+  relationship/mention/citation anchors off their evidence version.
+- Host disk is at 98% (5.9 GB free) after acquisition.
 
 ## Phase 23A setup (2026-09-29)
 

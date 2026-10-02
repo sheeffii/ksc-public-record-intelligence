@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "bundle_id": "2026-10-02-official-gap-01",
+  "case_number": "KSC-BC-2020-06",
+  "note": "Phase 23E official-site gap fill for the one record whose Legal Tools mirror PDF returns HTTP 404 (KSC-BC-2020-06/F03256/RED). Official public KSC repository UI only, operator-attached browser.",
+  "target_records": 1,
+  "strata": [
+    {
+      "key": "gap_f03256",
+      "quota": 1,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F03256",
+      "language": "eng",
+      "skipAnnexes": true,
+      "desc": "Mirror-404 gap: Public Redacted Version of Joint Defence Motion Pursuant to Rule 130 (F03256/RED)"
+    }
+  ]
+}

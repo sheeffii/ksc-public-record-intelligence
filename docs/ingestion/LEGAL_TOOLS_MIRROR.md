@@ -44,6 +44,13 @@ This writes `~/Downloads/ksc-bc-2020-06-legal-tools/inventory.json` and
 skipped. Paging the API takes about 8 minutes, at the robots.txt
 `crawl-delay: 10`. Add `--reuse-inventory` to skip the paging on later runs.
 
+The mirror's search paging is unstable: one sweep of the same hit count
+returns a different subset of records (2026-10-01/02: 4,271–4,660 unique of
+5,049). Run several `--inventory-only` sweeps, keep each `inventory.json`,
+union them by mirror record `id`, and plan over the union with
+`--reuse-inventory`. Leave out records an earlier harvest quarantined unless
+the mirror has modified them since.
+
 ## 2. Download
 
 ```bash
@@ -102,3 +109,7 @@ pnpm exec node scripts/ksc_operator_browser_capture.mjs --attach \
 
 The collector skips a record before downloading its PDF when its official PDF
 URL is already held. It still dedupes by SHA-256 afterwards.
+
+To fill one known gap (e.g. a record whose mirror PDF returns 404), pass a
+one-stratum `--strata` plan with its `filingNumber` and `quota: 1`; see
+`docs/ingestion/manifests/2026-10-02-official-gap-01-strata.json`.

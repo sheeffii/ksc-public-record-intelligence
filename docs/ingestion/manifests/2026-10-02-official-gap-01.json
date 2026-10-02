@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "case_number": "KSC-BC-2020-06",
+  "bundle_id": "2026-10-02-official-gap-01",
+  "generated_at": "2026-10-02T00:15:34.085894Z",
+  "source": "database state after ingestion and quality gate; official KSC URLs are the canonical provenance",
+  "note": "Metadata only. PDFs and captured pages are intentionally not committed (data/captures/ is git-ignored); artifact bytes live in object storage under object_key and are identified by sha256.",
+  "record_count": 1,
+  "document_count": 1,
+  "version_count": 1,
+  "total_bytes": 864785,
+  "records": [
+    {
+      "record_id": "r01",
+      "case_number": "KSC-BC-2020-06",
+      "published_document_id": "F03256RED",
+      "document_official_ref": "KSC-BC-2020-06/F03256",
+      "official_version_ref": "KSC-BC-2020-06/F03256/RED",
+      "version_type": "public_redacted",
+      "title": "Public Redacted Version of Joint Defence Motion Pursuant to Rule 130, with Confidential Annexes 1 and 2",
+      "record_type": "Filing",
+      "document_type": "motion",
+      "language": "en",
+      "filing_party_label": "Specialist Counsel",
+      "filing_party": "defence",
+      "court_level": "Basic Court Chamber",
+      "published_status": "public_redacted",
+      "visibility": "public_redacted",
+      "published_date": "12/06/2025",
+      "document_date": "2025-06-12",
+      "detail_page_url": "https://repository.scp-ks.org/details.php?doc_id=0910c8e18047e7df&doc_type=stl_filing&lang=eng",
+      "artifact_url": "https://repository.scp-ks.org/LW/Published/Filing/0b10c8e18047e6fb/Public%20Redacted%20Version%20of%20Joint%20Defence%20Motion%20Pursuant%20to%20Rule%20130,%20with%20Confidential%20Annexes%201%20and%202.pdf",
+      "source_system": "ksc_public_court_records",
+      "external_record_id": "0910c8e18047e7df",
+      "sha256": "0a9ff90869895bcab46c01cf56cb314d7d974ead65d2e901c56b6bee3a35c758",
+      "byte_size": 864785,
+      "page_count": 66,
+      "artifact_status": "fetched",
+      "object_key": "documents/KSC-BC-2020-06/KSC-BC-2020-06_F03256_RED/0a9ff90869895bcab46c01cf56cb314d7d974ead65d2e901c56b6bee3a35c758.pdf",
+      "fetch_method": "operator_browser_capture",
+      "metadata_source": "capture_snapshot",
+      "reference_source": "published_id_confirmed_by_pdf_header",
+      "hearing": null,
+      "quality_gate": {
+        "status": "PASS",
+        "checks_passed": 32,
+        "checks_total": 32
+      }
+    }
+  ],
+  "refused": []
+}
