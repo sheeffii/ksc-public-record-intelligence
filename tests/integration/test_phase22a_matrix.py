@@ -137,10 +137,23 @@ def test_matrix_projection_replaces_its_own_edges_whatever_their_note(demo_setti
     finally:
         # The demo fixture has no projected matrix; leave none behind for
         # tests that count its relationships and anchors.
-        from ksc_api.models import Case
+        from sqlalchemy import delete
+
+        from ksc_api.models import Case, Finding, SourceAnchor, SourceSpan
 
         with sessions() as session:
             case = session.scalar(select(Case).where(Case.case_number == DEMO_CASE_NUMBER))
             assert case is not None
             Phase22ALegalMatrixProjector._clear(session, case.id)
+            finding_ids = select(Finding.id).where(Finding.case_id == case.id)
+            session.execute(
+                delete(SourceSpan).where(
+                    SourceSpan.id.in_(
+                        select(SourceAnchor.source_span_id).where(
+                            SourceAnchor.object_type == "finding",
+                            SourceAnchor.object_id.in_(finding_ids),
+                        )
+                    )
+                )
+            )
             session.commit()
