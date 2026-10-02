@@ -179,7 +179,10 @@ class SourceAnchor(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     source_span_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("source_spans.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("source_spans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     object_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     object_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)

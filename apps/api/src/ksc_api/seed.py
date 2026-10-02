@@ -29,8 +29,7 @@ CASE_SEED = {
     "seat": "The Hague, the Netherlands",
     "official_source_url": "https://www.scp-ks.org",
     "description": (
-        "Public-record research case. Only lawfully public court materials will "
-        "ever be ingested. No documents have been ingested yet."
+        "Public-record research case. Only lawfully public court materials are ingested."
     ),
 }
 
