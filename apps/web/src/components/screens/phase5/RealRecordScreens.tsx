@@ -1035,9 +1035,12 @@ export function RealIncidentScreen({ incident }: { incident: IncidentView }) {
 export function RealPublicScreen({
   topic,
   rowsByKind,
+  totals = {},
 }: {
   topic?: string;
   rowsByKind: Readonly<Record<DirectoryKind, readonly DirectoryRow[]>>;
+  /** Directory totals when `rowsByKind` holds only a first page. */
+  totals?: Partial<Readonly<Record<DirectoryKind, number>>>;
 }) {
   const t = useTranslations("phase5");
   const ts = useTranslations("screens");
@@ -1064,7 +1067,7 @@ export function RealPublicScreen({
         <nav aria-label={t15("publicSections")} className="grid grid-cols-2 gap-2 md:grid-cols-6">
           {kinds.map((kind) => (
             <ActionLink key={kind} href={`/public/${kind}`} primary={kind === active}>
-              {ts(kind)} ({rowsByKind[kind].length})
+              {ts(kind)} ({totals[kind] ?? rowsByKind[kind].length})
             </ActionLink>
           ))}
         </nav>

@@ -1,9 +1,9 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import "@/test/next-mocks";
-import { routerPush } from "@/test/next-mocks";
+import { routerPush, routerReplace } from "@/test/next-mocks";
 import { renderWithProviders } from "@/test/render";
 import type { DirectoryRow } from "@/data";
 
@@ -60,5 +60,73 @@ describe("directory facet filters", () => {
     renderWithProviders(<DirectoryScreen kind="people" screenTitle="People" initialRows={ROWS} />);
     await user.click(document.querySelector("tr[data-row-id='counsel-capin'] td") as HTMLElement);
     expect(routerPush).toHaveBeenCalledWith("/people/counsel-capin");
+  });
+});
+
+describe("server-paged directories", () => {
+  function doc(id: string, type: string): DirectoryRow {
+    return {
+      id,
+      title: `Filing ${id}`,
+      kind: "documents",
+      description: type,
+      date: "2024-01-01",
+      references: 0,
+      verification: "unreviewed",
+      href: `/documents/${id}`,
+      facets: { type },
+    };
+  }
+  const server = {
+    q: "",
+    sort: "title",
+    page: 2,
+    pageSize: 10,
+    total: 3516,
+    unfilteredTotal: 3516,
+    facets: {
+      type: [
+        ["filing", 3000],
+        ["decision", 516],
+      ] as const,
+    },
+  };
+
+  it("shows the API page and totals instead of filtering in the browser", () => {
+    renderWithProviders(
+      <DirectoryScreen
+        kind="documents"
+        screenTitle="Documents"
+        initialRows={[doc("F00011", "filing"), doc("F00012", "decision")]}
+        server={server}
+      />,
+    );
+    expect(screen.getAllByText("Filing F00011").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Filing F00012").length).toBeGreaterThan(0);
+    const types = screen.getAllByRole("group", { name: "Type" })[0]!;
+    expect(within(types).getByRole("button", { name: /Filing\s*3000/ })).toBeInTheDocument();
+    expect(document.body.textContent).toMatch(/3,?516/);
+  });
+
+  it("writes facet, search and sort changes to the URL for the server", async () => {
+    const user = userEvent.setup();
+    routerReplace.mockClear();
+    renderWithProviders(
+      <DirectoryScreen
+        kind="documents"
+        screenTitle="Documents"
+        initialRows={[doc("F00011", "filing")]}
+        server={server}
+      />,
+    );
+    const types = screen.getAllByRole("group", { name: "Type" })[0]!;
+    await user.click(within(types).getByRole("button", { name: /Decision\s*516/ }));
+    // The decision row is not hidden locally; the server answers the new URL.
+    expect(screen.getAllByText("Filing F00011").length).toBeGreaterThan(0);
+    await vi.waitFor(() => expect(routerReplace).toHaveBeenCalled());
+    const url = String(routerReplace.mock.calls.at(-1)?.[0]);
+    expect(url).toContain("type=decision");
+    expect(url).toContain("sort=title");
+    expect(url).not.toContain("page=");
   });
 });

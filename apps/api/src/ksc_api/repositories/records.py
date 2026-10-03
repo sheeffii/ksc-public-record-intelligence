@@ -20,7 +20,7 @@ from typing import Annotated, Any
 from urllib.parse import quote
 
 from fastapi import Depends
-from sqlalchemy import Select, and_, false, func, or_, select, union_all
+from sqlalchemy import Select, String, and_, cast, false, func, or_, select, union_all
 from sqlalchemy.orm import Session, aliased, selectinload
 
 from ksc_api.config import Settings, get_settings
@@ -80,7 +80,7 @@ from ksc_api.repositories.filters import (
 from ksc_api.repositories.intelligence import IntelligenceReadsMixin
 from ksc_api.repositories.reader import ReaderReadsMixin
 from ksc_api.schemas.citation import CitationRead, IdentifierMatch, ResolveResult
-from ksc_api.schemas.common import Page
+from ksc_api.schemas.common import DirectoryPage, FacetCount, Page
 from ksc_api.schemas.records import (
     ArgumentRead,
     CaseRead,
@@ -158,6 +158,67 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
         self.case = case
 
     # ------------------------------------------------------------ helpers --
+    def _count(self, stmt: Select[Any]) -> int:
+        return int(
+            self.session.scalar(select(func.count()).select_from(stmt.order_by(None).subquery()))
+            or 0
+        )
+
+    def _facet_counts(
+        self, stmt: Select[Any], columns: dict[str, Any]
+    ) -> dict[str, list[FacetCount]]:
+        """Records per facet value among the rows matching the search text."""
+        ids = stmt.with_only_columns(stmt.selected_columns[0].table.c.id).order_by(None)
+        result: dict[str, list[FacetCount]] = {}
+        for key, column in columns.items():
+            table = stmt.selected_columns[0].table
+            rows = self.session.execute(
+                select(column, func.count())
+                .select_from(table)
+                .where(table.c.id.in_(ids), column.is_not(None), column != "")
+                .group_by(column)
+            ).all()
+            result[key] = [
+                FacetCount(value=str(value), count=int(count))
+                for value, count in sorted(rows, key=lambda row: (-row[1], str(row[0])))
+            ]
+        return result
+
+    def _directory_rows[T](
+        self,
+        stmt: Select[tuple[T]],
+        sort: str | None,
+        orders: dict[str, tuple[Any, ...]],
+        *,
+        default: tuple[Any, ...],
+        tiebreak: Any,
+        kind: EntityKind,
+        limit: int,
+        offset: int,
+    ) -> tuple[Sequence[T], int]:
+        """One page in a deterministic order. `references` ranks by the same
+        public reference counts the rows display, over the whole filtered set."""
+        key = (sort or "").removeprefix("-")
+        descending = sort is not None and sort.startswith("-")
+        if key == "references":
+            total = self._count(stmt)
+            everything = list(self.session.scalars(stmt.order_by(tiebreak)).all())
+            counts = self._counts(kind, [row.id for row in everything])  # type: ignore[attr-defined]
+
+            def refs(row: Any) -> int:
+                c = counts.get(row.id, mappers.ZERO_COUNTS)
+                return int(c.relationships + c.citations_resolved)
+
+            ordered = sorted(everything, key=refs, reverse=descending)
+            return ordered[offset : offset + limit], total
+        if key in orders:
+            first, *rest = orders[key]
+            first = first.desc().nulls_last() if descending else first.asc().nulls_last()
+            stmt = stmt.order_by(first, *rest)
+        else:
+            stmt = stmt.order_by(*default)
+        return self._paginate(stmt, limit, offset)
+
     def _paginate[T](
         self, stmt: Select[tuple[T]], limit: int, offset: int
     ) -> tuple[Sequence[T], int]:
@@ -342,25 +403,71 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
 
     # ---------------------------------------------------------- documents --
     def list_documents(
-        self, *, limit: int, offset: int, document_type: str | None = None, q: str | None = None
-    ) -> Page[DocumentSummary]:
-        stmt = (
-            select(Document)
-            .where(Document.case_id == self.case.id, public_visibility(Document.visibility))
-            .order_by(Document.filing_date.desc().nulls_last(), Document.official_ref)
-        )
+        self,
+        *,
+        limit: int,
+        offset: int,
+        document_type: str | None = None,
+        q: str | None = None,
+        sort: str | None = None,
+        facets: dict[str, list[str]] | None = None,
+    ) -> DirectoryPage[DocumentSummary]:
+        selected = dict(facets or {})
         if document_type:
-            stmt = stmt.where(Document.document_type == document_type)
-        if q:
-            stmt = stmt.where(
-                _ilike_any(q, Document.title, Document.official_ref, Document.filing_number)
+            selected["type"] = [*selected.get("type", []), document_type]
+        facet_columns: dict[str, Any] = {
+            "type": Document.document_type,
+            "language": Document.language,
+            "party": cast(Document.filing_party, String),
+        }
+        base = select(Document).where(
+            Document.case_id == self.case.id, public_visibility(Document.visibility)
+        )
+        searched = (
+            base.where(
+                _ilike_any(
+                    q,
+                    Document.official_ref,
+                    Document.filing_number,
+                    Document.title,
+                    Document.document_type,
+                    Document.language,
+                    cast(Document.filing_party, String),
+                    cast(Document.visibility, String),
+                )
             )
-        rows, total = self._paginate(stmt, limit, offset)
+            if q and q.strip()
+            else base
+        )
+        filtered = _with_facets(searched, facet_columns, selected)
+        date = func.coalesce(Document.filing_date, Document.document_date)
+        orders: dict[str, tuple[Any, ...]] = {
+            "id": (Document.official_ref,),
+            "title": (Document.title, Document.official_ref),
+            "date": (date, Document.official_ref),
+        }
+        rows, total = self._directory_rows(
+            filtered,
+            sort,
+            orders,
+            default=(Document.filing_date.desc().nulls_last(), Document.official_ref),
+            tiebreak=Document.official_ref,
+            kind=EntityKind.DOCUMENT,
+            limit=limit,
+            offset=offset,
+        )
         counts = self._counts(EntityKind.DOCUMENT, [d.id for d in rows])
         items = [
             mappers.to_document_summary(d, counts.get(d.id, mappers.ZERO_COUNTS)) for d in rows
         ]
-        return Page(items=items, total=total, limit=limit, offset=offset)
+        return DirectoryPage(
+            items=items,
+            total=total,
+            limit=limit,
+            offset=offset,
+            unfiltered_total=self._count(base),
+            facets=self._facet_counts(searched, facet_columns),
+        )
 
     def get_document(self, ref: str) -> DocumentDetail | None:
         """Any visibility: a not-public document is returned with no versions
@@ -638,20 +745,58 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
         return mappers.to_witness(witness, counts)
 
     # ----------------------------------------------------------- exhibits --
-    def list_exhibits(self, *, limit: int, offset: int) -> Page[ExhibitRead]:
-        stmt = (
-            select(Exhibit)
-            .options(
-                selectinload(Exhibit.through_witness),
-                selectinload(Exhibit.document_version),
-            )
-            .where(Exhibit.case_id == self.case.id, public_visibility(Exhibit.visibility))
-            .order_by(Exhibit.official_exhibit_id)
+    def list_exhibits(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        q: str | None = None,
+        sort: str | None = None,
+        facets: dict[str, list[str]] | None = None,
+    ) -> DirectoryPage[ExhibitRead]:
+        facet_columns: dict[str, Any] = {
+            "status": Exhibit.status,
+            "party": cast(Exhibit.tendered_by, String),
+        }
+        base = select(Exhibit).where(
+            Exhibit.case_id == self.case.id, public_visibility(Exhibit.visibility)
         )
-        rows, total = self._paginate(stmt, limit, offset)
+        searched = (
+            base.where(
+                _ilike_any(q, Exhibit.official_exhibit_id, Exhibit.title, Exhibit.description)
+            )
+            if q and q.strip()
+            else base
+        )
+        filtered = _with_facets(searched, facet_columns, facets or {})
+        date = func.coalesce(Exhibit.admitted_date, Exhibit.document_date)
+        orders: dict[str, tuple[Any, ...]] = {
+            "id": (Exhibit.official_exhibit_id,),
+            "title": (Exhibit.title, Exhibit.official_exhibit_id),
+            "date": (date, Exhibit.official_exhibit_id),
+        }
+        rows, total = self._directory_rows(
+            filtered.options(
+                selectinload(Exhibit.through_witness), selectinload(Exhibit.document_version)
+            ),
+            sort,
+            orders,
+            default=(Exhibit.official_exhibit_id,),
+            tiebreak=Exhibit.official_exhibit_id,
+            kind=EntityKind.EXHIBIT,
+            limit=limit,
+            offset=offset,
+        )
         counts = self._counts(EntityKind.EXHIBIT, [e.id for e in rows])
         items = [mappers.to_exhibit(e, counts.get(e.id, mappers.ZERO_COUNTS)) for e in rows]
-        return Page(items=items, total=total, limit=limit, offset=offset)
+        return DirectoryPage(
+            items=items,
+            total=total,
+            limit=limit,
+            offset=offset,
+            unfiltered_total=self._count(base),
+            facets=self._facet_counts(searched, facet_columns),
+        )
 
     def get_exhibit(self, official_exhibit_id: str) -> ExhibitRead | None:
         exhibit = self.session.scalar(
@@ -2229,6 +2374,15 @@ def _identifier_target(row: RecordIdentifier) -> uuid.UUID:
         if column is not None:
             return column
     raise AssertionError("record_identifiers CHECK guarantees exactly one target")
+
+
+def _with_facets[T](
+    stmt: Select[tuple[T]], columns: dict[str, Any], selected: dict[str, list[str]]
+) -> Select[tuple[T]]:
+    for key, values in selected.items():
+        if key in columns and values:
+            stmt = stmt.where(columns[key].in_(values))
+    return stmt
 
 
 def _ilike_any(q: str, *columns: Any) -> Any:

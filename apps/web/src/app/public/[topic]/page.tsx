@@ -6,16 +6,24 @@ export default async function Page({ params }: { params: Promise<{ topic: string
   const repository = getRepository();
   const [findings, documents, witnesses, people, exhibits, incidents] = await Promise.all([
     repository.getDirectory("findings"),
-    repository.getDirectory("documents"),
+    repository.queryDirectory("documents", { limit: 25, offset: 0 }),
     repository.getDirectory("witnesses"),
     repository.getDirectory("people"),
-    repository.getDirectory("exhibits"),
+    repository.queryDirectory("exhibits", { limit: 25, offset: 0 }),
     repository.getDirectory("incidents"),
   ]);
   return (
     <RealPublicScreen
       topic={topic}
-      rowsByKind={{ findings, documents, witnesses, people, exhibits, incidents }}
+      rowsByKind={{
+        findings,
+        documents: documents.rows,
+        witnesses,
+        people,
+        exhibits: exhibits.rows,
+        incidents,
+      }}
+      totals={{ documents: documents.unfilteredTotal, exhibits: exhibits.unfilteredTotal }}
     />
   );
 }

@@ -24,6 +24,7 @@ import type {
   PersonDossier,
   ResearchRepository,
   SearchResult,
+  ServerDirectoryKind,
   TimelineItem,
   WitnessAppearanceView,
   WitnessDossier,
@@ -37,6 +38,7 @@ import type {
   ApiArgumentLab,
   ApiAiRun,
   ApiAiRunSummary,
+  ApiDirectoryPage,
   ApiDocumentChunk,
   ApiDocumentDetail,
   ApiDocumentSummary,
@@ -99,8 +101,39 @@ export function createApiRepository(options: ApiClientOptions): ResearchReposito
         .filter((row): row is DirectoryRow => row !== null),
   };
 
+  const serverRows = {
+    documents: map.documentRow,
+    exhibits: map.exhibitRow,
+  } as const satisfies Record<ServerDirectoryKind, (item: never) => DirectoryRow>;
+
   return {
     getDirectory: (kind) => directories[kind](),
+
+    async queryDirectory(kind, query) {
+      const result = await client.get<ApiDirectoryPage<ApiDocumentSummary & ApiExhibit>>(
+        `/${kind}`,
+        {
+          q: query.q?.trim() || undefined,
+          sort: query.sort || undefined,
+          limit: query.limit,
+          offset: query.offset,
+          ...query.facets,
+        },
+      );
+      if (!result) return { rows: [], total: 0, unfilteredTotal: 0, facets: {} };
+      const toRow = serverRows[kind] as (item: ApiDocumentSummary & ApiExhibit) => DirectoryRow;
+      return {
+        rows: result.items.map(toRow),
+        total: result.total,
+        unfilteredTotal: result.unfiltered_total,
+        facets: Object.fromEntries(
+          Object.entries(result.facets).map(([key, values]) => [
+            key,
+            values.map(({ value, count }) => [value, count] as const),
+          ]),
+        ),
+      };
+    },
 
     async getPerson(slug: string): Promise<PersonDossier | null> {
       const person = await client.get<ApiPerson>(`/people/${encodeURIComponent(slug)}`);

@@ -295,3 +295,58 @@ def test_phase8_search_modes_filters_and_source_navigation(demo_client):
     assert all(
         "page=" in hit["target_path"] and "line=" in hit["target_path"] for hit in transcript
     )
+
+
+def _all_pages(demo_client, path: str, size: int) -> list[str]:
+    refs: list[str] = []
+    offset = 0
+    while True:
+        body = demo_client.get(f"{path}&limit={size}&offset={offset}").json()
+        refs += [item.get("official_ref") or item["official_exhibit_id"] for item in body["items"]]
+        offset += size
+        if offset >= body["total"]:
+            return refs
+
+
+@pytest.mark.parametrize("sort", ["id", "-id", "title", "-title", "date", "-date", "-references"])
+def test_document_directory_pages_are_stable_and_complete(demo_client, sort: str) -> None:
+    whole = demo_client.get(f"/api/v1/documents?sort={sort}&limit=200").json()
+    assert whole["total"] == whole["unfiltered_total"] == len(whole["items"])
+    paged = _all_pages(demo_client, f"/api/v1/documents?sort={sort}", 1)
+    assert paged == [item["official_ref"] for item in whole["items"]]
+
+
+def test_document_directory_filters_match_facet_counts(demo_client) -> None:
+    body = demo_client.get("/api/v1/documents?limit=200").json()
+    for key, field in (
+        ("type", "document_type"),
+        ("language", "language"),
+        ("party", "filing_party"),
+    ):
+        for facet in body["facets"][key]:
+            filtered = demo_client.get(f"/api/v1/documents?limit=200&{key}={facet['value']}").json()
+            assert filtered["total"] == facet["count"]
+            assert filtered["unfiltered_total"] == body["total"]
+            assert {str(item[field]) for item in filtered["items"]} == {facet["value"]}
+    ids = [item["official_ref"] for item in body["items"]]
+    reverse = demo_client.get("/api/v1/documents?limit=200&sort=-id").json()
+    assert [item["official_ref"] for item in reverse["items"]] == sorted(ids, reverse=True)
+
+
+def test_document_directory_search_scopes_totals_and_facets(demo_client) -> None:
+    body = demo_client.get("/api/v1/documents?limit=200&q=judgment").json()
+    assert 0 < body["total"] < body["unfiltered_total"]
+    assert sum(f["count"] for f in body["facets"]["type"]) == body["total"]
+    assert demo_client.get("/api/v1/documents?sort=bogus").status_code == 422
+
+
+def test_exhibit_directory_pages_filters_and_totals(demo_client) -> None:
+    whole = demo_client.get("/api/v1/exhibits?limit=200&sort=id").json()
+    assert whole["total"] == whole["unfiltered_total"] == len(whole["items"])
+    assert _all_pages(demo_client, "/api/v1/exhibits?sort=id", 1) == [
+        item["official_exhibit_id"] for item in whole["items"]
+    ]
+    for facet in whole["facets"]["status"]:
+        filtered = demo_client.get(f"/api/v1/exhibits?limit=200&status={facet['value']}").json()
+        assert filtered["total"] == facet["count"]
+        assert {item["status"] for item in filtered["items"]} == {facet["value"]}

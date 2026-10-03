@@ -152,6 +152,11 @@ export interface ApiPage<T> {
   offset: number;
 }
 
+export interface ApiDirectoryPage<T> extends ApiPage<T> {
+  unfiltered_total: number;
+  facets: Record<string, { value: string; count: number }[]>;
+}
+
 export interface ApiReferenceCounts {
   relationships: number;
   document_mentions: number;

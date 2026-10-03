@@ -31,7 +31,7 @@ import {
   type MockNetworkNode,
   type MockTimelineItem,
 } from "@/mock";
-import { DirectoryScreen } from "./DirectoryScreen";
+import { DirectoryScreen, type ServerDirectoryState } from "./DirectoryScreen";
 import { ActionLink, DemoNotice, ScreenHeader, TabStrip } from "./ScreenChrome";
 import {
   KeyValue,
@@ -50,11 +50,20 @@ export { AiResearchScreen, AppealScreen, ArgumentLabScreen, PublicScreen } from 
 
 export function EvidenceExplorerScreen({
   initialRows = [],
+  server,
 }: {
   initialRows?: readonly import("@/data").DirectoryRow[];
+  server?: ServerDirectoryState;
 }) {
   const t = useTranslations("screens");
-  return <DirectoryScreen kind="exhibits" screenTitle={t("exhibits")} initialRows={initialRows} />;
+  return (
+    <DirectoryScreen
+      kind="exhibits"
+      screenTitle={t("exhibits")}
+      initialRows={initialRows}
+      server={server}
+    />
+  );
 }
 
 // ------------------------------------------------------------ network -----

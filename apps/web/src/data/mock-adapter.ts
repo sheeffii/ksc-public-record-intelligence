@@ -1,6 +1,7 @@
 import type { MockRepository } from "@/mock/types";
 import { mockRepository } from "@/mock/repository";
 import type { ResearchRepository } from "./contract";
+import { queryRows } from "./directory-query";
 
 /** Explicit test/story/visual-QA adapter. Never the production default. */
 export function createMockRepositoryAdapter(
@@ -8,6 +9,7 @@ export function createMockRepositoryAdapter(
 ): ResearchRepository {
   return {
     getDirectory: async (kind) => source.getDirectory(kind),
+    queryDirectory: async (kind, query) => queryRows(source.getDirectory(kind), query),
     getPerson: async (slug) => source.getPerson(slug),
     getWitness: async (code) => ({
       witness: source.getWitness(code),

@@ -7,6 +7,7 @@ import { vi } from "vitest";
 export const navigationState = { pathname: "/" };
 export const routerRefresh = vi.fn();
 export const routerPush = vi.fn();
+export const routerReplace = vi.fn();
 
 export function mockPathname(pathname: string) {
   navigationState.pathname = pathname;
@@ -14,7 +15,12 @@ export function mockPathname(pathname: string) {
 
 vi.mock("next/navigation", () => ({
   usePathname: () => navigationState.pathname,
-  useRouter: () => ({ refresh: routerRefresh, push: routerPush, replace: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({
+    refresh: routerRefresh,
+    push: routerPush,
+    replace: routerReplace,
+    back: vi.fn(),
+  }),
   useSearchParams: () => new URLSearchParams(),
 }));
 

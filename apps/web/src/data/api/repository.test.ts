@@ -23,6 +23,36 @@ describe("ApiRepository", () => {
     }
   });
 
+  it("queries large directories one server-filtered page at a time", async () => {
+    const documents = routes["/documents"] as { items: unknown[] };
+    const stub = stubFetch({
+      ...routes,
+      "/documents": {
+        items: documents.items,
+        total: 7,
+        unfiltered_total: 3516,
+        limit: 25,
+        offset: 50,
+        facets: { type: [{ value: "judgment", count: 7 }], language: [] },
+      },
+    });
+    const repo = createApiRepository({ baseUrl: "http://api.test/", fetch: stub.fetchImpl });
+    const result = await repo.queryDirectory("documents", {
+      q: " ruling ",
+      sort: "-date",
+      facets: { type: ["judgment", "decision"], language: [] },
+      limit: 25,
+      offset: 50,
+    });
+    expect(stub.calls).toEqual([
+      "/documents?q=ruling&sort=-date&limit=25&offset=50&type=judgment&type=decision",
+    ]);
+    expect(result.total).toBe(7);
+    expect(result.unfilteredTotal).toBe(3516);
+    expect(result.rows.map((row) => row.kind)).toEqual(["documents"]);
+    expect(result.facets.type).toEqual([["judgment", 7]]);
+  });
+
   it("returns null for unknown records instead of inventing them", async () => {
     const { repo } = repository();
     expect(await repo.getPerson("nobody")).toBeNull();

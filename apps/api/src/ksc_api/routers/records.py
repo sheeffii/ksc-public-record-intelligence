@@ -16,7 +16,7 @@ from starlette.responses import StreamingResponse
 from ksc_api.models import EntityKind, Party, RelationshipType, VerificationState
 from ksc_api.repositories import RecordRepository, get_repository
 from ksc_api.schemas.citation import CitationRead, ResolveResult
-from ksc_api.schemas.common import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
+from ksc_api.schemas.common import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DirectoryPage, Page
 from ksc_api.schemas.records import (
     ArgumentRead,
     CaseRead,
@@ -69,15 +69,37 @@ def read_case(repo: Repo) -> CaseRead:
 
 
 # ------------------------------------------------------------- documents --
-@router.get("/documents", response_model=Page[DocumentSummary])
+DirectorySort = Annotated[
+    Literal["id", "-id", "title", "-title", "date", "-date", "references", "-references"] | None,
+    Query(),
+]
+FacetValues = Annotated[list[str] | None, Query()]
+
+
+def _facets(**values: list[str] | None) -> dict[str, list[str]]:
+    return {key: items for key, items in values.items() if items}
+
+
+@router.get("/documents", response_model=DirectoryPage[DocumentSummary])
 def list_documents(
     repo: Repo,
     limit: Limit = DEFAULT_PAGE_SIZE,
     offset: Offset = 0,
     document_type: str | None = None,
     q: str | None = None,
-) -> Page[DocumentSummary]:
-    return repo.list_documents(limit=limit, offset=offset, document_type=document_type, q=q)
+    sort: DirectorySort = None,
+    type_: Annotated[list[str] | None, Query(alias="type")] = None,
+    language: FacetValues = None,
+    party: FacetValues = None,
+) -> DirectoryPage[DocumentSummary]:
+    return repo.list_documents(
+        limit=limit,
+        offset=offset,
+        document_type=document_type,
+        q=q,
+        sort=sort,
+        facets=_facets(type=type_, language=language, party=party),
+    )
 
 
 @router.get("/documents/{ref:path}", response_model=DocumentDetail)
@@ -336,11 +358,19 @@ def read_witness(code: str, repo: Repo) -> WitnessRead:
 
 
 # -------------------------------------------------------------- exhibits --
-@router.get("/exhibits", response_model=Page[ExhibitRead])
+@router.get("/exhibits", response_model=DirectoryPage[ExhibitRead])
 def list_exhibits(
-    repo: Repo, limit: Limit = DEFAULT_PAGE_SIZE, offset: Offset = 0
-) -> Page[ExhibitRead]:
-    return repo.list_exhibits(limit=limit, offset=offset)
+    repo: Repo,
+    limit: Limit = DEFAULT_PAGE_SIZE,
+    offset: Offset = 0,
+    q: str | None = None,
+    sort: DirectorySort = None,
+    status: FacetValues = None,
+    party: FacetValues = None,
+) -> DirectoryPage[ExhibitRead]:
+    return repo.list_exhibits(
+        limit=limit, offset=offset, q=q, sort=sort, facets=_facets(status=status, party=party)
+    )
 
 
 @router.get("/exhibits/{exhibit_id}", response_model=ExhibitRead)

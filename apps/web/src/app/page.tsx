@@ -48,11 +48,13 @@ async function getIngestionSummary(): Promise<IngestionSummary | null> {
 const getHomeData = unstable_cache(
   async () => {
     const repository = getRepository();
+    // The large directories are asked for their totals and a few recent rows,
+    // never their full contents.
     const [documents, people, witnesses, exhibits, findings, ingestion] = await Promise.all([
-      repository.getDirectory("documents"),
+      repository.queryDirectory("documents", { sort: "-date", limit: 10, offset: 0 }),
       repository.getDirectory("people"),
       repository.getDirectory("witnesses"),
-      repository.getDirectory("exhibits"),
+      repository.queryDirectory("exhibits", { limit: 1, offset: 0 }),
       repository.getDirectory("findings"),
       getIngestionSummary(),
     ]);
@@ -73,7 +75,12 @@ export default async function HomePage() {
   ]);
   const { documents, people, witnesses, exhibits, findings, ingestion } = await getHomeData();
   const corpusStats = [
-    { key: "documents", label: tNav("documents"), value: documents.length, href: "/documents" },
+    {
+      key: "documents",
+      label: tNav("documents"),
+      value: documents.unfilteredTotal,
+      href: "/documents",
+    },
     { key: "pages", label: t18("parsedPages"), value: ingestion?.pages_parsed, href: "/documents" },
     {
       key: "segments",
@@ -83,7 +90,12 @@ export default async function HomePage() {
     },
     { key: "people", label: tNav("people"), value: people.length, href: "/people" },
     { key: "witnesses", label: tNav("witnesses"), value: witnesses.length, href: "/witnesses" },
-    { key: "exhibits", label: tNav("exhibits"), value: exhibits.length, href: "/exhibits" },
+    {
+      key: "exhibits",
+      label: tNav("exhibits"),
+      value: exhibits.unfilteredTotal,
+      href: "/exhibits",
+    },
     {
       key: "citations",
       label: t18("resolvedCitations"),
@@ -91,7 +103,7 @@ export default async function HomePage() {
       href: "/search",
     },
   ] as const;
-  const recentDocuments = [...documents]
+  const recentDocuments = [...documents.rows]
     .filter((row) => row.date !== "—")
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 5);
@@ -250,7 +262,7 @@ export default async function HomePage() {
                 <span className="text-fg ml-2 text-[11px]">{row.title}</span>
               </Link>
             ))}
-            {!documents.length ? (
+            {!documents.unfilteredTotal ? (
               <p className="text-fg-secondary text-[11px]">{t15("empty.documents")}</p>
             ) : null}
           </Panel>

@@ -4,7 +4,7 @@ import type { VerificationState } from "@ksc/shared";
 import type { MockDirectory, MockDirectoryRow } from "@/mock";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DataTable,
   DensityToggle,
@@ -35,6 +35,17 @@ const STATES: readonly VerificationState[] = [
 ];
 const PAGE_SIZES = [10, 25, 50] as const;
 
+/** One API-filtered page and the URL state it was produced from. */
+export interface ServerDirectoryState {
+  readonly q: string;
+  readonly sort: string;
+  readonly page: number;
+  readonly pageSize: number;
+  readonly total: number;
+  readonly unfilteredTotal: number;
+  readonly facets: Readonly<Record<string, readonly (readonly [string, number])[]>>;
+}
+
 /**
  * Dense table workspace (PAGE_SPECS §10 and the five directory routes built
  * from it): toolbar with counts, search, filters, active chips, density and
@@ -44,10 +55,13 @@ export function DirectoryScreen({
   kind,
   screenTitle,
   initialRows = [],
+  server,
 }: {
   kind: MockDirectory;
   screenTitle: string;
   initialRows?: readonly MockDirectoryRow[];
+  /** Rows are one page already searched, filtered and sorted by the API. */
+  server?: ServerDirectoryState;
 }) {
   const t = useTranslations("phase5");
   const tb = useTranslations("phase5b");
@@ -58,9 +72,9 @@ export function DirectoryScreen({
   const tp = useTranslations("personDossier");
   const router = useRouter();
   const t21 = useTranslations("phase21");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(server?.q ?? "");
   const [density, setDensity] = useState<Density>("compact");
-  const [sortBy, setSortBy] = useState(kind === "findings" ? "id" : "title");
+  const [sortBy, setSortBy] = useState(server?.sort || (kind === "findings" ? "id" : "title"));
   const [states, setStates] = useState<Set<VerificationState>>(new Set());
   const [protectedOnly, setProtectedOnly] = useState(false);
   const tf = useTranslations("directoryFacets");
@@ -80,6 +94,7 @@ export function DirectoryScreen({
   function updateFacets(next: Record<string, string[]>) {
     setFacetFilters(next);
     setPage(1);
+    if (server) return;
     const params = new URLSearchParams();
     for (const [key, values] of Object.entries(next)) {
       for (const value of values) params.append(key, value);
@@ -106,13 +121,45 @@ export function DirectoryScreen({
     const text = value.replaceAll("_", " ");
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState(server?.page ?? 1);
+  const [pageSize, setPageSize] = useState<number>(server?.pageSize ?? 10);
+  // Server mode: the URL is the state; the page re-renders with that API page.
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+  useEffect(() => {
+    if (!server) return;
+    const params = new URLSearchParams();
+    if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
+    params.set("sort", sortBy);
+    if (page > 1) params.set("page", String(page));
+    if (pageSize !== 10) params.set("size", String(pageSize));
+    for (const [key, values] of Object.entries(facetFilters)) {
+      for (const value of values) params.append(key, value);
+    }
+    const next = params.toString();
+    if (next !== (searchParams?.toString() ?? "")) {
+      router.replace(`${pathname}?${next}`, { scroll: false });
+    }
+  }, [
+    server,
+    debouncedQuery,
+    sortBy,
+    page,
+    pageSize,
+    facetFilters,
+    pathname,
+    router,
+    searchParams,
+  ]);
   const [selectedId, setSelectedId] = useState<string>();
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
 
   const all = useMemo(() => initialRows, [initialRows]);
   const rows = useMemo(() => {
+    if (server) return all;
     const needle = query.trim().toLowerCase();
     const filtered = all.filter(
       (row) =>
@@ -134,10 +181,15 @@ export function DirectoryScreen({
           : String(av ?? "").localeCompare(String(bv ?? ""));
       return cmp * (descending ? -1 : 1);
     });
-  }, [all, query, states, protectedOnly, sortBy, facetFilters]);
+  }, [all, server, query, states, protectedOnly, sortBy, facetFilters]);
   // Counts per facet value over the rows matching the search box: a count of
   // records, never a ranking.
   const facetOptions = useMemo(() => {
+    if (server) {
+      return FACET_ORDER.map((key) => ({ key, values: [...(server.facets[key] ?? [])] })).filter(
+        (facet) => facet.values.length > 1 || (facetFilters[facet.key]?.length ?? 0) > 0,
+      );
+    }
     const needle = query.trim().toLowerCase();
     const base = all.filter(
       (row) =>
@@ -154,10 +206,19 @@ export function DirectoryScreen({
         values: [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
       };
     }).filter((facet) => facet.values.length > 1 || (facetFilters[facet.key]?.length ?? 0) > 0);
-  }, [all, query, facetFilters]);
-  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+  }, [all, server, query, facetFilters]);
+  // Server mode: the rows are already this page; verification is "unreviewed"
+  // for every document and exhibit row, so another state selects nothing.
+  const serverExcluded = Boolean(server && states.size > 0 && !states.has("unreviewed"));
+  const filteredTotal = server ? (serverExcluded ? 0 : server.total) : rows.length;
+  const corpusTotal = server ? server.unfilteredTotal : all.length;
+  const pageCount = Math.max(1, Math.ceil(filteredTotal / pageSize));
   const current = Math.min(page, pageCount);
-  const visible = rows.slice((current - 1) * pageSize, current * pageSize);
+  const visible = server
+    ? serverExcluded
+      ? []
+      : rows
+    : rows.slice((current - 1) * pageSize, current * pageSize);
   const selected = rows.find((r) => r.id === selectedId) ?? visible[0];
   const activeFilters = [
     ...[...states].map((s) => ({ id: `state:${s}`, label: `${tb("verification")}: ${s}` })),
@@ -372,13 +433,13 @@ export function DirectoryScreen({
             <div className="flex items-baseline gap-2">
               <h1 className="text-fg text-[19px] font-bold tracking-[-0.02em]">{screenTitle}</h1>
               <span className="text-fg-secondary tabular text-[10.5px]">
-                {t21("corpusCount", { count: all.length })}
+                {t21("corpusCount", { count: corpusTotal })}
               </span>
               <span className="sr-only">
                 {tb("rowsShown", {
-                  from: rows.length ? (current - 1) * pageSize + 1 : 0,
-                  to: Math.min(current * pageSize, rows.length),
-                  total: rows.length,
+                  from: filteredTotal ? (current - 1) * pageSize + 1 : 0,
+                  to: Math.min(current * pageSize, filteredTotal),
+                  total: filteredTotal,
                 })}
               </span>
             </div>
@@ -549,9 +610,9 @@ export function DirectoryScreen({
                 prevLabel={tb("prevPage")}
                 nextLabel={tb("nextPage")}
                 summary={tb("rowsShown", {
-                  from: rows.length ? (current - 1) * pageSize + 1 : 0,
-                  to: Math.min(current * pageSize, rows.length),
-                  total: rows.length,
+                  from: filteredTotal ? (current - 1) * pageSize + 1 : 0,
+                  to: Math.min(current * pageSize, filteredTotal),
+                  total: filteredTotal,
                 })}
               />
               <p className="governance-text border-border-faint border-t px-3 py-1.5">
@@ -722,9 +783,9 @@ export function DirectoryScreen({
         description={
           <span className="tabular">
             {tb("rowsShown", {
-              from: rows.length ? (current - 1) * pageSize + 1 : 0,
-              to: Math.min(current * pageSize, rows.length),
-              total: rows.length,
+              from: filteredTotal ? (current - 1) * pageSize + 1 : 0,
+              to: Math.min(current * pageSize, filteredTotal),
+              total: filteredTotal,
             })}
           </span>
         }
@@ -816,7 +877,13 @@ export function DirectoryScreen({
               <FilterOption
                 key={s}
                 label={s}
-                count={all.filter((r) => r.verification === s).length}
+                count={
+                  server
+                    ? s === "unreviewed"
+                      ? server.unfilteredTotal
+                      : 0
+                    : all.filter((r) => r.verification === s).length
+                }
                 checked={states.has(s)}
                 onChange={(checked) => {
                   setStates((prev) => {
@@ -897,9 +964,9 @@ export function DirectoryScreen({
               prevLabel={tb("prevPage")}
               nextLabel={tb("nextPage")}
               summary={tb("rowsShown", {
-                from: rows.length ? (current - 1) * pageSize + 1 : 0,
-                to: Math.min(current * pageSize, rows.length),
-                total: rows.length,
+                from: filteredTotal ? (current - 1) * pageSize + 1 : 0,
+                to: Math.min(current * pageSize, filteredTotal),
+                total: filteredTotal,
               })}
             />
           </Panel>

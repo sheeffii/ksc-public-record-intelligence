@@ -30,11 +30,13 @@ export class ApiClient {
   /** GET and decode JSON; `null` on 404, `ApiError` on any other failure. */
   async get<T>(
     path: string,
-    params?: Record<string, string | number | undefined>,
+    params?: Record<string, string | number | readonly string[] | undefined>,
   ): Promise<T | null> {
     const url = new URL(`${this.baseUrl}/api/v1${path}`);
     for (const [key, value] of Object.entries(params ?? {})) {
-      if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
+      if (Array.isArray(value)) {
+        for (const item of value) url.searchParams.append(key, item);
+      } else if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
     }
     const response = await this.fetchImpl(url.toString(), {
       headers: { accept: "application/json" },

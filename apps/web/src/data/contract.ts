@@ -31,6 +31,29 @@ import type {
 
 export type DirectoryKind = MockDirectory;
 export type DirectoryRow = MockDirectoryRow;
+
+/** Directories large enough to be searched, filtered, sorted and paged by the API. */
+export type ServerDirectoryKind = "documents" | "exhibits";
+export const SERVER_DIRECTORIES: readonly ServerDirectoryKind[] = ["documents", "exhibits"];
+
+export interface DirectoryQuery {
+  readonly q?: string;
+  /** A column key, `-` prefixed for descending. */
+  readonly sort?: string;
+  readonly facets?: Readonly<Record<string, readonly string[]>>;
+  readonly limit: number;
+  readonly offset: number;
+}
+
+export interface DirectoryResult {
+  readonly rows: readonly DirectoryRow[];
+  /** Rows matching every filter. */
+  readonly total: number;
+  /** The whole public directory. */
+  readonly unfilteredTotal: number;
+  /** Records per facet value among rows matching the search text (counts, never ranks). */
+  readonly facets: Readonly<Record<string, readonly (readonly [string, number])[]>>;
+}
 export type PersonDossier = MockPerson;
 export interface WitnessDossier {
   witness: Witness;
@@ -569,6 +592,7 @@ export interface ArgumentLabView {
 
 export interface ResearchRepository {
   getDirectory(kind: DirectoryKind): Promise<readonly DirectoryRow[]>;
+  queryDirectory(kind: ServerDirectoryKind, query: DirectoryQuery): Promise<DirectoryResult>;
   getPerson(slug: string): Promise<PersonDossier | null>;
   getWitness(code: string): Promise<WitnessDossier | null>;
   getOrganization(slug: string): Promise<OrganizationDossier | null>;
