@@ -5,9 +5,8 @@ This report covers 23A–23C. The 23A pilot report the roadmap asked for was
 never written separately; its numbers are in `MEMORY.md` and are summarised
 here.
 
-**Result: NOT READY for `phase-23-complete`.** Reconciliation, integrity and
-the repository gates pass. Three acceptance items stay open (see "Open
-issues").
+**Result: COMPLETE (2026-10-03).** Every Phase 23 acceptance check passes;
+annotated tag `phase-23-complete`.
 
 ## Acquisition (23A–23B)
 
@@ -70,27 +69,28 @@ which the legal-matrix projection re-points (it writes no other column).
 
 ## Gates
 
-| Gate                              | Result                                                        |
-| --------------------------------- | ------------------------------------------------------------- |
-| `make lint`                       | pass                                                          |
-| `make typecheck`                  | pass                                                          |
-| `make test`                       | pass — 408 backend, 272 frontend                              |
-| `gate-phase17c` (structured)      | pass                                                          |
-| `gate-phase19a` (mentions)        | pass — 0 provenance violations, 0 dedup conflicts             |
-| `gate-phase13` (real scale)       | pass — 4,160 accepted, integrity/performance/completion ready |
-| `gate-phase14` (external sources) | pass                                                          |
-| `gate-appeal`                     | pass                                                          |
-| `gate-findings` (Phase 10)        | **fail** — see open issue 1                                   |
-| `gate-ai` (Phase 11)              | **fail** — see open issue 2                                   |
+| Gate                              | Result                                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `make lint`                       | pass                                                                                                          |
+| `make typecheck`                  | pass                                                                                                          |
+| `make test`                       | pass — 424 backend, 278 frontend                                                                              |
+| `gate-findings` (Phase 10)        | pass — benchmark version pinned, finding anchor resolved, 0 unsupported findings, exact paragraph mapping 1/1 |
+| `gate-ai` (Phase 11)              | pass — 4/4 cases, 1 correct abstention                                                                        |
+| `gate-phase17c` (structured)      | pass                                                                                                          |
+| `gate-phase19a` (mentions)        | pass — 0 provenance violations, 0 dedup conflicts                                                             |
+| `gate-phase13` (real scale)       | pass — 4,160 accepted, integrity/performance/completion ready                                                 |
+| `gate-phase14` (external sources) | pass                                                                                                          |
+| `gate-appeal`                     | pass                                                                                                          |
 
 ## Scale
 
-API, warm (live stack): `/documents` 0.8 s (50 rows; total 3,516), `/people`,
-`/witnesses` 0.4–0.5 s (200 rows), `/events` 0.1–0.2 s (200 rows; total
-3,757), `/search` 0.1–0.6 s, `/network?limit=500` 0.5 s. API totals equal the
-per-case database counts for documents, people, witnesses, exhibits, events
-and organisations. Web: `/timeline` 2.5 s, `/documents` 5.2 s, both showing
-the same totals.
+API (rebuilt stack, warm): `/documents` 0.3 s for a 10-row page of 3,516,
+filtered 0.26 s; `/exhibits` 0.16 s; the reference-count sort over the whole
+filtered set 1.1–1.5 s. Web: `/documents` 0.12 s (was 5.2 s), filtered and
+deep pages 0.15–0.16 s, `/exhibits` 0.11 s, home 0.05 s, `/public` 0.9–1.2 s,
+`/timeline` 1.8 s, `/search` 0.2 s, `/people` 0.4 s, `/witnesses` 0.7 s. API
+totals equal the per-case database counts, and the web shows the same totals
+(for example "3516 records · 1–10 of 125" for a filtered documents view).
 
 ## Fixes made during 23C
 
@@ -105,25 +105,37 @@ the same totals.
   lint gate on `main`, migration-head assertions stuck at `0017`, and tests
   that left demo-case state behind in the persistent test database.
 
-## Open issues (block the tag)
+- `0415cb5` — findings gate checks the benchmark, not corpus size; migration
+  0021 aligns the benchmark finding text (audited).
+- `afc5de9`, `4345993` — AI retrieval prefers a held party filing over the
+  Court's summary of it; evaluation and unit expectations updated.
+- `6b6e63b` — server-side directory search, filters, sorting and paging.
 
-1. **Findings gate.** It requires the held corpus to equal the 22-version
-   Phase 7 manifest, which corpus expansion breaks by design. Separately, the
-   hand-verified text of finding `FD-F03752-P12-16` includes the heading
-   "B. THIRD AMENDMENT", which parser v4 (2026-09-28, before Phase 23) now
-   keeps out of the paragraph text, so the exact paragraph mapping is 0/1.
-   Needs an owner decision on the pinned-corpus criterion and on how the
-   finding text maps to v4 paragraphs.
-2. **AI gate.** Two of three expected abstentions now answer: F03743 and
-   F03746 were acquired in Phase 23, so "missing filing" no longer applies.
-   The answers are grounded and correctly labelled (citation, category and
-   quote accuracy 1.0) but come from the Court's summary of each party's
-   position in F03752, not from the newly held filings. The evaluation set
-   needs new expectations, and retrieval should prefer the requested filing's
-   own text.
-3. **Directory scale.** Web directories load every row (18 sequential requests
-   for documents) and filter in the browser. Usable at 3,516 documents
-   (5.2 s) but this is the server-driven directory work the 23B plan asked for.
+## Closeout decisions (2026-10-03)
+
+1. **Findings gate.** It no longer requires the corpus to equal the 22-version
+   Phase 7 set. It checks that each benchmark finding's judgment version is held
+   with exactly the pinned bytes, that its finding anchor lies on that version,
+   that no unrecognised findings exist, and the existing evidence, party and
+   Court checks. Migration 0021 aligned `FD-F03752-P12-16`'s text with parsed
+   paragraphs 12–16 (the heading "B. THIRD AMENDMENT" stays a
+   `document_sections` heading); verification state, reviewer and date are
+   unchanged and the old text is in the audit log. Only unheld summarised
+   filings are reported missing.
+2. **AI gate.** A question naming a held filing retrieves that filing's own
+   text first, labelled by its party (from the document or a human-verified
+   Court summary naming it as the party's filing). The Court's summary in
+   F03752 stays a separate, lower-ranked source and never answers alone. The
+   two evaluation cases now expect answers from F03743 (Defence) and F03746
+   (SPO). Citable versions are any fetched version of the case, with pinned
+   versions still held to their pinned bytes.
+3. **Directory scale.** `/documents` and `/exhibits` search, filter, sort and
+   page on the server with exact totals and facet counts. The web keeps the
+   view in the URL; home and public pages ask only for totals and first rows.
+   CSV export covers the visible page in these two directories.
 
 Also open, not blocking: `process-new` does not run transcript sync, so new
-transcripts need `project-transcript-sync` until it does.
+transcripts need `project-transcript-sync`; a full geometry run clears
+legal-matrix anchors, so run `project-legal-matrix` after it. The appeal
+workspace's human-curated missing-material list still names F03746, which is
+now held, for human review.

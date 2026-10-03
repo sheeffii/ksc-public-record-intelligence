@@ -7,12 +7,11 @@ Live checkpoint. Repository state wins over this note.
 - Current branch: `main`.
 - Current branch for Phase 23 closeout: `feat/phase-23-closeout` (from
   `main` `78b192c`; not pushed, not merged).
-- Current milestone: **Phase 23 IN PROGRESS; 23C reconciled, gates pass, NOT
-  tagged.** Legal Tools acquisition is exhausted (5,049/5,049 mirror records).
-  **Next action:** owner decisions on the three open issues in
-  `docs/ingestion/PHASE23_CLOSEOUT_REPORT.md` (Phase 10 findings gate, Phase 11
-  AI gate expectations, server-driven directories); do not create
-  `phase-23-complete` until they are resolved. The
+- Current milestone: **Phase 23 COMPLETE** at annotated tag
+  `phase-23-complete` on `feat/phase-23-closeout` (not pushed, not merged into
+  `main`). Legal Tools acquisition is exhausted (5,049/5,049 mirror records).
+  **Next action:** owner decides on pushing the branch/tag and merging into
+  `main`; do not start a new phase automatically. The
   Phase 23
   roadmap is `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
   It integrates the permitted Legal Tools byte-mirror path, closes concrete
@@ -75,7 +74,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0020`.
+- Migration head and live database revision: `0021`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -192,6 +191,21 @@ Live checkpoint. Repository state wins over this note.
   none), 0 duplicate anchor keys, 0 relationship anchors off their evidence
   version, all 87,509 out-of-scope anchors byte-identical. Corpus: 448,475
   anchors, 351,147 spans.
+
+### Phase 23 complete (2026-10-03)
+
+- Findings gate checks the benchmark (pinned bytes, finding anchor, no
+  unrecognised findings) instead of corpus size; migration 0021 aligned
+  `FD-F03752-P12-16` with parsed paragraphs (audited, review status kept).
+- AI: a question naming a held filing answers from that filing first, party
+  attribution from the document or a human-verified Court summary; Court
+  summaries are secondary and never answer alone. Evaluation now expects
+  answers for F03743 (Defence) and F03746 (SPO).
+- Directories: `/documents` and `/exhibits` support `q`, `sort`, facet params
+  and return `unfiltered_total` + `facets`; web state lives in the URL. CSV
+  export covers the visible page for these two.
+- Gates: all Phase 23 acceptance gates pass; 424 backend + 278 frontend tests.
+- Containers `api` and `web` were rebuilt from this branch for verification.
 
 ### Phase 23C closeout checkpoint (2026-10-02)
 

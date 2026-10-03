@@ -3,34 +3,34 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-10-02 (Phase 23C closeout checkpoint)
+Last updated: 2026-10-03 (Phase 23 complete)
 
 ## Milestones
 
-| Phase  | Scope                                                                                                     | Status                                                                                                   |
-| ------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| 1–3    | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                               |
-| **4**  | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                                             |
-| **5**  | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B)                |
-| **6**  | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                                             |
-| **5B** | **UI/UX visual parity remediation against `docs/design/Design.html`**                                     | ✅ **Complete (2026-09-20)**                                                                             |
-| **7**  | **KSC public record discovery + controlled document ingestion (first real KSC data)**                     | ✅ **Complete (2026-09-20)** — 22 real public records, quality gate 22/22, idempotent (ADR-011, ADR-012) |
-| **8**  | **Parsing, exact citations, resolution index, search**                                                    | ✅ **Complete (2026-09-20)** — controlled-corpus quality gate PASS (ADR-013)                             |
-| **9**  | **Real evidence network and timeline**                                                                    | ✅ **Complete (2026-09-21)** — controlled-corpus quality gate PASS (ADR-014)                             |
-| **10** | **Judgment, findings and evidence matrix**                                                                | ✅ **Complete (2026-09-21)** — real Court-decision quality gate PASS (ADR-015)                           |
-| **11** | **Citation-first AI / RAG**                                                                               | ✅ **Complete (2026-09-21)** — real-corpus AI quality gate PASS (ADR-016)                                |
-| **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                            |
-| **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                    |
-| **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                         |
-| **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                           |
-| **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred            |
-| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                     |
-| **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                 |
-| **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                        |
-| **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                   |
-| **21** | **Design parity and research UX**                                                                         | ✅ **COMPLETE (2026-09-27)** — tag `phase-21-complete`                                                   |
-| **22** | **Evidence Matrix, Witness Comparison & Legal Issue Intelligence**                                        | ✅ **COMPLETE (2026-09-27)** — tag `phase-22-complete`                                                   |
-| **23** | **Corpus Expansion & Research Coverage**                                                                  | **IN PROGRESS (2026-10-02)** — 23A–23B done; 23C reconciled, gates pass, 3 open issues block the tag     |
+| Phase  | Scope                                                                                                     | Status                                                                                                                   |
+| ------ | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 1–3    | Product definition, design system, 21-artboard UX package, flow audit                                     | ✅ Delivered (docs/design)                                                                                               |
+| **4**  | **Engineering foundation** — monorepo, shell, tokens, i18n, theme infra, API, DB, Docker, tests, CI, docs | ✅ **Complete (2026-09-19)**                                                                                             |
+| **5**  | **Implement approved UI with mock data (all 21 screens + 5 directories, DemoDataFlag everywhere)**        | ✅ **Functionally complete (2026-09-19)** — visual parity: remediation pending (Phase 5B)                                |
+| **6**  | **Real database / evidence model and API-backed repository contracts**                                    | ✅ **Complete (2026-09-20)**                                                                                             |
+| **5B** | **UI/UX visual parity remediation against `docs/design/Design.html`**                                     | ✅ **Complete (2026-09-20)**                                                                                             |
+| **7**  | **KSC public record discovery + controlled document ingestion (first real KSC data)**                     | ✅ **Complete (2026-09-20)** — 22 real public records, quality gate 22/22, idempotent (ADR-011, ADR-012)                 |
+| **8**  | **Parsing, exact citations, resolution index, search**                                                    | ✅ **Complete (2026-09-20)** — controlled-corpus quality gate PASS (ADR-013)                                             |
+| **9**  | **Real evidence network and timeline**                                                                    | ✅ **Complete (2026-09-21)** — controlled-corpus quality gate PASS (ADR-014)                                             |
+| **10** | **Judgment, findings and evidence matrix**                                                                | ✅ **Complete (2026-09-21)** — real Court-decision quality gate PASS (ADR-015)                                           |
+| **11** | **Citation-first AI / RAG**                                                                               | ✅ **Complete (2026-09-21)** — real-corpus AI quality gate PASS (ADR-016)                                                |
+| **12** | **Appeal research, red team and statement comparison**                                                    | ✅ **Complete (2026-09-21)** — real-corpus appeal quality gate PASS (ADR-017)                                            |
+| **13** | **Gradual full public corpus ingestion and production hardening**                                         | ✅ **Complete (2026-09-22)** — real-scale gate PASS 61/50 (ADR-018, ADR-019, ADR-020)                                    |
+| **14** | **External media and public statements intelligence**                                                     | ✅ **Complete (2026-09-22)** — controlled real-public-source gate PASS (ADR-021)                                         |
+| **15** | **Real data UI completion and demo removal**                                                              | ✅ **Complete (2026-09-22)** — route-level real-data gate PASS                                                           |
+| **16** | **Production readiness, security and lawyer beta**                                                        | **IN PROGRESS** — local gates pass; external deployment/alerting gates intentionally deferred                            |
+| **17** | **Historical corpus expansion, coverage and continuous sync**                                             | ✅ **COMPLETE (2026-09-24)** — known-public-corpus scope; no exhaustive-corpus claim                                     |
+| **18** | **Research experience and visual excellence**                                                             | ✅ **COMPLETE (2026-09-24)** — research experience acceptance audit PASS                                                 |
+| **19** | **Corpus depth and verified entity intelligence**                                                         | ✅ **COMPLETE (2026-09-25)** — tag `phase-19-complete`; known-public-corpus scope                                        |
+| **20** | **Source-native intelligent PDF and transcript Reader**                                                   | ✅ **COMPLETE (2026-09-25)** — tag `phase-20-complete`; 20C source-fidelity audit PASS                                   |
+| **21** | **Design parity and research UX**                                                                         | ✅ **COMPLETE (2026-09-27)** — tag `phase-21-complete`                                                                   |
+| **22** | **Evidence Matrix, Witness Comparison & Legal Issue Intelligence**                                        | ✅ **COMPLETE (2026-09-27)** — tag `phase-22-complete`                                                                   |
+| **23** | **Corpus Expansion & Research Coverage**                                                                  | **COMPLETE (2026-10-03)** — tag `phase-23-complete`; Legal Tools acquisition exhausted; 3,516 documents / 4,160 versions |
 
 ## Roadmap
 
@@ -68,9 +68,24 @@ Phase 21 is merged into synchronized `main` at `f25cfe0`. Phase 22 is
 deterministic AI relevance gate resolves the final fail-closed blocker. The
 Reader/Timeline parity follow-up is also merged. Phase 23 is **IN PROGRESS**
 (work continued on `main`): the 23A pilot and the 23B staged expansion are done
-and Legal Tools acquisition is exhausted. 23C ran on `feat/phase-23-closeout`;
-three open issues block the closeout tag.
+and Legal Tools acquisition is exhausted. Phase 23 is **COMPLETE** on
+`feat/phase-23-closeout` at tag `phase-23-complete` (not yet pushed or merged).
 Repository code, migrations, tests and Git state win over stale roadmap text.
+
+### Phase 23 complete (2026-10-03)
+
+- The three closeout blockers are resolved: the Phase 10 findings gate checks
+  the benchmark rather than corpus size (migration 0021 aligns the benchmark
+  finding text, audited); AI retrieval answers from a held party filing before
+  the Court's summary of it; `/documents` and `/exhibits` are searched,
+  filtered, sorted and paged on the server (web documents page 5.2 s → 0.12 s).
+- All Phase 23 acceptance gates pass (findings, AI, structured, mentions,
+  real-scale, external-source, appeal); `make lint`, `make typecheck`,
+  `make test` (424 backend, 278 frontend) pass.
+- Integrity: 4,160/4,160 versions parsed; 0 missing geometry; 678,936 anchors,
+  0 duplicate keys, 0 anchors off their evidence version; 0 AI-originated
+  relationships or findings; all 60 ingestion jobs completed.
+- Report: `docs/ingestion/PHASE23_CLOSEOUT_REPORT.md`.
 
 ### Phase 23C closeout checkpoint (2026-10-02)
 
