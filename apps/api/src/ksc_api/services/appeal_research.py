@@ -243,10 +243,9 @@ class AppealResearchService:
         issues = [f"{unresolved} citation(s) do not resolve."] if unresolved else []
         if unverified_sources:
             issues.append(f"{unverified_sources} source relationship(s) are not human verified.")
-        issues.extend(
-            f"Missing source: {item.reference}. {item.reason}" for item in issue.missing_material
-        )
-        ready = not unresolved and not unverified_sources and not issue.missing_material
+        still_missing = [item for item in issue.missing_material if item.state != "resolved"]
+        issues.extend(f"Missing source: {item.reference}. {item.reason}" for item in still_missing)
+        ready = not unresolved and not unverified_sources and not still_missing
         return CitationAuditRead(
             citations_total=len(unique),
             citations_resolved=len(unique) - unresolved,

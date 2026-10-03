@@ -58,6 +58,7 @@ class Phase10QualityReport:
     unsupported_relied_upon_labels: int
     party_positions: int
     party_positions_by_party: dict[str, int]
+    direct_party_positions: int
     court_responses: int
     human_verified_relationships: int
     unresolved_linked_citations: int
@@ -186,10 +187,24 @@ def run_phase10_gate(
     party_arguments = [
         argument for argument in arguments if argument.party.value in {"spo", "defence"}
     ]
+    # The benchmark's Court summaries of each party stay exactly as reviewed;
+    # direct-source positions from the parties' own filings may sit beside them.
     party_counts = {
-        party: sum(argument.party.value == party for argument in party_arguments)
+        party: sum(
+            argument.party.value == party and argument.source_scope != "direct_source"
+            for argument in party_arguments
+        )
         for party in ("spo", "defence")
     }
+    direct_positions = [a for a in party_arguments if a.source_scope == "direct_source"]
+    direct_positions_own_source = sum(
+        argument.citation is not None
+        and argument.citation.resolution_state == ResolutionState.RESOLVED
+        and argument.document_version_id is not None
+        and argument.citation.target_document_version_id == argument.document_version_id
+        and argument.document_id != (findings[0].judgment_document_id if findings else None)
+        for argument in direct_positions
+    )
     summarised_refs = {
         argument.underlying_source_ref
         for argument in party_arguments
@@ -273,6 +288,7 @@ def run_phase10_gate(
             exact_source == len(explicit),
             unsupported == 0,
             party_counts == {"spo": 1, "defence": 1},
+            direct_positions_own_source == len(direct_positions),
             len(responses) >= 1,
             verified_relationships == len(links) + len(arguments) + len(responses),
             unresolved == 0,
@@ -301,6 +317,7 @@ def run_phase10_gate(
         unsupported_relied_upon_labels=unsupported,
         party_positions=len(party_arguments),
         party_positions_by_party=party_counts,
+        direct_party_positions=len(direct_positions),
         court_responses=len(responses),
         human_verified_relationships=verified_relationships,
         unresolved_linked_citations=unresolved,

@@ -755,7 +755,13 @@ export interface ApiAppealIssue extends ApiAppealIssueSummary {
     party_attribution: string | null;
     source_scope: "direct_source" | "court_summary" | "source_missing" | null;
   }[];
-  missing_material: { reference: string; kind: string; reason: string; state: string }[];
+  missing_material: {
+    reference: string;
+    kind: string;
+    reason: string;
+    state: string;
+    resolved_source_ref?: string | null;
+  }[];
   statement_comparisons: ApiStatementComparison[];
   red_team_reviews: {
     result: string;

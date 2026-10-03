@@ -626,6 +626,19 @@ def cmd_process_new(args: argparse.Namespace) -> int:
     return 0 if parse_failed == 0 else 1
 
 
+def cmd_enrich_research(args: argparse.Namespace) -> int:
+    """Apply the reviewed Phase 23 enrichment of the F03752 benchmark (idempotent)."""
+    from ksc_ingestion.research_enrichment import Phase23ResearchEnrichment
+
+    settings = get_settings()
+    result = Phase23ResearchEnrichment(get_sessionmaker(), case_number=settings.case_id).run()
+    print(
+        f"party_positions={result.party_positions} issue_sources={result.issue_sources} "
+        f"resolved_gaps={result.resolved_gaps} open_gaps={result.open_gaps}"
+    )
+    return 0
+
+
 def cmd_reresolve(args: argparse.Namespace) -> int:
     """Rebuild identifier mappings and re-resolve held citations without network access."""
 
@@ -957,6 +970,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_gate.add_argument("path")
     p_gate.add_argument("--json", help="write the full report to this path")
     p_gate.set_defaults(func=cmd_gate)
+
+    p_enrich = sub.add_parser(
+        "enrich-research", help="apply the reviewed Phase 23 research enrichment (idempotent)"
+    )
+    p_enrich.set_defaults(func=cmd_enrich_research)
 
     p_export = sub.add_parser(
         "export-corpus", help="write the tracked metadata manifest of a verified bundle"

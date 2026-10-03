@@ -137,3 +137,26 @@ it("keeps all three red-team perspectives visible without declaring a winner", (
   expect(screen.getByText("Neutral Reviewer")).toBeInTheDocument();
   expect(screen.getAllByText(/does not declare a winner/).length).toBeGreaterThan(0);
 });
+
+it("lists only open gaps; a gap resolved by a held source is not shown as missing", () => {
+  renderWithProviders(
+    <RealAppealScreen
+      workspace={workspace}
+      issue={{
+        ...issue,
+        missingMaterial: [
+          ...issue.missingMaterial,
+          {
+            reference: "F03746",
+            kind: "underlying filing",
+            reason: "Was available only through the Court's summary.",
+            state: "resolved",
+            resolved_source_ref: "KSC-BC-2020-06/F03746",
+          },
+        ],
+      }}
+    />,
+  );
+  expect(screen.getByText("F03743")).toBeInTheDocument();
+  expect(screen.queryByText("F03746")).toBeNull();
+});

@@ -484,7 +484,13 @@ export interface AppealIssueView extends AppealIssueSummaryView {
     partyAttribution?: string;
     sourceScope?: "direct_source" | "court_summary" | "source_missing";
   }[];
-  missingMaterial: readonly { reference: string; kind: string; reason: string; state: string }[];
+  missingMaterial: readonly {
+    reference: string;
+    kind: string;
+    reason: string;
+    state: string;
+    resolved_source_ref?: string | null;
+  }[];
   comparisons: readonly StatementComparisonView[];
   redTeam: readonly {
     result: string;

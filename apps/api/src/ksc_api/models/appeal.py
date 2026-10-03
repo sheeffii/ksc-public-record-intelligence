@@ -189,8 +189,14 @@ class AppealMissingMaterial(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("issue_id", "reference", name="uq_appeal_missing_material_reference"),
         CheckConstraint(
-            "state IN ('source_unavailable', 'court_treatment_not_located', 'unresolved')",
+            "state IN ('source_unavailable', 'court_treatment_not_located', 'unresolved', "
+            "'resolved')",
             name="state_allowed",
+        ),
+        # A gap is resolved only by naming the exact held source version.
+        CheckConstraint(
+            "(state = 'resolved') = (resolved_source_ref IS NOT NULL)",
+            name="resolved_has_source",
         ),
     )
 
@@ -203,6 +209,7 @@ class AppealMissingMaterial(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     reference: Mapped[str] = mapped_column(String(255), nullable=False)
     kind: Mapped[str] = mapped_column(String(64), nullable=False)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
+    resolved_source_ref: Mapped[str | None] = mapped_column(String(255))
     state: Mapped[str] = mapped_column(String(32), nullable=False)
 
     issue: Mapped[AppealIssue] = relationship(back_populates="missing_material")

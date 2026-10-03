@@ -118,7 +118,19 @@ def run_phase12_gate(session: Session, *, case_number: str, generated_at: str) -
         )
         for citation in unique_citations.values()
     )
-    missing = sorted(item.reference for detail in material for item in detail.missing_material)
+    missing = sorted(
+        item.reference
+        for detail in material
+        for item in detail.missing_material
+        if item.state != "resolved"
+    )
+    # A gap closes only by naming the exact held source (Phase 23 review).
+    resolved_gaps = {
+        item.reference: item.resolved_source_ref
+        for detail in material
+        for item in detail.missing_material
+        if item.state == "resolved"
+    }
     after = _fingerprint(session, case.id)
     trial_judgment_present = bool(
         session.scalar(
@@ -148,7 +160,9 @@ def run_phase12_gate(session: Session, *, case_number: str, generated_at: str) -
     passed = all(
         [
             len(issues) == 1,
-            len(sources) == 5,
+            # The 5 Phase 12 sources plus the reviewed Phase 23 direct-source party
+            # positions (F03743 ¶3, ¶4; F03746 ¶¶1-3) and Annex 3 as qualifying context.
+            len(sources) == 9,
             len(comparisons) == 1,
             len(reviews) == 1,
             len(findings) == 4,
@@ -158,13 +172,8 @@ def run_phase12_gate(session: Session, *, case_number: str, generated_at: str) -
             abstentions == 1,
             unsupported == 0,
             all(not detail.citation_audit.ready_for_human_review for detail in material),
-            set(missing)
-            == {
-                "F03743",
-                "F03746",
-                "pre-correction SPO Final Trial Brief",
-                "public Trial Judgment",
-            },
+            set(missing) == {"pre-correction SPO Final Trial Brief", "public Trial Judgment"},
+            resolved_gaps == {"F03743": "KSC-BC-2020-06/F03743", "F03746": "KSC-BC-2020-06/F03746"},
             before == after,
             not trial_judgment_present,
             workspace.coverage.issues == 1,

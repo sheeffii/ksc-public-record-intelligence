@@ -60,6 +60,7 @@ class MissingMaterialRead(ReadModel):
     kind: str
     reason: str
     state: str
+    resolved_source_ref: str | None = None
 
 
 class RedTeamFindingRead(ReadModel):

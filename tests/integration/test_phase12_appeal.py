@@ -211,3 +211,38 @@ def test_note_rejects_non_whitelisted_source_and_saves_only_as_research(
     )
     assert saved.status_code == 201
     assert saved.json()["provenance"] == "human"
+
+
+def test_resolved_gap_names_its_held_source_and_leaves_the_audit(
+    phase12_demo: dict[str, str], demo_client: Any
+) -> None:
+    import pytest
+    from sqlalchemy import select
+    from sqlalchemy.exc import IntegrityError
+
+    from ksc_api.db.session import session_scope
+
+    key = phase12_demo["issue_key"]
+    from ksc_api.db.session import get_sessionmaker
+
+    with get_sessionmaker()() as session:
+        entry = session.scalar(
+            select(AppealMissingMaterial).where(AppealMissingMaterial.reference == "F-DEMO-MISSING")
+        )
+        assert entry is not None
+        entry.state = "resolved"
+        with pytest.raises(IntegrityError):
+            session.flush()  # resolved without naming the held source is refused
+        session.rollback()
+    with session_scope() as session:
+        entry = session.scalar(
+            select(AppealMissingMaterial).where(AppealMissingMaterial.reference == "F-DEMO-MISSING")
+        )
+        assert entry is not None
+        entry.state = "resolved"
+        entry.resolved_source_ref = "KSC-DEMO-0000/F-DEMO-002"
+
+    detail = demo_client.get(f"/api/v1/appeal/issues/{key}").json()
+    gap = detail["missing_material"][0]
+    assert (gap["state"], gap["resolved_source_ref"]) == ("resolved", "KSC-DEMO-0000/F-DEMO-002")
+    assert not any("F-DEMO-MISSING" in issue for issue in detail["citation_audit"]["issues"])

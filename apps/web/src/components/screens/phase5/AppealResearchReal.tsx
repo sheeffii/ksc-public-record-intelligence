@@ -138,15 +138,18 @@ export function RealAppealScreen({
               </SectionCard>
               <SectionCard title={t("missingMaterial")}>
                 <div className="grid gap-2 md:grid-cols-2">
-                  {issue.missingMaterial.map((item) => (
-                    <GapNotice
-                      key={item.reference}
-                      kind="unresolved-citation"
-                      reference={item.reference}
-                      extent={item.kind}
-                      reason={item.reason}
-                    />
-                  ))}
+                  {/* A resolved entry is no longer a gap; its held source is an issue source. */}
+                  {issue.missingMaterial
+                    .filter((item) => item.state !== "resolved")
+                    .map((item) => (
+                      <GapNotice
+                        key={item.reference}
+                        kind="unresolved-citation"
+                        reference={item.reference}
+                        extent={item.kind}
+                        reason={item.reason}
+                      />
+                    ))}
                 </div>
               </SectionCard>
               <div className="flex flex-wrap gap-3">
