@@ -313,6 +313,11 @@ MAX_PARAGRAPH_PAGES = 5
 # ("…infra paras 169, 271, 359.") and never opens a paragraph.
 _MAX_PARAGRAPH_STEP = 3
 _MAX_FIRST_PARAGRAPH = 5
+# A long document whose "numbered paragraphs" cover almost none of its pages is
+# not paragraph-numbered: the numbers belong to headings and contents entries
+# (e.g. a final trial brief cited by page and footnote).
+_UNNUMBERED_MIN_PAGES = 100
+_UNNUMBERED_MAX_COVERAGE = 0.05
 _FOOTNOTE_START_RE = re.compile(r"^\s*(\d{1,4})\s+(\S.*)$")
 _HEADER_FURNITURE_RE = re.compile(
     r"^(?:KSC-\S+/\d+\s+of\s+\d+\b.*|PUBLIC|PUBLIKE?|"
@@ -567,6 +572,30 @@ def _paragraphs_and_sections(
             text = " ".join(" ".join(" ".join(line.split()) for line in footnote_lines).split())
             blocks.append(_Block(page.pdf_page_index, page.page_number, None, "footnotes", text))
     flush()
+
+    covered = {
+        page
+        for paragraph in paragraphs
+        for page in range(
+            paragraph.pdf_page_index_from,
+            (paragraph.pdf_page_index_to or paragraph.pdf_page_index_from) + 1,
+        )
+    }
+    if (
+        paragraphs
+        and len(pages) >= _UNNUMBERED_MIN_PAGES
+        and len(covered) / len(pages) < _UNNUMBERED_MAX_COVERAGE
+    ):
+        # Not a parse defect: the document is cited by page and footnote. Notes
+        # about the false paragraphs (e.g. their length) no longer apply.
+        reasons = [reason for reason in reasons if not reason.startswith("paragraph ")]
+        paragraphs = []
+        blocks = [
+            _Block(block.pdf_page_index, block.page_number, None, "body", block.text)
+            if block.kind == "paragraph"
+            else block
+            for block in blocks
+        ]
 
     for index, section in enumerate(sections):
         next_page = sections[index + 1].page_from if index + 1 < len(sections) else None
