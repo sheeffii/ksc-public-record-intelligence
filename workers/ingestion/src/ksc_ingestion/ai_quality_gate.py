@@ -15,6 +15,7 @@ from ksc_api.config import Settings
 from ksc_api.models import (
     AiRun,
     Argument,
+    ArtifactStatus,
     Case,
     Citation,
     Document,
@@ -145,10 +146,25 @@ def run_phase11_gate(
 
     manifest_bytes = manifest_path.read_bytes()
     manifest: Any = json.loads(manifest_bytes)
-    approved_versions = {
+    pinned_versions = {
         record["official_version_ref"]: record["sha256"]
         for record in manifest["records"]
         if record.get("artifact_status") == "fetched"
+    }
+    # Any fetched version of the case may be cited as the corpus grows; a version
+    # the controlled manifest pins must still hold exactly the pinned bytes.
+    approved_versions = {
+        ref: sha
+        for ref, sha in session.execute(
+            select(DocumentVersion.official_version_ref, DocumentVersion.sha256)
+            .join(Document, Document.id == DocumentVersion.document_id)
+            .where(
+                Document.case_id == case.id,
+                DocumentVersion.artifact_status == ArtifactStatus.FETCHED,
+                DocumentVersion.sha256.is_not(None),
+            )
+        )
+        if pinned_versions.get(ref, sha) == sha
     }
     persisted_versions = {
         row.id: (row.official_version_ref, row.sha256)
@@ -249,7 +265,7 @@ def run_phase11_gate(
         or 0
     ) > 0
     report_passed = all(result.passed for result in results) and all(
-        (controlled_records == expected_records, source_unchanged, verification_unchanged)
+        (controlled_records >= expected_records, source_unchanged, verification_unchanged)
     )
     return Phase11QualityReport(
         phase=11,

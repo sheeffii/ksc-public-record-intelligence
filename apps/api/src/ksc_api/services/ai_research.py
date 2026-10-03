@@ -56,6 +56,7 @@ PROMPT_NAME = "citation-first-answer"
 PROMPT_VERSION = 2
 PROMPT_FILE = "citation-first-answer-v2.txt"
 MAX_SOURCES = 8
+_REQUESTED_FILING = "requested_filing"
 # Persisted scale of ai_retrieval_sources.retrieval_score (Numeric(12, 8)); the
 # returned run must mirror the stored audit value exactly.
 _SCORE_SCALE = Decimal("0.00000001")
@@ -396,7 +397,11 @@ class AiResearchService:
         tokens = _query_tokens(question)
         if not tokens:
             return []
-        candidates = [*self._structured_candidates(tokens), *self._lexical_candidates(tokens)]
+        candidates = [
+            *self._requested_filing_candidates(question, tokens),
+            *self._structured_candidates(tokens),
+            *self._lexical_candidates(tokens),
+        ]
         deduplicated: dict[tuple[str, uuid.UUID], Candidate] = {}
         for candidate in candidates:
             key = (candidate.anchor_kind, candidate.anchor_id)
@@ -442,6 +447,13 @@ class AiResearchService:
                 if row.target_transcript_segment_id is not None
             }
 
+        # A Court summary of a party filing is secondary context once that filing
+        # is held: it may accompany the filing's own relevant text, never replace it.
+        held_requested = {
+            candidate.metadata["requested_filing"]
+            for candidate in candidates
+            if candidate.method == _REQUESTED_FILING and candidate.metadata
+        }
         result: list[Candidate] = []
         for candidate in candidates:
             if plan.required_categories and candidate.category not in plan.required_categories:
@@ -457,6 +469,21 @@ class AiResearchService:
                 continue
             if _candidate_relevant(candidate, plan):
                 result.append(candidate)
+        relevant_filings = {
+            candidate.metadata["requested_filing"]
+            for candidate in result
+            if candidate.method == _REQUESTED_FILING and candidate.metadata
+        }
+        result = [
+            candidate
+            for candidate in result
+            if not (
+                candidate.anchor_kind == "argument"
+                and (candidate.metadata or {}).get("source_scope") == "court_summary"
+                and (candidate.metadata or {}).get("underlying_source_ref") in held_requested
+                and (candidate.metadata or {}).get("underlying_source_ref") not in relevant_filings
+            )
+        ]
         if plan.intent == "COMPARE_PASSAGES" and plan.identifiers:
             combined = " ".join(
                 f"{candidate.ref} {candidate.version_ref or ''} {candidate.text}".casefold()
@@ -465,6 +492,111 @@ class AiResearchService:
             if any(identifier.casefold() not in combined for identifier in plan.identifiers):
                 return []
         return result[:MAX_SOURCES]
+
+    def _requested_filing_candidates(
+        self, question: str, tokens: tuple[str, ...]
+    ) -> list[Candidate]:
+        """The named filing's own text when it is held, ahead of any summary of it.
+
+        Party attribution comes from the document itself or from a human-verified
+        Court summary naming it as a party's underlying filing; otherwise the
+        passage stays a document source.
+        """
+
+        requested = sorted({match.upper() for match in _RECORD_REF.findall(question)})
+        if not requested:
+            return []
+        attributed: dict[str, Party] = {}
+        for ref, party in self.session.execute(
+            select(Argument.underlying_source_ref, Argument.party).where(
+                Argument.case_id == self.case.id,
+                Argument.underlying_source_ref.in_(requested),
+                Argument.verification_state == VerificationState.HUMAN_VERIFIED,
+                Argument.party.in_([Party.SPO, Party.DEFENCE]),
+            )
+        ):
+            attributed.setdefault(ref, party)
+        rows = self.session.execute(
+            select(DocumentChunk, DocumentVersion, Document)
+            .join(DocumentVersion, DocumentChunk.document_version_id == DocumentVersion.id)
+            .join(Document, DocumentVersion.document_id == Document.id)
+            .where(
+                Document.case_id == self.case.id,
+                Document.filing_number.in_(requested),
+                Document.document_type != "transcript",
+                public_visibility(Document.visibility),
+                public_visibility(DocumentVersion.visibility),
+                DocumentVersion.parse_requires_review.is_(False),
+            )
+            .order_by(
+                Document.official_ref, DocumentVersion.official_version_ref, DocumentChunk.sequence
+            )
+        ).all()
+        by_version: dict[uuid.UUID, list[tuple[Decimal, DocumentChunk]]] = {}
+        context: dict[uuid.UUID, tuple[DocumentVersion, Document]] = {}
+        for chunk, version, document in rows:
+            by_version.setdefault(version.id, []).append((_match_score(chunk.text, tokens), chunk))
+            context[version.id] = (version, document)
+        result: list[Candidate] = []
+        for version_id, scored in by_version.items():
+            version, document = context[version_id]
+            party = document.filing_party or attributed.get(document.filing_number or "")
+            category = (
+                {
+                    Party.SPO: "spo_argument",
+                    Party.DEFENCE: "defence_argument",
+                }.get(party)
+                if party
+                else None
+            )
+            best = sorted(scored, key=lambda item: (-item[0], item[1].sequence))[:3]
+            for match, chunk in sorted(best, key=lambda item: item[1].sequence):
+                result.append(
+                    Candidate(
+                        anchor_kind="document_chunk",
+                        anchor_id=chunk.id,
+                        document_version_id=version.id,
+                        citation_id=None,
+                        category=category or "document_exhibit",
+                        visibility=version.visibility.value,
+                        ref=document.official_ref,
+                        version_ref=version.official_version_ref,
+                        display=_display(
+                            version.official_version_ref,
+                            page=chunk.page_from,
+                            para=chunk.para_from,
+                            para_to=chunk.para_to,
+                        ),
+                        target_path=_document_path(
+                            document,
+                            version,
+                            pdf_page=chunk.pdf_page_index_from,
+                            para=chunk.para_from,
+                            page=chunk.page_from,
+                        ),
+                        source_url=version.source_url,
+                        text=_excerpt(chunk.text, tokens),
+                        page_from=chunk.page_from,
+                        page_to=chunk.page_to,
+                        pdf_page_index=chunk.pdf_page_index_from,
+                        para_from=chunk.para_from,
+                        para_to=chunk.para_to,
+                        method=_REQUESTED_FILING,
+                        score=Decimal("120") + match,
+                        metadata={
+                            "document_type": document.document_type,
+                            "requested_filing": document.filing_number,
+                            "party_attribution": (
+                                "document"
+                                if document.filing_party
+                                else "verified_court_summary"
+                                if category
+                                else None
+                            ),
+                        },
+                    )
+                )
+        return result
 
     def _structured_candidates(self, tokens: tuple[str, ...]) -> list[Candidate]:
         result: list[Candidate] = []
@@ -973,7 +1105,11 @@ def _candidate_relevant(candidate: Candidate, plan: RelevancePlan) -> bool:
     matched = sum(token in haystack for token in plan.topic_tokens)
     if len(plan.topic_tokens) == 1:
         return matched == 1
-    required_share = Decimal("0.60") if candidate.method == "lexical_fts" else Decimal("0.50")
+    required_share = (
+        Decimal("0.60")
+        if candidate.method in {"lexical_fts", _REQUESTED_FILING}
+        else Decimal("0.50")
+    )
     return matched >= 2 and Decimal(matched) / Decimal(len(plan.topic_tokens)) >= required_share
 
 

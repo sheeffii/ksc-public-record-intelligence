@@ -23,18 +23,18 @@
       "expected_error": "DOCUMENT_NOT_FOUND"
     },
     {
-      "id": "missing-defence-filing",
+      "id": "held-defence-filing",
       "question": "What does filing F03743 establish?",
-      "should_answer": false,
-      "expected_categories": [],
-      "expected_error": "DOCUMENT_NOT_FOUND"
+      "should_answer": true,
+      "expected_categories": ["defence_argument"],
+      "expected_error": null
     },
     {
-      "id": "missing-spo-filing",
+      "id": "held-spo-filing",
       "question": "What does filing F03746 establish?",
-      "should_answer": false,
-      "expected_categories": [],
-      "expected_error": "DOCUMENT_NOT_FOUND"
+      "should_answer": true,
+      "expected_categories": ["spo_argument"],
+      "expected_error": null
     }
   ]
 }
