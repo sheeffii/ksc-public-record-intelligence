@@ -27,7 +27,9 @@ from ksc_api.models import (
     FindingEvidenceLink,
     ResearchNote,
     ResolutionState,
+    SourceAnchor,
     SourceRecord,
+    SourceSpan,
     VerificationState,
 )
 
@@ -43,6 +45,9 @@ class Phase10QualityReport:
     pinned_versions: int
     held_versions: int
     trial_judgment_present: bool
+    benchmark_versions_pinned: bool
+    finding_anchors_resolved: int
+    unsupported_findings: int
     benchmark_record_ref: str | None
     benchmark_record_type: str | None
     findings: int
@@ -62,6 +67,17 @@ class Phase10QualityReport:
     ai_generated_findings: int
     missing_official_material: list[str]
     passed: bool
+
+
+def benchmark_versions_match(
+    pinned: dict[str, str], held: list[tuple[str, str | None] | None]
+) -> bool:
+    """Every benchmark finding's judgment version is held with exactly the bytes
+    the controlled manifest pins. Extra corpus versions do not matter."""
+
+    return bool(held) and all(
+        version is not None and pinned.get(version[0]) == version[1] for version in held
+    )
 
 
 def run_phase10_gate(
@@ -174,13 +190,19 @@ def run_phase10_gate(
         party: sum(argument.party.value == party for argument in party_arguments)
         for party in ("spo", "defence")
     }
-    missing_refs = sorted(
-        {
-            argument.underlying_source_ref
-            for argument in party_arguments
-            if argument.source_scope != "direct_source" and argument.underlying_source_ref
-        }
+    summarised_refs = {
+        argument.underlying_source_ref
+        for argument in party_arguments
+        if argument.source_scope != "direct_source" and argument.underlying_source_ref
+    }
+    held_refs = set(
+        session.scalars(
+            select(Document.filing_number).where(
+                Document.case_id == case.id, Document.filing_number.in_(summarised_refs)
+            )
+        )
     )
+    missing_refs = sorted(summarised_refs - held_refs)
     verified_relationships = (
         sum(link.verification_state == VerificationState.HUMAN_VERIFIED for link in links)
         + sum(
@@ -207,10 +229,43 @@ def run_phase10_gate(
         if finding_ids
         else 0
     )
+    # The corpus grows beyond the pinned manifest; the benchmark must not drift.
+    benchmark_versions_pinned = benchmark_versions_match(
+        {record["official_version_ref"]: record["sha256"] for record in manifest["records"]},
+        [
+            (finding.judgment_version.official_version_ref, finding.judgment_version.sha256)
+            if finding.judgment_version is not None
+            else None
+            for finding in findings
+        ],
+    )
+    finding_anchors_resolved = sum(
+        session.scalar(
+            select(func.count(SourceAnchor.id))
+            .join(SourceSpan, SourceSpan.id == SourceAnchor.source_span_id)
+            .where(
+                SourceAnchor.object_type == "finding",
+                SourceAnchor.object_id == finding.id,
+                SourceSpan.document_version_id == finding.judgment_version_id,
+            )
+        )
+        == 1
+        for finding in findings
+    )
+    unsupported_findings = (
+        session.scalar(
+            select(func.count(Finding.id)).where(
+                Finding.case_id == case.id, Finding.id.not_in(finding_ids)
+            )
+        )
+        if finding_ids
+        else 0
+    ) or 0
     passed = all(
         [
-            # The held corpus is exactly the pinned manifest (no drift, no extras).
-            held_versions == pinned_versions,
+            benchmark_versions_pinned,
+            finding_anchors_resolved == len(findings),
+            unsupported_findings == 0,
             len(findings) >= 1,
             exact_mappings == len(findings),
             len(explicit) >= 1,
@@ -233,6 +288,9 @@ def run_phase10_gate(
         pinned_versions=pinned_versions,
         held_versions=held_versions,
         trial_judgment_present=trial_judgment_present,
+        benchmark_versions_pinned=benchmark_versions_pinned,
+        finding_anchors_resolved=finding_anchors_resolved,
+        unsupported_findings=unsupported_findings,
         benchmark_record_ref=benchmark_doc.official_ref if benchmark_doc else None,
         benchmark_record_type=benchmark_doc.document_type if benchmark_doc else None,
         findings=len(findings),
