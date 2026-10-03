@@ -74,7 +74,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0021`.
+- Migration head and live database revision: `0022`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -191,6 +191,24 @@ Live checkpoint. Repository state wins over this note.
   none), 0 duplicate anchor keys, 0 relationship anchors off their evidence
   version, all 87,509 out-of-scope anchors byte-identical. Corpus: 448,475
   anchors, 351,147 spans.
+
+### Post-Phase-23 research enrichment, pass 1 (2026-10-04)
+
+- Parser (`b99b917`): a 100+ page document whose numbered "paragraphs" cover
+  under 5% of its pages keeps no paragraph numbers (headings/contents, not
+  ¶s). Re-parsed only `F03667/COR/RED` (9 false ¶ → 0, audited structure
+  repair); citations, mentions, 25,334 anchors unchanged. Same defect, not
+  re-parsed yet: `F00026/RED/sqi/COR`, `F00139/A01`.
+- `enrich-research` (`c2148b4`, idempotent, audited) adds direct-source party
+  positions AR-F03743-DEF-P3, AR-F03743-DEF-P4, AR-F03746-SPO-P1-3 to
+  FD-F03752-P12-16 beside the Court summaries (F03752 ¶6, ¶7); issue
+  PIR-F03752-AMENDMENTS-RECORD gains them plus Annex 3 (qualifying, partial
+  context). Migration 0022 adds `resolved` gaps with `resolved_source_ref`:
+  F03743, F03746 resolved; pre-correction brief and Trial Judgment remain
+  `source_unavailable`. Issue stays `needs_more_evidence` /
+  `insufficient_record` (exhibit files and pre-correction brief not held).
+  Re-running `build-findings` or `build-appeal` resets this; run
+  `enrich-research` after them. Migration head `0022`.
 
 ### Phase 23 complete (2026-10-03)
 
