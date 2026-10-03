@@ -10,10 +10,14 @@ def test_phase11_evaluation_set_keeps_grounded_and_abstention_cases():
         Path("tests/evaluation/phase11_questions.json")
     )
     assert case_number == "KSC-BC-2020-06"
-    # Re-pinned to the Phase 13 corpus (22 controlled + 40 corpus-02 source records).
+    # Minimum corpus: the Phase 13 corpus (22 controlled + 40 corpus-02 source records).
     assert records == 62
-    assert sum(item.should_answer for item in cases) == 1
-    assert sum(not item.should_answer for item in cases) == 3
+    # F03743/F03746 are held since Phase 23: answered from the party filings.
+    assert sum(item.should_answer for item in cases) == 3
+    assert sum(not item.should_answer for item in cases) == 1
+    by_id = {item.id: item for item in cases}
+    assert by_id["held-defence-filing"].expected_categories == ("defence_argument",)
+    assert by_id["held-spo-filing"].expected_categories == ("spo_argument",)
     assert all(
         item.expected_error == "DOCUMENT_NOT_FOUND" for item in cases if not item.should_answer
     )
