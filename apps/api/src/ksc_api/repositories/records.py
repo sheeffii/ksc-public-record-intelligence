@@ -20,7 +20,7 @@ from typing import Annotated, Any
 from urllib.parse import quote
 
 from fastapi import Depends
-from sqlalchemy import Select, String, and_, cast, false, func, or_, select, union_all
+from sqlalchemy import Select, String, and_, cast, exists, false, func, or_, select, union_all
 from sqlalchemy.orm import Session, aliased, selectinload
 
 from ksc_api.config import Settings, get_settings
@@ -49,6 +49,7 @@ from ksc_api.models import (
     GraphNode,
     Hearing,
     Incident,
+    IncidentSource,
     Location,
     Organization,
     Party,
@@ -101,7 +102,9 @@ from ksc_api.schemas.records import (
     FindingSummary,
     GraphNodeRead,
     HumanNoteRead,
+    IncidentDetail,
     IncidentRead,
+    IncidentSourceRead,
     JudgmentParagraphRead,
     JudgmentSectionRead,
     JudgmentStructureRead,
@@ -939,11 +942,33 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
         return Page(items=items, total=total, limit=limit, offset=offset)
 
     # ---------------------------------------------------------- incidents --
+    def _public_incidents_stmt(self) -> Select[tuple[Incident]]:
+        invalid_source = (
+            select(IncidentSource.id)
+            .join(DocumentVersion, DocumentVersion.id == IncidentSource.document_version_id)
+            .join(Document, Document.id == DocumentVersion.document_id)
+            .where(
+                IncidentSource.incident_id == Incident.id,
+                or_(
+                    IncidentSource.verification_state == VerificationState.HUMAN_REJECTED,
+                    ~public_visibility(Document.visibility),
+                    ~public_visibility(DocumentVersion.visibility),
+                    Document.case_id != self.case.id,
+                    IncidentSource.source_ref != DocumentVersion.official_version_ref,
+                ),
+            )
+            .correlate(Incident)
+        )
+        return select(Incident).where(
+            Incident.case_id == self.case.id,
+            not_rejected(Incident),
+            ~exists(invalid_source),
+        )
+
     def list_incidents(self, *, limit: int, offset: int) -> Page[IncidentRead]:
         stmt = (
-            select(Incident)
+            self._public_incidents_stmt()
             .options(selectinload(Incident.location))
-            .where(Incident.case_id == self.case.id)
             .order_by(Incident.date_from.nulls_last(), Incident.slug)
         )
         rows, total = self._paginate(stmt, limit, offset)
@@ -951,18 +976,95 @@ class RecordRepository(ReaderReadsMixin, IntelligenceReadsMixin):
         items = [mappers.to_incident(i, counts.get(i.id, mappers.ZERO_COUNTS)) for i in rows]
         return Page(items=items, total=total, limit=limit, offset=offset)
 
-    def get_incident(self, slug: str) -> IncidentRead | None:
+    def get_incident(self, slug: str) -> IncidentDetail | None:
         incident = self.session.scalar(
-            select(Incident)
-            .options(selectinload(Incident.location))
-            .where(Incident.case_id == self.case.id, Incident.slug == slug)
+            self._public_incidents_stmt()
+            .options(selectinload(Incident.location), selectinload(Incident.sources))
+            .where(Incident.slug == slug)
         )
         if incident is None:
             return None
+        source_rows = self.session.execute(
+            select(IncidentSource, DocumentVersion, Document)
+            .join(DocumentVersion, DocumentVersion.id == IncidentSource.document_version_id)
+            .join(Document, Document.id == DocumentVersion.document_id)
+            .where(IncidentSource.incident_id == incident.id)
+            .order_by(IncidentSource.sequence)
+        ).all()
+        if len(source_rows) != len(incident.sources):
+            return None
+        sources: list[IncidentSourceRead] = []
+        for source, version, document in source_rows:
+            if (
+                source.source_ref != version.official_version_ref
+                or document.case_id != self.case.id
+                or document.visibility not in _PUBLIC
+                or version.visibility not in _PUBLIC
+                or source.verification_state == VerificationState.HUMAN_REJECTED
+            ):
+                return None
+            paragraph = (
+                self.session.scalar(
+                    select(DocumentParagraph).where(
+                        DocumentParagraph.document_version_id == version.id,
+                        DocumentParagraph.paragraph_number == source.paragraph_number,
+                    )
+                )
+                if source.paragraph_number is not None
+                else None
+            )
+            anchor = (
+                self.get_source_anchor(source.source_anchor_id) if source.source_anchor_id else None
+            )
+            valid_anchor = (
+                anchor is not None
+                and anchor.object_type == "incident_source"
+                and anchor.object_id == source.id
+                and anchor.verification_state == source.verification_state
+                and anchor.document_version_id == version.id
+                and anchor.paragraph_number == source.paragraph_number
+                and anchor.exact_text == source.excerpt
+                and paragraph is not None
+                and anchor.pdf_page_index is not None
+                and paragraph.pdf_page_index_from
+                <= anchor.pdf_page_index
+                <= paragraph.pdf_page_index_to
+                and source.excerpt is not None
+                and paragraph.text.startswith(source.excerpt)
+            )
+            target_path = None
+            if source.role == "operative":
+                if valid_anchor and anchor is not None and paragraph is not None:
+                    target_path = anchor.target_path
+            elif paragraph is not None:
+                target_path = _document_target_path(
+                    document,
+                    version,
+                    pdf_page_index=paragraph.pdf_page_index_from,
+                    paragraph=paragraph.paragraph_number,
+                    page=paragraph.page_from,
+                )
+            sources.append(
+                IncidentSourceRead(
+                    sequence=source.sequence,
+                    role=source.role,
+                    source_ref=source.source_ref,
+                    paragraph_number=source.paragraph_number,
+                    excerpt=source.excerpt if target_path and source.role == "operative" else None,
+                    note=source.note,
+                    verification_state=source.verification_state,
+                    source_anchor_id=source.source_anchor_id if valid_anchor else None,
+                    target_path=target_path,
+                )
+            )
         counts = self._counts(EntityKind.INCIDENT, [incident.id]).get(
             incident.id, mappers.ZERO_COUNTS
         )
-        return mappers.to_incident(incident, counts)
+        return IncidentDetail(
+            **mappers.to_incident(incident, counts).model_dump(),
+            review_decision=incident.review_decision,
+            sources=sources,
+        )
 
     # ----------------------------------------------------------- findings --
     def _findings_stmt(self) -> Select[tuple[Finding]]:

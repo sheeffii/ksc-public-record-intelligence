@@ -303,6 +303,11 @@ export const incident: ApiIncident = {
   date_to: "1999-05-03",
   date_precision: "range",
   charges_pleaded: null,
+  source_category: null,
+  verification_state: "unreviewed",
+  date_as_pleaded: null,
+  review_decision: null,
+  sources: [],
   counts,
 };
 

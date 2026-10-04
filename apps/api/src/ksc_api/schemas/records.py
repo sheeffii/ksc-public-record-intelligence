@@ -246,7 +246,27 @@ class IncidentRead(ReadModel):
     date_to: date | None
     date_precision: DatePrecision
     charges_pleaded: list[dict[str, Any]] | None
+    source_category: str | None
+    verification_state: VerificationState
+    date_as_pleaded: str | None
     counts: ReferenceCounts
+
+
+class IncidentSourceRead(ReadModel):
+    sequence: int
+    role: Literal["operative", "version_history", "withdrawal_review"]
+    source_ref: str
+    paragraph_number: int | None
+    excerpt: str | None
+    note: str | None
+    verification_state: VerificationState
+    source_anchor_id: uuid.UUID | None
+    target_path: str | None
+
+
+class IncidentDetail(IncidentRead):
+    review_decision: dict[str, Any] | None
+    sources: list[IncidentSourceRead]
 
 
 class EventRead(ReadModel):

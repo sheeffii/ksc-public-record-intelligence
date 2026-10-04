@@ -329,7 +329,24 @@ export interface ApiIncident {
   date_to: string | null;
   date_precision: string;
   charges_pleaded: Record<string, unknown>[] | null;
+  source_category: string | null;
+  verification_state: ApiVerificationState;
+  date_as_pleaded: string | null;
+  review_decision?: Record<string, unknown> | null;
+  sources?: ApiIncidentSource[];
   counts: ApiReferenceCounts;
+}
+
+export interface ApiIncidentSource {
+  sequence: number;
+  role: "operative" | "version_history" | "withdrawal_review";
+  source_ref: string;
+  paragraph_number: number | null;
+  excerpt: string | null;
+  note: string | null;
+  verification_state: ApiVerificationState;
+  source_anchor_id: string | null;
+  target_path: string | null;
 }
 
 export interface ApiFindingSummary {

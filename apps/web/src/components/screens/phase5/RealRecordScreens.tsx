@@ -991,16 +991,26 @@ function RecordActivity({ href, label, value }: { href: string; label: string; v
 export function RealIncidentScreen({ incident }: { incident: IncidentView }) {
   const t = useTranslations("phase5");
   const t15 = useTranslations("phase15");
+  const ti = useTranslations("incidentDetail");
   const tr = useTranslations("referenceCounts");
   const date = [incident.dateFrom, incident.dateTo].filter(Boolean).join(" — ") || "—";
   return (
     <AppShell crumbs={[{ label: t("incidents"), href: "/incidents" }, { label: incident.slug }]}>
       <ScreenHeader
         realData
-        eyebrow={t15("verifiedPublicRecord")}
+        eyebrow={
+          incident.sourceCategory === "spo_allegation"
+            ? ti("spoAllegation")
+            : t15("verifiedPublicRecord")
+        }
         title={incident.title}
         description={t15("incidentBoundary")}
-        actions={<SourceBadge type="incident" />}
+        actions={
+          <>
+            <SourceBadge type="incident" />
+            <VerificationBadge state={incident.verification} />
+          </>
+        }
       />
       <div className="mx-auto w-full max-w-[1100px] space-y-3 p-3 md:p-4">
         <StatStrip
@@ -1021,12 +1031,70 @@ export function RealIncidentScreen({ incident }: { incident: IncidentView }) {
               rows={[
                 { key: "id", label: "ID", value: incident.slug },
                 { key: "location", label: t15("location"), value: incident.location || "—" },
-                { key: "date", label: t15("date"), value: date },
+                { key: "date", label: ti("dateAsPleaded"), value: incident.dateAsPleaded || date },
                 { key: "precision", label: t15("precision"), value: incident.datePrecision },
               ]}
             />
           </Panel>
         </div>
+        {incident.sourceCategory === "spo_allegation" ? (
+          <Panel title={ti("withdrawalReview")}>
+            <p className="text-fg-body text-[12px] leading-relaxed">
+              {incident.withdrawalStatus === "UNAFFECTED"
+                ? ti("unaffected")
+                : ti("reviewUnavailable")}
+            </p>
+            {incident.withdrawalBasis ? (
+              <p className="text-fg-secondary mt-2 text-[11px] leading-relaxed">
+                {incident.withdrawalBasis}
+              </p>
+            ) : null}
+          </Panel>
+        ) : null}
+        <Panel title={ti("sources")}>
+          {incident.sources.length ? (
+            <ol className="space-y-3">
+              {incident.sources.map((source) => (
+                <li
+                  key={`${source.role}-${source.sequence}`}
+                  className="border-border-subtle bg-surface-raised rounded-card border p-3"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-fg text-[11px] font-semibold">
+                      {ti(`role.${source.role}`)}
+                    </span>
+                    <VerificationBadge state={source.verification} size="sm" />
+                  </div>
+                  <p className="text-fg-secondary mt-1 text-[11px]">
+                    {source.sourceRef}
+                    {source.paragraphNumber ? ` · ¶${source.paragraphNumber}` : ""}
+                  </p>
+                  {source.excerpt ? (
+                    <blockquote className="border-spo text-fg-body mt-2 border-l-2 pl-3 text-[12px] leading-relaxed">
+                      {source.excerpt}
+                    </blockquote>
+                  ) : null}
+                  {source.note ? (
+                    <p className="text-fg-secondary mt-2 text-[11px] leading-relaxed">
+                      {source.note}
+                    </p>
+                  ) : null}
+                  <div className="mt-2">
+                    {source.targetPath ? (
+                      <ActionLink href={source.targetPath}>
+                        {source.role === "operative" ? ti("openExactSource") : ti("openSource")}
+                      </ActionLink>
+                    ) : (
+                      <span className="text-fg-muted text-[11px]">{ti("sourceUnavailable")}</span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <EmptyState title={ti("noSources")} reason={t15("incidentBoundary")} />
+          )}
+        </Panel>
       </div>
     </AppShell>
   );

@@ -422,12 +422,17 @@ export function incidentRow(incident: ApiIncident): DirectoryRow {
     description: incident.location ?? "",
     date: incident.date_from ?? NO_DATE,
     references: references(incident.counts),
-    verification: "unreviewed",
+    verification: toVerification(incident.verification_state) ?? "unreviewed",
     href: `/incidents/${incident.slug}`,
   };
 }
 
 export function toIncident(incident: ApiIncident): IncidentView {
+  const withdrawal = incident.review_decision?.withdrawal_review;
+  const withdrawalReview =
+    withdrawal && typeof withdrawal === "object" && !Array.isArray(withdrawal)
+      ? (withdrawal as Record<string, unknown>)
+      : null;
   return {
     slug: incident.slug,
     title: incident.title,
@@ -436,6 +441,24 @@ export function toIncident(incident: ApiIncident): IncidentView {
     dateFrom: incident.date_from ?? undefined,
     dateTo: incident.date_to ?? undefined,
     datePrecision: incident.date_precision,
+    dateAsPleaded: incident.date_as_pleaded ?? undefined,
+    sourceCategory: incident.source_category ?? undefined,
+    verification: toVerification(incident.verification_state) ?? "unreviewed",
+    withdrawalStatus:
+      typeof withdrawalReview?.status === "string" ? withdrawalReview.status : undefined,
+    withdrawalBasis:
+      typeof withdrawalReview?.basis === "string" ? withdrawalReview.basis : undefined,
+    sources: (incident.sources ?? []).map((source) => ({
+      sequence: source.sequence,
+      role: source.role,
+      sourceRef: source.source_ref,
+      paragraphNumber: source.paragraph_number ?? undefined,
+      excerpt: source.excerpt ?? undefined,
+      note: source.note ?? undefined,
+      verification: toVerification(source.verification_state) ?? "unreviewed",
+      sourceAnchorId: source.source_anchor_id ?? undefined,
+      targetPath: source.target_path ?? undefined,
+    })),
     charges: incident.charges_pleaded ?? [],
     counts: toCounts(incident.counts),
   };

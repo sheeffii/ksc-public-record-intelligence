@@ -34,6 +34,7 @@ from ksc_api.schemas.records import (
     ExhibitStatusEventRead,
     FindingDetail,
     FindingSummary,
+    IncidentDetail,
     IncidentRead,
     LocalSearchRead,
     NetworkRead,
@@ -446,8 +447,8 @@ def list_incidents(
     return repo.list_incidents(limit=limit, offset=offset)
 
 
-@router.get("/incidents/{slug}", response_model=IncidentRead)
-def read_incident(slug: str, repo: Repo) -> IncidentRead:
+@router.get("/incidents/{slug}", response_model=IncidentDetail)
+def read_incident(slug: str, repo: Repo) -> IncidentDetail:
     return _or_404(repo.get_incident(slug), "incident")
 
 

@@ -374,6 +374,9 @@ def to_incident(incident: Incident, counts: ReferenceCounts) -> IncidentRead:
         date_to=incident.date_to,
         date_precision=incident.date_precision,
         charges_pleaded=incident.charges_pleaded,
+        source_category=incident.source_category,
+        verification_state=incident.verification_state,
+        date_as_pleaded=incident.date_as_pleaded,
         counts=counts,
     )
 

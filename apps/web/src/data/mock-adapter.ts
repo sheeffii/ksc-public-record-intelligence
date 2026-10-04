@@ -35,6 +35,8 @@ export function createMockRepositoryAdapter(
         title: row.title,
         summary: row.description,
         datePrecision: "unknown",
+        verification: "unreviewed",
+        sources: [],
         charges: [],
         counts: {
           documentMentions: 0,

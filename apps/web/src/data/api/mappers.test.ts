@@ -3,6 +3,8 @@ import * as fx from "./fixtures";
 import {
   documentRouteId,
   findingRow,
+  incidentRow,
+  toIncident,
   toCitation,
   toDocument,
   toEvidenceRows,
@@ -53,6 +55,35 @@ describe("API → screen mapping", () => {
     expect(toVerification("unreviewed")).toBe("unreviewed");
     expect(toVerification("human_rejected")).toBeNull();
     expect(findingRow({ ...fx.finding, verification_state: "human_rejected" })).toBeNull();
+  });
+
+  it("maps reviewed incident sources and keeps exact Reader targets", () => {
+    const reviewed = {
+      ...fx.incident,
+      source_category: "spo_allegation",
+      verification_state: "human_verified" as const,
+      date_as_pleaded: "In May 1999 and in June 1999",
+      review_decision: { withdrawal_review: { status: "UNAFFECTED", basis: "Reviewed." } },
+      sources: [
+        {
+          sequence: 1,
+          role: "operative" as const,
+          source_ref: "KSC-DEMO-0000/F-DEMO-001/RED",
+          paragraph_number: 12,
+          excerpt: "Synthetic public source excerpt.",
+          note: null,
+          verification_state: "human_verified" as const,
+          source_anchor_id: "00000000-0000-0000-0000-000000000001",
+          target_path:
+            "/documents/F-DEMO-001?version=KSC-DEMO-0000%2FF-DEMO-001%2FRED&pdfPage=1&anchor=00000000-0000-0000-0000-000000000001",
+        },
+      ],
+    };
+    const view = toIncident(reviewed);
+    expect(incidentRow(reviewed).verification).toBe("verified");
+    expect(view.dateAsPleaded).toBe("In May 1999 and in June 1999");
+    expect(view.withdrawalStatus).toBe("UNAFFECTED");
+    expect(view.sources[0]?.targetPath).toContain("anchor=00000000-0000-0000-0000-000000000001");
   });
 
   it("keeps real graph nodes inside the percentage-based canvas", () => {

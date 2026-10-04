@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-10-03 (Phase 23 complete)
+Last updated: 2026-10-04 (post-Phase-23 Incident API/UI/Reader checkpoint)
 
 ## Milestones
 
@@ -66,11 +66,28 @@ Reader and evidence-integrity boundaries. The tag is `phase-21-complete`.
 Phase 21 is merged into synchronized `main` at `f25cfe0`. Phase 22 is
 **COMPLETE** at tag `phase-22-complete` and is contained in `main`. The
 deterministic AI relevance gate resolves the final fail-closed blocker. The
-Reader/Timeline parity follow-up is also merged. Phase 23 is **IN PROGRESS**
-(work continued on `main`): the 23A pilot and the 23B staged expansion are done
-and Legal Tools acquisition is exhausted. Phase 23 is **COMPLETE** on
-`feat/phase-23-closeout` at tag `phase-23-complete` (not yet pushed or merged).
+Reader/Timeline parity follow-up is also merged. Phase 23 is **COMPLETE**, tagged
+`phase-23-complete` and merged into `main`; Legal Tools acquisition is
+exhausted. The first reviewed incident batch is on synchronized `main` at
+`fe577b2`. The subsequent Incident API/UI/Reader-link follow-up is complete.
 Repository code, migrations, tests and Git state win over stale roadmap text.
+
+### Post-Phase-23 Incident API/UI/Reader checkpoint (2026-10-04)
+
+- Migration head is `0023`. Six human-reviewed SPO-allegation incidents and 30
+  source rows are present; Drenoc/POSSIBLY_AFFECTED and
+  Kleçkë/CANNOT_DETERMINE remain unwritten.
+- The detail API serves ordered source provenance and review metadata. It
+  excludes rejected/non-public source records and exposes operative excerpts
+  only with a matching public, non-rejected SourceAnchor on the correct
+  paragraph page.
+- The Incident UI labels allegations distinctly from Court findings, displays
+  withdrawal review and source roles, and links the 12 operative anchors, 12
+  version-history paragraphs and six withdrawal-review paragraphs to the
+  exact-version Reader. English/Albanian strings use the string tables.
+- Read-only live-data link checks pass. `make lint`, `make typecheck` and
+  `make test` pass (439 backend, 281 frontend). No ingestion, corpus reparse or
+  rebuild was run for this follow-up.
 
 ### Phase 23 complete (2026-10-03)
 

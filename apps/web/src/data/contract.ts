@@ -212,6 +212,22 @@ export interface IncidentView {
   dateFrom?: string;
   dateTo?: string;
   datePrecision: string;
+  dateAsPleaded?: string;
+  sourceCategory?: string;
+  verification: VerificationState;
+  withdrawalStatus?: string;
+  withdrawalBasis?: string;
+  sources: readonly {
+    sequence: number;
+    role: "operative" | "version_history" | "withdrawal_review";
+    sourceRef: string;
+    paragraphNumber?: number;
+    excerpt?: string;
+    note?: string;
+    verification: VerificationState;
+    sourceAnchorId?: string;
+    targetPath?: string;
+  }[];
   charges: readonly Record<string, unknown>[];
   counts: ReferenceCounts;
 }

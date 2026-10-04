@@ -95,6 +95,9 @@ def test_person_exhibit_incident_details(demo_client):
     incident = demo_client.get(f"{V1}/incidents/demo-incident-001").json()
     assert incident["location"] == "Demo Village"
     assert incident["date_precision"] == "range"
+    assert incident["source_category"] is None
+    assert incident["verification_state"] == "unreviewed"
+    assert incident["sources"] == []
     assert demo_client.get(f"{V1}/people/nobody").status_code == 404
     organization = demo_client.get(f"{V1}/organizations/demo-unit").json()
     assert organization["name"] == "Demo Unit"

@@ -1061,6 +1061,23 @@
       "ai": "AI ANALYSIS"
     }
   },
+  "incidentDetail": {
+    "spoAllegation": "SPO allegation · not a Court finding",
+    "dateAsPleaded": "Date as pleaded",
+    "withdrawalReview": "Withdrawal review",
+    "unaffected": "Reviewed: these pleaded site paragraphs were not withdrawn",
+    "reviewUnavailable": "Withdrawal review is not available",
+    "sources": "Exact sources and version history",
+    "noSources": "No reviewed source trail is available",
+    "openExactSource": "Open exact passage in Reader",
+    "openSource": "Open source paragraph in Reader",
+    "sourceUnavailable": "Exact source link unavailable",
+    "role": {
+      "operative": "Operative SPO allegation",
+      "version_history": "Superseded indictment · version history",
+      "withdrawal_review": "SPO withdrawal notice · review source"
+    }
+  },
   "phase15": {
     "noFilteredRecords": "No real records match the current filters.",
     "linkedRecordsUnavailable": "No verified linked records are available for this item yet.",

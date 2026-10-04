@@ -5,17 +5,13 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `main`.
-- Current branch for Phase 23 closeout: `feat/phase-23-closeout` (from
-  `main` `78b192c`; not pushed, not merged).
-- Current milestone: **Phase 23 COMPLETE** at annotated tag
-  `phase-23-complete` on `feat/phase-23-closeout` (not pushed, not merged into
-  `main`). Legal Tools acquisition is exhausted (5,049/5,049 mirror records).
-  **Next action:** owner decides on pushing the branch/tag and merging into
-  `main`; do not start a new phase automatically. The
-  Phase 23
-  roadmap is `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
-  It integrates the permitted Legal Tools byte-mirror path, closes concrete
-  readiness blockers, and stops after an approximately 100-document pilot.
+- Current milestone: **Phase 23 COMPLETE**, merged into `main` and tagged
+  `phase-23-complete`. Legal Tools acquisition is exhausted (5,049/5,049 mirror
+  records). The Phase 23 roadmap is
+  `docs/roadmap/PHASE_23_CORPUS_EXPANSION_AND_RESEARCH_COVERAGE.md`.
+  Post-phase incident enrichment has six reviewed SPO-allegation incidents on
+  `main` at `fe577b2`; the API/UI/Reader-link follow-up is complete. Do not
+  start a new phase automatically.
   Phase 22 is complete at annotated tag
   `phase-22-complete`. The deterministic AI relevance gate resolves the final
   fail-closed blocker with 0 unsupported answered runs. Phase 22 and the
@@ -41,7 +37,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 16 remains local at `eb01a87`; Phase 17 implementation runs through
   `0e382b3`, with the closeout commit tagged `phase-17-complete`. Both are
   contained in `main`.
-- Latest completion tag: annotated `phase-22-complete`.
+- Latest completion tag: annotated `phase-23-complete`.
 - Post-Phase-22 Reader/UI polish is complete and merged into `main`:
   page-local synchronized text now reads the exact `document_pages` row for
   PDF page N; page changes clear stale display/scroll state; exact text anchors,
@@ -74,7 +70,7 @@ Live checkpoint. Repository state wins over this note.
 - Phase 15–19 feature branches are preserved on `origin`.
 - Previous checkpoints: `phase-10-complete` (implementation `c8eaa1e`).
 - Phase 14 implementation commit: `9ff9a2b`.
-- Migration head and live database revision: `0022`.
+- Migration head and live database revision: `0023`.
 - Phase 7 prerequisite: complete; tag `phase-7-complete` exists. The controlled
   bundle `data/captures/2026-09-20-corpus-01/` has 22 official public PDFs and
   the tracked reproducibility manifest is
@@ -214,7 +210,24 @@ Live checkpoint. Repository state wins over this note.
   Re-run `project-legal-matrix` after any geometry rebuild of F00999/A03.
 - Held, not written: INC-CAND-03 Drenoc/Drenovac POSSIBLY_AFFECTED (F03155
   item (b)); INC-CAND-08 Kleçkë/Klečka CANNOT_DETERMINE (item (e) redacted).
-- Migration head `0023`. Not pushed.
+- Migration head `0023`; first reviewed batch is on synchronized `main` at
+  `fe577b2`.
+
+### Incident API/UI/Reader follow-up (2026-10-04)
+
+- Incident detail API includes source category, review state, date as pleaded,
+  withdrawal review and ordered provenance rows. It excludes rejected and
+  non-public sources and withholds operative excerpts/links for invalid,
+  rejected or wrongly paged SourceAnchors.
+- Incident detail UI distinguishes SPO allegations from Court findings, shows
+  the review and all 30 source rows, and opens operative SourceAnchors or exact
+  version-history/withdrawal paragraphs in the Reader. EN/SQ strings are in
+  the string tables.
+- Read-only live check: six reviewed incidents, 30 sources, 12 operative anchor
+  links, 12 history links and six withdrawal links. Held candidates remain
+  unwritten: Drenoc POSSIBLY_AFFECTED; Kleçkë CANNOT_DETERMINE.
+- `make lint`, `make typecheck` and `make test` pass (439 backend, 281 frontend).
+  No ingestion, corpus reparse or rebuild was run for this follow-up.
 
 ### Operative Amended Indictment captured (2026-10-04)
 
