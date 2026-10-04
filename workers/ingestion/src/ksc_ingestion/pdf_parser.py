@@ -322,6 +322,8 @@ _FOOTNOTE_START_RE = re.compile(r"^\s*(\d{1,4})\s+(\S.*)$")
 _HEADER_FURNITURE_RE = re.compile(
     r"^(?:KSC-\S+/\d+\s+of\s+\d+\b.*|PUBLIC|PUBLIKE?|"
     r"Date (?:original|public redacted version|public redacted|public)\b.*|"
+    # A bare filing timestamp ("30/09/2022 11:42:00") in the page header.
+    r"\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2}|"
     r"Data (?:origjinale|e versionit publik)\b.*)$",
     re.IGNORECASE,
 )
@@ -492,6 +494,12 @@ def _paragraphs_and_sections(
                         para_to=None,
                     )
                 )
+                # A section heading ends the open paragraph, also when it heads
+                # the next page; it stays page body, never paragraph text.
+                emit(page, run_number, run)
+                run = []
+                flush()
+                run_number = None
             match = _PARAGRAPH_RE.match(raw_line)
             following = body_lines[position + 1] if position + 1 < len(body_lines) else None
             if match is not None and _is_numbered_heading(
