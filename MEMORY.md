@@ -192,6 +192,17 @@ Live checkpoint. Repository state wins over this note.
   version, all 87,509 out-of-scope anchors byte-identical. Corpus: 448,475
   anchors, 351,147 spans.
 
+### Operative Amended Indictment captured (2026-10-04)
+
+- Official-site gap fill `2026-10-04-official-gap-02`: `F00999/A03` (public
+  redacted confirmed Amended Indictment, EN, 177 ¶) and `F00999/A03/sqi/COR`
+  (Albanian, flagged for parse review). Gate 2/2; process-new: geometry 2/2,
+  309 anchors, 0 failures/duplicates/mismatches. F03155 cites this numbering.
+- Incident review (read-only, nothing persisted): candidates map to F00999 ¶¶63/100
+  Jabllanicë, 64/101 Llapushnik, 65/102 Drenoc, 70/106 Bare+Bajgorë, 71/107
+  Llapashticë, 75/109 Zllash, 78-79/115-116 Kleçkë. Paragraphs split by a page
+  break lose their continuation (e.g. F00999 ¶¶101, 109, 115; F00045 ¶61).
+
 ### Post-Phase-23 research enrichment, pass 1 (2026-10-04)
 
 - Parser (`b99b917`): a 100+ page document whose numbered "paragraphs" cover

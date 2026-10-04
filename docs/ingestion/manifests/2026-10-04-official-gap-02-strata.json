@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "bundle_id": "2026-10-04-official-gap-02",
+  "case_number": "KSC-BC-2020-06",
+  "note": "Gap fill for the public redacted confirmed Amended Indictment (KSC-BC-2020-06/F00999/A03), the operative text F03155 cites. Official public KSC repository UI only, operator-attached browser.",
+  "target_records": 3,
+  "strata": [
+    {
+      "key": "gap_f00999",
+      "quota": 3,
+      "record": "stl_filing",
+      "sort": "oldest",
+      "filingNumber": "F00999",
+      "language": "eng",
+      "desc": "Confirmed Amended Indictment F00999 and its public annex"
+    }
+  ]
+}
