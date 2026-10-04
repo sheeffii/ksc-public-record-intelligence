@@ -173,7 +173,7 @@ class SourceAnchor(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint(
             "object_type IN "
             "('entity_occurrence','citation','relationship','finding','transcript_segment',"
-            "'finding_evidence_link','argument','appeal_issue_source')",
+            "'finding_evidence_link','argument','appeal_issue_source','incident_source')",
             name="object_type_allowed",
         ),
     )

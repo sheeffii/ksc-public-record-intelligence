@@ -89,6 +89,7 @@ from ksc_api.models.evidence import (
     Finding,
     FindingEvidenceLink,
     Incident,
+    IncidentSource,
 )
 from ksc_api.models.graph import NODE_FK_COLUMNS, GraphNode, Relationship
 from ksc_api.models.hearing import Hearing, Transcript, TranscriptSegment, WitnessAppearance
@@ -174,6 +175,7 @@ __all__ = [
     "Hearing",
     "IdentifierKind",
     "Incident",
+    "IncidentSource",
     "IngestionItemStatus",
     "IngestionJob",
     "IngestionJobItem",

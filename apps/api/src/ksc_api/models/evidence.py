@@ -172,13 +172,15 @@ class ExhibitStatusEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
 
-class Incident(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Incident(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
     __tablename__ = "incidents"
     __table_args__ = (
         UniqueConstraint("case_id", "slug", name="uq_incidents_case_slug"),
         CheckConstraint(
             "date_to IS NULL OR date_from IS NULL OR date_to >= date_from", name="date_range"
         ),
+        CheckConstraint("source_category IN ('spo_allegation')", name="source_category_allowed"),
+        human_verification_requires_reviewer(),
     )
 
     case_id: Mapped[uuid.UUID] = mapped_column(
@@ -201,8 +203,62 @@ class Incident(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     # Counts / charges as pleaded, e.g. [{"count": 1, "label": "…"}]. "As charged — not a determination".
     charges_pleaded: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    # Whose account this is. An SPO allegation is never a Court finding.
+    source_category: Mapped[str | None] = mapped_column(String(32))
+    # The source's own date wording, verbatim; date_from/date_to only bound it.
+    date_as_pleaded: Mapped[str | None] = mapped_column(Text)
+    # The human-review decision: candidate, withdrawal check, named units/people.
+    review_decision: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    extraction_origin: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="manual", server_default="manual"
+    )
 
     location: Mapped[Location | None] = relationship()
+    sources: Mapped[list[IncidentSource]] = relationship(
+        back_populates="incident", order_by="IncidentSource.sequence"
+    )
+
+
+class IncidentSource(UUIDPrimaryKeyMixin, TimestampMixin, VerificationMixin, Base):
+    """One exact source of an incident. Only the operative text is quoted and
+    anchored; version history and withdrawal review are provenance."""
+
+    __tablename__ = "incident_sources"
+    __table_args__ = (
+        UniqueConstraint("incident_id", "sequence", name="uq_incident_sources_sequence"),
+        CheckConstraint("sequence >= 1", name="sequence_positive"),
+        CheckConstraint(
+            "role IN ('operative', 'version_history', 'withdrawal_review')", name="role_allowed"
+        ),
+        CheckConstraint(
+            "(role = 'operative') = (excerpt IS NOT NULL)", name="excerpt_only_operative"
+        ),
+        human_verification_requires_reviewer(),
+    )
+
+    incident_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("incidents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    role: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("document_versions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    paragraph_number: Mapped[int | None] = mapped_column(Integer)
+    excerpt: Mapped[str | None] = mapped_column(Text)
+    note: Mapped[str | None] = mapped_column(Text)
+    source_anchor_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("source_anchors.id", ondelete="SET NULL")
+    )
+
+    incident: Mapped[Incident] = relationship(back_populates="sources")
 
 
 class Event(UUIDPrimaryKeyMixin, TimestampMixin, Base):

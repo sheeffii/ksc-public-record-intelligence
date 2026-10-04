@@ -192,6 +192,30 @@ Live checkpoint. Repository state wins over this note.
   version, all 87,509 out-of-scope anchors byte-identical. Corpus: 448,475
   anchors, 351,147 spans.
 
+### Page-break fix and first reviewed incident batch (2026-10-04)
+
+- F00999/A03 acquisition commit: `9aab5b5`.
+- Parser (`611e903`): a bare page-header filing timestamp ("30/09/2022 11:42:00")
+  is furniture, so a numbered paragraph continues across the page break; a
+  section heading on the next page still closes it. Re-parsed only English
+  `F00999/A03` (¶101 pp.31–32, ¶109 pp.34–35, ¶115 pp.35–36 now complete).
+  The fix would change 2,533 other versions if re-parsed; not re-parsed.
+  Known, not fixed: a site sub-heading (e.g. "Drenoc/Drenovac") is appended to
+  the paragraph before it; incident excerpts strip it explicitly.
+- Migration 0023 / ADR-034: incidents gain `source_category`
+  (`spo_allegation`), review fields, `date_as_pleaded`; new
+  `incident_sources`; `locations.parent_location_id`.
+- `write-reviewed-incidents` wrote six SPO-allegation incidents (never Court
+  findings): INC-CAND-01 Jabllanicë/Jablanica, 02 Llapushnik/Lapušnik,
+  04 Bare, 05 Bajgorë/Bajgora (shares ¶70/¶106 with Bare), 06
+  Llapashticë/Lapaštica, 07 Zllash/Zlaš; 10 locations (6 villages, 4
+  municipalities, source spellings, no coordinates); 30 sources (12 operative
+  F00999/A03 anchored, 12 F00045/A03 history, 6 F03155/RED withdrawal review).
+  Re-run `project-legal-matrix` after any geometry rebuild of F00999/A03.
+- Held, not written: INC-CAND-03 Drenoc/Drenovac POSSIBLY_AFFECTED (F03155
+  item (b)); INC-CAND-08 Kleçkë/Klečka CANNOT_DETERMINE (item (e) redacted).
+- Migration head `0023`. Not pushed.
+
 ### Operative Amended Indictment captured (2026-10-04)
 
 - Official-site gap fill `2026-10-04-official-gap-02`: `F00999/A03` (public

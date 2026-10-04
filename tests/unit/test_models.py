@@ -71,6 +71,7 @@ PHASE6_TABLES = {
     "locations",
     "exhibits",
     "incidents",
+    "incident_sources",
     "events",
     "claims",
     "claim_mentions",

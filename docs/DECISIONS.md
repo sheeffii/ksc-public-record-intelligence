@@ -1650,3 +1650,34 @@ Decision:
 Consequences: ingestion order no longer changes canonical metadata, full and
 scoped anchor rebuilds are idempotent, and a full rebuild takes about an hour
 instead of many.
+
+## ADR-034 — Reviewed incidents are source-attributed and exactly sourced
+
+Date: 2026-10-04 · Status: accepted · Post-Phase-23
+
+Context: the first incident batch comes from the operative Amended Indictment
+(F00999/A03). An incident row had no field saying whose account it is, no human
+review record and no SourceAnchor, so an SPO allegation could not be told apart
+from a Court finding or traced to a paragraph.
+
+Decision:
+
+- `incidents.source_category` names the account; it allows only
+  `spo_allegation` for now. Incidents carry verification + reviewer, the
+  source's verbatim date wording (`date_as_pleaded`; `date_from`/`date_to` only
+  bound it, and stay empty when the source pleads disjoint periods) and the
+  review decision (candidate, withdrawal check, units and people named).
+- `incident_sources` lists the exact sources: operative paragraphs (quoted
+  verbatim, redactions as published, without a parser-attached trailing
+  sub-heading), superseded versions as version history and withdrawal notices as
+  review provenance. Only operative rows are anchored (`incident_source`
+  anchors, rebuilt by `project-legal-matrix` after any geometry rebuild).
+- Two sites pleaded in the same paragraphs (Bare, Bajgorë/Bajgora) are two
+  incidents quoting the same paragraphs, each naming the other in its review
+  decision; nothing pleaded jointly is split or invented.
+- `locations.parent_location_id` links a village to its municipality as the
+  source names them. No coordinates or derived geography.
+
+Consequences: migration 0023. Held candidates (Drenoc/Drenovac, Kleçkë/Klečka)
+are not written. Writing is `ksc-ingest write-reviewed-incidents` (idempotent,
+audited), then `project-legal-matrix`.

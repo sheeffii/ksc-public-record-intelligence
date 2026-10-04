@@ -241,7 +241,12 @@ class EntityOccurrence(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 class Location(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "locations"
-    __table_args__ = (UniqueConstraint("case_id", "slug", name="uq_locations_case_slug"),)
+    __table_args__ = (
+        UniqueConstraint("case_id", "slug", name="uq_locations_case_slug"),
+        CheckConstraint(
+            "parent_location_id IS NULL OR parent_location_id <> id", name="not_own_parent"
+        ),
+    )
 
     case_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("cases.id", ondelete="RESTRICT"), nullable=False, index=True
@@ -254,3 +259,7 @@ class Location(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     kind: Mapped[str | None] = mapped_column(String(64))
     description: Mapped[str | None] = mapped_column(Text)
+    # The municipality a village lies in, as the source names it. No coordinates.
+    parent_location_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("locations.id", ondelete="SET NULL")
+    )

@@ -127,6 +127,6 @@ def test_downgrade_to_base_and_reupgrade(migrated_database_url):
             "transcript_page_contexts",
         } <= set(inspect(engine).get_table_names())
         with engine.connect() as conn:
-            assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0022"
+            assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0023"
     finally:
         engine.dispose()

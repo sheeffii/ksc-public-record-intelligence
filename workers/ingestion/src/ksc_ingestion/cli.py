@@ -639,6 +639,20 @@ def cmd_enrich_research(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_write_reviewed_incidents(args: argparse.Namespace) -> int:
+    """Write the first reviewed SPO-allegation incident batch (idempotent)."""
+    from ksc_ingestion.incident_review import ReviewedIncidentBatch
+
+    settings = get_settings()
+    result = ReviewedIncidentBatch(get_sessionmaker(), case_number=settings.case_id).run()
+    held = " ".join(f"{key}={state}" for key, state in sorted(result.held.items()))
+    print(
+        f"incidents={result.incidents} locations={result.locations} "
+        f"sources={result.sources} held: {held}"
+    )
+    return 0
+
+
 def cmd_reresolve(args: argparse.Namespace) -> int:
     """Rebuild identifier mappings and re-resolve held citations without network access."""
 
@@ -975,6 +989,12 @@ def build_parser() -> argparse.ArgumentParser:
         "enrich-research", help="apply the reviewed Phase 23 research enrichment (idempotent)"
     )
     p_enrich.set_defaults(func=cmd_enrich_research)
+
+    p_incidents = sub.add_parser(
+        "write-reviewed-incidents",
+        help="write the reviewed SPO-allegation incident batch (idempotent)",
+    )
+    p_incidents.set_defaults(func=cmd_write_reviewed_incidents)
 
     p_export = sub.add_parser(
         "export-corpus", help="write the tracked metadata manifest of a verified bundle"

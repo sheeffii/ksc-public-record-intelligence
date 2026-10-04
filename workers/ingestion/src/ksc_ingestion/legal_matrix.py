@@ -27,6 +27,8 @@ from ksc_api.models import (
     FindingEvidenceLink,
     FindingLinkType,
     GraphNode,
+    Incident,
+    IncidentSource,
     PageTextGeometry,
     ProcessingRun,
     Relationship,
@@ -296,6 +298,36 @@ class Phase22ALegalMatrixProjector:
                     )
                 source.source_anchor_id = anchor.id
 
+            # Reviewed incidents quote their operative source paragraphs verbatim.
+            incident_sources = list(
+                session.scalars(
+                    select(IncidentSource)
+                    .join(Incident)
+                    .where(Incident.case_id == case.id, IncidentSource.role == "operative")
+                    .order_by(IncidentSource.incident_id, IncidentSource.sequence)
+                ).all()
+            )
+            for incident_source in incident_sources:
+                paragraph = self._paragraph(
+                    session, incident_source.document_version_id, incident_source.paragraph_number
+                )
+                incident_anchor = self._new_anchor(
+                    session,
+                    run_id=run_id,
+                    object_type="incident_source",
+                    object_id=incident_source.id,
+                    role="incident_source",
+                    version_id=incident_source.document_version_id,
+                    pdf_page_index=paragraph.pdf_page_index_from if paragraph else None,
+                    page_number=paragraph.page_from if paragraph else None,
+                    paragraph_number=incident_source.paragraph_number,
+                    exact_text=incident_source.excerpt,
+                    verification=incident_source.verification_state.value,
+                    precision_counts=precision,
+                )
+                session.flush()  # no ORM relationship orders the anchor insert first
+                incident_source.source_anchor_id = incident_anchor.id
+
             node_count, relationship_count = self._project_graph(
                 session, case.id, findings, arguments, links, link_anchors, precision
             )
@@ -337,6 +369,9 @@ class Phase22ALegalMatrixProjector:
             Relationship.id.in_(owned_ids),
         )
         relationship_ids = select(Relationship.id).where(Relationship.case_id == case_id, owned)
+        incident_source_ids = (
+            select(IncidentSource.id).join(Incident).where(Incident.case_id == case_id)
+        )
         legal_anchors = list(
             session.scalars(
                 select(SourceAnchor).where(
@@ -356,6 +391,10 @@ class Phase22ALegalMatrixProjector:
                         (
                             (SourceAnchor.object_type == "relationship")
                             & SourceAnchor.object_id.in_(relationship_ids)
+                        ),
+                        (
+                            (SourceAnchor.object_type == "incident_source")
+                            & SourceAnchor.object_id.in_(incident_source_ids)
                         ),
                     )
                 )
