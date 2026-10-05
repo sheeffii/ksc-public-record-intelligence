@@ -5,8 +5,8 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `main`.
-- Post-Phase-23 AI Researcher-access correction is ready for the 2026-10-05
-  main push: run reads and writes are Researcher-gated in staging/production,
+- Post-Phase-23 AI Researcher-access correction was pushed to `main` on
+  2026-10-05 at `d207b0c`: run reads and writes are Researcher-gated in staging/production,
   and the real web screen uses server-side token forwarding. The production web
   container receives the canonical origin for its mutation check.
 - Public deployment review (2026-10-05): Phase 16 evidence gate is PENDING for
