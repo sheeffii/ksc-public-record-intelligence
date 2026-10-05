@@ -101,6 +101,8 @@ def test_public_user_cannot_reach_privileged_read_or_mutation_routes() -> None:
     requests = (
         ("get", "/api/v1/ingestion/status", None),
         ("post", "/api/v1/ai/runs", {"question": "What does the record show?"}),
+        ("get", "/api/v1/ai/runs", None),
+        ("get", "/api/v1/ai/runs/00000000-0000-0000-0000-000000000000", None),
         ("post", "/api/v1/ai/runs/00000000-0000-0000-0000-000000000000/notes", {"title": "x"}),
         (
             "patch",

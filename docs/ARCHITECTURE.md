@@ -68,8 +68,15 @@ docs/               this documentation; docs/design is the approved UX (read-onl
   code-only, and never builds a citation display string. Screens still import
   the synchronous mock directly except real-data Search, Document Reader,
   Network, Timeline, Finding Matrix, AI Research, Appeal Research, Argument Lab,
-  and Statement Comparison routes, which server-load through `getRepository()`
-  and consume API data.
+  and Statement Comparison routes, which server-load API data. AI Research uses
+  the authenticated repository boundary below rather than `getRepository()`.
+
+- **AI Researcher boundary** (ADR-035): the API's existing Researcher role
+  protects run creation, run list/detail and AI-note writes in staging/production.
+  `/ai` and `/ai/:sessionId` perform uncached server-side reads with a token from
+  an eight-hour HttpOnly cookie. Browser writes use only same-origin Next.js AI
+  routes, which forward that token to the API; the token is never a client prop.
+  Researcher access is shared at case scope, not per-person ownership.
 
 ## API (`apps/api`)
 

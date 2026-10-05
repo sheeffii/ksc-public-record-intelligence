@@ -1681,3 +1681,34 @@ Decision:
 Consequences: migration 0023. Held candidates (Drenoc/Drenovac, Kleçkë/Klečka)
 are not written. Writing is `ksc-ingest write-reviewed-incidents` (idempotent,
 audited), then `project-legal-matrix`.
+
+## ADR-035 — Researcher access for AI runs and web research sessions
+
+Date: 2026-10-04 · Status: accepted · Post-Phase-23
+
+Context: AI run creation and research-note writes already required the API's
+Researcher bearer role in staging/production, but the real browser screen sent
+no credential. Run list/detail reads were public and exposed stored questions and
+answers. The project has role tokens, not per-person accounts or run ownership.
+
+Decision:
+
+- The existing Researcher role gates creation, list, detail and AI-note writes
+  in staging/production. Any Researcher token may read the case's runs; this is
+  a shared Researcher workspace, not per-person private storage. Anonymous API
+  callers cannot enumerate questions or read a run by ID. Development/test
+  retain the existing local bypass.
+- The Next.js AI screen uses only same-origin AI routes. A native form validates
+  a Researcher token against the API and stores it in an eight-hour Secure,
+  HttpOnly, SameSite=Strict cookie. The web server forwards it to the existing
+  API role guard; it never appears in client JavaScript, page props or public
+  environment variables. State-changing web routes check Origin. Server-side
+  run reads and proxied responses are uncached.
+- The existing AI-note and appeal-note writes keep their Researcher guard. The
+  real AI screen's note write uses the same authenticated web path as run
+  creation. No retrieval, citation, prompt or answer semantics change.
+
+Consequences: no new role, user table, ownership model or migration. A future
+per-person private workspace would require separately authorized identity and
+ownership design; shared Researcher access must not be described as private
+per-user access.

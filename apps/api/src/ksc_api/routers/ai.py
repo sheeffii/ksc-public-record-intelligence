@@ -52,7 +52,7 @@ def create_ai_run(payload: AiQuestionCreate, _: AiCapacity, service: Service) ->
 
 
 @router.get("/runs/{run_id}", response_model=AiRunRead)
-def read_ai_run(run_id: uuid.UUID, service: Service) -> AiRunRead:
+def read_ai_run(run_id: uuid.UUID, _: Researcher, service: Service) -> AiRunRead:
     run = service.get_run(run_id)
     if run is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "AI run not found")
@@ -61,7 +61,7 @@ def read_ai_run(run_id: uuid.UUID, service: Service) -> AiRunRead:
 
 @router.get("/runs", response_model=list[AiRunSummary])
 def list_ai_runs(
-    service: Service, limit: Annotated[int, Query(ge=1, le=100)] = 20
+    _: Researcher, service: Service, limit: Annotated[int, Query(ge=1, le=100)] = 20
 ) -> list[AiRunSummary]:
     return [
         AiRunSummary(

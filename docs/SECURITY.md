@@ -97,6 +97,12 @@ updates must pass the same gate.
 ## Access control direction
 
 - Phase 4 has no authentication; the deployment is local.
+- In staging/production, AI run creation, list/detail reads and AI-assisted
+  research-note writes require the existing Researcher API role. Runs are shared
+  among Researchers, not anonymous or per-person private. The real web AI flow
+  forwards the token server-side from a Secure, HttpOnly, SameSite=Strict
+  eight-hour cookie; no bearer token is included in browser JavaScript or public
+  environment variables. Same-origin mutation checks protect the web routes.
 - Planned: authenticated users with roles (reader · reviewer · admin). Reviewer
   actions (verification, comparison labels, potential-issue review) write to the
   audit log with actor identity. Public mode remains readable without an account.

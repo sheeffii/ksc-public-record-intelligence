@@ -3,7 +3,7 @@
 Long-term implementation tracker. `MEMORY.md` is the live checkpoint; this file
 tracks milestones, features, debt and status across sessions.
 
-Last updated: 2026-10-04 (post-Phase-23 Incident API/UI/Reader checkpoint)
+Last updated: 2026-10-05 (public deployment readiness review)
 
 ## Milestones
 
@@ -88,6 +88,31 @@ Repository code, migrations, tests and Git state win over stale roadmap text.
 - Read-only live-data link checks pass. `make lint`, `make typecheck` and
   `make test` pass (439 backend, 281 frontend). No ingestion, corpus reparse or
   rebuild was run for this follow-up.
+
+### Post-Phase-23 AI Researcher-access checkpoint (2026-10-04)
+
+- Staging/production AI run creation, list and detail use the existing
+  Researcher role; anonymous questions and answers are not enumerable. The
+  access model is a shared Researcher workspace, not per-person ownership.
+- The real web AI screen uses same-origin routes with server-side bearer
+  forwarding from an eight-hour HttpOnly cookie. AI-note writes follow the
+  same path; appeal-note writes already require Researcher. Local/test API
+  behavior remains unchanged. See ADR-035. The production web service now
+  receives `CANONICAL_URL` for the same-origin mutation check.
+
+### Public deployment readiness review (2026-10-05)
+
+- Phase 16 evidence gate remains **PENDING**: deployment/HTTPS smoke, live alert
+  delivery and production smoke have no passing evidence. The external beta is
+  documented as an external dependency. Earlier local restore, security,
+  supply-chain, load and accessibility evidence passes.
+- GitHub CI, security and deploy workflow files retain their `.disabled` suffix;
+  a push to `main` does not start those checks or a release. Restoring the
+  workflows and configuring protected staging/production targets, credentials,
+  alert routing, managed DB/object-store permissions, backups and a live restore
+  drill are required before public launch.
+- The AI access correction closes the known anonymous-run-read gap, but it
+  needs staging and production smoke checks with the real edge and role tokens.
 
 ### Phase 23 complete (2026-10-03)
 

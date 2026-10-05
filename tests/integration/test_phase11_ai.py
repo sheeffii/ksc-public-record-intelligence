@@ -11,6 +11,43 @@ from ksc_api.services.ai_providers import ProviderClaim, ProviderResponse
 from ksc_api.services.ai_research import AiResearchService
 
 
+def test_researcher_token_controls_ai_run_creation_and_reads(
+    demo_client, demo_settings, monkeypatch
+):
+    settings = demo_settings.model_copy(
+        update={
+            "app_env": "staging",
+            "researcher_api_keys": "r" * 32,
+            "redis_url": "redis://localhost:6379/0",
+        }
+    )
+    demo_client.app.dependency_overrides[get_settings] = lambda: settings
+    monkeypatch.setattr("ksc_api.security._enforce_rate_limit", lambda *args: None)
+    path = "/api/v1/ai/runs"
+    question = "What does the Panel find about the synthetic demo event?"
+    assert demo_client.post(path, json={"question": question}).status_code == 401
+    assert demo_client.get(path).status_code == 401
+    assert demo_client.get(f"{path}/{uuid.uuid4()}").status_code == 401
+
+    headers = {"Authorization": f"Bearer {'r' * 32}"}
+    created = demo_client.post(path, json={"question": question}, headers=headers)
+    assert created.status_code == 201
+    run_id = created.json()["id"]
+    listing = demo_client.get(path, headers=headers)
+    assert listing.status_code == 200
+    assert any(row["id"] == run_id for row in listing.json())
+    detail = demo_client.get(f"{path}/{run_id}", headers=headers)
+    assert detail.status_code == 200
+    assert detail.json() == created.json()
+    assert demo_client.get(f"{path}/{run_id}").status_code == 401
+    note_path = f"{path}/{run_id}/notes"
+    assert demo_client.post(note_path, json={"title": "Review note"}).status_code == 401
+    assert (
+        demo_client.post(note_path, json={"title": "Review note"}, headers=headers).status_code
+        == 201
+    )
+
+
 def test_demo_ai_run_is_audited_and_source_grounded(demo_client):
     response = demo_client.post(
         "/api/v1/ai/runs",

@@ -5,6 +5,15 @@ Live checkpoint. Repository state wins over this note.
 ## Current status
 
 - Current branch: `main`.
+- Post-Phase-23 AI Researcher-access correction is ready for the 2026-10-05
+  main push: run reads and writes are Researcher-gated in staging/production,
+  and the real web screen uses server-side token forwarding. The production web
+  container receives the canonical origin for its mutation check.
+- Public deployment review (2026-10-05): Phase 16 evidence gate is PENDING for
+  live HTTPS/deployment smoke, alert delivery and production smoke. CI, security
+  and deploy GitHub workflows are still `.disabled`. No deployment target or
+  managed-service/alert credentials are configured in the repository. Do not
+  claim production readiness until these external gates have real evidence.
 - Current milestone: **Phase 23 COMPLETE**, merged into `main` and tagged
   `phase-23-complete`. Legal Tools acquisition is exhausted (5,049/5,049 mirror
   records). The Phase 23 roadmap is
@@ -228,6 +237,17 @@ Live checkpoint. Repository state wins over this note.
   unwritten: Drenoc POSSIBLY_AFFECTED; Kleçkë CANNOT_DETERMINE.
 - `make lint`, `make typecheck` and `make test` pass (439 backend, 281 frontend).
   No ingestion, corpus reparse or rebuild was run for this follow-up.
+
+### AI run access correction (2026-10-04, uncommitted)
+
+- API run list/detail now require the same Researcher role as creation and
+  AI-note writes in staging/production. Authorized Researchers share case runs;
+  anonymous users cannot enumerate questions or answers. Local/test bypass
+  remains intact.
+- Web AI access uses a native token form, an eight-hour Secure/HttpOnly/
+  SameSite=Strict cookie and server-side forwarding for run reads, writes and
+  note saves. No token reaches browser JavaScript or page props. ADR-035 records
+  this boundary. No AI retrieval, citation or answer logic was changed.
 
 ### Operative Amended Indictment captured (2026-10-04)
 

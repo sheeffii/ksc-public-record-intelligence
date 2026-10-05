@@ -94,13 +94,12 @@ function RecordAnswerBlock({ block }: { block: AiResearchBlock }) {
 export function AiResearchReal({
   initialRun,
   sessions,
-  apiBaseUrl,
 }: {
   initialRun: AiResearchRun | null;
   sessions: readonly AiRunSummaryView[];
-  apiBaseUrl: string;
 }) {
   const t = useTranslations("phase11");
+  const access = useTranslations("aiAccess");
   const footer = useTranslations("footer");
   const router = useRouter();
   const [run, setRun] = useState(initialRun);
@@ -116,7 +115,9 @@ export function AiResearchReal({
     setRequestError(false);
     setRun(null);
     try {
-      const next = await createApiRepository({ baseUrl: apiBaseUrl }).createAiRun(question);
+      const next = await createApiRepository({ baseUrl: window.location.origin }).createAiRun(
+        question,
+      );
       setRun(next);
       router.push(`/ai/${next.id}`);
     } catch {
@@ -128,11 +129,15 @@ export function AiResearchReal({
 
   async function saveNote() {
     if (!run || run.answerWithheld) return;
-    await createApiRepository({ baseUrl: apiBaseUrl }).saveAiRunAsNote(
-      run.id,
-      `${t("noteTitle")}: ${run.question}`,
-    );
-    setSaved(true);
+    try {
+      await createApiRepository({ baseUrl: window.location.origin }).saveAiRunAsNote(
+        run.id,
+        `${t("noteTitle")}: ${run.question}`,
+      );
+      setSaved(true);
+    } catch {
+      setRequestError(true);
+    }
   }
 
   const recordBlocks = run?.blocks.filter((block) => block.kind !== "ai") ?? [];
@@ -144,6 +149,13 @@ export function AiResearchReal({
         title={t("title")}
         description={t("description")}
         realData
+        actions={
+          <form action="/api/ai/access/logout" method="post">
+            <button type="submit" className="text-fg-secondary text-[11px] underline">
+              {access("signOut")}
+            </button>
+          </form>
+        }
       />
       <div className="mx-auto grid w-full max-w-[1440px] min-w-0 flex-1 gap-3 p-3 md:p-4 lg:grid-cols-[214px_minmax(0,1fr)] xl:grid-cols-[214px_minmax(0,1fr)_292px]">
         <aside className="min-w-0 space-y-3">

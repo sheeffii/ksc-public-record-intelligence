@@ -1061,6 +1061,15 @@
       "ai": "ANALIZË E IA-së"
     }
   },
+  "aiAccess": {
+    "title": "Qasje për hulumtuesin",
+    "description": "Sesionet dhe shënimet e kërkimit me IA kërkojnë qasje si hulumtues.",
+    "tokenLabel": "Kodi i qasjes së hulumtuesit",
+    "continue": "Vazhdo te Kërkimi me IA",
+    "invalid": "Qasja nuk mund të verifikohej. Kontrolloni kodin dhe provoni përsëri.",
+    "unavailable": "Shërbimi i IA-së nuk është i disponueshëm. Provoni më vonë.",
+    "signOut": "Mbyll sesionin e hulumtuesit"
+  },
   "incidentDetail": {
     "spoAllegation": "Pretendim i ZPS-së · jo konstatim i Gjykatës",
     "dateAsPleaded": "Data siç është paraqitur në aktakuzë",

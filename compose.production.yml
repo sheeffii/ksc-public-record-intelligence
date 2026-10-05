@@ -83,6 +83,7 @@ services:
     cap_drop: [ALL]
     environment:
       NODE_ENV: production
+      CANONICAL_URL: ${CANONICAL_URL:?set CANONICAL_URL}
       NEXT_PUBLIC_DATA_SOURCE: api
       NEXT_PUBLIC_API_URL: ${CANONICAL_URL:?set CANONICAL_URL}
       API_INTERNAL_URL: http://api:8000

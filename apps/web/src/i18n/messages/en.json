@@ -1061,6 +1061,15 @@
       "ai": "AI ANALYSIS"
     }
   },
+  "aiAccess": {
+    "title": "Researcher access",
+    "description": "AI research sessions and notes require Researcher access.",
+    "tokenLabel": "Researcher access token",
+    "continue": "Continue to AI Research",
+    "invalid": "Access could not be verified. Check the token and try again.",
+    "unavailable": "The AI service is unavailable. Try again later.",
+    "signOut": "End researcher session"
+  },
   "incidentDetail": {
     "spoAllegation": "SPO allegation · not a Court finding",
     "dateAsPleaded": "Date as pleaded",

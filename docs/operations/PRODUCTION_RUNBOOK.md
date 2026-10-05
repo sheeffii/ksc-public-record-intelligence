@@ -82,7 +82,8 @@ drop privileges to the normal application account.
   is uncertain, and publish only confirmed availability facts.
 
 Logs contain route templates, status, latency and request IDs—not query strings,
-document text, protected identifiers or research notes. No analytics, cookies
-or third-party error tracker are enabled. Reassess payload filtering before
-adding telemetry. Supported beta clients are current and previous Chrome,
+document text, protected identifiers or research notes. The AI Research screen
+uses an eight-hour Secure, HttpOnly, SameSite=Strict Researcher access cookie;
+no analytics or third-party error tracker is enabled. Reassess payload filtering
+before adding telemetry. Supported beta clients are current and previous Chrome,
 Firefox, Safari and Edge, plus responsive mobile Safari/Chrome.
